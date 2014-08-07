@@ -1,0 +1,61 @@
+{
+  "name": "encode_bwa",
+  "title": "ENCODE BWA",
+  "summary": "Map reads with BWA 0.7.7",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "reads1",
+      "label": "reads1",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "reads2",
+      "label": "reads2",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "reference_tar",
+      "label": "E.g. male or female hg19; mm9.",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "bwa_aln_params",
+      "label": "Command-line parameters to BWA aln",
+      "class": "string",
+      "optional": true,
+      "default": "-q 5 -l 32 -k 2"
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "mapped_reads",
+      "label": "Mapped reads",
+      "class": "file"
+    },
+    {
+      "name": "mapping_statistics",
+      "label": "Mapping statistics",
+      "class": "file"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/ENCODE_BWA.py",
+    "execDepends": [
+      { "name": "bwa" },
+      { "name": "samtools" }
+    ]
+  },
+  "authorizedUsers": [],
+  "access": {
+    "network": ["*"]
+  }
+}
