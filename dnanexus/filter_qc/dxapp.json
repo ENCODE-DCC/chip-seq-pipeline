@@ -1,0 +1,60 @@
+{
+  "name": "filter_qc",
+  "title": "ENCODE TF Chip-seq Mapped Read Filter and QC.",
+  "summary": "Take a raw bam file of mapped reads, filter, calculate QC metrics.",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "input_bam",
+      "label": "Raw, unfiltered, mapped reads.",
+      "class": "file",
+      "optional": false
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "filtered_bam",
+      "label": "Mapped reads surviving the filter.",
+      "class": "file"
+    },
+    {
+      "name": "filtered_bam_index",
+      "label": "Indexed reads surviving the filter.",
+      "class": "file"
+    },
+    {
+      "name": "filtered_mapstats",
+      "label": "Post-filtering mapping statistics.",
+      "class": "file"
+    },
+    {
+      "name": "dup_file_qc",
+      "label": "Duplication metrics from MarkDuplicates.",
+      "class": "file"
+    },
+    {
+      "name": "pbc_file_qc",
+      "label": "Library complexity measures.",
+      "class": "file"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/filter_qc.py",
+    "execDepends": [
+      {"name": "samtools"},
+      {"name": "picard-tools"},
+      {"name": "bedtools"}
+     ]
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}
