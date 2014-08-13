@@ -57,16 +57,41 @@ def main(input_bam, paired_end, samtools_params):
 
     print subprocess.check_output('ls -l', shell=True)
 
-    # =============================
-    # Remove  unmapped, mate unmapped
-    # not primary alignment, reads failing platform
-    # Remove low MAPQ reads
-    # Obtain name sorted BAM file
-    # ==================  
-    filt_bam_filename = raw_bam_basename + ".filt.srt.bam"
-    with open(filt_bam_filename, 'w') as fh:
-        subprocess.check_call(shlex.split("samtools view -F 1804 %s -b %s"
-            %(samtools_params, raw_bam_filename)), stdout=fh)
+    filt_bam_prefix = raw_bam_basename + ".filt.srt" 
+    filt_bam_filename = filt_bam_prefix + ".filt.srt.bam"
+    if paired_end:
+        # =============================
+        # Remove  unmapped, mate unmapped
+        # not primary alignment, reads failing platform
+        # Remove low MAPQ reads
+        # Only keep properly paired reads
+        # Obtain name sorted BAM file
+        # ==================
+        tmp_filt_bam_prefix = "tmp.%s.nmsrt" %(filt_bam_prefix)
+        out,err = run_pipe([
+            "samtools view -F 1804 -f2 %s -u %s" %(samtools_params, raw_bam_filename),
+            "samtools sort -n - %s" %(tmp_filt_bam_prefix)])  # Will produce name sorted BAM
+        if err:
+            print "samtools error: %s" %(err)
+        # Remove orphan reads (pair was removed)
+        # and read pairs mapping to different chromosomes
+        # Obtain position sorted BAM
+        out,err = run_pipe([
+            "samtools fixmate -r %s -" %(tmp_filt_bam_filename),
+            "samtools view -F 1804 -f 2 -u -",
+            "samtools sort - %s" %(filt_bam_prefix)]) # Will produce coordinate sorted BAM
+        if err:
+            print "samtools error: %s" %(err)
+    else: #single-end data
+        # =============================
+        # Remove  unmapped, mate unmapped
+        # not primary alignment, reads failing platform
+        # Remove low MAPQ reads
+        # Obtain name sorted BAM file
+        # ==================  
+        with open(filt_bam_filename, 'w') as fh:
+            subprocess.check_call(shlex.split("samtools view -F 1804 %s -b %s"
+                %(samtools_params, raw_bam_filename)), stdout=fh)
 
     # ========================
     # Mark duplicates
@@ -79,18 +104,37 @@ def main(input_bam, paired_end, samtools_params):
          %(filt_bam_filename, tmp_filt_bam_filename, dup_file_qc_filename)))
     os.rename(tmp_filt_bam_filename,filt_bam_filename)
 
-    # ============================
-    # Remove duplicates
-    # Index final position sorted BAM
-    # ============================
-    final_bam_prefix = raw_bam_basename + ".filt.nodup.srt"
+    if paired_end:
+        final_bam_prefix = raw_bam_basename + ".filt.srt.nodup"
+    else:
+        final_bam_prefix = raw_bam_basename + ".filt.nodup.srt"
     final_bam_filename = final_bam_prefix + ".bam" # To be stored
     final_bam_index_filename = final_bam_prefix + ".bai" # To be stored
     final_bam_file_mapstats_filename = final_bam_prefix + ".flagstat.qc" # QC file
-    with open(final_bam_filename, 'w') as fh:
-        subprocess.check_call(shlex.split("samtools view -F 1804 -b %s"
-            %(filt_bam_filename)), stdout=fh)
+
+    if paired_end:
+        # ============================
+        # Remove duplicates
+        # Index final position sorted BAM
+        # Create final name sorted BAM
+        # ============================
+        final_nmsrt_bam_prefix = raw_bam_basename + ".filt.nmsrt.nodup"
+        final_nmsrt_bam_filename = final_nmsrt_bam_prefix + ".bam"
+        with open(final_bam_filename, 'w') as fh:
+            subprocess.check_call(shlex.split("samtools view -F 1804 -f2 -b %s"
+                %(filt_bam_filename)), stdout=fh)
+        subprocess.check_call(shlex.split("samtools sort -n %s %s" %(final_bam_filename, final_nmsrt_bam_prefix)))
+    else:
+        # ============================
+        # Remove duplicates
+        # Index final position sorted BAM
+        # ============================
+        with open(final_bam_filename, 'w') as fh:
+            subprocess.check_call(shlex.split("samtools view -F 1804 -b %s"
+                %(filt_bam_filename)), stdout=fh)
+    # Index final bam file
     subprocess.check_call(shlex.split("samtools index %s %s" %(final_bam_filename, final_bam_index_filename)))
+    # Generate mapping statistics
     with open(final_bam_file_mapstats_filename, 'w') as fh:
         subprocess.check_call(shlex.split("samtools flagstat %s"
             %(final_bam_filename)), stdout=fh)
@@ -105,14 +149,22 @@ def main(input_bam, paired_end, samtools_params):
     pbc_file_qc_filename = final_bam_prefix + ".pbc.qc"
     # PBC File output
     # TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
-    steps = [
-        "bamToBed -i %s" %(final_bam_filename), #for some reason bedtools bamtobed does not work
-        r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$6}'""",
+    if paired_end:
+        steps = [
+            "samtools sort -n %s" %(filt_bam_filename),
+            "bamToBed -bedpe -i stdin",
+            r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}'"""]
+    else:
+        steps = [
+            "bamToBed -i %s" %(final_bam_filename), #for some reason bedtools bamtobed does not work
+            r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$6}'"""]
+    # these st
+    steps.extend([
         "grep -v 'chrM'",
         "sort",
         "uniq -c",
         r"""awk 'BEGIN{mt=0;m0=0;m1=0;m2=0} ($1==1){m1=m1+1} ($1==2){m2=m2+1} {m0=m0+1} {mt=mt+$1} END{printf "%d\t%d\t%d\t%d\t%f\t%f\t%f\n",mt,m0,m1,m2,m0/mt,m1/m0,m1/m2}'"""
-        ]
+        ])
     out,err = run_pipe(steps,pbc_file_qc_filename)
     if err:
         print "PBC file error: %s" %(err)

@@ -10,6 +10,7 @@ import pdb
 
 def run_pipe(steps, outfile=None):
     #break this out into a recursive function
+    #TODO:  as written does not handle single-step pipes
     from subprocess import Popen, PIPE
     p = None
     p_next = None

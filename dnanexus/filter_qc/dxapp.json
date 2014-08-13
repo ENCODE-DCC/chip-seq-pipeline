@@ -21,7 +21,7 @@
     },
     {
       "name": "samtools_params",
-      "label": "Command-line parameters to samtools",
+      "label": "Command-line parameters to samtools common to both single- and paired-end data",
       "class": "string",
       "optional": true,
       "default": "-q 30"
