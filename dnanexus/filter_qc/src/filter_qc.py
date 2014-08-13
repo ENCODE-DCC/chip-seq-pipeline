@@ -45,7 +45,6 @@ def main(input_bam, paired_end, samtools_params):
 
     open("filtered_bam_index",'a').close()
     open("filtered_mapstats",'a').close()
-    open("dup_file_qc",'a').close()
     open("pbc_file_qc",'a').close()
 
 
@@ -57,7 +56,7 @@ def main(input_bam, paired_end, samtools_params):
     filtered_bam = dxpy.upload_local_file(filt_bam_filename)
     filtered_bam_index = dxpy.upload_local_file("filtered_bam_index")
     filtered_mapstats = dxpy.upload_local_file("filtered_mapstats")
-    dup_file_qc = dxpy.upload_local_file("dup_file_qc")
+    dup_file_qc = dxpy.upload_local_file(dup_file_qc_filename)
     pbc_file_qc = dxpy.upload_local_file("pbc_file_qc")
 
     # The following line fills in some basic dummy output and assumes
