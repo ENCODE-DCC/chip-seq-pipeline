@@ -44,6 +44,10 @@
       "name": "mapping_statistics",
       "label": "Mapping statistics",
       "class": "file"
+    },
+    {
+      "name": "paired_end",
+      "class": "boolean"
     }
   ],
   "runSpec": {

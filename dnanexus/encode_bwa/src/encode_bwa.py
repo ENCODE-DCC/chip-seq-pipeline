@@ -195,7 +195,7 @@ def main(reads1, reference_tar, bwa_aln_params, reads2=None):
     mapped_reads = postprocess_job.get_output_ref("mapped_reads")
     mapping_statistics = postprocess_job.get_output_ref("mapping_statistics")
 
-    output = { "mapped_reads": mapped_reads, "mapping_statistics": mapping_statistics }
+    output = { "mapped_reads": mapped_reads, "mapping_statistics": mapping_statistics, "paired_end": paired_end }
     print "Exiting with output: %s" %(output)
     return output
 
