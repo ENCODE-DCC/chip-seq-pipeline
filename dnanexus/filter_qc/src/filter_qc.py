@@ -11,25 +11,38 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os
+import os, subprocess, shlex
 import dxpy
 
 @dxpy.entry_point('main')
-def main(input_bam):
+def main(input_bam, paired_end, samtools_params):
 
     # The following line(s) initialize your data object inputs on the platform
     # into dxpy.DXDataObject instances that you can start using immediately.
 
-    input_bam = dxpy.DXFile(input_bam)
+    raw_bam_file = dxpy.DXFile(input_bam)
 
     # The following line(s) download your file inputs to the local file system
     # using variable names for the filenames.
 
-    dxpy.download_dxfile(input_bam.get_id(), "input_bam")
+    raw_bam_filename = raw_bam_file.name
+    raw_bam_basename = raw_bam_filename.rstrip('.bam')
+    dxpy.download_dxfile(raw_bam_file.get_id(), raw_bam_filename)
+    filt_bam_filename = raw_bam_basename + ".filt.srt.bam"
+    tmp_filt_bam_filename = raw_bam_basename + ".dupmark.bam"
+    dup_file_qc_filename = raw_bam_basename + ".dup.qc"
 
-    # Fill in your application code here.
+    print subprocess.check_output('ls -l', shell=True)
 
-    open("filtered_bam",'a').close()
+    with open(filt_bam_filename, 'w') as fh:
+        subprocess.check_call(shlex.split("samtools view -F 1804 %s -b %s" \
+            %(samtools_params, raw_bam_filename)), stdout=fh)
+
+    subprocess.check_call(shlex.split(
+        "java -Xmx4G -jar /picard/MarkDuplicates.jar INPUT=%s OUTPUT=%s METRICS_FILE=%s \
+         VALIDATION_STRINGENCY=LENIENT ASSUME_SORTED=true REMOVE_DUPLICATES=false"
+         %(filt_bam_filename, tmp_filt_bam_filename, dup_file_qc_filename)))
+
     open("filtered_bam_index",'a').close()
     open("filtered_mapstats",'a').close()
     open("dup_file_qc",'a').close()
@@ -41,7 +54,7 @@ def main(input_bam):
     # have used the output field name for the filename for each output, but you
     # can change that behavior to suit your needs.
 
-    filtered_bam = dxpy.upload_local_file("filtered_bam")
+    filtered_bam = dxpy.upload_local_file(filt_bam_filename)
     filtered_bam_index = dxpy.upload_local_file("filtered_bam_index")
     filtered_mapstats = dxpy.upload_local_file("filtered_mapstats")
     dup_file_qc = dxpy.upload_local_file("dup_file_qc")
