@@ -68,6 +68,7 @@ def main(input_bam, paired_end, samtools_params):
         # Obtain name sorted BAM file
         # ==================
         tmp_filt_bam_prefix = "tmp.%s.nmsrt" %(filt_bam_prefix)
+        tmp_filt_bam_filename = tmp_filt_bam_prefix + ".bam"
         out,err = run_pipe([
             "samtools view -F 1804 -f2 %s -u %s" %(samtools_params, raw_bam_filename),
             "samtools sort -n - %s" %(tmp_filt_bam_prefix)])  # Will produce name sorted BAM
@@ -156,7 +157,7 @@ def main(input_bam, paired_end, samtools_params):
             r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}'"""]
     else:
         steps = [
-            "bamToBed -i %s" %(final_bam_filename), #for some reason bedtools bamtobed does not work
+            "bamToBed -i %s" %(filt_bam_filename), #for some reason bedtools bamtobed does not work
             r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$6}'"""]
     # these st
     steps.extend([
