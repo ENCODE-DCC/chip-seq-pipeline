@@ -12,6 +12,8 @@
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
 import os, subprocess, shlex
+from multiprocessing import Pool, cpu_count
+from subprocess import Popen, PIPE #debug only this should only need to be imported into run_pipe
 import dxpy
 
 def run_pipe(steps, outfile=None):
@@ -25,13 +27,21 @@ def run_pipe(steps, outfile=None):
     for n,step in enumerate(steps, start=first_step_n):
         print "step: %s" %(step)
         if n == first_step_n:
+            if n == last_step_n and outfile: #one-step pipeline with outfile
+                with open(outfile, 'w') as fh:
+                    print "one step shlex: %s to file: %s" %(shlex.split(step), outfile)
+                    p = Popen(shlex.split(step), stdout=fh)
+                break
+            print "first step shlex to stdout: %s" %(shlex.split(step))
             p = Popen(shlex.split(step), stdout=PIPE)
         elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
             with open(outfile, 'w') as fh:
+                print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
                 p_last = Popen(shlex.split(step), stdin=p.stdout, stdout=fh)
                 p.stdout.close()
                 p = p_last
         else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
+            print "intermediate step shlex to stdout: %s" %(shlex.split(step))
             p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
             p.stdout.close()
             p = p_next
@@ -58,7 +68,7 @@ def main(input_bam, paired_end, samtools_params):
     print subprocess.check_output('ls -l', shell=True)
 
     filt_bam_prefix = raw_bam_basename + ".filt.srt" 
-    filt_bam_filename = filt_bam_prefix + ".filt.srt.bam"
+    filt_bam_filename = filt_bam_prefix + ".bam"
     if paired_end:
         # =============================
         # Remove  unmapped, mate unmapped
@@ -70,19 +80,28 @@ def main(input_bam, paired_end, samtools_params):
         tmp_filt_bam_prefix = "tmp.%s.nmsrt" %(filt_bam_prefix)
         tmp_filt_bam_filename = tmp_filt_bam_prefix + ".bam"
         out,err = run_pipe([
-            "samtools view -F 1804 -f2 %s -u %s" %(samtools_params, raw_bam_filename),
+            #filter:  -F 1804 FlAG bits to exclude; -F 2 FLAG bits to reqire; -q 30 exclude MAPQ < 30; -u uncompressed output
+            #exclude FLAG 1804: unmapped, next segment unmapped, secondary alignments, not passing platform q, PCR or optical duplicates
+            #require FLAG 2: properly aligned
+            "samtools view -F 1804 -f 2 %s -u %s" %(samtools_params, raw_bam_filename),
+            #sort:  -n sort by name; - take input from stdin; out to specified filename
             "samtools sort -n - %s" %(tmp_filt_bam_prefix)])  # Will produce name sorted BAM
         if err:
             print "samtools error: %s" %(err)
         # Remove orphan reads (pair was removed)
         # and read pairs mapping to different chromosomes
         # Obtain position sorted BAM
+        print subprocess.check_output('ls -l', shell=True)
         out,err = run_pipe([
+            #fill in mate coordinates, ISIZE and mate-related flags
+            #fixmate requires name-sorted alignment; -r removes secondary and unmapped (redundant here because already done above?)
+            #- send output to stdout
             "samtools fixmate -r %s -" %(tmp_filt_bam_filename),
+            #repeat filtering after mate repair
             "samtools view -F 1804 -f 2 -u -",
-            "samtools sort - %s" %(filt_bam_prefix)]) # Will produce coordinate sorted BAM
-        if err:
-            print "samtools error: %s" %(err)
+            #produce the coordinate-sorted BAM
+            "samtools sort - %s" %(filt_bam_prefix)])
+        print subprocess.check_output('ls -l', shell=True)
     else: #single-end data
         # =============================
         # Remove  unmapped, mate unmapped
@@ -152,7 +171,7 @@ def main(input_bam, paired_end, samtools_params):
     # TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
     if paired_end:
         steps = [
-            "samtools sort -n %s" %(filt_bam_filename),
+            "samtools sort -n %s -" %(filt_bam_filename),
             "bamToBed -bedpe -i stdin",
             r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}'"""]
     else:
