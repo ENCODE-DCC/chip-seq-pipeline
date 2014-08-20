@@ -11,7 +11,7 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, subprocess, shlex
+import os, subprocess, shlex, time
 from multiprocessing import Pool, cpu_count
 from subprocess import Popen, PIPE #debug only this should only need to be imported into run_pipe
 import dxpy
@@ -25,7 +25,7 @@ def run_pipe(steps, outfile=None):
     first_step_n = 1
     last_step_n = len(steps)
     for n,step in enumerate(steps, start=first_step_n):
-        print "step: %s" %(step)
+        print "step %d: %s" %(n,step)
         if n == first_step_n:
             if n == last_step_n and outfile: #one-step pipeline with outfile
                 with open(outfile, 'w') as fh:
@@ -41,7 +41,7 @@ def run_pipe(steps, outfile=None):
                 p.stdout.close()
                 p = p_last
         else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
-            print "intermediate step shlex to stdout: %s" %(shlex.split(step))
+            print "intermediate step %d shlex to stdout: %s" %(n,shlex.split(step))
             p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
             p.stdout.close()
             p = p_next
@@ -171,12 +171,12 @@ def main(input_bam, paired_end, samtools_params):
     # TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
     if paired_end:
         steps = [
-            "samtools sort -n %s -" %(filt_bam_filename),
+            "samtools sort -no %s -" %(filt_bam_filename),
             "bamToBed -bedpe -i stdin",
             r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$4,$6,$9,$10}'"""]
     else:
         steps = [
-            "bamToBed -i %s" %(filt_bam_filename), #for some reason bedtools bamtobed does not work
+            "bamToBed -i %s" %(filt_bam_filename), #for some reason 'bedtools bamtobed' does not work but bamToBed does
             r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$6}'"""]
     # these st
     steps.extend([
