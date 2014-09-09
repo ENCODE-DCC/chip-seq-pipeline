@@ -18,7 +18,7 @@ import dxpy
 
 def run_pipe(steps, outfile=None):
     #break this out into a recursive function
-    #TODO:  as written does not handle single-step pipes
+    #TODO:  capture stderr
     from subprocess import Popen, PIPE
     p = None
     p_next = None
@@ -34,6 +34,7 @@ def run_pipe(steps, outfile=None):
                 break
             print "first step shlex to stdout: %s" %(shlex.split(step))
             p = Popen(shlex.split(step), stdout=PIPE)
+            #need to close p.stdout here?
         elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
             with open(outfile, 'w') as fh:
                 print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
@@ -62,7 +63,7 @@ def main(input_bam, paired_end, samtools_params):
     # using variable names for the filenames.
 
     raw_bam_filename = raw_bam_file.name
-    raw_bam_basename = raw_bam_filename.rstrip('.bam')
+    raw_bam_basename = raw_bam_file.name.rstrip('.bam')
     dxpy.download_dxfile(raw_bam_file.get_id(), raw_bam_filename)
 
     print subprocess.check_output('ls -l', shell=True)
@@ -151,7 +152,7 @@ def main(input_bam, paired_end, samtools_params):
         # ============================
         with open(final_bam_filename, 'w') as fh:
             subprocess.check_call(shlex.split("samtools view -F 1804 -b %s"
-                %(filt_bam_filename)), stdout=fh)
+                %(filt_bam_filename)), stdo˜ut=fh)
     # Index final bam file
     subprocess.check_call(shlex.split("samtools index %s %s" %(final_bam_filename, final_bam_index_filename)))
     # Generate mapping statistics
@@ -189,6 +190,7 @@ def main(input_bam, paired_end, samtools_params):
     if err:
         print "PBC file error: %s" %(err)
 
+    print "Uploading results files to the project"
     # Use the Python bindings to upload the file outputs to the project.
     filtered_bam = dxpy.upload_local_file(filt_bam_filename)
     filtered_bam_index = dxpy.upload_local_file(final_bam_index_filename)
@@ -203,7 +205,9 @@ def main(input_bam, paired_end, samtools_params):
     output["filtered_mapstats"] = dxpy.dxlink(filtered_mapstats)
     output["dup_file_qc"] = dxpy.dxlink(dup_file_qc)
     output["pbc_file_qc"] = dxpy.dxlink(pbc_file_qc)
+    output["paired_end"] = paired_end
 
+    print "Done"
     return output
 
 dxpy.run()
