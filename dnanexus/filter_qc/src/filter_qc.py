@@ -105,7 +105,7 @@ def main(input_bam, paired_end, samtools_params):
         print subprocess.check_output('ls -l', shell=True)
     else: #single-end data
         # =============================
-        # Remove  unmapped, mate unmapped
+        # Remove unmapped, mate unmapped
         # not primary alignment, reads failing platform
         # Remove low MAPQ reads
         # Obtain name sorted BAM file
@@ -152,7 +152,7 @@ def main(input_bam, paired_end, samtools_params):
         # ============================
         with open(final_bam_filename, 'w') as fh:
             subprocess.check_call(shlex.split("samtools view -F 1804 -b %s"
-                %(filt_bam_filename)), stdo˜ut=fh)
+                %(filt_bam_filename)), stdout=fh)
     # Index final bam file
     subprocess.check_call(shlex.split("samtools index %s %s" %(final_bam_filename, final_bam_index_filename)))
     # Generate mapping statistics
