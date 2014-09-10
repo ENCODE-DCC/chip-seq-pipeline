@@ -61,7 +61,7 @@ def main(input_bam, paired_end):
     # using variable names for the filenames.
 
     input_bam_filename = input_bam_file.name
-    input_bam_basename = input_bam_file.name.rstrip('bam')
+    input_bam_basename = input_bam_file.name.rstrip('.bam')
     dxpy.download_dxfile(input_bam_file.get_id(), input_bam_filename)
 
     intermediate_TA_filename = input_bam_basename + ".tagAlign"
@@ -126,9 +126,9 @@ def main(input_bam, paired_end):
     print subprocess.check_output(shlex.split('R CMD INSTALL %s' %(spp_tarball)))
     out,err = run_pipe([
         "Rscript %s -c=%s -p=%d -filtchr=chrM -savp=%s -out=%s" \
-            %(run_spp_command, subsampled_TA_filename, cpu_count(), CC_plot_filename, CC_scores_filename)],
-        outfile=CC_scores_filename)
+            %(run_spp_command, subsampled_TA_filename, cpu_count(), CC_plot_filename, CC_scores_filename)])
     print subprocess.check_output('ls -l', shell=True)
+    #time.sleep(3600)
     out,err = run_pipe([
         r"""sed -r  's/,[^\t]+//g' %s""" %(CC_scores_filename)],
         outfile="temp")
@@ -136,8 +136,11 @@ def main(input_bam, paired_end):
         "mv temp %s" %(CC_scores_filename)])
 
     tagAlign_file = dxpy.upload_local_file(final_TA_filename)
-    if paired_end:
-        BEDPE_file = dxpy.upload_local_file(final_BEDPE_filename)
+    if not paired_end:
+        final_BEDPE_filename = 'SE_so_no_BEDPE'
+        subprocess.check_call('touch %s' %(final_BEDPE_filename), shell=True)
+    BEDPE_file = dxpy.upload_local_file(final_BEDPE_filename)
+
     CC_scores_file = dxpy.upload_local_file(CC_scores_filename)
     CC_plot_file = dxpy.upload_local_file(CC_plot_filename)
 
@@ -145,8 +148,7 @@ def main(input_bam, paired_end):
 
     output = {}
     output["tagAlign_file"] = dxpy.dxlink(tagAlign_file)
-    if paired_end:
-        output["BEDPE_file"] = dxpy.dxlink(BEDPE_file)
+    output["BEDPE_file"] = dxpy.dxlink(BEDPE_file)
     output["CC_scores_file"] = dxpy.dxlink(CC_scores_file)
     output["CC_plot_file"] = dxpy.dxlink(CC_plot_file)
     output["paired_end"] = paired_end
