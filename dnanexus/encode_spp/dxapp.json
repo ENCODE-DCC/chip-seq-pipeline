@@ -1,0 +1,70 @@
+{
+  "name": "encode_spp",
+  "title": "ENCODE Peaks with SPP",
+  "summary": "Take experiment tagAlign file and a control tagAlign file and call peaks",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "experiment",
+      "label": "ChIP tagAlign",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "control",
+      "label": "Input or IgG control tagAlign",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "xcor_scores_input",
+      "label": "Cross-correlation scores file from previous pipeline step",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "npeaks",
+      "label": "Maximum number of peaks to call",
+      "class": "int",
+      "optional": true,
+      "default": 300000
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "peaks",
+      "label": "Narrowpeaks file",
+      "class": "file"
+    },
+    {
+      "name": "xcor_plot",
+      "label": "Cross-correlation plot",
+      "class": "file"
+    },
+    {
+      "name": "xcor_scores",
+      "label": "Cross-correlation scores",
+      "class": "file"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/encode_spp.py",
+    "execDepends": [
+      {"name": "libboost1.46-dev"},
+      {"name": "libboost-dev"},
+      {"name": "caTools", "package_manager": "cran"},
+      {"name": "snow", "package_manager": "cran"}
+    ]
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}
