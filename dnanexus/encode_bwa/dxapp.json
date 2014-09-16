@@ -32,7 +32,21 @@
       "class": "string",
       "optional": true,
       "default": "-q 5 -l 32 -k 2"
-    }
+    },
+    {
+      "name": "bwa_version",
+      "label": "BWA version",
+      "class": "string",
+      "optional": true,
+      "default": "0.7.7"
+    },
+    {
+      "name": "samtools_version",
+      "label": "samtools version",
+      "class": "string",
+      "optional": true,
+      "default": "0.1.19"
+    }    
   ],
   "outputSpec": [
     {
@@ -52,11 +66,7 @@
   ],
   "runSpec": {
     "interpreter": "python2.7",
-    "file": "src/ENCODE_BWA.py",
-    "execDepends": [
-      { "name": "bwa" },
-      { "name": "samtools" }
-    ]
+    "file": "src/ENCODE_BWA.py"
   },
   "authorizedUsers": [],
   "access": {
