@@ -1,30 +1,38 @@
 #!/usr/bin/env python
 # ENCODE_BWA 0.0.1
 
-import os
-import dxpy
-
-import subprocess, shlex
+import os, subprocess, shlex, time
 from multiprocessing import Pool, cpu_count
-import pdb
+from subprocess import Popen, PIPE #debug only this should only need to be imported into run_pipe
+import dxpy
 
 def run_pipe(steps, outfile=None):
     #break this out into a recursive function
-    #TODO:  as written does not handle single-step pipes
+    #TODO:  capture stderr
     from subprocess import Popen, PIPE
     p = None
     p_next = None
     first_step_n = 1
     last_step_n = len(steps)
     for n,step in enumerate(steps, start=first_step_n):
+        print "step %d: %s" %(n,step)
         if n == first_step_n:
+            if n == last_step_n and outfile: #one-step pipeline with outfile
+                with open(outfile, 'w') as fh:
+                    print "one step shlex: %s to file: %s" %(shlex.split(step), outfile)
+                    p = Popen(shlex.split(step), stdout=fh)
+                break
+            print "first step shlex to stdout: %s" %(shlex.split(step))
             p = Popen(shlex.split(step), stdout=PIPE)
+            #need to close p.stdout here?
         elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
             with open(outfile, 'w') as fh:
+                print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
                 p_last = Popen(shlex.split(step), stdin=p.stdout, stdout=fh)
                 p.stdout.close()
                 p = p_last
         else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
+            print "intermediate step %d shlex to stdout: %s" %(n,shlex.split(step))
             p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
             p.stdout.close()
             p = p_next
@@ -39,7 +47,7 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
     if samtools_version == "0.1.19":
         samtools = "/usr/local/bin/samtools-0.1.19/samtools"
     elif samtools_version == "1.0":
-        samtools = "/usr/local/bin/samtools-1.0/samtools"
+        samtools = "/usr/local/bin/samtools-1.0/bin/samtools"
     else:
         samtools = "/usr/local/bin/samtools-0.1.19/samtools"
 
@@ -75,6 +83,7 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
     dxpy.download_dxfile(reference_tar, reference_tar_filename)
     # extract the reference files from the tar
     tar_command = 'tar -xvf %s' %(reference_tar_filename)
+    print "Unpacking %s" %(reference_tar_filename)
     print subprocess.check_output(shlex.split(tar_command))
     # assume the reference file is the only .fa file
     reference_filename = subprocess.check_output('ls *.fa', shell=True).rstrip()
@@ -118,6 +127,8 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
     else:
         steps.extend(["%s view -@%d -Su -" %(samtools, cpu_count()),
                       "%s sort -@%d - %s" %(samtools, cpu_count(), raw_bam_filename.rstrip('.bam')) ]) # samtools adds .bam
+    print "Running pipe:"
+    print steps
     out,err = run_pipe(steps)
 
     if out:
@@ -163,6 +174,7 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
     reference_tar_file = dxpy.download_dxfile(reference_tar,reference_tar_filename)
     # extract the reference files from the tar
     tar_command = 'tar -xvf %s' %(reference_tar_filename)
+    print "Unpacking %s" %(reference_tar_filename)
     print subprocess.check_output(shlex.split(tar_command))
     # assume the reference file is the only .fa file
     reference_filename = subprocess.check_output('ls *.fa', shell=True).rstrip()
