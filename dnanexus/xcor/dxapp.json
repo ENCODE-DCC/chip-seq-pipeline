@@ -52,10 +52,10 @@
     "interpreter": "python2.7",
     "file": "src/xcor.py",
     "execDepends": [
-    {"name": "libboost1.46-dev"},
-    {"name": "libboost-dev"},
-    {"name": "caTools", "package_manager": "cran"},
-    {"name": "snow", "package_manager": "cran"}
+      {"name": "libboost1.46-dev"},
+      {"name": "libboost-dev"},
+      {"name": "caTools", "package_manager": "cran"},
+      {"name": "snow", "package_manager": "cran"}
     ]
   },
   "access": {
