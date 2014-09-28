@@ -32,6 +32,13 @@
       "class": "int",
       "optional": true,
       "default": 300000
+    },
+    {
+      "name": "nodups",
+      "label": "Have duplicates been removed from the input tag file",
+      "class": "boolean",
+      "optional": true,
+      "default": true
     }
   ],
   "outputSpec": [

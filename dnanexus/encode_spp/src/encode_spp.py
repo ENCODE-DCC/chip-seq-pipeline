@@ -50,7 +50,7 @@ def run_pipe(steps, outfile=None):
     return out,err
 
 @dxpy.entry_point('main')
-def main(experiment, control, xcor_scores_input, npeaks):
+def main(experiment, control, xcor_scores_input, npeaks, nodups):
 
     # The following line(s) initialize your data object inputs on the platform
     # into dxpy.DXDataObject instances that you can start using immediately.
@@ -84,13 +84,19 @@ def main(experiment, control, xcor_scores_input, npeaks):
 
     #run_spp_command = subprocess.check_output('which run_spp.R', shell=True)
     spp_tarball = '/phantompeakqualtools/spp_1.10.1.tar.gz'
-    run_spp = '/phantompeakqualtools/run_spp.R'
+    if nodups:
+        run_spp = '/phantompeakqualtools/run_spp_nodups.R'
+    else:
+        run_spp = '/phantompeakqualtools/run_spp.R'
     #install spp
     print subprocess.check_output(shlex.split('R CMD INSTALL %s' %(spp_tarball)))
     out, err = run_pipe([
         "Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%d -savr=%s -savp=%s -rf -out=%s" \
             %(run_spp, cpu_count(), experiment_filename, control_filename, npeaks, fragment_length, peaks_filename, xcor_plot_filename, xcor_scores_filename)])
-
+    print "STDOUT:"
+    print out
+    print "STDERR:"
+    print err
     #open("peaks",'a').close()
     #open("xcor_plot").close()
     #open("xcor_scores").close()
