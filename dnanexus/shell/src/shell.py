@@ -19,7 +19,7 @@ def main():
 
     from time import sleep
 
-    sleep(3600)
+    sleep(36000)
 
     output = {}
 
