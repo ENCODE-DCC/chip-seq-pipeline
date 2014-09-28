@@ -81,7 +81,7 @@ def main(input_bam, paired_end, samtools_params):
         tmp_filt_bam_prefix = "tmp.%s.nmsrt" %(filt_bam_prefix)
         tmp_filt_bam_filename = tmp_filt_bam_prefix + ".bam"
         out,err = run_pipe([
-            #filter:  -F 1804 FlAG bits to exclude; -F 2 FLAG bits to reqire; -q 30 exclude MAPQ < 30; -u uncompressed output
+            #filter:  -F 1804 FlAG bits to exclude; -f 2 FLAG bits to reqire; -q 30 exclude MAPQ < 30; -u uncompressed output
             #exclude FLAG 1804: unmapped, next segment unmapped, secondary alignments, not passing platform q, PCR or optical duplicates
             #require FLAG 2: properly aligned
             "samtools view -F 1804 -f 2 %s -u %s" %(samtools_params, raw_bam_filename),
