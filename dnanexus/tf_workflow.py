@@ -12,6 +12,20 @@ Examples:
 	%(prog)s
 '''
 
+WF_TITLE = 'tf_chip_seq'
+WF_DESCRIPTION = 'ENCODE TF ChIP-Seq Pipeline'
+
+MAPPING_REFERENCE_TAR_FILE_IDENTIFIER = 'E3 ChIP-seq:/Reference Files/hg19.tar' #this could also be an ENCFF accession
+
+MAPPING_APPLET_NAME = 'encode_bwa'
+FILTER_QC_APPLET_NAME = 'filter_qc'
+XCOR_APPLET_NAME = 'xcor'
+SPP_APPLET_NAME = 'encode_spp'
+POOL_APPLET_NAME = 'pool'
+PSEUDOREPLICATOR_APPLET_NAME = 'pseudoreplicator'
+
+APPLETS = {}
+
 def get_args():
 	import argparse
 	parser = argparse.ArgumentParser(
@@ -19,10 +33,10 @@ def get_args():
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
 	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
-	parser.add_argument('--rep1',    help="Replicate 1 fastq.gz", 				default=None)
-	parser.add_argument('--rep2',    help="Replicate 2 fastq.gz", 				default=None)
-	parser.add_argument('--ctl1',    help="Control for Replicate 1 fastq.gz", 	default=None)
-	parser.add_argument('--ctl2',    help="Control for Replicate 2 fastq.gz", 	default=None)
+	parser.add_argument('--rep1',    help="Replicate 1 fastq.gz", 				default=None, nargs='*')
+	parser.add_argument('--rep2',    help="Replicate 2 fastq.gz", 				default=None, nargs='*')
+	parser.add_argument('--ctl1',    help="Control for Replicate 1 fastq.gz", 	default=None, nargs='*')
+	parser.add_argument('--ctl2',    help="Control for Replicate 2 fastq.gz", 	default=None, nargs='*')
 	parser.add_argument('--outp',    help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/")
 	parser.add_argument('--name',    help="Name of new workflow", 				default="TF ChIP-Seq")
@@ -172,6 +186,19 @@ def resolve_accession(accession):
 		logging.error("Cannot find accession %s in project %s" %(accession, snapshot_project.name))
 		raise ValueError(accession)
 
+def find_applet_by_name(applet_name, applets_project_id):
+	'''Looks up an applet by name in the project that holds tools.  From Joe Dale's code.'''
+	cached = '*'
+	if (applet_name, applets_project_id) not in APPLETS:
+		found = dxpy.find_one_data_object(classname="applet", name=applet_name,
+										  project=applets_project_id,
+										  zero_ok=False, more_ok=False, return_handler=True)
+		APPLETS[(applet_name, applets_project_id)] = found
+		cached = ''
+
+	logging.info(cached + "Resolved applet %s to %s" %(applet_name, APPLETS[(applet_name, applets_project_id)].get_id()))
+	return APPLETS[(applet_name, applets_project_id)]
+
 def main():
 	args = get_args()
 
@@ -182,15 +209,33 @@ def main():
 	applet_project = resolve_project(args.applets, 'r')
 	logging.info('Found applet project %s' %(applet_project.name))
 
-	rep1_fastq = resolve_file(args.rep1)
-	rep2_fastq = resolve_file(args.rep2)
-	ctl1_fastq = resolve_file(args.ctl1)
-	ctl2_fastq = resolve_file(args.ctl2)
+	rep1_fastqs = [resolve_file(f) for f in args.rep1 if r]
+	rep2_fastqs = [resolve_file(f) for f in args.rep2 if r]
+	ctl1_fastqs = [resolve_file(f) for f in args.ctl1 if r]
+	ctl2_fastqs = [resolve_file(f) for f in args.ctl2 if r]
 
-	if not (args.rep1 or args.rep2 or args.ctl1 or args.ctl2):
-		wf = blank_workflow(args)
+	wf = dxpy.new_dxworkflow(
+		title=WF_TITLE,
+		name=args.name,
+		description=WF_DESCRIPTION,
+		project=output_project.get_id(),
+		folder=output_folder.get_id())
+
+	mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
+	mapping_output_folder = resolve_folder(output_project, output_folder + '/' + mapping_applet.name)
+	if no_inputs or rep1_fastq:
+		mapping_inputs = {'reference_tar' : }
+
+		r1_map_stage = wf.add_stage(
+			mapping_applet,
+			name=mapping_applet.name,
+			folder=mapping_output_folder,
+			stage_input={},
+			)
+	if not ():
+		blank_workflow(output_project, output_folder, applet_project, args.name)
 		return
-	else:
+	elif rep1_fastq:
 		wf = None
 
 	'''
