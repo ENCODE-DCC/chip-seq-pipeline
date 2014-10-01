@@ -41,7 +41,7 @@ def get_args():
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/analysis_run")
 	parser.add_argument('--name',    help="Name of new workflow", 				default="TF ChIP-Seq")
 	parser.add_argument('--applets', help="Name of project containing applets", default="E3 ChIP-seq")
-	parser.add_argument('--instance_type', help="Instance type for applets",	required=False)
+	parser.add_argument('--instance_type', help="Instance type for applets",	default=None)
 
 	args = parser.parse_args()
 
@@ -51,6 +51,8 @@ def get_args():
 		logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 	else: #use the defaulf logging level
 		logging.basicConfig(format='%(levelname)s:%(message)s')
+
+	logging.debug("rep1 is: %s" %(args.rep1))
 
 	return args
 
@@ -200,30 +202,6 @@ def find_applet_by_name(applet_name, applets_project_id):
 	logging.info(cached + "Resolved applet %s to %s" %(applet_name, APPLETS[(applet_name, applets_project_id)].get_id()))
 	return APPLETS[(applet_name, applets_project_id)]
 
-def map_fastqs(workflow, applet_project, output_project, output_folder, input_fastqs, stage_name="Map Reads", instance_type=None):
-
-	mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
-	mapping_output_folder = resolve_folder(output_project, output_folder + '/' + mapping_applet.name)
-	reference_tar = resolve_file(MAPPING_REFERENCE_TAR_FILE_IDENTIFIER)
-
-	applet_input = {'reference_tar' : dxpy.dxlink(reference_tar.get_id())}
-	logging.debug('Input fastqs: %s' %(input_fastqs))
-	if input_fastqs:
-		applet_input.update({'reads1': dxpy.dxlink(input_fastqs[0].get_id())})
-		try:
-			input_fastqs[1]
-			applet_input.update({'reads2': dxpy.dxlink(input_fastqs[1].get_id())})
-		except:
-			pass
-	stage = workflow.add_stage(
-		mapping_applet,
-		name=stage_name,
-		folder=mapping_output_folder,
-		stage_input=applet_input,
-		instance_type=instance_type)
-
-	return stage
-
 def main():
 	args = get_args()
 
@@ -234,47 +212,36 @@ def main():
 	applet_project = resolve_project(args.applets, 'r')
 	logging.info('Found applet project %s' %(applet_project.name))
 
-	blank_workflow = not (args.rep1 or args.rep2 or args.rep3 or args.rep4)
-
-	if args.rep1:
-		rep1_fastqs = []
-		for fq in args.rep1:
-			if fq:
-				fh = resolve_file(fq)
-				if fh:
-					rep1_fastqs.append(fh)
-				else:
-					logging.error('Could not resolve fastq %s' %(fq))
-					sys.exit()
-	else:
-		rep1_fastqs = None
-	if args.rep2:
-		rep2_fastqs = [resolve_file(f) for f in args.rep2 if f]
-	else:
-		rep2_fastqs = None
-	if args.ctl1:
-		ctl1_fastqs = [resolve_file(f) for f in args.ctl1 if f]
-	else:
-		ctl1_fastqs = None
-	if args.ctl2:
-		ctl2_fastqs = [resolve_file(f) for f in args.ctl2 if f]
-	else:
-		ctl2_fastqs = None
-
-	wf = dxpy.new_dxworkflow(
+	workflow = dxpy.new_dxworkflow(
 		title=WF_TITLE,
 		name=args.name,
 		description=WF_DESCRIPTION,
 		project=output_project.get_id(),
 		folder=output_folder)
 
-	mapping_stages = []
-	for input_fastqs, stage_name in [(rep1_fastqs, 'Map Rep1'),
-									 (rep2_fastqs, 'Map Rep2'),
-									 (ctl1_fastqs, 'Map Ctl1'),
-									 (ctl2_fastqs, 'Map Ctl2')]:
-		if blank_workflow or input_fastqs:
-			mapping_stages.append(map_fastqs(wf, applet_project, output_project, output_folder, input_fastqs, stage_name, args.instance_type))
+	mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
+	mapping_output_folder = resolve_folder(output_project, output_folder + '/' + mapping_applet.name)
+	reference_tar = resolve_file(MAPPING_REFERENCE_TAR_FILE_IDENTIFIER)
+	mapping_stages = [
+		{'name': 'Map Rep1', 'input_args': args.rep1},
+		{'name': 'Map Rep2', 'input_args': args.rep2},
+		{'name': 'Map Ctl1', 'input_args': args.ctl1},
+		{'name': 'Map Ctl2', 'input_args': args.ctl2}
+	]
+
+	for mapping_stage in mapping_stages:
+		stage_input = {'reference_tar' : dxpy.dxlink(reference_tar.get_id())}
+		if mapping_stage.get('input_args'):
+			for i,input_arg in enumerate(mapping_stage['input_args'], 1):
+				reads = dxpy.dxlink(resolve_file(input_arg).get_id())
+				stage_input.update({'reads%d' %(i): reads})
+		new_stage = workflow.add_stage(
+			mapping_applet,
+			name=mapping_stage.get('name'),
+			folder=mapping_output_folder,
+			stage_input=stage_input,
+			instance_type=args.instance_type)
+
 
 if __name__ == '__main__':
 	main()
