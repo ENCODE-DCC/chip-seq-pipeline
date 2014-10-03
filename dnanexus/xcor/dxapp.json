@@ -1,7 +1,7 @@
 {
   "name": "xcor",
   "title": "ENCODE TF ChIP-seq Cross-Correlation Analysis",
-  "summary": "Take a bam file from SE or PE sequencing, create tagAlign file and generate cross-corelation scores and plot.",
+  "summary": "Take a bam file from SE or PE sequencing, create tagAlign file and generate cross-corelation scores and plot",
   "dxapi": "1.0.0",
   "version": "0.0.1",
   "categories": [
