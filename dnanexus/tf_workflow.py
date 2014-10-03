@@ -219,29 +219,114 @@ def main():
 		project=output_project.get_id(),
 		folder=output_folder)
 
+	blank_workflow = not (args.rep1 or args.rep2 or args.ctl1 or args.ctl2)
+
+	#this whole strategy is fragile and unsatisfying
+	#subsequent code assumes reps come before contols
+	mapping_superstages = [
+		{'name': 'Rep1', 'input_args': args.rep1},
+		{'name': 'Rep2', 'input_args': args.rep2},
+		{'name': 'Ctl1', 'input_args': args.ctl1},
+		{'name': 'Ctl2', 'input_args': args.ctl2}
+	]
+
 	mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
 	mapping_output_folder = resolve_folder(output_project, output_folder + '/' + mapping_applet.name)
 	reference_tar = resolve_file(MAPPING_REFERENCE_TAR_FILE_IDENTIFIER)
-	mapping_stages = [
-		{'name': 'Map Rep1', 'input_args': args.rep1},
-		{'name': 'Map Rep2', 'input_args': args.rep2},
-		{'name': 'Map Ctl1', 'input_args': args.ctl1},
-		{'name': 'Map Ctl2', 'input_args': args.ctl2}
-	]
+	filter_qc_applet = find_applet_by_name(FILTER_QC_APPLET_NAME, applet_project.get_id())
+	filter_qc_output_folder = mapping_output_folder
+	xcor_applet = find_applet_by_name(XCOR_APPLET_NAME, applet_project.get_id())
+	xcor_output_folder = mapping_output_folder
 
-	for mapping_stage in mapping_stages:
-		stage_input = {'reference_tar' : dxpy.dxlink(reference_tar.get_id())}
-		if mapping_stage.get('input_args'):
-			for i,input_arg in enumerate(mapping_stage['input_args'], 1):
-				reads = dxpy.dxlink(resolve_file(input_arg).get_id())
-				stage_input.update({'reads%d' %(i): reads})
-		new_stage = workflow.add_stage(
-			mapping_applet,
-			name=mapping_stage.get('name'),
-			folder=mapping_output_folder,
-			stage_input=stage_input,
-			instance_type=args.instance_type)
+	for mapping_superstage in mapping_superstages:
+		superstage_name = mapping_superstage.get('name')
 
+		if mapping_superstage.get('input_args') or blank_workflow:
+			if blank_workflow:
+				mapping_stage_input = None
+			else:
+				mapping_stage_input = {'reference_tar' : dxpy.dxlink(reference_tar.get_id())}
+				for arg_index,input_arg in enumerate(mapping_superstage['input_args']): #read pairs assumed be in order read1,read2
+					reads = dxpy.dxlink(resolve_file(input_arg).get_id())
+					mapping_stage_input.update({'reads%d' %(arg_index+1): reads})
+
+			mapped_stage_id = workflow.add_stage(
+				mapping_applet,
+				name='Map %s' %(superstage_name),
+				folder=mapping_output_folder,
+				stage_input=mapping_stage_input,
+				instance_type=args.instance_type
+			)
+			mapping_superstage.update({'map_stage_id': mapped_stage_id})
+
+			filter_qc_stage_id = workflow.add_stage(
+				filter_qc_applet,
+				name='Filter_QC %s' %(superstage_name),
+				folder=filter_qc_output_folder,
+				stage_input={
+					'input_bam': dxpy.dxlink({'stage': mapped_stage_id, 'outputField': 'mapped_reads'}),
+					'paired_end': dxpy.dxlink({'stage': mapped_stage_id, 'outputField': 'paired_end'})
+				},
+				instance_type=args.instance_type
+			)
+			mapping_superstage.update({'filter_qc_stage_id': filter_qc_stage_id})
+
+			xcor_stage_id = workflow.add_stage(
+				xcor_applet,
+				name='Xcor %s' %(superstage_name),
+				folder=xcor_output_folder,
+				stage_input={
+					'input_bam': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'filtered_bam'}),
+					'paired_end': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'paired_end'})
+				},
+				instance_type=args.instance_type
+			)
+			mapping_superstage.update({'xcor_stage_id': xcor_stage_id})
+
+	spp_applet = find_applet_by_name(SPP_APPLET_NAME, applet_project.get_id())
+	spp_stages = []
+	peaks_output_folder = resolve_folder(output_project, output_folder + '/' + spp_applet.name)
+	if (args.rep1 and args.ctl1) or blank_workflow:
+		rep1_spp_stage_id = workflow.add_stage(
+			spp_applet,
+			name='Peaks Rep1',
+			folder=peaks_output_folder,
+			stage_input={
+				'experiment' : dxpy.dxlink(
+					{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep1'),
+					 'outputField': 'tagAlign_file'}),
+				'control': dxpy.dxlink(
+					{'stage' : next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl1'),
+					 'outputField': 'tagAlign_file'}),
+				'xcor_scores_input': dxpy.dxlink(
+					{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep1'),
+					 'outputField': 'CC_scores_file'})
+			},
+			instance_type=args.instance_type
+		)
+		spp_stages.append({'name': 'Peaks Rep1', 'stage_id': rep1_spp_stage_id})
+	if (args.rep2 and args.ctl2) or blank_workflow:
+		rep2_spp_stage_id = workflow.add_stage(
+			spp_applet,
+			name='Peaks Rep2',
+			folder=peaks_output_folder,
+			stage_input={
+				'experiment' : dxpy.dxlink(
+					{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
+					 'outputField': 'tagAlign_file'}),
+				'control': dxpy.dxlink(
+					{'stage' : next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl2'),
+					 'outputField': 'tagAlign_file'}),
+				'xcor_scores_input': dxpy.dxlink(
+					{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
+					 'outputField': 'CC_scores_file'})
+			},
+			instance_type=args.instance_type
+		)
+		spp_stages.append({'name': 'Peaks Rep2', 'stage_id': rep2_spp_stage_id})
+
+	logging.debug("Mapping stages: %s" %(mapping_superstages))
+	logging.debug("Peak stages: %s" %(spp_stages))
 
 if __name__ == '__main__':
 	main()
