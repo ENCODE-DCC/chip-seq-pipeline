@@ -192,7 +192,7 @@ def main(input_bam, paired_end, samtools_params):
 
     print "Uploading results files to the project"
     # Use the Python bindings to upload the file outputs to the project.
-    filtered_bam = dxpy.upload_local_file(filt_bam_filename)
+    filtered_bam = dxpy.upload_local_file(final_bam_filename)
     filtered_bam_index = dxpy.upload_local_file(final_bam_index_filename)
     filtered_mapstats = dxpy.upload_local_file(final_bam_file_mapstats_filename)
     dup_file_qc = dxpy.upload_local_file(dup_file_qc_filename)
