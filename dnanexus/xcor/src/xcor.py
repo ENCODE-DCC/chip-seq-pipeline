@@ -121,7 +121,7 @@ def main(input_bam, paired_end):
 
     #run_spp_command = subprocess.check_output('which run_spp.R', shell=True)
     spp_tarball = '/phantompeakqualtools/spp_1.10.1.tar.gz'
-    run_spp_command = '/phantompeakqualtools/run_spp.R'
+    run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
     #install spp
     print subprocess.check_output(shlex.split('R CMD INSTALL %s' %(spp_tarball)))
     out,err = run_pipe([
