@@ -15,7 +15,7 @@ Examples:
 WF_TITLE = 'tf_chip_seq'
 WF_DESCRIPTION = 'ENCODE TF ChIP-Seq Pipeline'
 
-MAPPING_REFERENCE_TAR_FILE_IDENTIFIER = 'E3 ChIP-seq:/Reference Files/hg19.tar' #this could also be an ENCFF accession
+MAPPING_REFERENCE_TAR_FILE_IDENTIFIER = 'E3 ChIP-seq:/Reference Files/GRCh37.tar' #this could also be an ENCFF accession
 
 MAPPING_APPLET_NAME = 'encode_bwa'
 FILTER_QC_APPLET_NAME = 'filter_qc'
