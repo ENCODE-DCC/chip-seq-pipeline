@@ -1,7 +1,7 @@
 {
   "name": "filter_qc",
   "title": "ENCODE TF Chip-seq Mapped Read Filter and QC.",
-  "summary": "Take a raw bam file of mapped reads, filter, calculate QC metrics.",
+  "summary": "Take a raw bam file of mapped reads, filter, calculate QC metrics",
   "dxapi": "1.0.0",
   "version": "0.0.1",
   "categories": [
