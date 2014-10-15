@@ -15,8 +15,6 @@ Examples:
 WF_TITLE = 'tf_chip_seq'
 WF_DESCRIPTION = 'ENCODE TF ChIP-Seq Pipeline'
 
-MAPPING_REFERENCE_TAR_FILE_IDENTIFIER = 'E3 ChIP-seq:/Reference Files/GRCh37.tar' #this could also be an ENCFF accession
-
 MAPPING_APPLET_NAME = 'encode_bwa'
 FILTER_QC_APPLET_NAME = 'filter_qc'
 XCOR_APPLET_NAME = 'xcor'
@@ -33,6 +31,7 @@ def get_args():
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
 	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
+	parser.add_argument('--reference', help="Reference tar to map to", 			default='ENCODE Reference Files:male.hg19.fa.gz')
 	parser.add_argument('--rep1',    help="Replicate 1 fastq.gz", 				default=None, nargs='*')
 	parser.add_argument('--rep2',    help="Replicate 2 fastq.gz", 				default=None, nargs='*')
 	parser.add_argument('--ctl1',    help="Control for Replicate 1 fastq.gz", 	default=None, nargs='*')
@@ -232,7 +231,7 @@ def main():
 
 	mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
 	mapping_output_folder = resolve_folder(output_project, output_folder + '/' + mapping_applet.name)
-	reference_tar = resolve_file(MAPPING_REFERENCE_TAR_FILE_IDENTIFIER)
+	reference_tar = resolve_file(args.reference)
 	filter_qc_applet = find_applet_by_name(FILTER_QC_APPLET_NAME, applet_project.get_id())
 	filter_qc_output_folder = mapping_output_folder
 	xcor_applet = find_applet_by_name(XCOR_APPLET_NAME, applet_project.get_id())
