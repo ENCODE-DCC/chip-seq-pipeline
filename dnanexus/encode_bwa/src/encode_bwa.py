@@ -82,7 +82,10 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
     print "reference_tar: %s" %(reference_tar_filename)
     dxpy.download_dxfile(reference_tar, reference_tar_filename)
     # extract the reference files from the tar
-    tar_command = 'tar -xvf %s' %(reference_tar_filename)
+    if reference_tar_filename.endswith('.gz'):
+        tar_command = 'tar -xzvf %s' %(reference_tar_filename)
+    else:
+        tar_command = 'tar -xvf %s' %(reference_tar_filename)
     print "Unpacking %s" %(reference_tar_filename)
     print subprocess.check_output(shlex.split(tar_command))
     # assume the reference file is the only .fa file
@@ -173,7 +176,10 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
     reference_tar_filename = dxpy.describe(reference_tar)['name']
     reference_tar_file = dxpy.download_dxfile(reference_tar,reference_tar_filename)
     # extract the reference files from the tar
-    tar_command = 'tar -xvf %s' %(reference_tar_filename)
+    if reference_tar_filename.endswith('.gz'):
+        tar_command = 'tar -xzvf %s' %(reference_tar_filename)
+    else:
+        tar_command = 'tar -xvf %s' %(reference_tar_filename)
     print "Unpacking %s" %(reference_tar_filename)
     print subprocess.check_output(shlex.split(tar_command))
     # assume the reference file is the only .fa file
