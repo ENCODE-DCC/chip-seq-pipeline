@@ -70,11 +70,12 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups):
     dxpy.download_dxfile(xcor_scores_input_file.get_id(), xcor_scores_input_filename)
 
     output_filename_prefix = experiment_filename.rstrip('.gz').rstrip('.tagAlign')
-    peaks_filename = output_filename_prefix + '.regionPeak.gz'
+    peaks_filename = output_filename_prefix + '.regionPeak'
+    final_peaks_filename = peaks_filename + '.gz' #spp adds .gz, so this is the file name that's actually created
     xcor_plot_filename = output_filename_prefix + '.pdf'
     xcor_scores_filename = output_filename_prefix + '.ccscores'
 
-    print subprocess.check_output('ls -l', shell=True)
+    print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
 
     fraglen_column = 3 # third column in the cross-correlation scores input file
     with open(xcor_scores_input_filename, 'r') as f:
@@ -89,7 +90,11 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups):
     else:
         run_spp = '/phantompeakqualtools/run_spp.R'
     #install spp
-    print subprocess.check_output(shlex.split('R CMD INSTALL %s' %(spp_tarball)))
+    print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
+    print subprocess.check_output(shlex.split('R CMD INSTALL %s' %(spp_tarball)), stderr=subprocess.STDOUT)
+    print subprocess.check_output(shlex.split('Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%d -savr=%s -savp=%s -rf -out=%s' \
+            %(run_spp, cpu_count(), experiment_filename, control_filename, npeaks, fragment_length, peaks_filename, xcor_plot_filename, xcor_scores_filename)), stderr=subprocess.STDOUT)
+    '''
     out, err = run_pipe([
         "Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%d -savr=%s -savp=%s -rf -out=%s" \
             %(run_spp, cpu_count(), experiment_filename, control_filename, npeaks, fragment_length, peaks_filename, xcor_plot_filename, xcor_scores_filename)])
@@ -97,10 +102,12 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups):
     print out
     print "STDERR:"
     print err
+    '''
+    print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
     #open("peaks",'a').close()
     #open("xcor_plot").close()
     #open("xcor_scores").close()
-    peaks = dxpy.upload_local_file(peaks_filename)
+    peaks = dxpy.upload_local_file(final_peaks_filename)
     xcor_plot = dxpy.upload_local_file(xcor_plot_filename)
     xcor_scores = dxpy.upload_local_file(xcor_scores_filename)
 
