@@ -181,7 +181,7 @@ def main(input_bam, paired_end, samtools_params):
             r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$6}'"""]
     # these st
     steps.extend([
-        "grep -v 'chrM'",
+        "grep -v 'chrM'", #TODO this should be implemented as an explicit list of allowable names, so that mapping can be done to a complete reference
         "sort",
         "uniq -c",
         r"""awk 'BEGIN{mt=0;m0=0;m1=0;m2=0} ($1==1){m1=m1+1} ($1==2){m2=m2+1} {m0=m0+1} {mt=mt+$1} END{printf "%d\t%d\t%d\t%d\t%f\t%f\t%f\n",mt,m0,m1,m2,m0/mt,m1/m0,m1/m2}'"""
