@@ -3,3 +3,13 @@ local_tests/**
 dnanexus/temp
 
 SCG3/jss_test
+
+SCG3/spp.py
+
+SCG3/spp.sh
+
+*.narrowPeak
+
+*.regionPeak
+
+*.bb
