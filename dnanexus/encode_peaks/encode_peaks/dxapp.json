@@ -1,0 +1,71 @@
+{
+  "name": "encode_peaks",
+  "title": "ENCODE Peaks",
+  "summary": "Call peaks for a (possibly) replicated TF ChIP-seq experiment",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "experiments",
+      "label": "ChIP tagAligns",
+      "class": "array:file",
+      "optional": false
+    },
+    {
+      "name": "controls",
+      "label": "Control tagAligns",
+      "class": "array:file",
+      "optional": false
+    },
+    {
+      "name": "xcor_scores",
+      "label": "Cross correlation score files",
+      "class": "array:file",
+      "optional": false
+    },
+    {
+      "name": "npeaks",
+      "label": "Number of peaks to call",
+      "class": "int",
+      "optional": true,
+      "default": 300000
+    },
+    {
+      "name": "nodups",
+      "label": "Have duplicates been removed rom the input tag file(s)",
+      "class": "boolean",
+      "optional": true,
+      "default": true
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "peaks",
+      "label": "Narrowpeaks files",
+      "class": "array:file"
+    },
+    {
+      "name": "xcor_plots",
+      "label": "Cross-correlation plots",
+      "class": "array:file"
+    },
+    {
+      "name": "xcor_scores",
+      "label": "Cross-correlation scores",
+      "class": "array:file"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/encode_peaks.py"
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}
