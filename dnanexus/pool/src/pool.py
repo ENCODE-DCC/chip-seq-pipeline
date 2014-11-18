@@ -63,7 +63,7 @@ def main(input1, input2):
     input2_filename = input2_file.name
     dxpy.download_dxfile(input2_file.get_id(), input2_filename)
 
-    pooled_filename = 'pooled.gz'
+    pooled_filename = '_'.join([input1_filename, input2_filename, 'pooled.gz'])
     out,err = run_pipe([
         'gzip -dc %s %s' %(input1_filename, input2_filename),
         'gzip -c'],
