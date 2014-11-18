@@ -1,0 +1,45 @@
+{
+  "name": "bam2tagAlign",
+  "title": "BAM to tagAlign",
+  "summary": "Convert a bam file to a gzip-compressed tagAlign file",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "input_bam",
+      "label": "BAM file",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "paired_end",
+      "class": "boolean",
+      "optional": false
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "tagAlign_file",
+      "label": "Output tagAlign file",
+      "class": "file"
+    },
+    {
+      "name": "BEDPE_file",
+      "label": "BEDPW file (read pairs on each line)",
+      "class": "file"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/bam2tagAlign.py"
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}
