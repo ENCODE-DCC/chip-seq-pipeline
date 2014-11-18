@@ -1,7 +1,7 @@
 {
-  "name": "encode_spp",
-  "title": "ENCODE Peaks with SPP",
-  "summary": "Take experiment tagAlign file and a control tagAlign file and call peaks",
+  "name": "spp",
+  "title": "SPP",
+  "summary": "SPP Peak Caller",
   "dxapi": "1.0.0",
   "version": "0.0.1",
   "categories": [
@@ -60,7 +60,7 @@
   ],
   "runSpec": {
     "interpreter": "python2.7",
-    "file": "src/encode_spp.py",
+    "file": "src/spp.py",
     "execDepends": [
       {"name": "libboost1.46-dev"},
       {"name": "libboost-dev"},
