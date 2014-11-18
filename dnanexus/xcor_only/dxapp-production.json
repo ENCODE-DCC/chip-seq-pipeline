@@ -1,0 +1,79 @@
+{
+  "name": "xcor",
+  "title": "ENCODE TF ChIP-seq Cross-Correlation Analysis",
+  "summary": "Take a bam file from SE or PE sequencing, create tagAlign file and generate cross-corelation scores and plot.",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "input_bam",
+      "label": "Filtered BAM file",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "paired_end",
+      "class": "boolean",
+      "optional": false
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "tagAlign_file",
+      "label": "Final tagAlign file.",
+      "class": "file"
+    },
+    {
+      "name": "BEDPE_file",
+      "label": "BEDPE file (read pairs on each line)",
+      "class": "file"
+    },
+    {
+      "name": "CC_scores_file",
+      "label": "Tab-delimited NSC/RSC results",
+      "class": "file"
+    },
+    {
+      "name": "CC_plot_file",
+      "label": "Cross-correlation plot",
+      "class": "file"
+    },
+    {
+      "name": "paired_end",
+      "label": "True if the bam was derived from paired-end reads.",
+      "class": "boolean"
+    }
+
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/xcor.py",
+    "execDepends": [
+    {"name": "samtools",
+      "package_manager": "git",
+      "url": "https://github.com/samtools/samtools.git",
+      "destdir": "/samtools-build",
+      "tag": "0.1.19",
+      "build_commands": "make samtools && cp samtools /usr/local/bin"},
+    {"name": "bedtools",
+      "package_manager": "git",
+      "url": "https://github.com/arq5x/bedtools2.git",
+      "destdir": "/bedtools-build",
+      "tag": "v2.19.1",
+      "build_commands": "make && cp bin/* /usr/local/bin"},
+    {"name": "libboost1.46-dev"},
+    {"name": "libboost-dev"},
+    {"name": "caTools", "package_manager": "cran"},
+    {"name": "snow", "package_manager": "cran"}
+    ]
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}
