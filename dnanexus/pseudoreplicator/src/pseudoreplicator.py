@@ -77,13 +77,13 @@ def main(input_tags):
     pe_cols = 10
     if re.match('^(\S+[\t\n]){%d}$' %(se_cols), firstline):
         paired_end = False
-        input_tags_basename = input_tags_filename.rstrip('.bedpe.gz')
+        input_tags_basename = input_tags_filename.rstrip('.tagAlign.gz')
         filename_infix = 'SE'
         print "Single-end data"
     #elif re.match('^([a-zA-Z0-9_:-+]+[\t\n]){%d}$' %(pe_cols), firstline):
     elif re.match('^(\S+[\t\n]){%d}$' %(pe_cols), firstline):
         paired_end = True
-        input_tags_basename = input_tags_filename.rstrip('.tagAlign.gz')
+        input_tags_basename = input_tags_filename.rstrip('.bedpe.gz')
         filename_infix = 'PE2SE'
         print "Paired-end data"
     else:
