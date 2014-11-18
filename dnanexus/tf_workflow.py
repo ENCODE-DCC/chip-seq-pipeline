@@ -18,7 +18,7 @@ WF_DESCRIPTION = 'ENCODE TF ChIP-Seq Pipeline'
 MAPPING_APPLET_NAME = 'encode_bwa'
 FILTER_QC_APPLET_NAME = 'filter_qc'
 XCOR_APPLET_NAME = 'xcor'
-SPP_APPLET_NAME = 'encode_spp'
+SPP_APPLET_NAME = 'spp'
 POOL_APPLET_NAME = 'pool'
 PSEUDOREPLICATOR_APPLET_NAME = 'pseudoreplicator'
 
@@ -41,6 +41,7 @@ def get_args():
 	parser.add_argument('--name',    help="Name of new workflow", 				default="TF ChIP-Seq")
 	parser.add_argument('--applets', help="Name of project containing applets", default="E3 ChIP-seq")
 	parser.add_argument('--instance_type', help="Instance type for applets",	default=None)
+	parser.add_argument('--idr', 	 help='Run IDR analysis',					default=False, action='store_true')
 
 	args = parser.parse_args()
 
@@ -222,11 +223,16 @@ def main():
 
 	#this whole strategy is fragile and unsatisfying
 	#subsequent code assumes reps come before contols
+	#a "superstage" is just a dict with a name, name(s) of input files, and then names and id's of stages that process that input
+	#each superstage here could be implemented as a stage in a more abstract workflow.  That stage would then call the various applets that are separate
+	#stages here.
 	mapping_superstages = [
 		{'name': 'Rep1', 'input_args': args.rep1},
 		{'name': 'Rep2', 'input_args': args.rep2},
 		{'name': 'Ctl1', 'input_args': args.ctl1},
 		{'name': 'Ctl2', 'input_args': args.ctl2}
+		# {'name': 'Pooled Reps', 'input_args': (args.rep1 and args.rep2)},
+		# {'name': 'Pooled Controls', 'input_args': (args.ctl1 and args.ctl2)} ##idea is to create a "stub" stage and then populate it's input with the output of the pool stage, defined below
 	]
 
 	mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
@@ -282,6 +288,21 @@ def main():
 			)
 			mapping_superstage.update({'xcor_stage_id': xcor_stage_id})
 
+
+
+	# pool_applet = find_applet_by_name(POOL_APPLET_NAME, applet_project.get_id())
+	# pool_stages = []
+	# pool_output_folder = resolve_folder(output_project, output_folder + '/' + pool_applet.name)
+	# if (args.rep1 and args.rep2) or blank_workflow:
+	# 	reps_pool_stage_id = workflow.add_stage(
+	# 		pool_applet,
+	# 		name='Pool Reps',
+	# 		folder=pool_output_folder,
+	# 		stage_input={
+	# 			'input1': dxpy.dxlink(
+	# 				)
+	# 		})
+	####XXXXX WORKING HERE ... need to create a pooling stage, and then add the output of the pool mapping stage
 	spp_applet = find_applet_by_name(SPP_APPLET_NAME, applet_project.get_id())
 	spp_stages = []
 	peaks_output_folder = resolve_folder(output_project, output_folder + '/' + spp_applet.name)
@@ -323,6 +344,25 @@ def main():
 			instance_type=args.instance_type
 		)
 		spp_stages.append({'name': 'Peaks Rep2', 'stage_id': rep2_spp_stage_id})
+	# if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
+	# 	pool_reps_stage_id = workflow.add_stage(
+	# 		spp_applet,
+	# 		name='Peaks Pooled',
+	# 		folder=peaks_output_folder,
+	# 		stage_input={
+	# 			'experiment' : dxpy.dxlink(
+	# 				{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Pooled_reps'),
+	# 				 'output_field': 'tagAlign_file'}),
+	# 			'control' : dxpy.dxlink(
+	# 				{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Pooled_controls'),
+	# 				 'output_field': 'tagAlign_file'}),
+	# 			'xcor_scores_input': dxpy.dxlink(
+	# 				{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Pooled_reps'),
+	# 				 'outputField': 'CC_scores_file'})
+	# 		},
+	# 		instance_type=args.instance_type
+	# 	)
+	# 	spp_stages.append({'name': 'Peaks Pooled', 'stage_id': pool_reps_stage_id})
 
 	logging.debug("Mapping stages: %s" %(mapping_superstages))
 	logging.debug("Peak stages: %s" %(spp_stages))
