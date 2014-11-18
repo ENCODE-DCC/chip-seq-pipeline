@@ -112,7 +112,7 @@ def main(input_bam, paired_end):
     out,err = run_pipe(steps,outfile=subsampled_TA_filename)
     print subprocess.check_output('ls -l', shell=True)
 
-    # Calculate Corss-correlation QC scores
+    # Calculate Cross-correlation QC scores
     CC_scores_filename = subsampled_TA_filename + ".cc.qc"
     CC_plot_filename = subsampled_TA_filename + ".cc.plot.pdf"
 
