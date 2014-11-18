@@ -1,0 +1,77 @@
+{
+  "name": "encode_idr",
+  "title": "IDR for ChIP-seq",
+  "summary": "Generate peaks that pass the IDR threshold",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "rep1_peaks",
+      "label": "First replicate peaks",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "rep2_peaks",
+      "label": "Second replicate peaks",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "pooled_peaks",
+      "label": "Pooled replicate peaks",
+      "class": "file",
+      "optional": false
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "EM_fit_output",
+      "label": "The output from EM fitting",
+      "class": "file"
+    },
+    {
+      "name": "empirical_curves_output",
+      "label": "The output for plotting empirical curves",
+      "class": "file"
+    },
+    {
+      "name": "EM_parameters_log",
+      "label": "The parameters estimated from EM and the log of consistency analysis",
+      "class": "file"
+    },
+    {
+      "name": "npeaks_pass",
+      "label": "The number of peaks that pass specific IDR thresholds for pairwise analysis",
+      "class": "file"
+    },
+    {
+      "name": "overlapped_peaks",
+      "label": "The full set of peaks that overlap between the replicates with local and global IDR",
+      "class": "file"
+    },
+    {
+      "name": "IDR_output",
+      "label": "IDR output file",
+      "class": "file"
+    },
+    {
+      "name": "IDR_peaks",
+      "label": "Final IDR thresholded file",
+      "class": "file"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/encode_idr.py"
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}
