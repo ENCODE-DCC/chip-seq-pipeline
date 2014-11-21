@@ -1,0 +1,44 @@
+{
+  "name": "encode_s3cp",
+  "title": "ENCODE s3 cp",
+  "summary": "Copy a file from the ENCODE bucket",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "accession",
+      "label": "Accession number",
+      "class": "string",
+      "optional": false
+    },
+    {
+      "name": "key",
+      "label": "ENCODEd key",
+      "class": "string",
+      "optional": true
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "dx_file",
+      "label": "DNAnexus file",
+      "class": "file"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/encode_s3cp.py",
+    "execDepends": [
+      {"name": "awscli", "package_manager": "pip"}
+    ]
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}
