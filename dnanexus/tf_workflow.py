@@ -21,6 +21,8 @@ XCOR_APPLET_NAME = 'xcor'
 SPP_APPLET_NAME = 'spp'
 POOL_APPLET_NAME = 'pool'
 PSEUDOREPLICATOR_APPLET_NAME = 'pseudoreplicator'
+ENCODE_SPP_APPLET_NAME = 'encode_spp'
+IDR_APPLET_NAME='idr'
 
 APPLETS = {}
 
@@ -288,21 +290,6 @@ def main():
 			)
 			mapping_superstage.update({'xcor_stage_id': xcor_stage_id})
 
-
-
-	# pool_applet = find_applet_by_name(POOL_APPLET_NAME, applet_project.get_id())
-	# pool_stages = []
-	# pool_output_folder = resolve_folder(output_project, output_folder + '/' + pool_applet.name)
-	# if (args.rep1 and args.rep2) or blank_workflow:
-	# 	reps_pool_stage_id = workflow.add_stage(
-	# 		pool_applet,
-	# 		name='Pool Reps',
-	# 		folder=pool_output_folder,
-	# 		stage_input={
-	# 			'input1': dxpy.dxlink(
-	# 				)
-	# 		})
-	####XXXXX WORKING HERE ... need to create a pooling stage, and then add the output of the pool mapping stage
 	spp_applet = find_applet_by_name(SPP_APPLET_NAME, applet_project.get_id())
 	spp_stages = []
 	peaks_output_folder = resolve_folder(output_project, output_folder + '/' + spp_applet.name)
@@ -344,28 +331,129 @@ def main():
 			instance_type=args.instance_type
 		)
 		spp_stages.append({'name': 'Peaks Rep2', 'stage_id': rep2_spp_stage_id})
-	# if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
-	# 	pool_reps_stage_id = workflow.add_stage(
-	# 		spp_applet,
-	# 		name='Peaks Pooled',
-	# 		folder=peaks_output_folder,
-	# 		stage_input={
-	# 			'experiment' : dxpy.dxlink(
-	# 				{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Pooled_reps'),
-	# 				 'output_field': 'tagAlign_file'}),
-	# 			'control' : dxpy.dxlink(
-	# 				{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Pooled_controls'),
-	# 				 'output_field': 'tagAlign_file'}),
-	# 			'xcor_scores_input': dxpy.dxlink(
-	# 				{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Pooled_reps'),
-	# 				 'outputField': 'CC_scores_file'})
-	# 		},
-	# 		instance_type=args.instance_type
-	# 	)
-	# 	spp_stages.append({'name': 'Peaks Pooled', 'stage_id': pool_reps_stage_id})
+
+	encode_spp_applet = find_applet_by_name(ENCODE_SPP_APPLET_NAME, applet_project.get_id())
+	encode_spp_stages = []
+	if args.idr:
+		idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_spp_applet.name)
+		if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
+			encode_spp_stage_id = workflow.add_stage(
+				encode_spp_applet,
+				name='Peaks for IDR',
+				folder=idr_peaks_output_folder,
+				stage_input={
+					'rep1_ta' : dxpy.dxlink(
+						{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep1'),
+						 'outputField': 'tagAlign_file'}),
+					'rep2_ta' : dxpy.dxlink(
+						{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
+						 'outputField': 'tagAlign_file'}),
+					'ctl1_ta': dxpy.dxlink(
+						{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl1'),
+						 'outputField': 'tagAlign_file'}),
+					'ctl2_ta' : dxpy.dxlink(
+						{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl2'),
+						 'outputField': 'tagAlign_file'}),
+					'rep1_xcor' : dxpy.dxlink(
+						{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep1'),
+						 'outputField': '"CC_scores_file"'}),
+					'rep2_xcor' : dxpy.dxlink(
+						{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
+						 'outputField': '"CC_scores_file"'}),
+					'paired_end': dxpy.dxlink(
+						{'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep1'),
+						 'outputField': 'paired_end'}) #here we're assuming if rep1 is PE it's a PE experiment - need better error checking
+				},
+				instance_type=args.instance_type
+			)
+			encode_spp_stages.append({'name': 'Peaks for IDR', 'stage_id': encode_spp_stage_id})
+
+	idr_applet = find_applet_by_name(IDR_APPLET_NAME, applet_project.get_id())
+	idr_stages = []
+	if args.idr:
+		idr_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
+		if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
+			idr_stage_id = workflow.add_stage(
+				idr_applet,
+				name='IDR True Replicates',
+				folder=idr_output_folder,
+				stage_input={
+					'rep1_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'rep1_peaks'}),
+					'rep2_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'rep2_peaks'}),
+					'pooled_peaks': dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'pooled_peaks'})
+				},
+				instance_type=args.instance_type
+			)
+			idr_stages.append({'name': 'IDR True Replicates', 'stage_id': idr_stage_id})
+
+			idr_stage_id = workflow.add_stage(
+				idr_applet,
+				name='IDR Rep 1 Self-pseudoreplicates',
+				folder=idr_output_folder,
+				stage_input={
+					'rep1_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'rep1pr1_peaks'}),
+					'rep2_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'rep1pr2_peaks'}),
+					'pooled_peaks': dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'rep1_peaks'})
+				},
+				instance_type=args.instance_type
+			)
+			idr_stages.append({'name': 'IDR Rep 1 Self-pseudoreplicates', 'stage_id': idr_stage_id})
+
+			idr_stage_id = workflow.add_stage(
+				idr_applet,
+				name='IDR Rep 2 Self-pseudoreplicates',
+				folder=idr_output_folder,
+				stage_input={
+					'rep1_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'rep2pr1_peaks'}),
+					'rep2_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'rep2pr2_peaks'}),
+					'pooled_peaks': dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'rep2_peaks'})
+				},
+				instance_type=args.instance_type
+			)
+			idr_stages.append({'name': 'IDR Rep 2 Self-pseudoreplicates', 'stage_id': idr_stage_id})
+
+			idr_stage_id = workflow.add_stage(
+				idr_applet,
+				name='IDR Pooled Pseudoeplicates',
+				folder=idr_output_folder,
+				stage_input={
+					'rep1_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'pooledpr1_peaks'}),
+					'rep2_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'pooledpr2_peaks'}),
+					'pooled_peaks': dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						 'outputField': 'pooled_peaks'})
+				},
+				instance_type=args.instance_type
+			)
+			idr_stages.append({'name': 'IDR Pooled Pseudoeplicates', 'stage_id': idr_stage_id})
+
 
 	logging.debug("Mapping stages: %s" %(mapping_superstages))
 	logging.debug("Peak stages: %s" %(spp_stages))
+	logging.debug("Peaks for IDR stages: %s" %(encode_spp_stages))
+	logging.debug("IDR stages: %s" %(idr_stages))
 
 if __name__ == '__main__':
 	main()
