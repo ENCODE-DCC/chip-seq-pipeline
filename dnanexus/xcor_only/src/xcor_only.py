@@ -61,10 +61,10 @@ def main(input_tagAlign, paired_end):
     # # using variable names for the filenames.
 
     input_tagAlign_filename = input_tagAlign_file.name
-    input_tagAlign_basename = input_tagAlign_file.name.rstrip('.gz').rstrip('.tagAlign')
+    input_tagAlign_basename = input_tagAlign_file.name.rstrip('.gz')
     dxpy.download_dxfile(input_tagAlign_file.get_id(), input_tagAlign_filename)
 
-    uncompressed_TA_filename = input_tagAlign_basename + ".tagAlign"
+    uncompressed_TA_filename = input_tagAlign_basename
     out,err = run_pipe(['gzip -d %s' %(input_tagAlign_filename)])
 
     # if paired_end:
@@ -104,7 +104,7 @@ def main(input_tagAlign, paired_end):
         end_infix = 'MATE1'
     else:
         end_infix = 'SE'
-    subsampled_TA_filename = input_tagAlign_basename + ".filt.nodup.sample.%d.%s.tagAlign.gz" %(NREADS/1000000, end_infix)
+    subsampled_TA_filename = input_tagAlign_basename + ".sample.%d.%s.tagAlign.gz" %(NREADS/1000000, end_infix)
     steps = [
         'grep -v "chrM" %s' %(uncompressed_TA_filename),
         'shuf -n %d' %(NREADS)]
@@ -126,6 +126,7 @@ def main(input_tagAlign, paired_end):
     run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
     #install spp
     print subprocess.check_output(shlex.split('R CMD INSTALL %s' %(spp_tarball)))
+    print subprocess.check_output('ls -l', shell=True)
     out,err = run_pipe([
         "Rscript %s -c=%s -p=%d -filtchr=chrM -savp=%s -out=%s" \
             %(run_spp_command, subsampled_TA_filename, cpu_count(), CC_plot_filename, CC_scores_filename)])

@@ -57,6 +57,11 @@
       "class": "boolean",
       "optional": true,
       "default": true
+    },
+    {
+      "name": "paired_end",
+      "class": "boolean",
+      "optional": false
     }
   ],
   "outputSpec": [

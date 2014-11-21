@@ -66,10 +66,17 @@ def spp(experiment, control, xcor_scores):
     return spp_applet.run(
         {"experiment": experiment,
          "control": control,
-         "xcor_scores_input": xcor_scores})
+         "xcor_scores_input": xcor_scores},
+         instance_type="mem2_ssd1_x8")
+
+def xcor_only(tags, paired_end):
+    xcor_only_applet = dxpy.find_one_data_object(
+        classname='applet', name='xcor_only', zero_ok=False, more_ok=False, return_handler=True)
+    return xcor_only_applet.run({"input_tagAlign": tags, "paired_end": paired_end}, instance_type="mem2_ssd1_x8")
+
  
 @dxpy.entry_point('main')
-def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodups):
+def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodups, paired_end):
 
     # The following lines initialize the data object inputs on the platform
     # into dxpy.DXDataObject instances that you can start using immediately.
@@ -147,15 +154,13 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
     pool_pr2_subjob = pool_applet.run({"input1": rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
                                        "input2": rep2_pr_subjob.get_output_ref("pseudoreplicate2")})
 
-    xcor_only_applet = dxpy.find_one_data_object(
-        classname='applet', name='xcor_only', zero_ok=False, more_ok=False, return_handler=True)
-    pooled_replicates_xcor_subjob = xcor_only_applet.run({"input_tagAlign": pooled_replicates})
-    rep1_pr1_xcor_subjob = xcor_only_applet.run({"input_tagAlign": rep1_pr_subjob.get_output_ref("pseudoreplicate1")})
-    rep1_pr2_xcor_subjob = xcor_only_applet.run({"input_tagAlign": rep1_pr_subjob.get_output_ref("pseudoreplicate2")})
-    rep2_pr1_xcor_subjob = xcor_only_applet.run({"input_tagAlign": rep2_pr_subjob.get_output_ref("pseudoreplicate1")})
-    rep2_pr2_xcor_subjob = xcor_only_applet.run({"input_tagAlign": rep2_pr_subjob.get_output_ref("pseudoreplicate2")})
-    pool_pr1_xcor_subjob = xcor_only_applet.run({"input_tagAlign": pool_pr1_subjob.get_output_ref("pooled")})
-    pool_pr2_xcor_subjob = xcor_only_applet.run({"input_tagAlign": pool_pr2_subjob.get_output_ref("pooled")})
+    pooled_replicates_xcor_subjob = xcor_only(pooled_replicates, paired_end)
+    rep1_pr1_xcor_subjob = xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
+    rep1_pr2_xcor_subjob = xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
+    rep2_pr1_xcor_subjob = xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
+    rep2_pr2_xcor_subjob = xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
+    pool_pr1_xcor_subjob = xcor_only(pool_pr1_subjob.get_output_ref("pooled"), paired_end)
+    pool_pr2_xcor_subjob = xcor_only(pool_pr2_subjob.get_output_ref("pooled"), paired_end)
 
     rep1_peaks_subjob = spp(rep1_ta,
                             rep1_control,
