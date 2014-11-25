@@ -19,6 +19,12 @@
       "label": "ENCODEd key",
       "class": "string",
       "optional": true
+    },
+    {
+      "name": "debug",
+      "label": "debug",
+      "class": "boolean",
+      "optional": true
     }
   ],
   "outputSpec": [
