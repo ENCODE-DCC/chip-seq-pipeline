@@ -89,7 +89,7 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
     print "Unpacking %s" %(reference_tar_filename)
     print subprocess.check_output(shlex.split(tar_command))
     # assume the reference file is the only .fa file
-    reference_filename = subprocess.check_output('ls *.fa', shell=True).rstrip()
+    reference_filename = subprocess.check_output('ls *.fna', shell=True).rstrip()
 
     paired_end = len(indexed_reads) == 2
 
@@ -183,7 +183,7 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
     print "Unpacking %s" %(reference_tar_filename)
     print subprocess.check_output(shlex.split(tar_command))
     # assume the reference file is the only .fa file
-    reference_filename = subprocess.check_output('ls *.fa', shell=True).rstrip()
+    reference_filename = subprocess.check_output('ls *.fna', shell=True).rstrip()
 
     print subprocess.check_output('ls -l', shell=True)
 
