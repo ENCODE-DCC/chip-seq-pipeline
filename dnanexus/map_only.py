@@ -18,6 +18,8 @@ XX_REFERENCE = 'E3 ChIP-seq:/GRCh38/GRCh38_minimal_X.tar.gz'
 XY_REFERENCE = 'E3 ChIP-seq:/GRCh38/GRCh38_minimal_XY.tar.gz'
 KEYFILE = os.path.expanduser("~/keypairs.json")
 DEFAULT_SERVER = 'https://www.encodeproject.org'
+DNANEXUS_ENCODE_SNAPSHOT = 'ENCODE-SDSC-snapshot-20140505'
+SNAPSHOT_PROJECT_HANDLER = None
 
 APPLETS = {}
 
@@ -39,9 +41,7 @@ def get_args():
 
 	args = parser.parse_args()
 
-	global DEBUG
-	DEBUG = args.debug
-	if DEBUG:
+	if args.debug:
 		logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 	else: #use the defaulf logging level
 		logging.basicConfig(format='%(levelname)s:%(message)s')
@@ -111,91 +111,6 @@ def resolve_folder(project, identifier):
 			logging.info("New folder %s created in project %s" %(identifier, project.name))
 	return identifier
 
-def resolve_file(identifier):
-	logging.debug("resolve_file: %s" %(identifier))
-
-	if not identifier:
-		return None
-
-	m = re.match(r'''^([\w\-\ \.]+):([\w\-\ /\.]+)''', identifier)
-	if m:
-		project_identifier = m.group(1)
-		file_identifier = m.group(2)
-	else:
-		logging.debug("Defaulting to the current project")
-		project_identifier = dxpy.WORKSPACE_ID
-		file_identifier = identifier	
-
-	project = resolve_project(project_identifier)
-	logging.debug("Got project %s" %(project.name))
-	logging.debug("Now looking for file %s" %(file_identifier))
-
-	m = re.match(r'''(^[\w\-\ /\.]+)/([\w\-\ \.]+)''', file_identifier)
-	if m:
-		folder_name = m.group(1)
-		if not folder_name.startswith('/'):
-			folder_name = '/' + folder_name
-		file_name = m.group(2)
-	else:
-		folder_name = '/'
-		file_name = file_identifier
-
-	logging.debug("Looking for file %s in folder %s" %(file_name, folder_name))
-
-	try:
-		file_handler = dxpy.find_one_data_object(name=file_name, folder=folder_name, project=project.get_id(),
-			more_ok=False, zero_ok=False, return_handler=True)
-	except:
-		logging.debug('%s not found in project %s folder %s' %(file_name, project.get_id(), folder_name))
-		try:
-			file_handler = dxpy.DXFile(dxid=identifier, mode='r')
-		except:
-			logging.debug('%s not found as a dxid' %(identifier))
-			try:
-				file_handler = resolve_accession(identifier)
-			except:
-				logging.debug('%s not found as an accession' %(identifier))
-				logging.warning('Could not find file %s.' %(identifier))
-				return None
-
-	logging.info("Resolved file identifier %s to %s" %(identifier, file_handler.get_id()))
-	return file_handler
-
-def resolve_accession(accession):
-	logging.debug("Looking for accession %s" %(accession))
-	
-	if not re.match(r'''^ENCFF\d{3}[A-Z]{3}''', accession):
-		logging.debug("%s is not a valid accession format" %(accession))
-		raise ValueError(accession)
-	
-	DNANEXUS_ENCODE_SNAPSHOT = 'ENCODE-SDSC-snapshot-20140505'
-	logging.debug('Testing')
-
-	try:
-		snapshot_project
-	except:
-		logging.debug('Looking for snapshot project %s' %(DNANEXUS_ENCODE_SNAPSHOT))
-		try:
-			project_handler = resolve_project(DNANEXUS_ENCODE_SNAPSHOT)
-			global snapshot_project
-			snapshot_project = project_handler
-		except:
-			logging.error("Cannot find snapshot project %s" %(DNANEXUS_ENCODE_SNAPSHOT))
-			raise ValueError(DNANEXUS_ENCODE_SNAPSHOT)
-		logging.debug('Found snapshot project %s' %(snapshot_project.name))
-
-	try:
-		accession_search = accession + '*'
-		logging.debug('Looking recursively for %s in %s' %(accession_search, snapshot_project.name))
-		file_handler = dxpy.find_one_data_object(
-			name=accession_search, name_mode='glob', more_ok=False, classname='file', recurse=True, return_handler=True,
-			folder='/', project=snapshot_project.get_id())
-		logging.debug('Got file handler for %s' %(file_handler.name))
-		return file_handler
-	except:
-		logging.error("Cannot find accession %s in project %s" %(accession, snapshot_project.name))
-		raise ValueError(accession)
-
 def find_applet_by_name(applet_name, applets_project_id):
 	'''Looks up an applet by name in the project that holds tools.  From Joe Dale's code.'''
 	cached = '*'
@@ -216,7 +131,7 @@ def filenames_in(files=None):
 		return [f.get('submitted_file_name') for f in files]
 
 def files_to_map(exp_obj):
-	if not exp_obj:
+	if not exp_obj or not exp_obj.get('files'):
 		return []
 	else:
 		files = []
@@ -227,6 +142,7 @@ def files_to_map(exp_obj):
 			   files.extend([file_obj])
 			elif file_obj.get('submitted_file_name') in filenames_in(files):
 				logging.warning('%s:%s Duplicate filename, ignoring.' %(exp_obj.get('accession'),file_obj.get('accession')))
+				return []
 		return files
 
 def replicates_to_map(files):
@@ -235,27 +151,41 @@ def replicates_to_map(files):
 	else:
 		return [f.get('replicate') for f in files]
 
-def map_paired(experiment, biorep_n, files=(None,None)):
-	pass
+def map_only(experiment, biorep_n, files):
 
-def map_unpaired(experiment, biorep_n, files=None):
+	output_project = resolve_project(args.outp, 'w')
+	logging.debug('Found output project %s' %(output_project.name))
+	applet_project = resolve_project(args.applets, 'r')
+	logging.debug('Found applet project %s' %(applet_project.name))
+	mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
+	logging.debug('Found applet %s' %(mapping_applet.name))
+
+	mapping_output_folder = resolve_folder(output_project, args.outf + '/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
+
+	
+
 	pass
 
 def main():
+	global args
 	args = get_args()
+
 	authid, authpw, server = processkey(args.key)
 	keypair = (authid,authpw)
+
 
 	for exp_id in args.infile:
 		outstrings = []
 		encode_url = urlparse.urljoin(server,exp_id.rstrip())
 		experiment = encoded_get(encode_url, keypair)
 		outstrings.extend([exp_id.rstrip()])
-		outstrings.extend([experiment.get('accession')])
 		files = files_to_map(experiment)
+		outstrings.extend([str(len(files))])
+		outstrings.extend([str([f.get('accession') for f in files])])
 		replicates = replicates_to_map(files)
 		if files:
 			for biorep_n in set([rep.get('biological_replicate_number') for rep in replicates]):
+				outstrings.extend(['rep%s' %(biorep_n)])
 				biorep_files = [f for f in files if f.get('replicate').get('biological_replicate_number') == biorep_n]
 				paired_files = []
 				unpaired_files = []
@@ -266,29 +196,29 @@ def main():
 					elif file_object.get('paired_end') in ['1','2']:
 						if file_object.get('paired_with'):
 							mate = next((f for f in biorep_files if f.get('@id') == file_object.get('paired_with')), None)
-							biorep_files.remove(mate)
 						else: #have to find the file that is paired with this one
 							mate = next((f for f in biorep_files if f.get('paired_with') == file_object.get('@id')), None)
+						if mate:
 							biorep_files.remove(mate)
+						else:
+							logging.warning('%s:%s could not find mate' %(experiment.get('accession'), file_object.get('accession')))
+							mate = {}
 						paired_files.extend([(file_object,mate)])
 				if paired_files:
-					logging.debug('paired_files: %s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))
+					outstrings.extend(['paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files])])
 				else:
-					logging.debug('paired_files: %s' %(None))
+					outstrings.extend(['paired:%s' %(None)])
 				if unpaired_files:
-					logging.debug('unpaired_files: %s' %([f.get('accession') for f in unpaired_files]))
+					outstrings.extend(['unpaired:%s' %([f.get('accession') for f in unpaired_files])])
 				else:
-					logging.debug('unpaired_files: %s' %(None))
+					outstrings.extend(['unpaired:%s' %(None)])
 				if biorep_files:
 					logging.warning('%s: leftover file(s) %s' %(experiment.get('accession'), biorep_files))
-				#map_paired(experiment, biorep_n, paired_files)
-				#map_unpaired(experiment, biorep_n, unpaired_files)
+				map_only(experiment, biorep_n, paired_files)
+				map_only(experiment, biorep_n, unpaired_files)
+			print '\t'.join(outstrings)
 		else:
 			logging.warning('%s: No files to map' %experiment.get('accession'))
 
-
-		outstrings.extend([str(len(files))])
-		outstrings.extend([str([f.get('accession') for f in files])])
-		print '\t'.join(outstrings)
 if __name__ == '__main__':
 	main()

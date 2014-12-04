@@ -79,7 +79,7 @@ def main(accession, key=None, debug=False):
     except:
         logger.error('%s href does not resolve' %(f_obj.get('accession')))
         sys.exit()
-    logger.debug(r)
+    logger.debug("Response: %s", (r))
 
     #this is the actual S3 https URL after redirection
     s3_url = r.url
