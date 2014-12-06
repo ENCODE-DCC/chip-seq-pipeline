@@ -236,7 +236,7 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
     if len(reads1_files) > 1:
         pool_applet = dxpy.find_one_data_object(
             classname='applet', name='pool', zero_ok=False, more_ok=False, return_handler=True)
-        pool_subjob = pool_applet.run({"inputs": reads1_files)
+        pool_subjob = pool_applet.run({"inputs": reads1_files})
         reads1_file = dxpy.upload_local_file(pool_subjob.get_output_ref("pooled"))
     else:
         reads1_file = reads1_files[0]
