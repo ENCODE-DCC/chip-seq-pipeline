@@ -187,8 +187,6 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input):
 		folder=mapping_output_folder
 	)
 
-	pdb.set_trace()
-
 	input_shield_stage_id = workflow.add_stage(
 		input_shield_applet,
 		name='Gather inputs %s rep%d' %(experiment.get('accession'), biorep_n),
@@ -201,14 +199,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input):
 		mapping_applet,
 		name='Map %s rep%d' %(experiment.get('accession'), biorep_n),
 		folder=mapping_output_folder,
-		stage_input={
-			'reads1': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'reads1'}),
-			'reads2': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'reads2'}),
-			'reference_tar': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'reference_tar'}),
-			'bwa_aln_params': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'bwa_aln_params'}),
-	        'bwa_version': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'bwa_version'}),
-	        'samtools_version': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'samtools_version'})
-		},
+		stage_input={'input_JSON': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'output_JSON'})},
 		instance_type=args.instance_type
 	)
 
@@ -240,7 +231,8 @@ def map_only(experiment, biorep_n, files):
 
 	if args.yes:
 		for wf in workflows:
-			wf.run()
+			#wf.run()
+			pass
 
 def main():
 	global args

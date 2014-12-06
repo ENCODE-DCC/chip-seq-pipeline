@@ -243,10 +243,6 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
     reads2_file = resolve_file(reads2, key)
     reference_tar_file = resolve_file(reference_tar, key)
 
-    #reads1 = dxpy.upload_local_file("reads1")
-    #reads2 = dxpy.upload_local_file("reads2")
-    #reference_tar = dxpy.upload_local_file("reference_tar")
-
     logger.info('Resolved reads1 to %s', reads1_file.get_id())
     if reads2:
         logger.info('Resolved reads2 to %s', reads2_file.get_id())
@@ -261,8 +257,11 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
     }
     if reads2:
         output.update({"reads2": dxpy.dxlink(reads2_file)})
-    else:
-        output.update({"reads2": None})
-    return output
+
+    #logger.info('Exiting with output_JSON: %s' %(json.dumps(output)))
+    #return {'output_JSON': json.dumps(output)}
+
+    logger.info('Exiting with output_JSON: %s' %(output))
+    return {'output_JSON': output}
 
 dxpy.run()

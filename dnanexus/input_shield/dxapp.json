@@ -66,34 +66,9 @@
   ],
   "outputSpec": [
     {
-      "name": "reads1",
-      "label": "reads1",
-      "class": "file"
-    },
-    {
-      "name": "reads2",
-      "label": "reads2",
-      "class": "file"
-    },
-    {
-      "name": "reference_tar",
-      "label": "Genome reference tar file",
-      "class": "file"
-    },
-    {
-      "name": "bwa_aln_params",
-      "label": "Command-line-parameters to BWA aln",
-      "class": "string"
-    },
-    {
-      "name": "bwa_version",
-      "label": "bwa version",
-      "class": "string"
-    },
-    {
-      "name": "samtools_version",
-      "label": "samtools version",
-      "class": "string"
+      "name": "output_JSON",
+      "label": "Output for mapper as JSON",
+      "class": "hash"
     }
   ],
   "runSpec": {

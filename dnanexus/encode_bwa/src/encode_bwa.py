@@ -6,6 +6,8 @@ from multiprocessing import Pool, cpu_count
 from subprocess import Popen, PIPE #debug only this should only need to be imported into run_pipe
 import dxpy
 
+logger = logging.getLogger(__name__)
+
 def run_pipe(steps, outfile=None):
     #break this out into a recursive function
     #TODO:  capture stderr
@@ -207,10 +209,36 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
     return process_output
 
 @dxpy.entry_point("main")
-def main(reads1, reference_tar, bwa_aln_params, bwa_version, samtools_version, reads2=None):
+def main(reads1, reference_tar, bwa_aln_params, bwa_version, samtools_version, reads2=None, input_JSON=None, debug=False):
 
     # Main entry-point.  Parameter defaults assumed to come from dxapp.json.
     # reads1, reference_tar, reads2 are links to DNAnexus files or None
+
+    if debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
+    # if there is input_JSON, it over-rides any explicit parameters
+
+    if not (reads1 or 'reads1' in input_JSON):
+        logger.error('reads1 is required, explicitly or in input_JSON')
+        raise Exception
+
+    # this needs to be done with **kwagrs or something
+    if input_JSON:
+        if 'reads1' in input_JSON:
+            reads1 = input_JSON['reads1']
+        if 'reads2' in input_JSON:
+            reads2 = input_JSON['reads2']
+        if 'reference_tar' in input_JSON:
+            reference_tar = input_JSON['reference_tar']
+        if 'bwa_aln_params' in input_JSON:
+            bwa_aln_params = input_JSON['bwa_aln_params']
+        if 'bwa_version' in input_JSON:
+            bwa_version = input_JSON['bwa_version']
+        if 'samtools_version' in input_JSON:
+            samtools_version = input_JSON['samtools_version']
 
     # This spawns only one or two subjobs for single- or paired-end,
     # respectively.  It could also download the files, chunk the reads,
