@@ -162,9 +162,15 @@ def map_only(experiment, biorep_n, files):
 
 	mapping_output_folder = resolve_folder(output_project, args.outf + '/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
 
-	
+	#look into the structure of files parameter to decide on pooling, paired end etc.
 
-	pass
+	if all(isinstance(f, str) for f in files): #single-ended
+		input_shield ....
+	elif all(isinstance(f, tuple) for f in files): #paired-ended
+		input_shield ...
+	else:
+		logging.error('%s: List of files to map appears to be mixed single-end and paired-end: %s' %(experiment.get('accession'), files))
+
 
 def main():
 	global args
