@@ -63,7 +63,7 @@ def main(inputs):
 
     pooled_filename = 'pooled.gz'
     out,err = run_pipe([
-        'gzip -dc %s' %(' '.join([f.keys()[0] for f in input_files])) #list of kv pairs with key=filename
+        'gzip -dc %s' %(' '.join([f.keys()[0] for f in input_files])), #list of kv pairs with key=filename
         'gzip -c'],
         outfile=pooled_filename)
 
