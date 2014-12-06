@@ -241,24 +241,28 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
     else:
         reads1_file = reads1_files[0]
     reads2_file = resolve_file(reads2, key)
-    reference_tar = resolve_file(reference_tar, key)
+    reference_tar_file = resolve_file(reference_tar, key)
 
     #reads1 = dxpy.upload_local_file("reads1")
     #reads2 = dxpy.upload_local_file("reads2")
     #reference_tar = dxpy.upload_local_file("reference_tar")
 
-    logger.info('Resolved reads1 to %s', reads1.get_id())
-    logger.info('Resolved reads2 to %s', reads2.get_id())
-    logger.info('Resolved reference_tar to %s', reference_tar.get_id())
+    logger.info('Resolved reads1 to %s', reads1_file.get_id())
+    if reads2:
+        logger.info('Resolved reads2 to %s', reads2_file.get_id())
+    logger.info('Resolved reference_tar to %s', reference_tar_file.get_id())
 
     output = {
-        "reads1": dxpy.dxlink(reads1),
-        "reads2": dxpy.dxlink(reads2),
-        "reference_tar": dxpy.dxlink(reference_tar),
+        "reads1": dxpy.dxlink(reads1_file),
+        "reference_tar": dxpy.dxlink(reference_tar_file),
         "bwa_aln_params": bwa_aln_params,
         "bwa_version": bwa_version,
         "samtools_version": samtools_version
     }
+    if reads2:
+        output.update({"reads2": dxpy.dxlink(reads2_file)})
+    else:
+        output.update({"reads2": None})
     return output
 
 dxpy.run()

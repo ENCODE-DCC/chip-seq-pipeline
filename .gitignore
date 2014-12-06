@@ -13,3 +13,5 @@ SCG3/spp.sh
 *.regionPeak
 
 *.bb
+
+dnanexus/encsr

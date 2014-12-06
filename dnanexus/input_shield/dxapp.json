@@ -18,13 +18,15 @@
       "name": "reads2",
       "label": "reads2",
       "class": "string",
-      "optional": true
+      "optional": true,
+      "default": ""
     },
     {
       "name": "reference_tar",
       "label": "Over-rides the otherwise automatically-chosen reference",
       "class": "string",
-      "optional": true
+      "optional": true,
+      "default": ""
     },
     {
       "name": "bwa_aln_params",
