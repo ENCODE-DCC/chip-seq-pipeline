@@ -38,6 +38,7 @@ def get_args():
 	parser.add_argument('--instance_type', help="Instance type for applets",	default=None)
 	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default",
 		default='default')
+	parser.add_argument('--yes',   help="Run the workflows created", 			default=False, action='store_true')
 
 	args = parser.parse_args()
 
@@ -151,7 +152,20 @@ def replicates_to_map(files):
 	else:
 		return [f.get('replicate') for f in files]
 
-def map_only(experiment, biorep_n, files):
+def choose_reference(experiment, biorep_n):
+	try:
+		replicate = next(rep for rep in experiment.get('replicates') if rep.get('biological_replicate_number') == biorep_n)
+		sex = replicate.get('library').get('biosample').get('sex')
+	except:
+		sex = 'male'
+		logger.warning('%s:rep%d Cannot determine sex.  Using XY.' %(experiment.get('accession'), biorep_n))
+
+	if sex == 'female':
+		return XX_REFERENCE
+	else:
+		return XY_REFERENCE
+
+def build_workflow(experiment, biorep_n, input_shield_stage_input):
 
 	output_project = resolve_project(args.outp, 'w')
 	logging.debug('Found output project %s' %(output_project.name))
@@ -159,18 +173,69 @@ def map_only(experiment, biorep_n, files):
 	logging.debug('Found applet project %s' %(applet_project.name))
 	mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
 	logging.debug('Found applet %s' %(mapping_applet.name))
+	input_sield_applet = find_applet_by_name(INPUT_SHIELD_APPLET_NAME, applet_project.get_id())
+	logging.debug('Found applet %s' %(input_shield_applet.name))
 
 	mapping_output_folder = resolve_folder(output_project, args.outf + '/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
 
+
+	workflow = dxpy.new_dxworkflow(
+		title='Map %s rep%d' %(experiment.get('accession'), biorep_n),
+		name='Map %s rep%d' %(experiment.get('accession'), biorep_n),
+		project=output_project.get_id(),
+		folder=mapping_output_folder
+	)
+
+	input_shield_stage_id = workflow.add_stage(
+		input_shield_applet,
+		name='Gather inputs %s rep%d' %(experiment.get('accession'), biorep_n),
+		folder=mapping_output_folder,
+		stage_input=input_shield_stage_input,
+		instance_type=args.instance_type
+	)
+
+	mapping_stage_id = workflow.add_stage(
+		mapping_applet,
+		name='Map %s rep%d' %(experiment.get('accession'), biorep_n),
+		folder=mapping_output_folder,
+		stage_input={
+			'reads1': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'reads1'}),
+			'reads2': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'reads2'}),
+			'reference_tar': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'reference_tar'}),
+			'bwa_aln_params': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'bwa_aln_params'}),
+	        'bwa_version': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'bwa_version'}),
+	        'samtools_version': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'samtools_version'})
+		},
+		instance_type=args.instance_type
+	)
+
+	return workflow
+
+def map_only(experiment, biorep_n, files):
+
+
 	#look into the structure of files parameter to decide on pooling, paired end etc.
 
-	if all(isinstance(f, str) for f in files): #single-ended
-		input_shield ....
-	elif all(isinstance(f, tuple) for f in files): #paired-ended
-		input_shield ...
+	workflows = []
+	input_shield_stage_input = {}
+
+	input_shield_stage_input.update({'reference_tar' : choose_reference(experiment, biorep_n)})
+
+	if all(isinstance(f, dict) for f in files): #single end
+		input_shield_stage_input = {'reads1': [f.get('accession') for f in files]}
+		workflows.extend(build_workflow(experiment, biorep_n, input_shield_stage_input))
+	elif all(isinstance(f, tuple) for f in files):
+		for readpair in files:
+			input_shield_stage_input = {'reads1': next(f.get('accession') for f in readpair if f.get('paired_end') == '1'),
+										'reads2': next(f.get('accession') for f in readpair if f.get('paired_end') == '2')}
+			workflows.extend(build_workflow(experiment, biorep_n, input_shield_stage_input))
 	else:
 		logging.error('%s: List of files to map appears to be mixed single-end and paired-end: %s' %(experiment.get('accession'), files))
 
+
+	if args.yes:
+		for wf in workflows:
+			wf.run()
 
 def main():
 	global args
