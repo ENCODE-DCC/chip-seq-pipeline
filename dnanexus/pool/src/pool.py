@@ -50,22 +50,20 @@ def run_pipe(steps, outfile=None):
     return out,err
 
 @dxpy.entry_point('main')
-def main(input1, input2):
+def main(inputs):
 
     # The following line(s) initialize your data object inputs on the platform
     # into dxpy.DXDataObject instances that you can start using immediately.
 
-    input1_file = dxpy.DXFile(input1)
-    input2_file = dxpy.DXFile(input2)
+    input_filenames = []
+    for input_file in inputs:
+        dxf = dxpy.DXFile(input_file)
+        input_filenames.extend(dxf.name)
+        dxpy.download_dxfile(dxf.get_id(), dxf.name)
 
-    input1_filename = input1_file.name
-    dxpy.download_dxfile(input1_file.get_id(), input1_filename)
-    input2_filename = input2_file.name
-    dxpy.download_dxfile(input2_file.get_id(), input2_filename)
-
-    pooled_filename = '_'.join([input1_filename, input2_filename, 'pooled.gz'])
+    pooled_filename = 'pooled.gz'
     out,err = run_pipe([
-        'gzip -dc %s %s' %(input1_filename, input2_filename),
+        'gzip -dc %s' %(' '.join([f.keys()[0] for f in input_files])) #list of kv pairs with key=filename
         'gzip -c'],
         outfile=pooled_filename)
 

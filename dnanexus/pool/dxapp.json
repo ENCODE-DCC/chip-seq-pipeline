@@ -9,15 +9,9 @@
   ],
   "inputSpec": [
     {
-      "name": "input1",
-      "label": "First input file to concatenate.",
-      "class": "file",
-      "optional": false
-    },
-    {
-      "name": "input2",
-      "label": "Second input file to concatenate.",
-      "class": "file",
+      "name": "inputs",
+      "label": "List of files to concatenate.",
+      "class": "array:file",
       "optional": false
     }
   ],
