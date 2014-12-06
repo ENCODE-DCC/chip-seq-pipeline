@@ -11,7 +11,7 @@
     {
       "name": "reads1",
       "label": "reads1",
-      "class": "string",
+      "class": "array:string",
       "optional": false
     },
     {

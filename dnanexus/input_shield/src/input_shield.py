@@ -232,12 +232,15 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
     #for each input fastq decide if it's specified as an ENCODE file accession number (ENCFF*)
 
 
-    reads1_string = reads1
-    reads2_string = reads2
-    reference_tar_string = reference_tar
-
-    reads1 = resolve_file(reads1_string, key)
-    reads2 = resolve_file(reads2_string, key)
+    reads1_files = [resolve_file(read, key) for read in reads1]
+    if len(reads1_files) > 1:
+        pool_applet = dxpy.find_one_data_object(
+            classname='applet', name='pool', zero_ok=False, more_ok=False, return_handler=True)
+        pool_subjob = pool_applet.run({"inputs": reads1_files)
+        reads1_file = dxpy.upload_local_file(pool_subjob.get_output_ref("pooled"))
+    else:
+        reads1_file = reads1_files[0]
+    reads2_file = resolve_file(reads2, key)
     reference_tar = resolve_file(reference_tar, key)
 
     #reads1 = dxpy.upload_local_file("reads1")
@@ -248,14 +251,14 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
     logger.info('Resolved reads2 to %s', reads2.get_id())
     logger.info('Resolved reference_tar to %s', reference_tar.get_id())
 
-    output = {}
-    output["reads1"] = dxpy.dxlink(reads1)
-    output["reads2"] = dxpy.dxlink(reads2)
-    output["reference_tar"] = dxpy.dxlink(reference_tar)
-    output["bwa_aln_params"] = bwa_aln_params
-    output["bwa_version"] = bwa_version
-    output["samtools_version"] = samtools_version
-
+    output = {
+        "reads1": dxpy.dxlink(reads1),
+        "reads2": dxpy.dxlink(reads2),
+        "reference_tar": dxpy.dxlink(reference_tar),
+        "bwa_aln_params": bwa_aln_params,
+        "bwa_version": bwa_version,
+        "samtools_version": samtools_version
+    }
     return output
 
 dxpy.run()
