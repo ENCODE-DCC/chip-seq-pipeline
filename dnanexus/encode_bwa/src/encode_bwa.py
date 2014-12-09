@@ -209,7 +209,7 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
     return process_output
 
 @dxpy.entry_point("main")
-def main(reads1, reference_tar, bwa_aln_params, bwa_version, samtools_version, reads2=None, input_JSON=None, debug=False):
+def main(reads1=None, reference_tar=None, bwa_aln_params=None, bwa_version=None, samtools_version=None, reads2=None, input_JSON=None, debug=False):
 
     # Main entry-point.  Parameter defaults assumed to come from dxapp.json.
     # reads1, reference_tar, reads2 are links to DNAnexus files or None
