@@ -58,12 +58,12 @@ def main(inputs):
     input_filenames = []
     for input_file in inputs:
         dxf = dxpy.DXFile(input_file)
-        input_filenames.extend(dxf.name)
+        input_filenames.append(dxf.name)
         dxpy.download_dxfile(dxf.get_id(), dxf.name)
 
     pooled_filename = 'pooled.gz'
     out,err = run_pipe([
-        'gzip -dc %s' %(' '.join([f.keys()[0] for f in input_files])), #list of kv pairs with key=filename
+        'gzip -dc %s' %(' '.join([f for f in input_filenames])),
         'gzip -c'],
         outfile=pooled_filename)
 
