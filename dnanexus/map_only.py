@@ -20,7 +20,6 @@ XY_REFERENCE = 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'
 KEYFILE = os.path.expanduser("~/keypairs.json")
 DEFAULT_SERVER = 'https://www.encodeproject.org'
 DNANEXUS_ENCODE_SNAPSHOT = 'ENCODE-SDSC-snapshot-20140505'
-SNAPSHOT_PROJECT_HANDLER = None
 
 APPLETS = {}
 
@@ -80,9 +79,6 @@ def encoded_get(url, keypair=None):
     else:
         response = requests.get(url, headers=HEADERS)
     return response.json()
-
-def blank_workflow(args):
-	return
 
 def resolve_project(identifier, privs='r'):
 	project = dxpy.find_one_project(name=identifier, level='VIEW', name_mode='exact', return_handler=True, zero_ok=True)
@@ -159,7 +155,7 @@ def choose_reference(experiment, biorep_n):
 		sex = replicate.get('library').get('biosample').get('sex')
 	except:
 		sex = 'male'
-		logger.warning('%s:rep%d Cannot determine sex.  Using XY.' %(experiment.get('accession'), biorep_n))
+		logging.warning('%s:rep%d Cannot determine sex.  Using XY.' %(experiment.get('accession'), biorep_n))
 
 	if sex == 'female':
 		return XX_REFERENCE
@@ -179,7 +175,6 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input):
 
 	mapping_output_folder = resolve_folder(output_project, args.outf + '/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
 
-
 	workflow = dxpy.new_dxworkflow(
 		title='Map %s rep%d' %(experiment.get('accession'), biorep_n),
 		name='Map %s rep%d' %(experiment.get('accession'), biorep_n),
@@ -194,7 +189,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input):
 		stage_input=input_shield_stage_input,
 		instance_type=args.instance_type
 	)
-
+	
 	mapping_stage_id = workflow.add_stage(
 		mapping_applet,
 		name='Map %s rep%d' %(experiment.get('accession'), biorep_n),
@@ -202,10 +197,10 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input):
 		stage_input={'input_JSON': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'output_JSON'})},
 		instance_type=args.instance_type
 	)
-
+	
 	return workflow
 
-def map_only(experiment, biorep_n, files):
+def map_only(experiment, biorep_n, files, key):
 
 	if not files:
 		return
@@ -214,25 +209,29 @@ def map_only(experiment, biorep_n, files):
 	workflows = []
 	input_shield_stage_input = {}
 
-	input_shield_stage_input.update({'reference_tar' : choose_reference(experiment, biorep_n)})
+	input_shield_stage_input.update({
+		'reference_tar' : choose_reference(experiment, biorep_n),
+		'debug': args.debug,
+		'key': key
+	})
 
 	if all(isinstance(f, dict) for f in files): #single end
 		input_shield_stage_input.update({'reads1': [f.get('accession') for f in files]})
 		workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input))
-	elif all(isinstance(f, tuple) for f in files):
+	elif all(isinstance(f, tuple) for f in files): #paired-end
 		for readpair in files:
 			input_shield_stage_input.update(
-				{'reads1': next(f.get('accession') for f in readpair if f.get('paired_end') == '1'),
+				{'reads1': [next(f.get('accession') for f in readpair if f.get('paired_end') == '1')],
 				 'reads2': next(f.get('accession') for f in readpair if f.get('paired_end') == '2')})
 			workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input))
 	else:
 		logging.error('%s: List of files to map appears to be mixed single-end and paired-end: %s' %(experiment.get('accession'), files))
 
-
+	jobs = []
 	if args.yes:
 		for wf in workflows:
-			#wf.run()
-			pass
+			jobs.append(wf.run({}))
+	return jobs
 
 def main():
 	global args
@@ -272,18 +271,21 @@ def main():
 							logging.warning('%s:%s could not find mate' %(experiment.get('accession'), file_object.get('accession')))
 							mate = {}
 						paired_files.append((file_object,mate))
+				if biorep_files:
+					logging.warning('%s: leftover file(s) %s' %(experiment.get('accession'), biorep_files))
+				pe_jobs = map_only(experiment, biorep_n, paired_files, args.key)
+				se_jobs = map_only(experiment, biorep_n, unpaired_files, args.key)
 				if paired_files:
 					outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))
+					outstrings.append('paired jobs:%s' %([j.get_id() for j in pe_jobs]))
 				else:
 					outstrings.append('paired:%s' %(None))
 				if unpaired_files:
 					outstrings.append('unpaired:%s' %([f.get('accession') for f in unpaired_files]))
+					outstrings.append('unpaired jobs:%s' %([j.get_id() for j in se_jobs]))
 				else:
 					outstrings.append('unpaired:%s' %(None))
-				if biorep_files:
-					logging.warning('%s: leftover file(s) %s' %(experiment.get('accession'), biorep_files))
-				map_only(experiment, biorep_n, paired_files)
-				map_only(experiment, biorep_n, unpaired_files)
+
 			print '\t'.join(outstrings)
 		else:
 			logging.warning('%s: No files to map' %experiment.get('accession'))
