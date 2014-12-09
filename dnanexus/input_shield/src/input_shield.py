@@ -163,12 +163,13 @@ def resolve_accession(accession, key):
 
     # we're here because we couldn't find the cache or couldn't find the file in the cache, so look in AWS
     
-    file_handler = s3cp(accession, key)
-    if not file_handler:
+    dx_file = s3cp(accession, key) #this returns a link to the file in the applet's project context
+
+    if not dx_file:
         logger.warning('Cannot find %s.  Giving up.' %(accession))
         return None
     else:
-        return file_handler
+        return dx_file
 
 def resolve_file(identifier, key):
     logger.debug("resolve_file: %s" %(identifier))
@@ -236,32 +237,37 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
     if len(reads1_files) > 1:
         pool_applet = dxpy.find_one_data_object(
             classname='applet', name='pool', zero_ok=False, more_ok=False, return_handler=True)
-        pool_subjob = pool_applet.run({"inputs": reads1_files})
-        reads1_file = dxpy.upload_local_file(pool_subjob.get_output_ref("pooled"))
+        logger.debug('reads1_files:%s' %(reads1_files))
+        logger.debug('reads1_files ids:%s' %([dxf.get_id() for dxf in reads1_files]))
+        logger.debug('reads1_files dxlinks:%s' %([dxpy.dxlink(dxf) for dxf in reads1_files]))
+        pool_subjob = pool_applet.run({"inputs": [dxpy.dxlink(dxf) for dxf in reads1_files]})
+        reads1_file = pool_subjob.get_output_ref("pooled")
     else:
         reads1_file = reads1_files[0]
     reads2_file = resolve_file(reads2, key)
     reference_tar_file = resolve_file(reference_tar, key)
 
-    logger.info('Resolved reads1 to %s', reads1_file.get_id())
+    logger.info('Resolved reads1 to %s', reads1_file)
     if reads2:
-        logger.info('Resolved reads2 to %s', reads2_file.get_id())
-    logger.info('Resolved reference_tar to %s', reference_tar_file.get_id())
+        logger.info('Resolved reads2 to %s', reads2_file)
+    logger.info('Resolved reference_tar to %s', reference_tar_file)
 
-    output = {
-        "reads1": dxpy.dxlink(reads1_file),
-        "reference_tar": dxpy.dxlink(reference_tar_file),
+    output = {}
+    output.update({'reads1': reads1_file})
+    if reads2:
+        output.update({"reads2": reads2_file})
+    output_json = {
+        "reads1": reads1_file,
+        "reference_tar": reference_tar_file,
         "bwa_aln_params": bwa_aln_params,
         "bwa_version": bwa_version,
         "samtools_version": samtools_version
     }
-    if reads2:
-        output.update({"reads2": dxpy.dxlink(reads2_file)})
-
+    output.update({'output_JSON': output_json})
     #logger.info('Exiting with output_JSON: %s' %(json.dumps(output)))
     #return {'output_JSON': json.dumps(output)}
 
-    logger.info('Exiting with output_JSON: %s' %(output))
-    return {'output_JSON': output}
+    logger.info('Exiting with output: %s' %(output))
+    return output
 
 dxpy.run()

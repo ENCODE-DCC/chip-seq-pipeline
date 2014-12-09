@@ -69,6 +69,18 @@
       "name": "output_JSON",
       "label": "Output for mapper as JSON",
       "class": "hash"
+    },
+    {
+      "name": "reads1",
+      "label": "reads1",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "reads2",
+      "label": "reads2",
+      "class": "file",
+      "optional": true
     }
   ],
   "runSpec": {
@@ -80,9 +92,9 @@
 
   },
   "access": {
-    "network": [
-      "*"
-    ]
+    "network": ["*"],
+    "project": "UPLOAD",
+    "allProjects": "UPLOAD"
   },
   "authorizedUsers": []
 }
