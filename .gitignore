@@ -15,3 +15,7 @@ SCG3/spp.sh
 *.bb
 
 dnanexus/encsr
+
+*.input
+
+*.output
