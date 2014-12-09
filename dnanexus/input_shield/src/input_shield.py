@@ -263,6 +263,8 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
         "bwa_version": bwa_version,
         "samtools_version": samtools_version
     }
+    if reads2:
+        output_json.update({'reads2': reads2_file})
     output.update({'output_JSON': output_json})
     #logger.info('Exiting with output_JSON: %s' %(json.dumps(output)))
     #return {'output_JSON': json.dumps(output)}
