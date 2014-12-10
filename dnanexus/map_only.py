@@ -135,12 +135,11 @@ def files_to_map(exp_obj):
 		files = []
 		for file_obj in exp_obj.get('files'):
 			if file_obj.get('output_type') == 'reads' and \
-			   file_obj.get('file_format') == 'fastq' and \
-			   file_obj.get('submitted_file_name') not in filenames_in(files):
-			   files.extend([file_obj])
+				file_obj.get('file_format') == 'fastq' and \
+				file_obj.get('submitted_file_name') not in filenames_in(files):
+			  	files.extend([file_obj])
 			elif file_obj.get('submitted_file_name') in filenames_in(files):
 				logging.warning('%s:%s Duplicate filename, ignoring.' %(exp_obj.get('accession'),file_obj.get('accession')))
-				return []
 		return files
 
 def replicates_to_map(files):
@@ -173,7 +172,8 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input):
 	input_shield_applet = find_applet_by_name(INPUT_SHIELD_APPLET_NAME, applet_project.get_id())
 	logging.debug('Found applet %s' %(input_shield_applet.name))
 
-	mapping_output_folder = resolve_folder(output_project, args.outf + '/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
+	fastq_output_folder = resolve_folder(output_project, args.outf + '/fastqs/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
+	mapping_output_folder = resolve_folder(output_project, args.outf + '/bams/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
 
 	workflow = dxpy.new_dxworkflow(
 		title='Map %s rep%d' %(experiment.get('accession'), biorep_n),
@@ -185,7 +185,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input):
 	input_shield_stage_id = workflow.add_stage(
 		input_shield_applet,
 		name='Gather inputs %s rep%d' %(experiment.get('accession'), biorep_n),
-		folder=mapping_output_folder,
+		folder=fastq_output_folder,
 		stage_input=input_shield_stage_input,
 		instance_type=args.instance_type
 	)
@@ -197,7 +197,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input):
 		stage_input={'input_JSON': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'output_JSON'})},
 		instance_type=args.instance_type
 	)
-	
+
 	return workflow
 
 def map_only(experiment, biorep_n, files, key):
