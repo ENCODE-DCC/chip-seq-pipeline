@@ -12,6 +12,7 @@
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
 import os, subprocess, shlex, time, re, gzip
+from os.path import splitext
 from multiprocessing import Pool, cpu_count
 from subprocess import Popen, PIPE #debug only this should only need to be imported into run_pipe
 import dxpy
@@ -61,9 +62,10 @@ def main(inputs):
         input_filenames.append(dxf.name)
         dxpy.download_dxfile(dxf.get_id(), dxf.name)
 
-    pooled_filename = 'pooled.gz'
+    extension = splitext(splitext(input_filenames[-1])[0])[1] #uses last extension - presumably they are all the same
+    pooled_filename = '-'.join([splitext(splitext(fn)[0])[0] for fn in input_filenames]) + "_pooled%s.gz" %(extension)
     out,err = run_pipe([
-        'gzip -dc %s' %(' '.join([f for f in input_filenames])),
+        'gzip -dc %s' %(' '.join(input_filenames)),
         'gzip -c'],
         outfile=pooled_filename)
 
