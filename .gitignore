@@ -19,3 +19,5 @@ dnanexus/encsr
 *.input
 
 *.output
+
+dnanexus/accessionator/resources/keypairs.json
