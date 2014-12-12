@@ -39,6 +39,7 @@ def get_args():
 	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default",
 		default='default')
 	parser.add_argument('--yes',   help="Run the workflows created", 			default=False, action='store_true')
+	parser.add_argument('--accession_outputs',   help="Upload results to ENCODEd", default=False, action='store_true')
 
 	args = parser.parse_args()
 
@@ -161,7 +162,7 @@ def choose_reference(experiment, biorep_n):
 	else:
 		return XY_REFERENCE
 
-def build_workflow(experiment, biorep_n, input_shield_stage_input):
+def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
 	output_project = resolve_project(args.outp, 'w')
 	logging.debug('Found output project %s' %(output_project.name))
@@ -197,7 +198,30 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input):
 		stage_input={'input_JSON': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'output_JSON'})},
 		instance_type=args.instance_type
 	)
-
+	''' This should all be done in the shield's postprocess entrypoint
+	if args.accession_outputs:
+		derived_from = input_shield_stage_input.get('reads1')
+		if reads2:
+			derived_from.append(reads2)
+		files_json = {dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'mapped_reads'}) : {
+			'notes': 'Biorep%d | Mapped to %s' %(biorep_n, input_shield_stage_input.get('reference_tar')),
+			'lab': 'j-michael-cherry',
+			'award': 'U41HG006992',
+			'submitted_by': 'jseth@stanford.edu',
+			'file_format': 'bam',
+			'output_type': 'alignments',
+			'derived_from': derived_from,
+			'dataset': experiment.get('accession')}
+		}
+		output_shield_stage_id = workflow.add_stage(
+			output_shield_applet,
+			name='Accession outputs %s rep%d' %(experiment.get('accession'), biorep_n),
+			folder=mapping_output_folder,
+			stage_input={'files': [dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'mapped_reads'})],
+						 'files_json': files_json,
+						 'key': input_shield_stage_input.get('key')}
+		)
+	'''
 	return workflow
 
 def map_only(experiment, biorep_n, files, key):
@@ -217,13 +241,13 @@ def map_only(experiment, biorep_n, files, key):
 
 	if all(isinstance(f, dict) for f in files): #single end
 		input_shield_stage_input.update({'reads1': [f.get('accession') for f in files]})
-		workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input))
+		workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key))
 	elif all(isinstance(f, tuple) for f in files): #paired-end
 		for readpair in files:
 			input_shield_stage_input.update(
 				{'reads1': [next(f.get('accession') for f in readpair if f.get('paired_end') == '1')],
 				 'reads2': next(f.get('accession') for f in readpair if f.get('paired_end') == '2')})
-			workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input))
+			workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key))
 	else:
 		logging.error('%s: List of files to map appears to be mixed single-end and paired-end: %s' %(experiment.get('accession'), files))
 
