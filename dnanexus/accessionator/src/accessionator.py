@@ -24,13 +24,11 @@ S3_SERVER='s3://encode-files/'
 logger = logging.getLogger(__name__)
 
 FILE_OBJ_TEMPLATE = {
-        #'notes': 'Biorep%d | Mapped to %s' %(biorep_n, input_shield_stage_input.get('reference_tar')),
         'lab': 'j-michael-cherry',
         'award': 'U41HG006992',
         'file_format': 'bam',
         'output_type': 'alignments',
-        #'derived_from': derived_from,
-        #'dataset': experiment.get('accession')}
+        'assembly': 'GRCh38'
 }
 
 
@@ -70,175 +68,26 @@ def encoded_post(url, AUTHID, AUTHPW, payload):
     response = requests.post(url, auth=(AUTHID,AUTHPW), headers=HEADERS, data=json.dumps(payload))
     return response
 
-def s3cp(accession, key=None):
+def flagstat_parse(flagstat_file):
+    qc_dict = { #values are regular expressions, will be replaced with scores [hiq, lowq]
+        'in_total': 'in total',
+        'mapped': 'mapped',
+        'paired_in_sequencing': 'paired in sequencing',
+        'read1': 'read1',
+        'read2': 'read2',
+        'properly_paired': 'properly paired',
+        'with_self_mate_mapped': 'with itself and mate mapped',
+        'singletons': 'singletons',
+        'mate_mapped_different_chr': 'with mate mapped to a different chr$', #i.e. at the end of the line
+        'mate_mapped_different_chr_hiQ': 'with mate mapped to a different chr \(mapQ>=5\)' #RE so must escape
+    }
+    flagstat_lines = flagstat_file.read().splitlines()
+    for (qc_key, qc_pattern) in qc_dict.items():
+        qc_metrics = next(re.split(qc_pattern, line) for line in flagstat_lines if re.search(qc_pattern, line))
+        (hiq, lowq) = qc_metrics[0].split(' + ')
+        qc_dict[qc_key] = [int(hiq.rstrip()), int(lowq.rstrip())]
 
-    (AUTHID,AUTHPW,SERVER) = processkey(key)
-
-    url = SERVER + '/search/?type=file&accession=%s&format=json&frame=embedded&limit=all' %(accession)
-    #get the file object
-    response = encoded_get(url, AUTHID, AUTHPW)
-    logger.debug(response)
-
-    #select your file
-    f_obj = response.json()['@graph'][0]
-    logger.debug(f_obj)
-
-    #make the URL that will get redirected - get it from the file object's href property
-    encode_url = urlparse.urljoin(SERVER,f_obj.get('href'))
-    logger.debug("URL: %s" %(encode_url))
-    logger.debug("%s:%s" %(AUTHID, AUTHPW))
-    #stream=True avoids actually downloading the file, but it evaluates the redirection
-    r = requests.get(encode_url, auth=(AUTHID,AUTHPW), headers={'content-type': 'application/json'}, allow_redirects=True, stream=True)
-    try:
-        r.raise_for_status
-    except:
-        logger.error('%s href does not resolve' %(f_obj.get('accession')))
-    logger.debug("Response: %s", (r))
-
-    #this is the actual S3 https URL after redirection
-    s3_url = r.url
-    logger.debug(s3_url)
-
-    #release the connection
-    r.close()
-
-    #split up the url into components
-    o = urlparse.urlparse(s3_url)
-
-    #pull out the filename
-    filename = os.path.basename(o.path)
-
-    #hack together the s3 cp url (with the s3 method instead of https)
-    bucket_url = S3_SERVER.rstrip('/') + o.path
-
-    #cp the file from the bucket
-    subprocess.check_call(shlex.split('aws s3 cp %s . --quiet' %(bucket_url)), stderr=subprocess.STDOUT)
-    subprocess.check_call(shlex.split('ls -l %s' %(filename)))
-
-    dx_file = dxpy.upload_local_file(filename)
-
-    return dx_file
-
-def resolve_project(identifier, privs='r'):
-    logger.debug("In resolve_project with identifier %s" %(identifier))
-    project = dxpy.find_one_project(name=identifier, level='VIEW', name_mode='exact', return_handler=True, zero_ok=True)
-    if project == None:
-        try:
-            project = dxpy.get_handler(identifier)
-        except:
-            logger.error('Could not find a unique project with name or id %s' %(identifier))
-            raise ValueError(identifier)
-    logger.debug('Project %s access level is %s' %(project.name, project.describe()['level']))
-    if privs == 'w' and project.describe()['level'] == 'VIEW':
-        logger.error('Output project %s is read-only' %(identifier))
-        raise ValueError(identifier)
-    return project
-
-def resolve_folder(project, identifier):
-    if not identifier.startswith('/'):
-        identifier = '/' + identifier
-    try:
-        project_id = project.list_folder(identifier)
-    except:
-        try:
-            project_id = project.new_folder(identifier, parents=True)
-        except:
-            logger.error("Cannot create folder %s in project %s" %(identifier, project.name))
-            raise ValueError('%s:%s' %(project.name, identifier))
-        else:
-            logger.info("New folder %s created in project %s" %(identifier, project.name))
-    return identifier
-
-
-def resolve_accession(accession, key):
-    logger.debug("Looking for accession %s" %(accession))
-    
-    if not re.match(r'''^ENCFF\d{3}[A-Z]{3}''', accession):
-        logger.warning("%s is not a valid accession format" %(accession))
-        return None
-    
-    DNANEXUS_ENCODE_SNAPSHOT = 'ENCODE-SDSC-snapshot-20140505'
-
-    logger.debug('Looking for snapshot project %s' %(DNANEXUS_ENCODE_SNAPSHOT))
-    try:
-        project_handler = resolve_project(DNANEXUS_ENCODE_SNAPSHOT)
-        snapshot_project = project_handler
-    except:
-        logger.error("Cannot find snapshot project %s" %(DNANEXUS_ENCODE_SNAPSHOT))
-        snapshot_project = None
-
-    logger.debug('Snapshot project: %s' %(snapshot_project))
-
-    if snapshot_project:
-        try:
-            accession_search = accession + '*'
-            logger.debug('Looking recursively for %s in %s' %(accession_search, snapshot_project.name))
-            file_handler = dxpy.find_one_data_object(
-                name=accession_search, name_mode='glob', more_ok=False, classname='file', recurse=True, return_handler=True,
-                folder='/', project=snapshot_project.get_id())
-            logger.debug('Got file handler for %s' %(file_handler.name))
-            return file_handler
-        except:
-            logger.debug("Cannot find accession %s in project %s" %(accession, snapshot_project))
-
-    # we're here because we couldn't find the cache or couldn't find the file in the cache, so look in AWS
-    
-    dx_file = s3cp(accession, key) #this returns a link to the file in the applet's project context
-
-    if not dx_file:
-        logger.warning('Cannot find %s.  Giving up.' %(accession))
-        return None
-    else:
-        return dx_file
-
-def resolve_file(identifier, key):
-    logger.debug("resolve_file: %s" %(identifier))
-
-    if not identifier:
-        return None
-
-    m = re.match(r'''^([\w\-\ \.]+):([\w\-\ /\.]+)''', identifier)
-    if m: #fully specified with project:path
-        project_identifier = m.group(1)
-        file_identifier = m.group(2)
-    else:
-        logger.debug("Defaulting to the current project")
-        project_identifier = dxpy.WORKSPACE_ID
-        file_identifier = identifier    
-
-    project = resolve_project(project_identifier)
-    logger.debug("Got project %s" %(project.name))
-    logger.debug("Now looking for file %s" %(file_identifier))
-
-    m = re.match(r'''(^[\w\-\ /\.]+)/([\w\-\ \.]+)''', file_identifier)
-    if m:
-        folder_name = m.group(1)
-        if not folder_name.startswith('/'):
-            folder_name = '/' + folder_name
-        file_name = m.group(2)
-    else:
-        folder_name = '/'
-        file_name = file_identifier
-
-    logger.debug("Looking for file %s in folder %s" %(file_name, folder_name))
-
-    try:
-        file_handler = dxpy.find_one_data_object(name=file_name, folder=folder_name, project=project.get_id(),
-            more_ok=False, zero_ok=False, return_handler=True)
-    except:
-        logger.debug('%s not found in project %s folder %s' %(file_name, project.get_id(), folder_name))
-        try: #maybe it's just  filename in the default workspace
-            file_handler = dxpy.DXFile(dxid=identifier, mode='r')
-        except:
-            logger.debug('%s not found as a dxid' %(identifier))
-            file_handler = resolve_accession(identifier, key)
-
-    if not file_handler:
-        logger.warning("Failed to resolve file identifier %s" %(identifier))
-        return None
-    else:
-        logger.debug("Resolved file identifier %s to %s" %(identifier, file_handler.name))
-        return file_handler
+    return qc_dict
 
 
 @dxpy.entry_point('main')
@@ -282,19 +131,31 @@ def main(folder_name, key_name, debug):
 
     file_mapping = []
     for bam in bams:
+        bamqc = dxpy.find_one_data_object(
+            classname="file",
+            name=bam.name + '.flagstat.qc',
+            project=dxpy.PROJECT_CONTEXT_ID,
+            folder=bam.folder,
+            return_handler=True
+        )
         bam_description = bam.describe()
         experiment_accession = re.match('\S*(ENC\S{8})',bam.folder).group(1)
-        dxpy.download_dxfile(bam.get_id(),bam.name)
-        md5_output = subprocess.check_output(' '.join([md5_command, bam.name]), shell=True)
-        calculated_md5 = md5_output.partition(' ')[0].rstrip()
+        #dxpy.download_dxfile(bam.get_id(),bam.name)
+        #md5_output = subprocess.check_output(' '.join([md5_command, bam.name]), shell=True)
+        #calculated_md5 = md5_output.partition(' ')[0].rstrip()
         encode_object = FILE_OBJ_TEMPLATE
+        notes = {
+            'qc': flagstat_parse(bamqc),
+            'dx-id': bam_description.get('id'),
+            'dx-createdBy': bam_description.get('createdBy')
+        }
         encode_object.update({
             'dataset': experiment_accession,
-            'notes': '{"dx-id":"%s", "dx-createdBy":%s}' %(bam_description.get('id'), bam_description.get('createdBy')),
+            'notes': json.dumps(notes),
             'submitted_file_name': project_name + ':' + '/'.join([bam.folder,bam.name]),
             'derived_from': re.findall('(ENCFF\S{6})',bam.name),
             'file_size': bam_description.get('size'),
-            'md5sum': calculated_md5
+            #'md5sum': calculated_md5
             })
         print "Experiment accession: %s" %(experiment_accession)
         print "File metadata: %s" %(encode_object)
@@ -322,7 +183,7 @@ def main(folder_name, key_name, debug):
             print("Uploading file.")
             start = time.time()
             try:
-                subprocess.check_call(['aws', 's3', 'cp', bam.name, creds['upload_url']], env=env)
+                subprocess.check_call(['aws', 's3', 'cp', bam.name, creds['upload_url'], '--quiet'], env=env)
             except subprocess.CalledProcessError as e:
                 # The aws command returns a non-zero exit code on error.
                 print("Upload failed with exit code %d" % e.returncode)
@@ -335,7 +196,13 @@ def main(folder_name, key_name, debug):
         else:
             upload_returncode = -1
 
-        out_string = ','.join([experiment_accession, encode_object.get('submitted_file_name'), item.get('accession') or '', str(upload_returncode)])
+        out_string = '\t'.join([
+            experiment_accession,
+            encode_object.get('submitted_file_name'),
+            item.get('accession') or '',
+            str(upload_returncode),
+            encode_object.get('notes')
+        ])
         print out_string
         file_mapping.append(out_string)
 
