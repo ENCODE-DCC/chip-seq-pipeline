@@ -69,6 +69,9 @@ def encoded_post(url, AUTHID, AUTHPW, payload):
     return response
 
 def flagstat_parse(flagstat_file):
+    if not flagstat_file:
+        return None
+
     qc_dict = { #values are regular expressions, will be replaced with scores [hiq, lowq]
         'in_total': 'in total',
         'mapped': 'mapped',
@@ -131,19 +134,50 @@ def main(folder_name, key_name, debug):
 
     file_mapping = []
     for bam in bams:
-        bamqc = dxpy.find_one_data_object(
-            classname="file",
-            name=bam.name + '.flagstat.qc',
-            project=dxpy.PROJECT_CONTEXT_ID,
-            folder=bam.folder,
-            return_handler=True
-        )
         bam_description = bam.describe()
+        submitted_file_name = project_name + ':' + '/'.join([bam.folder,bam.name])
+        submitted_file_size = bam_description.get('size')
+        url = urlparse.urljoin(server, 'search/?type=file&submitted_file_name=%s&format=json&frame=object' %(submitted_file_name))
+        r = encoded_get(url,authid,authpw)
+        try:
+            r.raise_for_status()
+            if r.json()['@graph']:
+                duplicate_item = r.json()['@graph'][0]
+                print "Found potential duplicate: %s" %(duplicate_item.get('accession'))
+                if submitted_file_size ==  duplicate_item.get('file_size'):
+                    print "%s %s: File sizes match, assuming duplicate." %(str(submitted_file_size), duplicate_item.get('file_size'))
+                else:
+                    print "%s %s: File sizes differ, assuming new file." %(str(submitted_file_size), duplicate_item.get('file_size'))
+                    duplicate_item = {}
+            else:
+                print "No duplicate ... proceeding"
+                duplicate_item = {}
+        except:
+            print('Duplicate accession check failed: %s %s' % (r.status_code, r.reason))
+            print(r.text)
+            duplicate_item = {}
+
+        if duplicate_item:
+            print "Duplicate detected, skipping"
+            continue
+
         experiment_accession = re.match('\S*(ENC\S{8})',bam.folder).group(1)
-        #dxpy.download_dxfile(bam.get_id(),bam.name)
-        #md5_output = subprocess.check_output(' '.join([md5_command, bam.name]), shell=True)
-        #calculated_md5 = md5_output.partition(' ')[0].rstrip()
+        print "Downloading %s" %(bam.name)
+        dxpy.download_dxfile(bam.get_id(),bam.name)
+        md5_output = subprocess.check_output(' '.join([md5_command, bam.name]), shell=True)
+        calculated_md5 = md5_output.partition(' ')[0].rstrip()
         encode_object = FILE_OBJ_TEMPLATE
+        try:
+            bamqc = dxpy.find_one_data_object(
+                classname="file",
+                name=bam.name + '.flagstat.qc',
+                project=dxpy.PROJECT_CONTEXT_ID,
+                folder=bam.folder,
+                return_handler=True
+            )
+        except:
+            print "Flagstat file not found ... skipping QC"
+            bamqc = None
         notes = {
             'qc': flagstat_parse(bamqc),
             'dx-id': bam_description.get('id'),
@@ -152,10 +186,10 @@ def main(folder_name, key_name, debug):
         encode_object.update({
             'dataset': experiment_accession,
             'notes': json.dumps(notes),
-            'submitted_file_name': project_name + ':' + '/'.join([bam.folder,bam.name]),
+            'submitted_file_name': submitted_file_name,
             'derived_from': re.findall('(ENCFF\S{6})',bam.name),
-            'file_size': bam_description.get('size'),
-            #'md5sum': calculated_md5
+            'file_size': submitted_file_size,
+            'md5sum': calculated_md5
             })
         print "Experiment accession: %s" %(experiment_accession)
         print "File metadata: %s" %(encode_object)
