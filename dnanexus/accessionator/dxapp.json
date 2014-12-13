@@ -30,6 +30,7 @@
   "outputSpec": [
     {
       "name": "file_mapping",
+      "optional": true,
       "class": "array:string"
     },
     {
