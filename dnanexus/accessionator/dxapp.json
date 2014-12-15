@@ -11,8 +11,7 @@
     {
       "name": "folder_name",
       "class": "string",
-      "optional": true,
-      "default": "/"
+      "optional": false
     },
     {
       "name": "key_name",
