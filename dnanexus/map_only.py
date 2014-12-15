@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import pdb
 import os.path, sys, subprocess, logging, re, json, urlparse, requests
 import dxpy
 
@@ -74,7 +73,7 @@ def processkey(key):
 
 def encoded_get(url, keypair=None):
     HEADERS = {'content-type': 'application/json'}
-    url = urlparse.urljoin(url,'?format=json&frame=embedded')
+    url = urlparse.urljoin(url,'?format=json&frame=embedded&datastore=database')
     if keypair:
         response = requests.get(url, auth=keypair, headers=HEADERS)
     else:
@@ -137,10 +136,14 @@ def files_to_map(exp_obj):
 		for file_obj in exp_obj.get('files'):
 			if file_obj.get('output_type') == 'reads' and \
 				file_obj.get('file_format') == 'fastq' and \
+				file_obj.get('replicate') and \
 				file_obj.get('submitted_file_name') not in filenames_in(files):
 			  	files.extend([file_obj])
 			elif file_obj.get('submitted_file_name') in filenames_in(files):
 				logging.warning('%s:%s Duplicate filename, ignoring.' %(exp_obj.get('accession'),file_obj.get('accession')))
+			elif file_obj.get('output_type') == 'reads' and \
+				file_obj.get('file_format') == 'fastq' and not file_obj.get('replicate'):
+				logging.warning('%s: Fastq has no replicate' %(file_obj.get('accession')))
 		return files
 
 def replicates_to_map(files):
@@ -274,6 +277,7 @@ def main():
 		outstrings.append(str(len(files)))
 		outstrings.append(str([f.get('accession') for f in files]))
 		replicates = replicates_to_map(files)
+
 		if files:
 			for biorep_n in set([rep.get('biological_replicate_number') for rep in replicates]):
 				outstrings.append('rep%s' %(biorep_n))
@@ -312,7 +316,12 @@ def main():
 
 			print '\t'.join(outstrings)
 		else:
-			logging.warning('%s: No files to map' %experiment.get('accession'))
+			if not files:
+				logging.warning('%s: No files to map' %experiment.get('accession'))
+			if files and not replicates:
+				logging.warning('%s: Files but no replicates' %experiment.get('accession'))
+			if not (files or replicates):
+				logging.warning('%s: No files and no replicates' %experiment.get('accession'))
 
 if __name__ == '__main__':
 	main()
