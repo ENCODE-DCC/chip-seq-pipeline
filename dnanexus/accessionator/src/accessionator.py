@@ -19,6 +19,9 @@ try:
 except:
     DX_FS_ROOT = ""
 KEYFILE = DX_FS_ROOT + '/keypairs.json'
+
+GET_MAX_TRIES = 5
+GET_TRY_DELAY = 5
 DEFAULT_SERVER = 'https://www.encodeproject.org'
 S3_SERVER='s3://encode-files/'
 logger = logging.getLogger(__name__)
@@ -57,10 +60,28 @@ def processkey(key):
 
 def encoded_get(url, AUTHID=None, AUTHPW=None):
     HEADERS = {'content-type': 'application/json'}
-    if AUTHID and AUTHPW:
-        response = requests.get(url, auth=(AUTHID,AUTHPW), headers=HEADERS)
-    else:
-        response = requests.get(url, headers=HEADERS)
+    tries_left = GET_MAX_TRIES
+    while tries_left:
+        tries_left -= 1
+        if AUTHID and AUTHPW:
+            try:
+                response = requests.get(url, auth=(AUTHID,AUTHPW), headers=HEADERS)
+                response.raise_for_status()
+                break
+            except:
+                logger.warning("GET %s failed ... Retry in %d seconds" %(url, GET_TRY_DELAY))
+                time.sleep(GET_TRY_DELAY)
+                continue    
+        else:
+            try:
+                response = requests.get(url, headers=HEADERS)
+                response.raise_for_status()
+                break
+            except:
+                logger.warning("GET %s failed ... Retry in %d seconds" %(url, GET_TRY_DELAY))
+                time.sleep(GET_TRY_DELAY)
+                continue    
+    
     return response
 
 def encoded_post(url, AUTHID, AUTHPW, payload):
@@ -96,6 +117,7 @@ def flagstat_parse(flagstat_file):
 @dxpy.entry_point('main')
 def main(folder_name, key_name, debug):
 
+    
     if debug:
         logger.setLevel(logging.DEBUG)
     else:
@@ -108,7 +130,7 @@ def main(folder_name, key_name, debug):
         project = dxpy.DXProject(dxpy.PROJECT_CONTEXT_ID)
         project_name = project.describe().get('name')
     except:
-        print "Project not found"
+        logger.error("Failed to resolve proejct")
         project_name = ""
 
  
@@ -129,11 +151,20 @@ def main(folder_name, key_name, debug):
     elif not subprocess.call('which md5sum', shell=True):
         md5_command = 'md5sum'
     else:
-        print "Cannot find md5 or md5sum command"
+        logger.error("Cannot find md5 or md5sum command")
         md5_command = ''
 
     file_mapping = []
     for bam in bams:
+        already_accessioned = False
+        for tag in bam.tags:
+            m = re.search(r'(ENCFF\d{3}\D{3})|(TSTFF\D{6})', tag)
+            if m:
+                logger.info('%s appears to contain ENCODE accession number in tag %s ... skipping' %(bam.name,m.group(0)))
+                already_accessioned = True
+                break
+        if already_accessioned:
+            continue
         bam_description = bam.describe()
         submitted_file_name = project_name + ':' + '/'.join([bam.folder,bam.name])
         submitted_file_size = bam_description.get('size')
@@ -143,26 +174,26 @@ def main(folder_name, key_name, debug):
             r.raise_for_status()
             if r.json()['@graph']:
                 duplicate_item = r.json()['@graph'][0]
-                print "Found potential duplicate: %s" %(duplicate_item.get('accession'))
+                logger.info("Found potential duplicate: %s" %(duplicate_item.get('accession')))
                 if submitted_file_size ==  duplicate_item.get('file_size'):
-                    print "%s %s: File sizes match, assuming duplicate." %(str(submitted_file_size), duplicate_item.get('file_size'))
+                    logger.info("%s %s: File sizes match, assuming duplicate." %(str(submitted_file_size), duplicate_item.get('file_size')))
                 else:
-                    print "%s %s: File sizes differ, assuming new file." %(str(submitted_file_size), duplicate_item.get('file_size'))
+                    logger.info("%s %s: File sizes differ, assuming new file." %(str(submitted_file_size), duplicate_item.get('file_size')))
                     duplicate_item = {}
             else:
-                print "No duplicate ... proceeding"
+                logger.info("No duplicate ... proceeding")
                 duplicate_item = {}
         except:
-            print('Duplicate accession check failed: %s %s' % (r.status_code, r.reason))
-            print(r.text)
+            logger.warning('Duplicate accession check failed: %s %s' % (r.status_code, r.reason))
+            logger.debug(r.text)
             duplicate_item = {}
 
         if duplicate_item:
-            print "Duplicate detected, skipping"
+            logger.info("Duplicate detected, skipping")
             continue
 
         experiment_accession = re.match('\S*(ENC\S{8})',bam.folder).group(1)
-        print "Downloading %s" %(bam.name)
+        logger.info("Downloading %s" %(bam.name))
         dxpy.download_dxfile(bam.get_id(),bam.name)
         md5_output = subprocess.check_output(' '.join([md5_command, bam.name]), shell=True)
         calculated_md5 = md5_output.partition(' ')[0].rstrip()
@@ -176,7 +207,7 @@ def main(folder_name, key_name, debug):
                 return_handler=True
             )
         except:
-            print "Flagstat file not found ... skipping QC"
+            logger.warning("Flagstat file not found ... skipping QC")
             bamqc = None
         notes = {
             'qc': flagstat_parse(bamqc),
@@ -191,22 +222,33 @@ def main(folder_name, key_name, debug):
             'file_size': submitted_file_size,
             'md5sum': calculated_md5
             })
-        print "Experiment accession: %s" %(experiment_accession)
-        print "File metadata: %s" %(encode_object)
+        logger.info("Experiment accession: %s" %(experiment_accession))
+        logger.debug("File metadata: %s" %(encode_object))
 
         url = urlparse.urljoin(server,'files')
         r = encoded_post(url, authid, authpw, encode_object)
         try:
             r.raise_for_status()
-            item = r.json()['@graph'][0]
-            print "New accession: %s" %(item.get('accession'))
+            new_file_object = r.json()['@graph'][0]
+            logger.info("New accession: %s" %(new_file_object.get('accession')))
         except:
-            print('POST file object failed: %s %s' % (r.status_code, r.reason))
-            print(r.text)
-            item = {}
-
-        if item:
-            creds = item['upload_credentials']
+            logger.warning('POST file object failed: %s %s' % (r.status_code, r.reason))
+            logger.debug(r.text)
+            new_file_object = {}
+            if r.status_code == 409:
+                try: #cautiously add a tag with the existing accession number
+                    if calculated_md5 in r.json().get('detail'):
+                        url = urlparse.urljoin(server,'/search/?type=file&md5sum=%s' %(calculated_md5))
+                        r = encoded_get(url,authid,authpw)
+                        r.raise_for_status()
+                        accessioned_file = r.json()['@graph'][0]
+                        existing_accession = accessioned_file['accession']
+                        bam.add_tags([existing_accession])
+                        logger.info('Already accessioned.  Added %s to dxfile tags' %(existing_accession))
+                except:
+                    logger.info('Conflict does not appear to be md5 ... continuing')
+        if new_file_object:
+            creds = new_file_object['upload_credentials']
             env = os.environ.copy()
             env.update({
                 'AWS_ACCESS_KEY_ID': creds['access_key'],
@@ -214,26 +256,27 @@ def main(folder_name, key_name, debug):
                 'AWS_SECURITY_TOKEN': creds['session_token'],
             })
 
-            print("Uploading file.")
+            logger.info("Uploading file.")
             start = time.time()
             try:
                 subprocess.check_call(['aws', 's3', 'cp', bam.name, creds['upload_url'], '--quiet'], env=env)
             except subprocess.CalledProcessError as e:
                 # The aws command returns a non-zero exit code on error.
-                print("Upload failed with exit code %d" % e.returncode)
+                logger.error("Upload failed with exit code %d" % e.returncode)
                 upload_returncode = e.returncode
             else:
                 upload_returncode = 0
                 end = time.time()
                 duration = end - start
-                print("Uploaded in %.2f seconds" % duration)
+                logger.info("Uploaded in %.2f seconds" % duration)
+                bam.add_tags([new_file_object.get('accession')])
         else:
             upload_returncode = -1
 
         out_string = '\t'.join([
             experiment_accession,
             encode_object.get('submitted_file_name'),
-            item.get('accession') or '',
+            new_file_object.get('accession') or '',
             str(upload_returncode),
             encode_object.get('notes')
         ])
