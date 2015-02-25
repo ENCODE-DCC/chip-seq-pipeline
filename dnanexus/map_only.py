@@ -14,8 +14,12 @@ DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
 INPUT_SHIELD_APPLET_NAME = 'input_shield'
 MAPPING_APPLET_NAME = 'encode_bwa'
 POOL_APPLET_NAME = 'pool'
-XX_REFERENCE = 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'
-XY_REFERENCE = 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'
+REFERENCES = [
+	{'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
+	{'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
+	{'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
+	{'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'}
+	]
 KEYFILE = os.path.expanduser("~/keypairs.json")
 DEFAULT_SERVER = 'https://www.encodeproject.org'
 DNANEXUS_ENCODE_SNAPSHOT = 'ENCODE-SDSC-snapshot-20140505'
@@ -153,17 +157,34 @@ def replicates_to_map(files):
 		return [f.get('replicate') for f in files]
 
 def choose_reference(experiment, biorep_n):
+
 	try:
 		replicate = next(rep for rep in experiment.get('replicates') if rep.get('biological_replicate_number') == biorep_n)
-		sex = replicate.get('library').get('biosample').get('sex')
+		logging.debug('Replicate uuid %s' %(replicate.get('uuid')))
 	except:
-		sex = 'male'
-		logging.warning('%s:rep%d Cannot determine sex.  Using XY.' %(experiment.get('accession'), biorep_n))
+		logging.error('%s cannot resolve biological_replicate_number %s' %(experiment.get('accession'), biorep_n))
+		return None
 
-	if sex == 'female':
-		return XX_REFERENCE
-	else:
-		return XY_REFERENCE
+	try:
+		organism_name = replicate.get('library').get('biosample').get('organism').get('name')
+		logging.debug("Organism name %s" %(organism_name))
+	except:
+		logging.error('%s:rep%d Cannot determine organism.' %(experiment.get('accession'), biorep_n))
+		return None
+
+	try:
+		sex = replicate.get('library').get('biosample').get('sex')
+		if sex not in ['male', 'female']:
+			raise
+	except:
+		logging.warning('%s:rep%d Sex is %s.  Mapping to male reference.' %(experiment.get('accession'), biorep_n, sex))
+		sex = 'male'
+
+	logging.debug('Organism %s sex %s' %(organism_name, sex))
+
+	reference = next((ref.get('file') for ref in REFERENCES if ref.get('organism') == organism_name and ref.get('sex') == sex), None)
+	logging.debug('Found reference %s' %(reference))
+	return reference
 
 def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
@@ -230,14 +251,20 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 def map_only(experiment, biorep_n, files, key):
 
 	if not files:
+		logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
 		return
 	#look into the structure of files parameter to decide on pooling, paired end etc.
 
 	workflows = []
 	input_shield_stage_input = {}
 
+	reference_tar = choose_reference(experiment, biorep_n)
+	if not reference_tar:
+		logging.warning('%s:%s Cannot determine reference' %(experiment.get('accession'), biorep_n))
+		return
+
 	input_shield_stage_input.update({
-		'reference_tar' : choose_reference(experiment, biorep_n),
+		'reference_tar' : reference_tar,
 		'debug': args.debug,
 		'key': key
 	})
@@ -303,25 +330,25 @@ def main():
 					logging.warning('%s: leftover file(s) %s' %(experiment.get('accession'), biorep_files))
 				pe_jobs = map_only(experiment, biorep_n, paired_files, args.key)
 				se_jobs = map_only(experiment, biorep_n, unpaired_files, args.key)
-				if paired_files:
+				if paired_files and pe_jobs:
 					outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))
 					outstrings.append('paired jobs:%s' %([j.get_id() for j in pe_jobs]))
 				else:
 					outstrings.append('paired:%s' %(None))
-				if unpaired_files:
+				if unpaired_files and se_jobs:
 					outstrings.append('unpaired:%s' %([f.get('accession') for f in unpaired_files]))
 					outstrings.append('unpaired jobs:%s' %([j.get_id() for j in se_jobs]))
 				else:
 					outstrings.append('unpaired:%s' %(None))
 
 			print '\t'.join(outstrings)
-		else:
-			if not files:
-				logging.warning('%s: No files to map' %experiment.get('accession'))
-			if files and not replicates:
-				logging.warning('%s: Files but no replicates' %experiment.get('accession'))
-			if not (files or replicates):
+		else: # no files
+			if not replicates:
 				logging.warning('%s: No files and no replicates' %experiment.get('accession'))
+			else:
+				logging.warning('%s: No files to map' %experiment.get('accession'))
+		if files and not replicates:
+			logging.warning('%s: Files but no replicates' %experiment.get('accession'))
 
 if __name__ == '__main__':
 	main()
