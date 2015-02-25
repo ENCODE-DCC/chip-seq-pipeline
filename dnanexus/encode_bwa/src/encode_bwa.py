@@ -41,6 +41,10 @@ def run_pipe(steps, outfile=None):
     out,err = p.communicate()
     return out,err
 
+def resolve_reference():
+    # assume the reference file is the only .fa or .fna file
+    return next((f for f in os.listdir(".") if f.endswith('.fa') or f.endswith('.fna')), None)
+
 @dxpy.entry_point("postprocess")
 def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samtools_version):
 
@@ -84,14 +88,13 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
     print "reference_tar: %s" %(reference_tar_filename)
     dxpy.download_dxfile(reference_tar, reference_tar_filename)
     # extract the reference files from the tar
-    if reference_tar_filename.endswith('.gz'):
+    if reference_tar_filename.endswith('.gz') or reference_tar_filename.endswith('.tgz'):
         tar_command = 'tar -xzvf %s' %(reference_tar_filename)
     else:
         tar_command = 'tar -xvf %s' %(reference_tar_filename)
     print "Unpacking %s" %(reference_tar_filename)
     print subprocess.check_output(shlex.split(tar_command))
-    # assume the reference file is the only .fa file
-    reference_filename = subprocess.check_output('ls *.fna', shell=True).rstrip()
+    reference_filename = resolve_reference()
 
     paired_end = len(indexed_reads) == 2
 
@@ -178,14 +181,14 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
     reference_tar_filename = dxpy.describe(reference_tar)['name']
     reference_tar_file = dxpy.download_dxfile(reference_tar,reference_tar_filename)
     # extract the reference files from the tar
-    if reference_tar_filename.endswith('.gz'):
+    if reference_tar_filename.endswith('.gz') or reference_tar_filename.endswith('.tgz'):
         tar_command = 'tar -xzvf %s' %(reference_tar_filename)
     else:
         tar_command = 'tar -xvf %s' %(reference_tar_filename)
     print "Unpacking %s" %(reference_tar_filename)
     print subprocess.check_output(shlex.split(tar_command))
-    # assume the reference file is the only .fa file
-    reference_filename = subprocess.check_output('ls *.fna', shell=True).rstrip()
+    reference_filename = resolve_reference()
+    print "Using reference file: %s" %(reference_filename)
 
     print subprocess.check_output('ls -l', shell=True)
 
