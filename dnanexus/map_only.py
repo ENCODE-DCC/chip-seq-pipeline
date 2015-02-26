@@ -13,6 +13,7 @@ Examples:
 DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
 INPUT_SHIELD_APPLET_NAME = 'input_shield'
 MAPPING_APPLET_NAME = 'encode_bwa'
+FILTER_QC_APPLET_NAME = 'filter_qc'
 POOL_APPLET_NAME = 'pool'
 REFERENCES = [
 	{'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
@@ -42,7 +43,7 @@ def get_args():
 	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default",
 		default='default')
 	parser.add_argument('--yes',   help="Run the workflows created", 			default=False, action='store_true')
-	parser.add_argument('--accession_outputs',   help="Upload results to ENCODEd", default=False, action='store_true')
+	parser.add_argument('--filter',   help="Produce filtered BAMs (else raw)", default=False, action='store_true')
 
 	args = parser.parse_args()
 
@@ -190,15 +191,22 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
 	output_project = resolve_project(args.outp, 'w')
 	logging.debug('Found output project %s' %(output_project.name))
+
 	applet_project = resolve_project(args.applets, 'r')
 	logging.debug('Found applet project %s' %(applet_project.name))
+
 	mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
 	logging.debug('Found applet %s' %(mapping_applet.name))
+
 	input_shield_applet = find_applet_by_name(INPUT_SHIELD_APPLET_NAME, applet_project.get_id())
 	logging.debug('Found applet %s' %(input_shield_applet.name))
 
+	filter_qc_applet = find_applet_by_name(FILTER_QC_APPLET_NAME, applet_project.get_id())
+	logging.debug('Found applet %s' %(filter_qc_applet.name))
+
 	fastq_output_folder = resolve_folder(output_project, args.outf + '/fastqs/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
-	mapping_output_folder = resolve_folder(output_project, args.outf + '/bams/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
+	mapping_output_folder = resolve_folder(output_project, args.outf + '/raw_bams/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
+	filter_qc_output_folder = resolve_folder(output_project, args.outf + '/bams/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
 
 	workflow = dxpy.new_dxworkflow(
 		title='Map %s rep%d' %(experiment.get('accession'), biorep_n),
@@ -222,6 +230,15 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 		stage_input={'input_JSON': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'output_JSON'})},
 		instance_type=args.instance_type
 	)
+
+	if args.filter: #also do the filter_qc step
+		filter_qc_stage_id = workflow.add_stage(
+			filter_qc_applet,
+			name='Filter and QC %s rep%d' %(experiment.get('accession'), biorep_n),
+			folder=filter_qc_output_folder,
+			stage_input={'input_JSON': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'output_JSON'})},
+			instance_type=args.instance_type
+		)
 	''' This should all be done in the shield's postprocess entrypoint
 	if args.accession_outputs:
 		derived_from = input_shield_stage_input.get('reads1')
