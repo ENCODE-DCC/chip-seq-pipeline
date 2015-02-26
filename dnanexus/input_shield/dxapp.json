@@ -67,7 +67,7 @@
   "outputSpec": [
     {
       "name": "output_JSON",
-      "label": "Output for mapper as JSON",
+      "label": "Output as JSON",
       "class": "hash"
     },
     {

@@ -76,6 +76,12 @@
     {
       "name": "paired_end",
       "class": "boolean"
+    },
+    {
+      "name": "output_JSON",
+      "label": "Output as JSON",
+      "class": "hash",
+      "optional": true
     }
   ],
   "runSpec": {

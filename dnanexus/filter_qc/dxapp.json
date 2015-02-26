@@ -12,13 +12,13 @@
       "name": "input_bam",
       "label": "Raw, unfiltered, mapped reads.",
       "class": "file",
-      "optional": false
+      "optional": true
     },
     {
       "name": "paired_end",
       "label": "True if the bam was derived from paired-end reads.",
       "class": "boolean",
-      "optional": false
+      "optional": true
     },
     {
       "name": "samtools_params",
@@ -26,8 +26,20 @@
       "class": "string",
       "optional": true,
       "default": "-q 30"
+    },
+    {
+      "name": "input_JSON",
+      "label": "Input parameters as JSON",
+      "class": "hash",
+      "optional": true
+    },
+    {
+      "name": "debug",
+      "label": "debug mode",
+      "class": "boolean",
+      "optional": true,
+      "default": false
     }
-
   ],
   "outputSpec": [
     {
@@ -59,6 +71,12 @@
       "name": "paired_end",
       "label": "True if the bam was derived from paired-end reads.",
       "class": "boolean"
+    },
+    {
+      "name": "output_JSON",
+      "label": "Input parameters as JSON",
+      "class": "hash",
+      "optional": true
     }
   ],
   "runSpec": {
