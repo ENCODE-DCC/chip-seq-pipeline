@@ -16,10 +16,12 @@ MAPPING_APPLET_NAME = 'encode_bwa'
 FILTER_QC_APPLET_NAME = 'filter_qc'
 POOL_APPLET_NAME = 'pool'
 REFERENCES = [
-	{'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
-	{'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
-	{'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
-	{'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'}
+	{'build': 'GRCh38', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
+	{'build': 'GRCh38', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
+	{'build': 'mm10',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
+	{'build': 'mm10',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'},
+	{'build': 'hg19',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/male.hg19.fa.gz'},
+	{'build': 'hg19',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/female.hg19.fa.gz'}
 	]
 KEYFILE = os.path.expanduser("~/keypairs.json")
 DEFAULT_SERVER = 'https://www.encodeproject.org'
@@ -35,6 +37,7 @@ def get_args():
 
 	parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
 	parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout)
+	parser.add_argument('--build', help="Genome build, e.g. GRCh38, hg19, or mm10")
 	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--outp',    help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/")
@@ -182,8 +185,9 @@ def choose_reference(experiment, biorep_n):
 		sex = 'male'
 
 	logging.debug('Organism %s sex %s' %(organism_name, sex))
+	genome_build = args.build
 
-	reference = next((ref.get('file') for ref in REFERENCES if ref.get('organism') == organism_name and ref.get('sex') == sex), None)
+	reference = next((ref.get('file') for ref in REFERENCES if ref.get('organism') == organism_name and ref.get('sex') == sex and ref.get('build') == genome_build, None)
 	logging.debug('Found reference %s' %(reference))
 	return reference
 
@@ -236,7 +240,10 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 			filter_qc_applet,
 			name='Filter and QC %s rep%d' %(experiment.get('accession'), biorep_n),
 			folder=filter_qc_output_folder,
-			stage_input={'input_JSON': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'output_JSON'})},
+			stage_input={
+				'input_bam': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'mapped_reads'}),
+				'paired_end': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'paired_end'})
+			},
 			instance_type=args.instance_type
 		)
 	''' This should all be done in the shield's postprocess entrypoint
