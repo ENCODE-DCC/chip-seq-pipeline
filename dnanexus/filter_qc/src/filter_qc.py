@@ -102,7 +102,7 @@ def main(input_bam=None, paired_end=None, samtools_params=None, input_JSON=None,
 		# Only keep properly paired reads
 		# Obtain name sorted BAM file
 		# ==================
-		tmp_filt_bam_prefix = "tmp.%s.nmsrt" %(filt_bam_prefix)
+		tmp_filt_bam_prefix = "tmp.%s" %(filt_bam_prefix) #was tmp.prefix.nmsrt
 		tmp_filt_bam_filename = tmp_filt_bam_prefix + ".bam"
 		out,err = run_pipe([
 			#filter:  -F 1804 FlAG bits to exclude; -f 2 FLAG bits to reqire; -q 30 exclude MAPQ < 30; -u uncompressed output
@@ -163,12 +163,13 @@ def main(input_bam=None, paired_end=None, samtools_params=None, input_JSON=None,
 		# Index final position sorted BAM
 		# Create final name sorted BAM
 		# ============================
-		final_nmsrt_bam_prefix = raw_bam_basename + ".filt.nmsrt.nodup"
-		final_nmsrt_bam_filename = final_nmsrt_bam_prefix + ".bam"
 		with open(final_bam_filename, 'w') as fh:
 			subprocess.check_call(shlex.split("samtools view -F 1804 -f2 -b %s"
 				%(filt_bam_filename)), stdout=fh)
-		subprocess.check_call(shlex.split("samtools sort -n %s %s" %(final_bam_filename, final_nmsrt_bam_prefix)))
+		#namesorting is moved to bam2tagAlign
+		#final_nmsrt_bam_prefix = raw_bam_basename + ".filt.nmsrt.nodup"
+		#final_nmsrt_bam_filename = final_nmsrt_bam_prefix + ".bam"
+		#subprocess.check_call(shlex.split("samtools sort -n %s %s" %(final_bam_filename, final_nmsrt_bam_prefix)))
 	else:
 		# ============================
 		# Remove duplicates

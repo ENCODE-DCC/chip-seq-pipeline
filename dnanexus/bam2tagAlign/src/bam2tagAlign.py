@@ -49,9 +49,13 @@ def main(input_bam, paired_end):
     # Create BEDPE file
     # ================
     if paired_end:
+        final_nmsrt_bam_prefix = input_bam_basename + ".filt.nmsrt.nodup"
+        final_nmsrt_bam_filename = final_nmsrt_bam_prefix + ".bam"
+        subprocess.check_call(shlex.split("samtools sort -n %s %s" %(input_bam_filename, final_nmsrt_bam_prefix)))
+
         final_BEDPE_filename = input_bam_basename + ".bedpe.gz"
         out,err = run_pipe([
-            "bamToBed -bedpe -mate1 -i %s" %(input_bam_filename),
+            "bamToBed -bedpe -mate1 -i %s" %(final_nmsrt_bam_filename),
             "gzip -c"],
             outfile=final_BEDPE_filename)
     print subprocess.check_output('ls -l', shell=True)
@@ -63,10 +67,8 @@ def main(input_bam, paired_end):
     # can change that behavior to suit your needs.
 
     tagAlign_file = dxpy.upload_local_file(final_TA_filename)
-    if not paired_end:
-        final_BEDPE_filename = 'SE_so_no_BEDPE'
-        subprocess.check_call('touch %s' %(final_BEDPE_filename), shell=True)
-    BEDPE_file = dxpy.upload_local_file(final_BEDPE_filename)
+    if paired_end:
+        BEDPE_file = dxpy.upload_local_file(final_BEDPE_filename)
 
     # The following line fills in some basic dummy output and assumes
     # that you have created variables to represent your output with
@@ -74,7 +76,8 @@ def main(input_bam, paired_end):
 
     output = {}
     output["tagAlign_file"] = dxpy.dxlink(tagAlign_file)
-    output["BEDPE_file"] = dxpy.dxlink(BEDPE_file)
+    if paired_end:
+        output["BEDPE_file"] = dxpy.dxlink(BEDPE_file)
 
     return output
 

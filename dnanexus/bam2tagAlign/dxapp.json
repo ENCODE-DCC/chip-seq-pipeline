@@ -29,7 +29,8 @@
     {
       "name": "BEDPE_file",
       "label": "BEDPW file (read pairs on each line)",
-      "class": "file"
+      "class": "file",
+      "optional": true
     }
   ],
   "runSpec": {

@@ -136,10 +136,11 @@ def main(input_bam, paired_end):
         "mv temp %s" %(CC_scores_filename)])
 
     tagAlign_file = dxpy.upload_local_file(final_TA_filename)
-    if not paired_end:
-        final_BEDPE_filename = 'SE_so_no_BEDPE'
-        subprocess.check_call('touch %s' %(final_BEDPE_filename), shell=True)
-    BEDPE_file = dxpy.upload_local_file(final_BEDPE_filename)
+    # if not paired_end:
+    #     final_BEDPE_filename = 'SE_so_no_BEDPE'
+    #     subprocess.check_call('touch %s' %(final_BEDPE_filename), shell=True)
+    if paired_end:
+        BEDPE_file = dxpy.upload_local_file(final_BEDPE_filename)
 
     CC_scores_file = dxpy.upload_local_file(CC_scores_filename)
     CC_plot_file = dxpy.upload_local_file(CC_plot_filename)
@@ -148,7 +149,8 @@ def main(input_bam, paired_end):
 
     output = {}
     output["tagAlign_file"] = dxpy.dxlink(tagAlign_file)
-    output["BEDPE_file"] = dxpy.dxlink(BEDPE_file)
+    if paired_end:
+        output["BEDPE_file"] = dxpy.dxlink(BEDPE_file)
     output["CC_scores_file"] = dxpy.dxlink(CC_scores_file)
     output["CC_plot_file"] = dxpy.dxlink(CC_plot_file)
     output["paired_end"] = paired_end
