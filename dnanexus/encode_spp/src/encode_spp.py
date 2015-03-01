@@ -76,8 +76,11 @@ def xcor_only(tags, paired_end):
 
  
 @dxpy.entry_point('main')
-def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodups, paired_end):
+def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodups, rep1_paired_end, rep2_paired_end):
 
+    if not rep1_paired_end == rep2_paired_end:
+      raise ValueError('Mixed PE/SE not supported (yet)')
+    paired_end = rep1_paired_end
     # The following lines initialize the data object inputs on the platform
     # into dxpy.DXDataObject instances that you can start using immediately.
 
@@ -120,8 +123,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 
     pool_applet = dxpy.find_one_data_object(
         classname='applet', name='pool', zero_ok=False, more_ok=False, return_handler=True)
-    pool_controls_subjob = pool_applet.run({"input1": ctl1_ta, "input2": ctl2_ta})
-    pool_replicates_subjob = pool_applet.run({"input1": rep1_ta, "input2": rep2_ta})
+    pool_controls_subjob = pool_applet.run({"inputs": [ctl1_ta, ctl2_ta]})
+    pool_replicates_subjob = pool_applet.run({"inputs": [rep1_ta, rep2_ta]})
 
     pooled_controls = pool_controls_subjob.get_output_ref("pooled")
     pooled_replicates = pool_replicates_subjob.get_output_ref("pooled")
@@ -149,10 +152,10 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
     rep1_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep1_ta})
     rep2_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep2_ta})
 
-    pool_pr1_subjob = pool_applet.run({"input1": rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
-                                       "input2": rep2_pr_subjob.get_output_ref("pseudoreplicate1")})
-    pool_pr2_subjob = pool_applet.run({"input1": rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
-                                       "input2": rep2_pr_subjob.get_output_ref("pseudoreplicate2")})
+    pool_pr1_subjob = pool_applet.run({"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
+                                                  rep2_pr_subjob.get_output_ref("pseudoreplicate1")]})
+    pool_pr2_subjob = pool_applet.run({"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
+                                                  rep2_pr_subjob.get_output_ref("pseudoreplicate2")]})
 
     pooled_replicates_xcor_subjob = xcor_only(pooled_replicates, paired_end)
     rep1_pr1_xcor_subjob = xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)

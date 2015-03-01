@@ -59,7 +59,12 @@
       "default": true
     },
     {
-      "name": "paired_end",
+      "name": "rep1_paired_end",
+      "class": "boolean",
+      "optional": false
+    },
+    {
+      "name": "rep2_paired_end",
       "class": "boolean",
       "optional": false
     }
