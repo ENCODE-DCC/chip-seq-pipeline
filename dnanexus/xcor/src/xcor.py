@@ -88,11 +88,15 @@ def main(input_bam, paired_end):
     # ================
     if paired_end:
         final_BEDPE_filename = input_bam_basename + ".bedpe.gz"
+        #need namesorted bam to make BEDPE
+        final_nmsrt_bam_prefix = input_bam_basename + ".nmsrt"
+        final_nmsrt_bam_filename = final_nmsrt_bam_prefix + ".bam"
+        subprocess.check_call(shlex.split("samtools sort -n %s %s" %(input_bam_filename, final_nmsrt_bam_prefix)))
         out,err = run_pipe([
-            "bamToBed -bedpe -mate1 -i %s" %(input_bam_filename),
+            "bamToBed -bedpe -mate1 -i %s" %(final_nmsrt_bam_filename),
             "gzip -c"],
             outfile=final_BEDPE_filename)
-    print subprocess.check_output('ls -l', shell=True)
+        print subprocess.check_output('ls -l', shell=True)
 
     # =================================
     # Subsample tagAlign file
@@ -128,7 +132,6 @@ def main(input_bam, paired_end):
         "Rscript %s -c=%s -p=%d -filtchr=chrM -savp=%s -out=%s" \
             %(run_spp_command, subsampled_TA_filename, cpu_count(), CC_plot_filename, CC_scores_filename)])
     print subprocess.check_output('ls -l', shell=True)
-    #time.sleep(3600)
     out,err = run_pipe([
         r"""sed -r  's/,[^\t]+//g' %s""" %(CC_scores_filename)],
         outfile="temp")
