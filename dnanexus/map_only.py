@@ -14,14 +14,15 @@ DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
 INPUT_SHIELD_APPLET_NAME = 'input_shield'
 MAPPING_APPLET_NAME = 'encode_bwa'
 FILTER_QC_APPLET_NAME = 'filter_qc'
+XCOR_APPLET_NAME = 'xcor'
 POOL_APPLET_NAME = 'pool'
 REFERENCES = [
 	{'build': 'GRCh38', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
 	{'build': 'GRCh38', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
 	{'build': 'mm10',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
 	{'build': 'mm10',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'},
-	{'build': 'hg19',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/male.hg19.fa.gz'},
-	{'build': 'hg19',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/female.hg19.fa.gz'}
+	{'build': 'hg19',   'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/hg19_XY.tar.gz'},
+	{'build': 'hg19',   'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/hg19_X.tar.gz'}
 	]
 KEYFILE = os.path.expanduser("~/keypairs.json")
 DEFAULT_SERVER = 'https://www.encodeproject.org'
@@ -46,7 +47,7 @@ def get_args():
 	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default",
 		default='default')
 	parser.add_argument('--yes',   help="Run the workflows created", 			default=False, action='store_true')
-	parser.add_argument('--filter',   help="Produce filtered BAMs (else raw)", default=False, action='store_true')
+	parser.add_argument('--raw',   help="Produce only raw (unfiltered) bams", default=False, action='store_true')
 
 	args = parser.parse_args()
 
@@ -187,7 +188,7 @@ def choose_reference(experiment, biorep_n):
 	logging.debug('Organism %s sex %s' %(organism_name, sex))
 	genome_build = args.build
 
-	reference = next((ref.get('file') for ref in REFERENCES if ref.get('organism') == organism_name and ref.get('sex') == sex and ref.get('build') == genome_build, None)
+	reference = next((ref.get('file') for ref in REFERENCES if ref.get('organism') == organism_name and ref.get('sex') == sex and ref.get('build') == genome_build), None)
 	logging.debug('Found reference %s' %(reference))
 	return reference
 
@@ -205,18 +206,23 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 	input_shield_applet = find_applet_by_name(INPUT_SHIELD_APPLET_NAME, applet_project.get_id())
 	logging.debug('Found applet %s' %(input_shield_applet.name))
 
-	filter_qc_applet = find_applet_by_name(FILTER_QC_APPLET_NAME, applet_project.get_id())
-	logging.debug('Found applet %s' %(filter_qc_applet.name))
+	workflow_output_folder = resolve_folder(output_project, args.outf + '/workflows/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
 
 	fastq_output_folder = resolve_folder(output_project, args.outf + '/fastqs/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
 	mapping_output_folder = resolve_folder(output_project, args.outf + '/raw_bams/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
-	filter_qc_output_folder = resolve_folder(output_project, args.outf + '/bams/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
+
+	if args.raw:
+		workflow_title = 'Map %s rep%d to %s (no filter)' %(experiment.get('accession'), biorep_n, args.build)
+		workflow_name = 'ENCODE raw mapping pipeline'
+	else:
+		workflow_title = 'Map %s rep%d to %s and filter' %(experiment.get('accession'), biorep_n, args.build)
+		workflow_name = 'ENCODE mapping pipeline'
 
 	workflow = dxpy.new_dxworkflow(
-		title='Map %s rep%d' %(experiment.get('accession'), biorep_n),
-		name='Map %s rep%d' %(experiment.get('accession'), biorep_n),
+		title=workflow_title,
+		name=workflow_name,
 		project=output_project.get_id(),
-		folder=mapping_output_folder
+		folder=workflow_output_folder
 	)
 
 	input_shield_stage_id = workflow.add_stage(
@@ -235,17 +241,38 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 		instance_type=args.instance_type
 	)
 
-	if args.filter: #also do the filter_qc step
+	if not args.raw:
+		final_output_folder = resolve_folder(output_project, args.outf + '/bams/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
+
+		filter_qc_applet = find_applet_by_name(FILTER_QC_APPLET_NAME, applet_project.get_id())
+		logging.debug('Found applet %s' %(filter_qc_applet.name))
+
 		filter_qc_stage_id = workflow.add_stage(
 			filter_qc_applet,
 			name='Filter and QC %s rep%d' %(experiment.get('accession'), biorep_n),
-			folder=filter_qc_output_folder,
+			folder=final_output_folder,
 			stage_input={
 				'input_bam': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'mapped_reads'}),
 				'paired_end': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'paired_end'})
 			},
 			instance_type=args.instance_type
 		)
+
+		xcor_applet = find_applet_by_name(XCOR_APPLET_NAME, applet_project.get_id())
+		logging.debug('Found applet %s' %(xcor_applet.name))
+
+		xcor_stage_id = workflow.add_stage(
+			xcor_applet,
+			name='Calculate cross-correlation %s rep%d' %(experiment.get('accession'), biorep_n),
+			folder=final_output_folder,
+			stage_input={
+				'input_bam': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'filtered_bam'}),
+				'paired_end': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'paired_end'})
+			},
+			instance_type=args.instance_type
+		)
+
+
 	''' This should all be done in the shield's postprocess entrypoint
 	if args.accession_outputs:
 		derived_from = input_shield_stage_input.get('reads1')
@@ -352,8 +379,10 @@ def main():
 						paired_files.append((file_object,mate))
 				if biorep_files:
 					logging.warning('%s: leftover file(s) %s' %(experiment.get('accession'), biorep_files))
-				pe_jobs = map_only(experiment, biorep_n, paired_files, args.key)
-				se_jobs = map_only(experiment, biorep_n, unpaired_files, args.key)
+				if paired_files:
+					pe_jobs = map_only(experiment, biorep_n, paired_files, args.key)
+				if unpaired_files:
+					se_jobs = map_only(experiment, biorep_n, unpaired_files, args.key)
 				if paired_files and pe_jobs:
 					outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))
 					outstrings.append('paired jobs:%s' %([j.get_id() for j in pe_jobs]))
