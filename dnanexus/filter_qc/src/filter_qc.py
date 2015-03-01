@@ -166,7 +166,7 @@ def main(input_bam=None, paired_end=None, samtools_params=None, input_JSON=None,
 		with open(final_bam_filename, 'w') as fh:
 			subprocess.check_call(shlex.split("samtools view -F 1804 -f2 -b %s"
 				%(filt_bam_filename)), stdout=fh)
-		#namesorting is moved to bam2tagAlign
+		#namesorting is needed for bam->bedPE, so moved to xcor
 		#final_nmsrt_bam_prefix = raw_bam_basename + ".filt.nmsrt.nodup"
 		#final_nmsrt_bam_filename = final_nmsrt_bam_prefix + ".bam"
 		#subprocess.check_call(shlex.split("samtools sort -n %s %s" %(final_bam_filename, final_nmsrt_bam_prefix)))
