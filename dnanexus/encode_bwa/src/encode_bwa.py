@@ -43,7 +43,7 @@ def run_pipe(steps, outfile=None):
 
 def resolve_reference():
 	# assume the reference file is the only .fa or .fna file
-	return next((f for f in os.listdir(".") if f.endswith('.fa') or f.endswith('.fna')), None)
+	return next((f for f in os.listdir(".") if f.endswith('.fa') or f.endswith('.fna') or f.endswith('.fa.gz') or f.endswith('.fna.gz')), None)
 
 @dxpy.entry_point("postprocess")
 def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samtools_version):
