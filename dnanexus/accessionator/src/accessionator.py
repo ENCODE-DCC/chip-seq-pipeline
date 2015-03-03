@@ -30,8 +30,7 @@ FILE_OBJ_TEMPLATE = {
         'lab': 'j-michael-cherry',
         'award': 'U41HG006992',
         'file_format': 'bam',
-        'output_type': 'alignments',
-        'assembly': 'GRCh38'
+        'output_type': 'alignments'
 }
 
 
@@ -113,10 +112,81 @@ def flagstat_parse(flagstat_file):
 
     return qc_dict
 
+def dup_parse(dup_file):
+    if not dup_file:
+        return None
+
+    lines = iter(dup_file.read().splitlines())
+
+    for line in lines:
+        if line.startswith('## METRICS CLASS'):
+            headers = lines.next().rstrip('\n').lower()
+            metrics = lines.next().rstrip('\n')
+            break
+
+    headers = headers.split('\t')
+    metrics = metrics.split('\t')
+    headers.pop(0)
+    metrics.pop(0)
+
+    dup_qc = dict(zip(headers,metrics))
+    return dup_qc
+
+def xcor_parse(xcor_file):
+    if not xcor_file:
+        return None
+
+    lines = xcor_file.read().splitlines()
+    line = lines[0].rstrip('\n')
+    # CC_SCORE FILE format
+    # Filename <tab> numReads <tab> estFragLen <tab> corr_estFragLen <tab> PhantomPeak <tab> corr_phantomPeak <tab> argmin_corr <tab> min_corr <tab> phantomPeakCoef <tab> relPhantomPeakCoef <tab> QualityTag
+
+    headers = ['Filename','numReads','estFragLen','corr_estFragLen','PhantomPeak','corr_phantomPeak','argmin_corr','min_corr','phantomPeakCoef','relPhantomPeakCoef','QualityTag']
+    metrics = line.split('\t')
+    headers.pop(0)
+    metrics.pop(0)
+
+    xcor_qc = dict(zip(headers,metrics))
+    return xcor_qc
+
+def pbc_parse(pbc_file):
+    if not pbc_file:
+        return None
+
+    lines = pbc_file.read().splitlines()
+    line = lines[0].rstrip('\n')
+    # PBC File output
+    # TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
+
+    headers = ['TotalReadPairs','DistinctReadPairs','OneReadPair','TwoReadPairs','NRF','PBC1','PBC2']
+    metrics = line.split('\t')
+
+    pbc_qc = dict(zip(headers,metrics))
+    return pbc_qc
+
 
 @dxpy.entry_point('main')
-def main(folder_name, key_name, debug):
+def main(folder_name, key_name, assembly, debug):
 
+    #accessions bams contained within the folder named folder_name/bams
+
+    #Requires
+    #. directory structure folder_name/bams/ENCSRxxxabc/ ... /basename[.anything].bam
+    #. basename contains one or more ENCFF numbers from which the bam is derived
+    #. bam_filename.flagstat.qc exists
+    #. raw bam flagstat file exists in folder_name/raw_bams/ENCSRxxxabc/ ... /basename[.anything].flagstat.qc
+
+    #if bam file's tags on DNAnexus already contains and ENCFF number, assume it's already accessioned and skip
+    #create a fully qualified project:filename for submitted_file_name and calculate the file size
+    #if an ENCFF objects exists with the same submitted_file_name, AND it has the same size, skip
+
+    #**INFER the experiment accession number from the bam's containing folder
+    #calculate the md5
+    #find the raw bam's .flagstat.qc file and parse
+    #find the bam's .flagstat.qc file and parse
+    #**ASSUME all derived_from ENCFF's appear in the bam's filename
+    #POST file object
+    #Upload to AWS
     
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -125,6 +195,8 @@ def main(folder_name, key_name, debug):
 
     if not folder_name.startswith('/'):
     	folder_name = '/' + folder_name
+    if not folder_name.endswith('/'):
+        folder_name += '/'
 
     try:
         project = dxpy.DXProject(dxpy.PROJECT_CONTEXT_ID)
@@ -133,14 +205,14 @@ def main(folder_name, key_name, debug):
         logger.error("Failed to resolve proejct")
         project_name = ""
 
- 
+    bam_folder = folder_name + 'bams/'
     bams = dxpy.find_data_objects(
     	classname="file",
     	state="closed",
     	name="*.bam",
     	name_mode="glob",
     	project=dxpy.PROJECT_CONTEXT_ID,
-    	folder=folder_name,
+    	folder=bam_folder,
     	recurse=True,
     	return_handler=True
 	)
@@ -158,7 +230,7 @@ def main(folder_name, key_name, debug):
     for bam in bams:
         already_accessioned = False
         for tag in bam.tags:
-            m = re.search(r'(ENCFF\d{3}\D{3})|(TSTFF\D{6})', tag)
+            m = re.search(r'(ENCFF\d{3}\D{3})', tag)
             if m:
                 logger.info('%s appears to contain ENCODE accession number in tag %s ... skipping' %(bam.name,m.group(0)))
                 already_accessioned = True
@@ -173,22 +245,28 @@ def main(folder_name, key_name, debug):
         try:
             r.raise_for_status()
             if r.json()['@graph']:
-                duplicate_item = r.json()['@graph'][0]
-                logger.info("Found potential duplicate: %s" %(duplicate_item.get('accession')))
-                if submitted_file_size ==  duplicate_item.get('file_size'):
-                    logger.info("%s %s: File sizes match, assuming duplicate." %(str(submitted_file_size), duplicate_item.get('file_size')))
-                else:
-                    logger.info("%s %s: File sizes differ, assuming new file." %(str(submitted_file_size), duplicate_item.get('file_size')))
-                    duplicate_item = {}
+                for duplicate_item in r.json()['@graph']:
+                    if duplicate_item.get('status')  == 'deleted':
+                        logger.info("A potential duplicate file was found but its status=deleted ... proceeding")
+                        duplicate_found = False
+                    else:
+                        logger.info("Found potential duplicate: %s" %(duplicate_item.get('accession')))
+                        if submitted_file_size ==  duplicate_item.get('file_size'):
+                            logger.info("%s %s: File sizes match, assuming duplicate." %(str(submitted_file_size), duplicate_item.get('file_size')))
+                            duplicate_found = True
+                            break
+                        else:
+                            logger.info("%s %s: File sizes differ, assuming new file." %(str(submitted_file_size), duplicate_item.get('file_size')))
+                            duplicate_found = False
             else:
                 logger.info("No duplicate ... proceeding")
-                duplicate_item = {}
+                duplicate_found = False
         except:
             logger.warning('Duplicate accession check failed: %s %s' % (r.status_code, r.reason))
             logger.debug(r.text)
-            duplicate_item = {}
+            duplicate_found = False
 
-        if duplicate_item:
+        if duplicate_found:
             logger.info("Duplicate detected, skipping")
             continue
 
@@ -198,19 +276,80 @@ def main(folder_name, key_name, debug):
         md5_output = subprocess.check_output(' '.join([md5_command, bam.name]), shell=True)
         calculated_md5 = md5_output.partition(' ')[0].rstrip()
         encode_object = FILE_OBJ_TEMPLATE
+        encode_object.update({'assembly': assembly})
+
         try:
-            bamqc = dxpy.find_one_data_object(
+            bamqc_fh = dxpy.find_one_data_object(
                 classname="file",
-                name=bam.name + '.flagstat.qc',
+                name='*.flagstat.qc',
+                name_mode="glob",
                 project=dxpy.PROJECT_CONTEXT_ID,
                 folder=bam.folder,
                 return_handler=True
             )
         except:
-            logger.warning("Flagstat file not found ... skipping QC")
-            bamqc = None
+            logger.warning("Flagstat file not found ... skipping")
+            bamqc_fh = None
+
+        raw_bams_folder = str(bam.folder).replace('%sbams/' %(folder_name), '%sraw_bams/' %(folder_name), 1)
+        try:
+            raw_bamqc_fh = dxpy.find_one_data_object(
+                classname="file",
+                name='*.flagstat.qc',
+                name_mode="glob",
+                project=dxpy.PROJECT_CONTEXT_ID,
+                folder=raw_bams_folder,
+                return_handler=True
+            )
+        except:
+            logger.warning("Raw flagstat file not found ... skipping")
+            raw_bamqc_fh = None
+
+        try:
+            dup_qc_fh = dxpy.find_one_data_object(
+                classname="file",
+                name='*.dup.qc',
+                name_mode="glob",
+                project=dxpy.PROJECT_CONTEXT_ID,
+                folder=bam.folder,
+                return_handler=True
+            )
+        except:
+            logger.warning("Picard duplicates QC file not found ... skipping")
+            dup_qc_fh = None
+
+        try:
+            xcor_qc_fh = dxpy.find_one_data_object(
+                classname="file",
+                name='*.cc.qc',
+                name_mode="glob",
+                project=dxpy.PROJECT_CONTEXT_ID,
+                folder=bam.folder,
+                return_handler=True
+            )
+        except:
+            logger.warning("Cross-correlation QC file not found ... skipping")
+            xcor_qc_fh = None
+
+        try:
+            pbc_qc_fh = dxpy.find_one_data_object(
+                classname="file",
+                name='*.pbc.qc',
+                name_mode="glob",
+                project=dxpy.PROJECT_CONTEXT_ID,
+                folder=bam.folder,
+                return_handler=True
+            )
+        except:
+            logger.warning("PBC QC file not found ... skipping")
+            pbc_qc_fh = None
+
         notes = {
-            'qc': flagstat_parse(bamqc),
+            'filtered_qc': flagstat_parse(bamqc_fh),
+            'qc': flagstat_parse(raw_bamqc_fh),
+            'dup_qc': dup_parse(dup_qc_fh),
+            'xcor_qc': xcor_parse(xcor_qc_fh),
+            'pbc_qc': pbc_parse(pbc_qc_fh),
             'dx-id': bam_description.get('id'),
             'dx-createdBy': bam_description.get('createdBy')
         }
@@ -282,6 +421,8 @@ def main(folder_name, key_name, debug):
         ])
         print out_string
         file_mapping.append(out_string)
+
+        os.remove(bam.name)
 
     output_log_filename = time.strftime('%m%d%y%H%M') + '-accession_log.csv'
     out_fh = dxpy.upload_string('\n'.join(file_mapping), name=output_log_filename, media_type='text/csv')

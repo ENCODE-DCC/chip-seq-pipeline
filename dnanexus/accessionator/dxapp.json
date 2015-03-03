@@ -1,4 +1,4 @@
-{
+ {
   "name": "accessionator",
   "title": "ENCODE Accessionator",
   "summary": "Accessions DNAnexus files to ENCODE",
@@ -18,6 +18,11 @@
       "class": "string",
       "optional": true,
       "default": "default"
+    },
+    {
+      "name": "assembly",
+      "class": "string",
+      "optional": false
     },
     {
       "name": "debug",
