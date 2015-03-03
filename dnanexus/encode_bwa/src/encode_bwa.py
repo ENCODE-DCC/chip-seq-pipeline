@@ -114,7 +114,7 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
 		unmapped_reads2_filename = unmapped_reads_filenames[1]
 		raw_sam_filename = reads_basename + ".raw.sam"
 		badcigar_filename = "badreads.tmp"
-		steps = [ "%s sampe %s %s %s %s %s" %(bwa, reference_filename, reads1_filename, reads2_filename, unmapped_reads1_filename, unmapped_reads2_filename),
+		steps = [ "%s sampe -P %s %s %s %s %s" %(bwa, reference_filename, reads1_filename, reads2_filename, unmapped_reads1_filename, unmapped_reads2_filename),
 				  "tee %s" %(raw_sam_filename),
 				  r"""awk 'BEGIN {FS="\t" ; OFS="\t"} ! /^@/ && $6!="*" { cigar=$6; gsub("[0-9]+D","",cigar); n = split(cigar,vals,"[A-Z]"); s = 0; for (i=1;i<=n;i++) s=s+vals[i]; seqlen=length($10) ; if (s!=seqlen) print $1"\t" ; }'""",
 				  "sort",
