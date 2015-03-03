@@ -43,11 +43,12 @@ def get_args():
 	parser.add_argument('--outp',    help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/")
 	parser.add_argument('--applets', help="Name of project containing applets", default=DEFAULT_APPLET_PROJECT)
-	parser.add_argument('--instance_type', help="Instance type for applets",	default=None)
+	#parser.add_argument('--instance_type', help="Instance type for mapping",	default=None)
 	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default",
 		default='default')
 	parser.add_argument('--yes',   help="Run the workflows created", 			default=False, action='store_true')
 	parser.add_argument('--raw',   help="Produce only raw (unfiltered) bams", default=False, action='store_true')
+	parser.add_argument('--tag',   help="String to add to the workflow name", default="")
 
 	args = parser.parse_args()
 
@@ -218,6 +219,9 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 		workflow_title = 'Map %s rep%d to %s and filter' %(experiment.get('accession'), biorep_n, args.build)
 		workflow_name = 'ENCODE mapping pipeline'
 
+	if args.tag:
+		workflow_title += ': %s' %(args.tag)
+
 	workflow = dxpy.new_dxworkflow(
 		title=workflow_title,
 		name=workflow_name,
@@ -229,16 +233,14 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 		input_shield_applet,
 		name='Gather inputs %s rep%d' %(experiment.get('accession'), biorep_n),
 		folder=fastq_output_folder,
-		stage_input=input_shield_stage_input,
-		instance_type=args.instance_type
+		stage_input=input_shield_stage_input
 	)
 	
 	mapping_stage_id = workflow.add_stage(
 		mapping_applet,
 		name='Map %s rep%d' %(experiment.get('accession'), biorep_n),
 		folder=mapping_output_folder,
-		stage_input={'input_JSON': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'output_JSON'})},
-		instance_type=args.instance_type
+		stage_input={'input_JSON': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'output_JSON'})}
 	)
 
 	if not args.raw:
@@ -254,8 +256,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 			stage_input={
 				'input_bam': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'mapped_reads'}),
 				'paired_end': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'paired_end'})
-			},
-			instance_type=args.instance_type
+			}
 		)
 
 		xcor_applet = find_applet_by_name(XCOR_APPLET_NAME, applet_project.get_id())
@@ -268,8 +269,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 			stage_input={
 				'input_bam': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'filtered_bam'}),
 				'paired_end': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'paired_end'})
-			},
-			instance_type=args.instance_type
+			}
 		)
 
 
