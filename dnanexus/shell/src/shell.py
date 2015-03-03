@@ -15,11 +15,11 @@ import os
 import dxpy
 
 @dxpy.entry_point('main')
-def main():
+def main(hours_to_live):
 
     from time import sleep
 
-    sleep(36000)
+    sleep(hours_to_live*60*60)
 
     output = {}
 
