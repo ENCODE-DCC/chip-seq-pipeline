@@ -63,7 +63,10 @@
       {"name": "libboost-dev"},
       {"name": "caTools", "package_manager": "cran"},
       {"name": "snow", "package_manager": "cran"}
-    ]
+    ],
+    "systemRequirements": {
+      "main": {"instanceType": "mem3_ssd1_x2"}
+    }
   },
   "access": {
     "network": [
