@@ -88,8 +88,10 @@
     "file": "src/input_shield.py",
     "execDepends": [
       {"name": "awscli", "package_manager": "pip"}
-    ]
-
+    ],
+    "systemRequirements": {
+      "main": {"instanceType": "mem2_hdd2_x1"}
+    }
   },
   "access": {
     "network": ["*"],
