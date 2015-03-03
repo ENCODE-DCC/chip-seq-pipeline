@@ -11,7 +11,7 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, subprocess, shlex, time
+import os, subprocess, shlex, time, filecmp
 from multiprocessing import Pool, cpu_count
 from subprocess import Popen, PIPE #debug only this should only need to be imported into run_pipe
 import dxpy
@@ -103,6 +103,23 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups):
     print "STDERR:"
     print err
     '''
+    #when one of the peak coordinates are an exact multiple of 10, spp (R) outputs the coordinate in scientific notation
+    #this changes any such coodinates to decimal notation
+    #note this assumes 10-column output and that the 2nd and 3rd columns are coordinates
+
+    fix_coordinate_peaks_filename = output_filename_prefix + '.fixcoord.regionPeak'
+
+    out, err = run_pipe([
+        "gzip -dc %s" %(final_peaks_filename),
+        "tee %s" %(peaks_filename),
+        r"""awk 'BEGIN{OFS="\t"}{print $1,sprintf("%i",$2),sprintf("%i",$3),$4,$5,$6,$7,$8,$9,$10}'"""
+    ], fix_coordinate_peaks_filename)
+
+    if not filecmp.cmp(peaks_filename,fix_coordinate_peaks_filename):
+        print "Found coordinates in scientific notation; coverted to decimal notation"
+        print subprocess.check_output(shlex.split('gzip %s' %(fix_coordinate_peaks_filename)))
+        final_peaks_filename = fix_coordinate_peaks_filename + '.gz'
+
     print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
     #open("peaks",'a').close()
     #open("xcor_plot").close()
