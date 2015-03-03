@@ -177,174 +177,59 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
                               pooled_controls,
                               pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"))
 
-    rep1_pr1_peaks_subjob = spp(rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
+    rep1pr1_peaks_subjob = spp(rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
                                 rep1_control,
                                 rep1_pr1_xcor_subjob.get_output_ref("CC_scores_file"))
 
-    rep1_pr2_peaks_subjob = spp(rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
+    rep1pr2_peaks_subjob = spp(rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
                                 rep1_control,
                                 rep1_pr2_xcor_subjob.get_output_ref("CC_scores_file"))
 
-    rep2_pr1_peaks_subjob = spp(rep2_pr_subjob.get_output_ref("pseudoreplicate1"),
+    rep2pr1_peaks_subjob = spp(rep2_pr_subjob.get_output_ref("pseudoreplicate1"),
                                 rep2_control,
                                 rep2_pr1_xcor_subjob.get_output_ref("CC_scores_file"))
 
-    rep2_pr2_peaks_subjob = spp(rep2_pr_subjob.get_output_ref("pseudoreplicate2"),
+    rep2pr2_peaks_subjob = spp(rep2_pr_subjob.get_output_ref("pseudoreplicate2"),
                                 rep2_control,
                                 rep2_pr2_xcor_subjob.get_output_ref("CC_scores_file"))
 
-    pooled_pr1_peaks_subjob = spp(pool_pr1_subjob.get_output_ref("pooled"),
+    pooledpr1_peaks_subjob = spp(pool_pr1_subjob.get_output_ref("pooled"),
                                   pooled_controls,
                                   pool_pr1_xcor_subjob.get_output_ref("CC_scores_file"))
 
-    pooled_pr2_peaks_subjob = spp(pool_pr2_subjob.get_output_ref("pooled"),
+    pooledpr2_peaks_subjob = spp(pool_pr2_subjob.get_output_ref("pooled"),
                                   pooled_controls,
                                   pool_pr2_xcor_subjob.get_output_ref("CC_scores_file"))
 
-    outputSpec = [
-        {
-          "name": "rep1_peaks",
-          "label": "Narrowpeaks file",
-          "class": "file"
-        },
-        {
-          "name": "rep1_xcor_plot",
-          "label": "Cross-correlation plot",
-          "class": "file"
-        },
-        {
-          "name": "rep1_xcor_scores",
-          "label": "Cross-correlation scores",
-          "class": "file"
-        },
-        {
-          "name": "rep2_peaks",
-          "label": "Narrowpeaks file",
-          "class": "file"
-        },
-        {
-          "name": "rep2_xcor_plot",
-          "label": "Cross-correlation plot",
-          "class": "file"
-        },
-        {
-          "name": "rep2_xcor_scores",
-          "label": "Cross-correlation scores",
-          "class": "file"
-        },
-        {
-          "name": "pooled_peaks",
-          "label": "Narrowpeaks file",
-          "class": "file"
-        },
-        {
-          "name": "pooled_xcor_plot",
-          "label": "Cross-correlation plot",
-          "class": "file"
-        },
-        {
-          "name": "pooled_xcor_scores",
-          "label": "Cross-correlation scores",
-          "class": "file"
-        },
-        {
-          "name": "rep1pr1_peaks",
-          "label": "Narrowpeaks file",
-          "class": "file"
-        },
-        {
-          "name": "rep1pr1_xcor_plot",
-          "label": "Cross-correlation plot",
-          "class": "file"
-        },
-        {
-          "name": "rep1pr1_xcor_scores",
-          "label": "Cross-correlation scores",
-          "class": "file"
-        },
-        {
-          "name": "rep1pr2_peaks",
-          "label": "Narrowpeaks file",
-          "class": "file"
-        },
-        {
-          "name": "rep1pr2_xcor_plot",
-          "label": "Cross-correlation plot",
-          "class": "file"
-        },
-        {
-          "name": "rep1pr2_xcor_scores",
-          "label": "Cross-correlation scores",
-          "class": "file"
-        },
-        {
-          "name": "rep2pr1_peaks",
-          "label": "Narrowpeaks file",
-          "class": "file"
-        },
-        {
-          "name": "rep2pr1_xcor_plot",
-          "label": "Cross-correlation plot",
-          "class": "file"
-        },
-        {
-          "name": "rep2pr1_xcor_scores",
-          "label": "Cross-correlation scores",
-          "class": "file"
-        },
-        {
-          "name": "rep2pr2_peaks",
-          "label": "Narrowpeaks file",
-          "class": "file"
-        },
-        {
-          "name": "rep2pr2_xcor_plot",
-          "label": "Cross-correlation plot",
-          "class": "file"
-        },
-        {
-          "name": "rep2pr2_xcor_scores",
-          "label": "Cross-correlation scores",
-          "class": "file"
-        },
-        {
-          "name": "pooledpr1_peaks",
-          "label": "Narrowpeaks file",
-          "class": "file"
-        },
-        {
-          "name": "pooledpr1_xcor_plot",
-          "label": "Cross-correlation plot",
-          "class": "file"
-        },
-        {
-          "name": "pooledpr1_xcor_scores",
-          "label": "Cross-correlation scores",
-          "class": "file"
-        },
-        {
-          "name": "pooledpr2_peaks",
-          "label": "Narrowpeaks file",
-          "class": "file"
-        },
-        {
-          "name": "pooledpr2_xcor_plot",
-          "label": "Cross-correlation plot",
-          "class": "file"
-        },
-        {
-          "name": "pooledpr2_xcor_scores",
-          "label": "Cross-correlation scores",
-          "class": "file"
-        }
-    ]
-
-    open("temp",'a').close()
-    temp = dxpy.upload_local_file("temp")
-
-    output = {}
-    for o in outputSpec:
-        output[o["name"]] = dxpy.dxlink(temp)
+    output = {
+      'rep1_peaks':       rep1_peaks_subjob.get_output_ref("peaks"),
+      'rep1_xcor_plot':   rep1_peaks_subjob.get_output_ref("xcor_plot"),
+      'rep1_xcor_scores': rep1_peaks_subjob.get_output_ref("xcor_scores"),
+      'rep2_peaks':       rep2_peaks_subjob.get_output_ref("peaks"),
+      'rep2_xcor_plot':   rep2_peaks_subjob.get_output_ref("xcor_plot"),
+      'rep2_xcor_scores': rep2_peaks_subjob.get_output_ref("xcor_scores"),
+      'pooled_peaks':       pooled_peaks_subjob.get_output_ref("peaks"),
+      'pooled_xcor_plot':   pooled_peaks_subjob.get_output_ref("xcor_plot"),
+      'pooled_xcor_scores': pooled_peaks_subjob.get_output_ref("xcor_scores"),
+      'rep1pr1_peaks':       rep1pr1_peaks_subjob.get_output_ref("peaks"),
+      'rep1pr1_xcor_plot':   rep1pr1_peaks_subjob.get_output_ref("xcor_plot"),
+      'rep1pr1_xcor_scores': rep1pr1_peaks_subjob.get_output_ref("xcor_scores"),
+      'rep1pr2_peaks':       rep1pr2_peaks_subjob.get_output_ref("peaks"),
+      'rep1pr2_xcor_plot':   rep1pr2_peaks_subjob.get_output_ref("xcor_plot"),
+      'rep1pr2_xcor_scores': rep1pr2_peaks_subjob.get_output_ref("xcor_scores"),
+      'rep2pr1_peaks':       rep2pr1_peaks_subjob.get_output_ref("peaks"),
+      'rep2pr1_xcor_plot':   rep2pr1_peaks_subjob.get_output_ref("xcor_plot"),
+      'rep2pr1_xcor_scores': rep2pr1_peaks_subjob.get_output_ref("xcor_scores"),
+      'rep2pr2_peaks':       rep2pr2_peaks_subjob.get_output_ref("peaks"),
+      'rep2pr2_xcor_plot':   rep2pr2_peaks_subjob.get_output_ref("xcor_plot"),
+      'rep2pr2_xcor_scores': rep2pr2_peaks_subjob.get_output_ref("xcor_scores"),
+      'pooledpr1_peaks':       pooledpr1_peaks_subjob.get_output_ref("peaks"),
+      'pooledpr1_xcor_plot':   pooledpr1_peaks_subjob.get_output_ref("xcor_plot"),
+      'pooledpr1_xcor_scores': pooledpr1_peaks_subjob.get_output_ref("xcor_scores"),
+      'pooledpr2_peaks':       pooledpr2_peaks_subjob.get_output_ref("peaks"),
+      'pooledpr2_xcor_plot':   pooledpr2_peaks_subjob.get_output_ref("xcor_plot"),
+      'pooledpr2_xcor_scores': pooledpr2_peaks_subjob.get_output_ref("xcor_scores"),
+    }
 
     return output
 
