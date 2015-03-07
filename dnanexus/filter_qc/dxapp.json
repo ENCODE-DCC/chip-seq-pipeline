@@ -99,7 +99,7 @@
        "build_commands": "ant -Djava6.home=/usr/lib/jvm/java-6-openjdk-amd64/ -Ddist=/picard -lib lib/ant package-commands"}
      ],
     "systemRequirements": {
-      "main": {"instanceType": "mem3_ssd1_x2"}
+      "main": {"instanceType": "mem3_hdd2_x2"}
     }
   },
   "access": {
