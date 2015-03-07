@@ -35,7 +35,19 @@
   ],
   "runSpec": {
     "interpreter": "python2.7",
-    "file": "src/bam2tagAlign.py"
+    "file": "src/bam2tagAlign.py",
+    "execDepends": [
+      {"name": "samtools",
+       "package_manager": "git",
+       "url": "https://github.com/samtools/samtools.git",
+       "destdir": "/tmp",
+       "tag": "0.1.19",
+       "build_commands": "make samtools && cp /tmp/samtools/samtools /usr/local/bin/samtools"},
+      {"name": "libboost1.46-dev"},
+      {"name": "libboost-dev"},
+      {"name": "caTools", "package_manager": "cran"},
+      {"name": "snow", "package_manager": "cran"}
+    ]
   },
   "access": {
     "network": [
