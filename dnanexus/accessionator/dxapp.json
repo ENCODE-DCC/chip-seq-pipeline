@@ -25,6 +25,12 @@
       "optional": false
     },
     {
+      "name": "noupload",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    },
+    {
       "name": "debug",
       "class": "boolean",
       "optional": true,

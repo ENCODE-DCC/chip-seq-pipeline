@@ -166,7 +166,7 @@ def pbc_parse(pbc_file):
 
 
 @dxpy.entry_point('main')
-def main(folder_name, key_name, assembly, debug):
+def main(folder_name, key_name, assembly, noupload, debug):
 
     #accessions bams contained within the folder named folder_name/bams
 
@@ -230,7 +230,7 @@ def main(folder_name, key_name, assembly, debug):
     for bam in bams:
         already_accessioned = False
         for tag in bam.tags:
-            m = re.search(r'(ENCFF\d{3}\D{3})', tag)
+            m = re.search(r'(ENCFF\d{3}\D{3})|(TSTFF\D{6})', tag)
             if m:
                 logger.info('%s appears to contain ENCODE accession number in tag %s ... skipping' %(bam.name,m.group(0)))
                 already_accessioned = True
@@ -270,14 +270,6 @@ def main(folder_name, key_name, assembly, debug):
             logger.info("Duplicate detected, skipping")
             continue
 
-        experiment_accession = re.match('\S*(ENC\S{8})',bam.folder).group(1)
-        logger.info("Downloading %s" %(bam.name))
-        dxpy.download_dxfile(bam.get_id(),bam.name)
-        md5_output = subprocess.check_output(' '.join([md5_command, bam.name]), shell=True)
-        calculated_md5 = md5_output.partition(' ')[0].rstrip()
-        encode_object = FILE_OBJ_TEMPLATE
-        encode_object.update({'assembly': assembly})
-
         try:
             bamqc_fh = dxpy.find_one_data_object(
                 classname="file",
@@ -289,6 +281,7 @@ def main(folder_name, key_name, assembly, debug):
             )
         except:
             logger.warning("Flagstat file not found ... skipping")
+            continue
             bamqc_fh = None
 
         raw_bams_folder = str(bam.folder).replace('%sbams/' %(folder_name), '%sraw_bams/' %(folder_name), 1)
@@ -303,6 +296,7 @@ def main(folder_name, key_name, assembly, debug):
             )
         except:
             logger.warning("Raw flagstat file not found ... skipping")
+            continue
             raw_bamqc_fh = None
 
         try:
@@ -316,6 +310,7 @@ def main(folder_name, key_name, assembly, debug):
             )
         except:
             logger.warning("Picard duplicates QC file not found ... skipping")
+            continue
             dup_qc_fh = None
 
         try:
@@ -329,6 +324,7 @@ def main(folder_name, key_name, assembly, debug):
             )
         except:
             logger.warning("Cross-correlation QC file not found ... skipping")
+            continue
             xcor_qc_fh = None
 
         try:
@@ -342,7 +338,16 @@ def main(folder_name, key_name, assembly, debug):
             )
         except:
             logger.warning("PBC QC file not found ... skipping")
+            continue
             pbc_qc_fh = None
+
+        experiment_accession = re.match('\S*(ENC\S{8})',bam.folder).group(1)
+        logger.info("Downloading %s" %(bam.name))
+        dxpy.download_dxfile(bam.get_id(),bam.name)
+        md5_output = subprocess.check_output(' '.join([md5_command, bam.name]), shell=True)
+        calculated_md5 = md5_output.partition(' ')[0].rstrip()
+        encode_object = FILE_OBJ_TEMPLATE
+        encode_object.update({'assembly': assembly})
 
         notes = {
             'filtered_qc': flagstat_parse(bamqc_fh),
@@ -386,31 +391,35 @@ def main(folder_name, key_name, assembly, debug):
                         logger.info('Already accessioned.  Added %s to dxfile tags' %(existing_accession))
                 except:
                     logger.info('Conflict does not appear to be md5 ... continuing')
-        if new_file_object:
-            creds = new_file_object['upload_credentials']
-            env = os.environ.copy()
-            env.update({
-                'AWS_ACCESS_KEY_ID': creds['access_key'],
-                'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
-                'AWS_SECURITY_TOKEN': creds['session_token'],
-            })
-
-            logger.info("Uploading file.")
-            start = time.time()
-            try:
-                subprocess.check_call(['aws', 's3', 'cp', bam.name, creds['upload_url'], '--quiet'], env=env)
-            except subprocess.CalledProcessError as e:
-                # The aws command returns a non-zero exit code on error.
-                logger.error("Upload failed with exit code %d" % e.returncode)
-                upload_returncode = e.returncode
-            else:
-                upload_returncode = 0
-                end = time.time()
-                duration = end - start
-                logger.info("Uploaded in %.2f seconds" % duration)
-                bam.add_tags([new_file_object.get('accession')])
-        else:
+        if noupload:
+            logger.info("--noupload so skipping upload")
             upload_returncode = -1
+        else:
+            if new_file_object:
+                creds = new_file_object['upload_credentials']
+                env = os.environ.copy()
+                env.update({
+                    'AWS_ACCESS_KEY_ID': creds['access_key'],
+                    'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
+                    'AWS_SECURITY_TOKEN': creds['session_token'],
+                })
+
+                logger.info("Uploading file.")
+                start = time.time()
+                try:
+                    subprocess.check_call(['aws', 's3', 'cp', bam.name, creds['upload_url'], '--quiet'], env=env)
+                except subprocess.CalledProcessError as e:
+                    # The aws command returns a non-zero exit code on error.
+                    logger.error("Upload failed with exit code %d" % e.returncode)
+                    upload_returncode = e.returncode
+                else:
+                    upload_returncode = 0
+                    end = time.time()
+                    duration = end - start
+                    logger.info("Uploaded in %.2f seconds" % duration)
+                    bam.add_tags([new_file_object.get('accession')])
+            else:
+                upload_returncode = -1
 
         out_string = '\t'.join([
             experiment_accession,
