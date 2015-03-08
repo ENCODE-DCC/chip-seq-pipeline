@@ -1,7 +1,7 @@
 {
   "name": "encode_idr",
   "title": "IDR for ChIP-seq",
-  "summary": "Generate peaks that pass the IDR threshold",
+  "summary": "Filter peaks and produce the final peak sets",
   "dxapi": "1.0.0",
   "version": "0.0.1",
   "categories": [
@@ -9,59 +9,87 @@
   ],
   "inputSpec": [
     {
-      "name": "rep1_peaks",
-      "label": "First replicate peaks",
+      "name": "experiment",
+      "label": "Experiment ID string (ENCODE accession)",
+      "class": "string",
+      "optional": false
+    },
+    {
+      "name": "reps_peaks",
+      "label": "IDR peaks from true replicates",
       "class": "file",
       "optional": false
     },
     {
-      "name": "rep2_peaks",
-      "label": "Second replicate peaks",
+      "name": "r1pr_peaks",
+      "label": "IDR peaks from replicate 1 self-pseudoreplicates",
       "class": "file",
       "optional": false
     },
     {
-      "name": "pooled_peaks",
-      "label": "Pooled replicate peaks",
+      "name": "r2pr_peaks",
+      "label": "IDR peaks from replicate 2 self-pseudoreplicates",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "pooledpr_peaks",
+      "label": "IDR peaks from pooled self-pseudoreplicates",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "blacklist",
+      "label": "Blacklist BED.gz file",
       "class": "file",
       "optional": false
     }
   ],
   "outputSpec": [
     {
-      "name": "EM_fit_output",
-      "label": "The output from EM fitting",
+      "name": "Nt",
+      "label": "Number of peaks from true replicates",
+      "class": "int"
+    },
+    {
+      "name": "N1",
+      "label": "Number of peaks from replicate 1 self-pseudoreplicates",
+      "class": "int"
+    },
+    {
+      "name": "N2",
+      "label": "Number of peaks from replicate 2 self-pseudoreplicates",
+      "class": "int"
+    },
+    {
+      "name": "Np",
+      "label": "Number of peaks from pooled pseudoreplicates",
+      "class": "int"
+    },
+    {
+      "name": "conservative_set",
+      "label": "Final peak calls - conservative set",
       "class": "file"
     },
     {
-      "name": "empirical_curves_output",
-      "label": "The output for plotting empirical curves",
+      "name": "optimal_set",
+      "label": "Final peak calls - optimal set",
       "class": "file"
     },
     {
-      "name": "EM_parameters_log",
-      "label": "The parameters estimated from EM and the log of consistency analysis",
-      "class": "file"
+      "name": "rescue_ratio",
+      "label": "Rescue ratio",
+      "class": "float"
     },
     {
-      "name": "npeaks_pass",
-      "label": "The number of peaks that pass specific IDR thresholds for pairwise analysis",
-      "class": "file"
+      "name": "self_consistency_ratio",
+      "label": "Self-consistency ratio",
+      "class": "float"
     },
     {
-      "name": "overlapped_peaks",
-      "label": "The full set of peaks that overlap between the replicates with local and global IDR",
-      "class": "file"
-    },
-    {
-      "name": "IDR_output",
-      "label": "IDR output file",
-      "class": "file"
-    },
-    {
-      "name": "IDR_peaks",
-      "label": "Final IDR thresholded file",
-      "class": "file"
+      "name": "reproducibility_test",
+      "label": "Result of the reproducibility test",
+      "class": "string"
     }
   ],
   "runSpec": {

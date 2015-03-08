@@ -16,6 +16,14 @@
 import os, subprocess, logging
 import dxpy
 
+def count_lines(fname):
+    wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
+    return int(wc_output)
+
+def blacklist_filter(peaks_fname, output_fname, blacklist_fname):
+    #TODO implement blacklist filter
+    subprocess.check_call(shlex.split('cp %s %s' %(peaks_fname, output_fname)))
+
 @dxpy.entry_point("postprocess")
 def postprocess(process_outputs):
     # Change the following to process whatever input this stage
@@ -42,113 +50,69 @@ def process(input1):
     return { "output": "placeholder value" }
 
 @dxpy.entry_point("main")
-def main(rep1_peaks, rep2_peaks, pooled_peaks):
+def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blacklist):
+
+    #TODO for now just taking the peak files.  This applet should actually call IDR instead of 
+    #putting that in the workflow populator script
 
     # Initialize the data object inputs on the platform into
     # dxpy.DXDataObject instances.
 
-    rep1_peaks_file = dxpy.DXFile(rep1_peaks)
-    rep2_peaks_file = dxpy.DXFile(rep2_peaks)
-
-    rep1_peaks_filename = rep1_peaks_file.name
-    rep2_peaks_filename = rep2_peaks_file.name
+    reps_peaks_file = dxpy.DXFile(reps_peaks)
+    r1pr_peaks_file = dxpy.DXFile(r1pr_peaks)
+    r2pr_peaks_file = dxpy.DXFile(r2pr_peaks)
+    pooledpr_peaks_file = dxpy.DXFile(pooledpr_peaks)
+    blacklist_file = dxpy.DXFile(blacklist)
 
     # Download the file inputs to the local file system.
 
-    dxpy.download_dxfile(rep1_peaks_file.get_id(), rep1_peaks_filename)
-    dxpy.download_dxfile(rep2_peaks_file.get_id(), rep2_peaks_filename)
+    dxpy.download_dxfile(reps_peaks_file.get_id(), reps_peaks_file.name)
+    dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_file.name)
+    dxpy.download_dxfile(r2pr_peaks_file.get_id(), r2pr_peaks_file.name)
+    dxpy.download_dxfile(pooledpr_peaks_file.get_id(), pooledpr_peaks_file.name)
+    dxpy.download_dxfile(blacklist_file.get_id(), blacklist_file.name)
 
-    # Find the pooler and pseudoreplicator applets
-    # (assumed to be in the same project as this applet)
-    pool_applet = dxpy.find_one_data_object(
-        classname='applet', name='pool', zero_ok=False, more_ok=False, return_handler=True)
+    Nt = count_lines(reps_peaks_file.name)
+    N1 = count_lines(r1pr_peaks_file.name)
+    N2 = count_lines(r2pr_peaks_file.name)
+    Np = count_lines(pooledpr_peaks_file.name)
 
-    pseudoreplicator_applet = dxpy.find_one_data_object(
-        classname='applet', name='pseudoreplicator', zero_ok=False, more_ok=False, return_handler=True)
+    conservative_set_filename = '%s_final_conservative.narrowPeak' %(experiment)
+    blacklist_filter(reps_peaks_file.name, conservative_set_filename, blacklist_file.name)
 
-    # Dispatch parallel tasks.
+    if Nt >= Np:
+        peaks_to_filter_file = reps_peaks_file
+    else:
+        peaks_to_filter_file = pooledpr_peaks_file
 
-    subjobs = []
+    optimal_set_filename = '%s_optimal.narrowPeak' %(experiment)
+    blacklist_filter(peaks_to_filter_file.name, optimal_set_filename, blacklist_file.nane)
 
-    # True replicates
+    rescue_ratio            = float(max(Np,Nt)) / float(min(Np,Nt))
+    self_consistency_ratio  = float(max(N1,N2)) / float(min(N1,N2))
 
-    
+    if rescue_ratio > 2 and self_consistency_ratio > 2:
+        reproducibility = 'fail'
+    elif rescue_ratio > 2 or self_consistency_ratio > 2:
+        reproducibility = 'borderline'
+    else:
+        reproducibility = 'pass'
 
-    # Pooled replciates
+    #Upload the output files
+    conservative_set_output = dxpy.upload_local_file(conservative_set_filename)
+    optimal_set_output = dxpy.upload_local_file(optimal_set_filename)
 
-    pool_replicates_subjob = pool_applet.run({ "input1": rep1_peaks, "input2": rep2_peaks })
-    subjobs.append(pool_replicates_subjob)
-
-    # The following line creates the job that will perform the
-    # "postprocess" step of your app.  We've given it an input field
-    # that is a list of job-based object references created from the
-    # "process" jobs we just created.  Assuming those jobs have an
-    # output field called "output", these values will be passed to the
-    # "postprocess" job.  Because these values are not ready until the
-    # "process" jobs finish, the "postprocess" job WILL NOT RUN until
-    # all job-based object references have been resolved (i.e. the
-    # jobs they reference have finished running).
-    #
-    # If you do not plan to have the "process" jobs create output that
-    # the "postprocess" job will require, then you can explicitly list
-    # the dependencies to wait for those jobs to finish by setting the
-    # "depends_on" field to the list of subjobs to wait for (it
-    # accepts either dxpy handlers or string IDs in the list).  We've
-    # included this parameter in the line below as well for
-    # completeness, though it is unnecessary if you are providing
-    # job-based object references in the input that refer to the same
-    # set of jobs.
-
-    postprocess_job = dxpy.new_dxjob(fn_input={ "process_outputs": [subjob.get_output_ref("pooled") for subjob in subjobs] },
-                                     fn_name="postprocess",
-                                     depends_on=subjobs)
-
-    pooled_replicates = postprocess_job.get_output_ref("pooled")
-
-    # The following line(s) use the Python bindings to upload your file outputs
-    # after you have created them on the local file system.  It assumes that you
-    # have used the output field name for the filename for each output, but you
-    # can change that behavior to suit your needs.
-
-    subprocess.check_call('touch EM_fit_output',shell=True)
-    subprocess.check_call('touch empirical_curves_output',shell=True)
-    subprocess.check_call('touch EM_parameters_log',shell=True)
-    subprocess.check_call('touch npeaks_pass',shell=True)
-    subprocess.check_call('touch overlapped_peaks',shell=True)
-    subprocess.check_call('touch IDR_output',shell=True)
-    #subprocess.check_call('touch IDR_peaks',shell=True)
-
-    EM_fit_output = dxpy.upload_local_file("EM_fit_output")
-    empirical_curves_output = dxpy.upload_local_file("empirical_curves_output")
-    EM_parameters_log = dxpy.upload_local_file("EM_parameters_log")
-    npeaks_pass = dxpy.upload_local_file("npeaks_pass")
-    overlapped_peaks = dxpy.upload_local_file("overlapped_peaks")
-    IDR_output = dxpy.upload_local_file("IDR_output")
-    #IDR_peaks = dxpy.upload_local_file("IDR_peaks")
-
-    # If you would like to include any of the output fields from the
-    # postprocess_job as the output of your app, you should return it
-    # here using a job-based object reference.  If the output field in
-    # the postprocess function is called "answer", you can pass that
-    # on here as follows:
-    #
-    # return { "app_output_field": postprocess_job.get_output_ref("answer"), ...}
-    #
-    # Tip: you can include in your output at this point any open
-    # objects (such as gtables) which will be closed by a job that
-    # finishes later.  The system will check to make sure that the
-    # output object is closed and will attempt to clone it out as
-    # output into the parent container only after all subjobs have
-    # finished.
-
-    output = {}
-    output["EM_fit_output"] = dxpy.dxlink(EM_fit_output)
-    output["empirical_curves_output"] = dxpy.dxlink(empirical_curves_output)
-    output["EM_parameters_log"] = dxpy.dxlink(EM_parameters_log)
-    output["npeaks_pass"] = dxpy.dxlink(npeaks_pass)
-    output["overlapped_peaks"] = dxpy.dxlink(overlapped_peaks)
-    output["IDR_output"] = dxpy.dxlink(IDR_output)
-    output["IDR_peaks"] = pooled_replicates
+    output = {
+        "Nt": Nt,
+        "N1": N1,
+        "N2": N2,
+        "Np": Np,
+        "conservative_set": dxpy.dxlink(conservative_set_output),
+        "optimal_set": dxpy.dxlink(optimal_set_output),
+        "rescue_ratio": rescue_ratio,
+        "self_consistency_ratio": self_consistency_ratio,
+        "reproducibility_test": reproducibility
+    }
 
     logging.info("Exiting with output: %s", output)
     return output
