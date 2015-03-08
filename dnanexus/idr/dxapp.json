@@ -52,7 +52,7 @@
     },
     {
       "name": "npeaks_pass",
-      "label": "The number of peaks that pass specific IDR thresholds for pairwise analysis",
+      "label": "File with the number of peaks that pass the IDR threshold for pairwise analysis",
       "class": "file"
     },
     {
@@ -69,6 +69,11 @@
       "name": "IDR_peaks",
       "label": "Final IDR thresholded file",
       "class": "file"
+    },
+    {
+      "name": "N",
+      "label": "The number of peaks that pass the IDR threshold for pairwise analysis",
+      "class": "int"
     }
   ],
   "runSpec": {

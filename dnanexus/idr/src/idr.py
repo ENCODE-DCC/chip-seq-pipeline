@@ -227,9 +227,12 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold):
     ], final_IDR_thresholded_filename)
 
     npeaks_pass_filename = rep1_vs_rep2_prefix + '-npeaks-aboveIDR.txt'
-    run_pipe([
-        'wc -l %s' %(final_IDR_thresholded_filename)
-    ], npeaks_pass_filename)
+    line_count = subprocess.check_output(shlex.split('wc -l %s' %(final_IDR_thresholded_filename)))
+    with open(npeaks_pass_filename, 'w') as fh:
+        fh.write(line_count)
+    n_peaks = int(line_count)
+
+    #TODO batch consistency plot
 
     pooled_common_peaks_IDR_filename = compress(pooled_common_peaks_IDR_filename)
     final_IDR_thresholded_filename = compress(final_IDR_thresholded_filename)
@@ -239,14 +242,6 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold):
     # after you have created them on the local file system.  It assumes that you
     # have used the output field name for the filename for each output, but you
     # can change that behavior to suit your needs.
-
-    #subprocess.check_call('touch EM_fit_output',shell=True)
-    #subprocess.check_call('touch empirical_curves_output',shell=True)
-    #subprocess.check_call('touch EM_parameters_log',shell=True)
-    #subprocess.check_call('touch npeaks_pass',shell=True)
-    #subprocess.check_call('touch overlapped_peaks',shell=True)
-    #subprocess.check_call('touch IDR_output',shell=True)
-    #subprocess.check_call('touch IDR_peaks',shell=True)
 
     subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
 
@@ -258,29 +253,20 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold):
     IDR_output = dxpy.upload_local_file(pooled_common_peaks_IDR_filename)
     IDR_peaks = dxpy.upload_local_file(final_IDR_thresholded_filename)
 
-    # If you would like to include any of the output fields from the
-    # postprocess_job as the output of your app, you should return it
-    # here using a job-based object reference.  If the output field in
-    # the postprocess function is called "answer", you can pass that
-    # on here as follows:
     #
     # return { "app_output_field": postprocess_job.get_output_ref("answer"), ...}
     #
-    # Tip: you can include in your output at this point any open
-    # objects (such as gtables) which will be closed by a job that
-    # finishes later.  The system will check to make sure that the
-    # output object is closed and will attempt to clone it out as
-    # output into the parent container only after all subjobs have
-    # finished.
 
-    output = {}
-    output["EM_fit_output"] = dxpy.dxlink(EM_fit_output)
-    output["empirical_curves_output"] = dxpy.dxlink(empirical_curves_output)
-    output["EM_parameters_log"] = dxpy.dxlink(EM_parameters_log)
-    output["npeaks_pass"] = dxpy.dxlink(npeaks_pass)
-    output["overlapped_peaks"] = dxpy.dxlink(overlapped_peaks)
-    output["IDR_output"] = dxpy.dxlink(IDR_output)
-    output["IDR_peaks"] = dxpy.dxlink(IDR_peaks)
+    output = {
+        "EM_fit_output": dxpy.dxlink(EM_fit_output),
+        "empirical_curves_output": dxpy.dxlink(empirical_curves_output),
+        "EM_parameters_log": dxpy.dxlink(EM_parameters_log),
+        "npeaks_pass": dxpy.dxlink(npeaks_pass),
+        "overlapped_peaks": dxpy.dxlink(overlapped_peaks),
+        "IDR_output": dxpy.dxlink(IDR_output),
+        "IDR_peaks": dxpy.dxlink(IDR_peaks),
+        "N": n_peaks
+    }
 
     logging.info("Exiting with output: %s", output)
     return output
