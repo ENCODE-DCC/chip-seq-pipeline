@@ -66,13 +66,13 @@ def spp(experiment, control, xcor_scores):
     return spp_applet.run(
         {"experiment": experiment,
          "control": control,
-         "xcor_scores_input": xcor_scores},
-         instance_type="mem2_ssd1_x8")
+         "xcor_scores_input": xcor_scores}
+         )
 
 def xcor_only(tags, paired_end):
     xcor_only_applet = dxpy.find_one_data_object(
         classname='applet', name='xcor_only', zero_ok=False, more_ok=False, return_handler=True)
-    return xcor_only_applet.run({"input_tagAlign": tags, "paired_end": paired_end}, instance_type="mem2_ssd1_x8")
+    return xcor_only_applet.run({"input_tagAlign": tags, "paired_end": paired_end})
 
  
 @dxpy.entry_point('main')
