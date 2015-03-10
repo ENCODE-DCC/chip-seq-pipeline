@@ -21,3 +21,5 @@ dnanexus/encsr
 *.output
 
 dnanexus/accessionator/resources/keypairs.json
+
+dnanexus/wgEncodeDacMapabilityConsensusExcludable.bed.gz
