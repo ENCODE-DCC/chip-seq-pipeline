@@ -78,7 +78,11 @@
   ],
   "runSpec": {
     "interpreter": "python2.7",
-    "file": "src/idr.py"
+    "file": "src/idr.py",
+    "systemRequirements": {
+      "main": {"instanceType": "mem2_hdd2_x1"}
+    }
+
   },
   "access": {
     "network": [

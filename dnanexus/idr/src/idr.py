@@ -227,9 +227,10 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold):
     ], final_IDR_thresholded_filename)
 
     npeaks_pass_filename = rep1_vs_rep2_prefix + '-npeaks-aboveIDR.txt'
-    line_count = subprocess.check_output(shlex.split('wc -l %s' %(final_IDR_thresholded_filename)))
+    wc_output = subprocess.check_output(shlex.split('wc -l %s' %(final_IDR_thresholded_filename)))
     with open(npeaks_pass_filename, 'w') as fh:
-        fh.write(line_count)
+        fh.write(wc_output)
+    line_count = wc_output.split()[0]
     n_peaks = int(line_count)
 
     #TODO batch consistency plot
