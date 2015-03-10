@@ -61,6 +61,9 @@
   "runSpec": {
     "interpreter": "python2.7",
     "file": "src/spp.py",
+    "systemRequirements": {
+      "main":     {"instanceType": "mem3_ssd1_x32"}
+    },
     "execDepends": [
       {"name": "libboost1.46-dev"},
       {"name": "libboost-dev"},

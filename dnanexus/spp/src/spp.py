@@ -49,6 +49,12 @@ def run_pipe(steps, outfile=None):
     out,err = p.communicate()
     return out,err
 
+
+def count_lines(fname):
+    wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
+    lines = wc_output.split()[0]
+    return int(lines)
+
 @dxpy.entry_point('main')
 def main(experiment, control, xcor_scores_input, npeaks, nodups):
 
@@ -114,6 +120,9 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups):
         "tee %s" %(peaks_filename),
         r"""awk 'BEGIN{OFS="\t"}{print $1,sprintf("%i",$2),sprintf("%i",$3),$4,$5,$6,$7,$8,$9,$10}'"""
     ], fix_coordinate_peaks_filename)
+
+    npeaks = count_lines(peaks_filename)
+    print "%s peaks called." %(npeaks)
 
     if not filecmp.cmp(peaks_filename,fix_coordinate_peaks_filename):
         print "Found coordinates in scientific notation; coverted to decimal notation"
