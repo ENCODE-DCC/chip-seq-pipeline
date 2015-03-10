@@ -12,7 +12,8 @@
       "name": "experiment",
       "label": "Experiment ID string (ENCODE accession)",
       "class": "string",
-      "optional": false
+      "optional": true,
+      "default": "IDR"
     },
     {
       "name": "reps_peaks",
@@ -40,7 +41,7 @@
     },
     {
       "name": "blacklist",
-      "label": "Blacklist BED.gz file",
+      "label": "Blacklist (gzipped BED file)",
       "class": "file",
       "optional": false
     }
@@ -94,7 +95,10 @@
   ],
   "runSpec": {
     "interpreter": "python2.7",
-    "file": "src/encode_idr.py"
+    "file": "src/encode_idr.py",
+    "systemRequirements": {
+      "main": {"instanceType": "mem2_hdd2_x1"}
+    }
   },
   "access": {
     "network": [

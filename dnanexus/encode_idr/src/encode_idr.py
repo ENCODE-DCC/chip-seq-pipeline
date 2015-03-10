@@ -13,16 +13,107 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, subprocess, logging
+import os, subprocess, logging, re, shlex
 import dxpy
+
+def run_pipe(steps, outfile=None, debug=True):
+    #break this out into a recursive function
+    #TODO:  capture stderr
+    from subprocess import Popen, PIPE
+
+    if debug:
+        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+    else: # use the defaulf logging level
+        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
+    p = None
+    p_next = None
+    first_step_n = 1
+    last_step_n = len(steps)
+    for n,step in enumerate(steps, start=first_step_n):
+        #logging.info("step %d: %s" %(n,step))
+        print "step %d: %s" %(n,step)
+        if n == first_step_n:
+            if n == last_step_n and outfile: #one-step pipeline with outfile
+                with open(outfile, 'w') as fh:
+                    logging.info("one step shlex: %s to file: %s" %(shlex.split(step), outfile))
+                    p = Popen(shlex.split(step), stdout=fh)
+                break
+            #logging.info("first step shlex to stdout: %s" %(shlex.split(step)))
+            print "first step shlex to stdout: %s" %(shlex.split(step))
+            p = Popen(shlex.split(step), stdout=PIPE)
+            #need to close p.stdout here?
+        elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
+            with open(outfile, 'w') as fh:
+                #logging.info("last step shlex: %s to file: %s" %(shlex.split(step), outfile))
+                print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
+                p_last = Popen(shlex.split(step), stdin=p.stdout, stdout=fh)
+                p.stdout.close()
+                p = p_last
+        else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
+            #logging.info("intermediate step %d shlex to stdout: %s" %(n,shlex.split(step)))
+            print "intermediate step %d shlex to stdout: %s" %(n,shlex.split(step))
+            p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
+            p.stdout.close()
+            p = p_next
+    out,err = p.communicate()
+    if err:
+        #logging.warning(err)
+        print "stderr: %s" %(err)
+    return out,err
+
 
 def count_lines(fname):
     wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
-    return int(wc_output)
+    print wc_output
+    lines = wc_output.split()[0]
+    return int(lines)
 
-def blacklist_filter(peaks_fname, output_fname, blacklist_fname):
-    #TODO implement blacklist filter
-    subprocess.check_call(shlex.split('cp %s %s' %(peaks_fname, output_fname)))
+def blacklist_filter(input_fname, output_fname, input_blacklist_fname):
+    
+    with open(input_fname, 'rb') as fh:
+        gzipped = fh.read(2) == b'\x1f\x8b'
+    if gzipped:
+        peaks_fname = 'peaks.bed'
+        out,err = run_pipe(['gzip -dc %s' %(input_fname)], peaks_fname)
+    else:
+        peaks_fname = input_fname
+
+    with open(input_blacklist_fname, 'rb') as fh:
+        gzipped = fh.read(2) == b'\x1f\x8b'
+    if gzipped:
+        blacklist_fname = 'blacklist.bed'
+        out, err = run_pipe(['gzip -dc %s' %(input_blacklist_fname)], blacklist_fname)
+    else:
+        blacklist_fname = input_blacklist_fname
+
+    out, err = run_pipe([
+        'subtractBed -A -a %s -b %s' %(peaks_fname, blacklist_fname)
+        ], output_fname)
+    #subprocess.check_call(shlex.split('cp %s %s' %(peaks_fname, output_fname)))
+
+def uncompress(filename):
+    m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename)
+    if m:
+        basename = m.group(1)
+        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
+        logging.info("Decompressing %s" %(filename))
+        logging.info(subprocess.check_output(shlex.split('gzip -d %s' %(filename))))
+        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(basename))))
+        return basename
+    else:
+        return filename
+
+def compress(filename):
+    if re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename):
+        return filename
+    else:
+        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
+        logging.info("Compressing %s" %(filename))
+        logging.info(subprocess.check_output(shlex.split('gzip %s' %(filename))))
+        new_filename = filename + '.gz'
+        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
+        return new_filename
 
 @dxpy.entry_point("postprocess")
 def postprocess(process_outputs):
@@ -66,27 +157,50 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blackli
 
     # Download the file inputs to the local file system.
 
-    dxpy.download_dxfile(reps_peaks_file.get_id(), reps_peaks_file.name)
-    dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_file.name)
-    dxpy.download_dxfile(r2pr_peaks_file.get_id(), r2pr_peaks_file.name)
-    dxpy.download_dxfile(pooledpr_peaks_file.get_id(), pooledpr_peaks_file.name)
-    dxpy.download_dxfile(blacklist_file.get_id(), blacklist_file.name)
+    #Need to prepend something to ensure the local filenames will be unique
+    reps_peaks_filename = 'true_%s' %(reps_peaks_file.name)
+    r1pr_peaks_filename = 'r1pr_%s' %(r1pr_peaks_file.name)
+    r2pr_peaks_filename = 'r2pr_%s' %(r2pr_peaks_file.name)
+    pooledpr_peaks_filename = 'pooledpr_%s' %(pooledpr_peaks_file.name)
+    blacklist_filename = 'blacklist_%s' %(blacklist_file.name)
 
-    Nt = count_lines(reps_peaks_file.name)
-    N1 = count_lines(r1pr_peaks_file.name)
-    N2 = count_lines(r2pr_peaks_file.name)
-    Np = count_lines(pooledpr_peaks_file.name)
+    dxpy.download_dxfile(reps_peaks_file.get_id(), reps_peaks_filename)
+    dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_filename)
+    dxpy.download_dxfile(r2pr_peaks_file.get_id(), r2pr_peaks_filename)
+    dxpy.download_dxfile(pooledpr_peaks_file.get_id(), pooledpr_peaks_filename)
+    dxpy.download_dxfile(blacklist_file.get_id(), blacklist_filename)
+
+    reps_peaks_filename = uncompress(reps_peaks_filename)
+    r1pr_peaks_filename = uncompress(r1pr_peaks_filename)
+    r2pr_peaks_filename = uncompress(r2pr_peaks_filename)
+    pooledpr_peaks_filename = uncompress(pooledpr_peaks_filename)
+    blacklist_filename = uncompress(blacklist_filename)
+
+    Nt = count_lines(reps_peaks_filename)
+    print "%d peaks from true replicates" %(Nt)
+    N1 = count_lines(r1pr_peaks_filename)
+    print "%d peaks from rep1 self-pseudoreplicates" %(N1)
+    N2 = count_lines(r2pr_peaks_filename)
+    print "%d peaks from rep2 self-pseudoreplicates" %(N2)
+    Np = count_lines(pooledpr_peaks_filename)
+    print "%d peaks from pooled pseudoreplicates" %(Np)
 
     conservative_set_filename = '%s_final_conservative.narrowPeak' %(experiment)
-    blacklist_filter(reps_peaks_file.name, conservative_set_filename, blacklist_file.name)
+    blacklist_filter(reps_peaks_filename, conservative_set_filename, blacklist_filename)
+    Ncb = count_lines(conservative_set_filename)
+    print "%d peaks blacklisted from the conservative set" %(Nt-Ncb)
 
     if Nt >= Np:
-        peaks_to_filter_file = reps_peaks_file
+        peaks_to_filter_filename = reps_peaks_filename
+        No = Nt
     else:
-        peaks_to_filter_file = pooledpr_peaks_file
+        peaks_to_filter_filename = pooledpr_peaks_filename
+        No = Np
 
-    optimal_set_filename = '%s_optimal.narrowPeak' %(experiment)
-    blacklist_filter(peaks_to_filter_file.name, optimal_set_filename, blacklist_file.nane)
+    optimal_set_filename = '%s_final_optimal.narrowPeak' %(experiment)
+    blacklist_filter(peaks_to_filter_filename, optimal_set_filename, blacklist_filename)
+    Nob = count_lines(optimal_set_filename)
+    print "%d peaks blacklisted from the optimal set" %(No-Nob)
 
     rescue_ratio            = float(max(Np,Nt)) / float(min(Np,Nt))
     self_consistency_ratio  = float(max(N1,N2)) / float(min(N1,N2))
