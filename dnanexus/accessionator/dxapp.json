@@ -31,6 +31,12 @@
       "default": false
     },
     {
+      "name": "force",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    },
+    {
       "name": "debug",
       "class": "boolean",
       "optional": true,

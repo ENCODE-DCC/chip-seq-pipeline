@@ -23,7 +23,6 @@ KEYFILE = DX_FS_ROOT + '/keypairs.json'
 GET_MAX_TRIES = 5
 GET_TRY_DELAY = 5
 DEFAULT_SERVER = 'https://www.encodeproject.org'
-S3_SERVER='s3://encode-files/'
 logger = logging.getLogger(__name__)
 
 FILE_OBJ_TEMPLATE = {
@@ -166,7 +165,7 @@ def pbc_parse(pbc_file):
 
 
 @dxpy.entry_point('main')
-def main(folder_name, key_name, assembly, noupload, debug):
+def main(folder_name, key_name, assembly, noupload, force, debug):
 
     #accessions bams contained within the folder named folder_name/bams
 
@@ -267,8 +266,11 @@ def main(folder_name, key_name, assembly, noupload, debug):
             duplicate_found = False
 
         if duplicate_found:
-            logger.info("Duplicate detected, skipping")
-            continue
+            if force:
+                logger.info("Duplicate detected, but force=true, so continuing")
+            else:
+                logger.info("Duplicate detected, skipping")
+                continue
 
         try:
             bamqc_fh = dxpy.find_one_data_object(
