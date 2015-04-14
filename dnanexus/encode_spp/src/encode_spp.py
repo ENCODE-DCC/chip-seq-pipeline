@@ -60,14 +60,19 @@ def count_lines(filename):
     ])
     return int(out)
 
-def spp(experiment, control, xcor_scores):
+def spp(experiment, control, xcor_scores, bigbed=False, chrom_sizes=None, as_file=None):
     spp_applet = dxpy.find_one_data_object(
         classname='applet', name='spp', zero_ok=False, more_ok=False, return_handler=True)
-    return spp_applet.run(
-        {"experiment": experiment,
-         "control": control,
-         "xcor_scores_input": xcor_scores}
-         )
+    spp_input = {"experiment": experiment,
+                 "control": control,
+                 "xcor_scores_input": xcor_scores,
+                 "bigbed": bigbed}
+    if bigbed:
+      if chrom_sizes:
+        spp_input.update({"chrom_sizes": chrom_sizes})
+      if as_file:
+        spp_input.update({"as_file": as_file})
+    return spp_applet.run(spp_input)
 
 def xcor_only(tags, paired_end):
     xcor_only_applet = dxpy.find_one_data_object(
@@ -76,7 +81,7 @@ def xcor_only(tags, paired_end):
 
  
 @dxpy.entry_point('main')
-def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodups, rep1_paired_end, rep2_paired_end):
+def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodups, rep1_paired_end, rep2_paired_end, chrom_sizes=None, as_file=None):
 
     if not rep1_paired_end == rep2_paired_end:
       raise ValueError('Mixed PE/SE not supported (yet)')
@@ -167,50 +172,71 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 
     rep1_peaks_subjob = spp(rep1_ta,
                             rep1_control,
-                            rep1_xcor)
+                            rep1_xcor,
+                            bigbed=True,
+                            chrom_sizes=chrom_sizes,
+                            as_file=as_file)
 
     rep2_peaks_subjob = spp(rep2_ta,
                             rep2_control,
-                            rep2_xcor)
+                            rep2_xcor,
+                            bigbed=True,
+                            chrom_sizes=chrom_sizes,
+                            as_file=as_file)
 
     pooled_peaks_subjob = spp(pooled_replicates,
                               pooled_controls,
-                              pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"))
+                              pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"),
+                              bigbed=True,
+                              chrom_sizes=chrom_sizes,
+                              as_file=as_file)
 
     rep1pr1_peaks_subjob = spp(rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
                                 rep1_control,
-                                rep1_pr1_xcor_subjob.get_output_ref("CC_scores_file"))
+                                rep1_pr1_xcor_subjob.get_output_ref("CC_scores_file"),
+                                bigbed=False)
 
     rep1pr2_peaks_subjob = spp(rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
                                 rep1_control,
-                                rep1_pr2_xcor_subjob.get_output_ref("CC_scores_file"))
+                                rep1_pr2_xcor_subjob.get_output_ref("CC_scores_file"),
+                                bigbed=False)
 
     rep2pr1_peaks_subjob = spp(rep2_pr_subjob.get_output_ref("pseudoreplicate1"),
                                 rep2_control,
-                                rep2_pr1_xcor_subjob.get_output_ref("CC_scores_file"))
+                                rep2_pr1_xcor_subjob.get_output_ref("CC_scores_file"),
+                                bigbed=False)
 
     rep2pr2_peaks_subjob = spp(rep2_pr_subjob.get_output_ref("pseudoreplicate2"),
                                 rep2_control,
-                                rep2_pr2_xcor_subjob.get_output_ref("CC_scores_file"))
+                                rep2_pr2_xcor_subjob.get_output_ref("CC_scores_file"),
+                                bigbed=False)
 
     pooledpr1_peaks_subjob = spp(pool_pr1_subjob.get_output_ref("pooled"),
                                   pooled_controls,
-                                  pool_pr1_xcor_subjob.get_output_ref("CC_scores_file"))
+                                  pool_pr1_xcor_subjob.get_output_ref("CC_scores_file"),
+                                  bigbed=False)
 
     pooledpr2_peaks_subjob = spp(pool_pr2_subjob.get_output_ref("pooled"),
                                   pooled_controls,
-                                  pool_pr2_xcor_subjob.get_output_ref("CC_scores_file"))
+                                  pool_pr2_xcor_subjob.get_output_ref("CC_scores_file"),
+                                  bigbed=False)
 
     output = {
       'rep1_peaks':       rep1_peaks_subjob.get_output_ref("peaks"),
+      'rep1_peaks_bb': rep1_peaks_subjob.get_output_ref("peaks_bb"),
       'rep1_xcor_plot':   rep1_peaks_subjob.get_output_ref("xcor_plot"),
       'rep1_xcor_scores': rep1_peaks_subjob.get_output_ref("xcor_scores"),
+
       'rep2_peaks':       rep2_peaks_subjob.get_output_ref("peaks"),
+      'rep2_peaks_bb':       rep2_peaks_subjob.get_output_ref("peaks_bb"),
       'rep2_xcor_plot':   rep2_peaks_subjob.get_output_ref("xcor_plot"),
       'rep2_xcor_scores': rep2_peaks_subjob.get_output_ref("xcor_scores"),
+
       'pooled_peaks':       pooled_peaks_subjob.get_output_ref("peaks"),
+      'pooled_peaks_bb':       pooled_peaks_subjob.get_output_ref("peaks_bb"),
       'pooled_xcor_plot':   pooled_peaks_subjob.get_output_ref("xcor_plot"),
       'pooled_xcor_scores': pooled_peaks_subjob.get_output_ref("xcor_scores"),
+
       'rep1pr1_peaks':       rep1pr1_peaks_subjob.get_output_ref("peaks"),
       'rep1pr1_xcor_plot':   rep1pr1_peaks_subjob.get_output_ref("xcor_plot"),
       'rep1pr1_xcor_scores': rep1pr1_peaks_subjob.get_output_ref("xcor_scores"),

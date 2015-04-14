@@ -39,6 +39,25 @@
       "class": "boolean",
       "optional": true,
       "default": true
+    },
+    {
+      "name": "bigbed",
+      "label": "Generate bigBed files",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    },
+    {
+      "name": "chrom_sizes",
+      "label": "chrom.sizes file for bedToBigBed",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "as_file",
+      "label": ".as file for bedToBigBed",
+      "class": "file",
+      "optional": true
     }
   ],
   "outputSpec": [
@@ -56,13 +75,19 @@
       "name": "xcor_scores",
       "label": "Cross-correlation scores",
       "class": "file"
+    },
+    {
+      "name": "peaks_bb",
+      "label": "bigBed file",
+      "class": "file",
+      "optional": true
     }
   ],
   "runSpec": {
     "interpreter": "python2.7",
     "file": "src/spp.py",
     "systemRequirements": {
-      "main":     {"instanceType": "mem3_ssd1_x32"}
+      "main":     {"instanceType": "mem3_ssd1_x4"}
     },
     "execDepends": [
       {"name": "libboost1.46-dev"},

@@ -115,6 +115,15 @@ def compress(filename):
         logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
         return new_filename
 
+def bed2bb(bed_filename, chrom_sizes, as_file):
+    bb_filename = bed_filename.rstrip('.bed') + '.bb'
+    bed_filename_sorted = bed_filename + ".sorted"
+    out,err = run_pipe([
+        "sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename),
+        "bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)
+    ])
+    return bb_filename
+
 @dxpy.entry_point("postprocess")
 def postprocess(process_outputs):
     # Change the following to process whatever input this stage
@@ -141,7 +150,7 @@ def process(input1):
     return { "output": "placeholder value" }
 
 @dxpy.entry_point("main")
-def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blacklist):
+def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blacklist, chrom_sizes, as_file):
 
     #TODO for now just taking the peak files.  This applet should actually call IDR instead of 
     #putting that in the workflow populator script
@@ -154,6 +163,8 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blackli
     r2pr_peaks_file = dxpy.DXFile(r2pr_peaks)
     pooledpr_peaks_file = dxpy.DXFile(pooledpr_peaks)
     blacklist_file = dxpy.DXFile(blacklist)
+    chrom_sizes_file = dxpy.DXFile(chrom_sizes)
+    as_file_file = dxpy.DXFile(as_file)
 
     # Download the file inputs to the local file system.
 
@@ -163,12 +174,16 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blackli
     r2pr_peaks_filename = 'r2pr_%s' %(r2pr_peaks_file.name)
     pooledpr_peaks_filename = 'pooledpr_%s' %(pooledpr_peaks_file.name)
     blacklist_filename = 'blacklist_%s' %(blacklist_file.name)
+    chrom_sizes_filename = chrom_sizes_file.name
+    as_file_filename = as_file_file.name
 
     dxpy.download_dxfile(reps_peaks_file.get_id(), reps_peaks_filename)
     dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_filename)
     dxpy.download_dxfile(r2pr_peaks_file.get_id(), r2pr_peaks_filename)
     dxpy.download_dxfile(pooledpr_peaks_file.get_id(), pooledpr_peaks_filename)
     dxpy.download_dxfile(blacklist_file.get_id(), blacklist_filename)
+    dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
+    dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
 
     reps_peaks_filename = uncompress(reps_peaks_filename)
     r1pr_peaks_filename = uncompress(r1pr_peaks_filename)
@@ -213,8 +228,10 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blackli
         reproducibility = 'pass'
 
     #Upload the output files
-    conservative_set_output = dxpy.upload_local_file(conservative_set_filename)
-    optimal_set_output = dxpy.upload_local_file(optimal_set_filename)
+    conservative_set_bb_output = dxpy.upload_local_file(bed2bb(conservative_set_filename, chrom_sizes_filename, as_file_filename))
+    conservative_set_output = dxpy.upload_local_file(compress(conservative_set_filename))
+    optimal_set_bb_output = dxpy.upload_local_file(bed2bb(optimal_set_filename, chrom_sizes_filename, as_file_filename))
+    optimal_set_output = dxpy.upload_local_file(compress(optimal_set_filename))
 
     output = {
         "Nt": Nt,
@@ -223,6 +240,8 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blackli
         "Np": Np,
         "conservative_set": dxpy.dxlink(conservative_set_output),
         "optimal_set": dxpy.dxlink(optimal_set_output),
+        "conservative_set_bb": dxpy.dxlink(conservative_set_bb_output),
+        "optimal_set_bb": dxpy.dxlink(optimal_set_bb_output),
         "rescue_ratio": rescue_ratio,
         "self_consistency_ratio": self_consistency_ratio,
         "reproducibility_test": reproducibility

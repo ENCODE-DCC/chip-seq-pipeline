@@ -55,8 +55,17 @@ def count_lines(fname):
     lines = wc_output.split()[0]
     return int(lines)
 
+def bed2bb(bed_filename, chrom_sizes, as_file):
+    bb_filename = bed_filename.rstrip('.bed') + '.bb'
+    bed_filename_sorted = bed_filename + ".sorted"
+    out,err = run_pipe([
+        "sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename),
+        "bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)
+    ])
+    return bb_filename
+
 @dxpy.entry_point('main')
-def main(experiment, control, xcor_scores_input, npeaks, nodups):
+def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed, chrom_sizes=None, as_file=None):
 
     # The following line(s) initialize your data object inputs on the platform
     # into dxpy.DXDataObject instances that you can start using immediately.
@@ -64,6 +73,17 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups):
     experiment_file = dxpy.DXFile(experiment)
     control_file = dxpy.DXFile(control)
     xcor_scores_input_file = dxpy.DXFile(xcor_scores_input)
+    if bigbed:
+        if not chrom_sizes:
+            print "WARNING: bigBed requested but no chrom_sizes file specified, no bigBed will be produced."
+            bigbed = False
+        else:
+            chrom_sizes_file = dxpy.DXFile(chrom_sizes)
+            chrom_sizes_filename = chrom_sizes_file.name
+            dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
+            as_file_file = dxpy.DXFile(as_file)
+            as_file_filename = as_file_file.name
+            dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
 
     # The following line(s) download your file inputs to the local file system
     # using variable names for the filenames.
@@ -124,27 +144,29 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups):
     npeaks = count_lines(peaks_filename)
     print "%s peaks called." %(npeaks)
 
+    if bigbed:
+        peaks_bb_filename = bed2bb(peaks_filename, chrom_sizes_filename, as_file_filename)
+        peaks_bb = dxpy.upload_local_file(peaks_bb_filename)
+
     if not filecmp.cmp(peaks_filename,fix_coordinate_peaks_filename):
         print "Found coordinates in scientific notation; coverted to decimal notation"
         print subprocess.check_output(shlex.split('gzip %s' %(fix_coordinate_peaks_filename)))
         final_peaks_filename = fix_coordinate_peaks_filename + '.gz'
 
     print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
-    #open("peaks",'a').close()
-    #open("xcor_plot").close()
-    #open("xcor_scores").close()
+    print subprocess.check_output('head %s' %(final_peaks_filename), shell=True, stderr=subprocess.STDOUT)
+    print subprocess.check_output('head %s' %(xcor_scores_filename), shell=True, stderr=subprocess.STDOUT)
+    
     peaks = dxpy.upload_local_file(final_peaks_filename)
     xcor_plot = dxpy.upload_local_file(xcor_plot_filename)
     xcor_scores = dxpy.upload_local_file(xcor_scores_filename)
-
-    # The following line fills in some basic dummy output and assumes
-    # that you have created variables to represent your output with
-    # the same name as your output fields.
 
     output = {}
     output["peaks"] = dxpy.dxlink(peaks)
     output["xcor_plot"] = dxpy.dxlink(xcor_plot)
     output["xcor_scores"] = dxpy.dxlink(xcor_scores)
+    if bigbed:
+        output["peaks_bb"] = dxpy.dxlink(peaks_bb)
 
     return output
 

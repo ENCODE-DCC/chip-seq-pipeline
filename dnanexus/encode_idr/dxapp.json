@@ -44,6 +44,18 @@
       "label": "Blacklist (gzipped BED file)",
       "class": "file",
       "optional": false
+    },
+    {
+      "name": "chrom_sizes",
+      "label": "chrom.sizes for bedToBigBed",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "as_file",
+      "label": ".as file for bedToBigBed",
+      "class": "file",
+      "optional": false
     }
   ],
   "outputSpec": [
@@ -75,6 +87,16 @@
     {
       "name": "optimal_set",
       "label": "Final peak calls - optimal set",
+      "class": "file"
+    },
+    {
+      "name": "conservative_set_bb",
+      "label": "Final peak calls - conservative set bigBed",
+      "class": "file"
+    },
+    {
+      "name": "optimal_set_bb",
+      "label": "Final peak calls - optimal set bigBed",
       "class": "file"
     },
     {

@@ -67,12 +67,29 @@
       "name": "rep2_paired_end",
       "class": "boolean",
       "optional": false
+    },
+    {
+      "name": "chrom_sizes",
+      "label": "chrom.sizes file for bedToBigBed",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "as_file",
+      "label": ".as file for bedToBigBed",
+      "class": "file",
+      "optional": true
     }
   ],
   "outputSpec": [
     {
       "name": "rep1_peaks",
       "label": "Narrowpeaks file",
+      "class": "file"
+    },
+    {
+      "name": "rep1_peaks_bb",
+      "label": "Bigbed file",
       "class": "file"
     },
     {
@@ -91,6 +108,11 @@
       "class": "file"
     },
     {
+      "name": "rep2_peaks_bb",
+      "label": "Bigbed file",
+      "class": "file"
+    },
+    {
       "name": "rep2_xcor_plot",
       "label": "Cross-correlation plot",
       "class": "file"
@@ -103,6 +125,11 @@
     {
       "name": "pooled_peaks",
       "label": "Narrowpeaks file",
+      "class": "file"
+    },
+    {
+      "name": "pooled_peaks_bb",
+      "label": "Bigbed file",
       "class": "file"
     },
     {

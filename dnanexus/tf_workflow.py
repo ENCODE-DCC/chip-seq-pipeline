@@ -49,6 +49,8 @@ def get_args():
 
 	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--reference', help="Reference tar to map to", 			default='ENCODE Reference Files:/hg19/hg19_XY.tar.gz')
+	parser.add_argument('--chrom_sizes', help="chrom.sizes file for bed to bigbed", default='ENCODE Reference Files:/hg19/male.hg19.chrom.sizes')
+	parser.add_argument('--as_file', help=".as file for bed to bigbed", default='ENCODE Reference Files:narrowPeak.as')
 	parser.add_argument('--rep1',    help="Replicate 1 fastq or tagAlign", 				default=None, nargs='*')
 	parser.add_argument('--rep2',    help="Replicate 2 fastq or tagAlign", 				default=None, nargs='*')
 	parser.add_argument('--ctl1',    help="Control for replicate 1 fastq or tagAlign", 	default=None, nargs='*')
@@ -244,8 +246,6 @@ def main():
 	blank_workflow = not (args.rep1 or args.rep2 or args.ctl1 or args.ctl2)
 
 	if not args.nomap:
-		#this whole strategy is fragile and unsatisfying
-		#subsequent code assumes reps come before contols
 		#a "superstage" is just a dict with a name, name(s) of input files, and then names and id's of stages that process that input
 		#each superstage here could be implemented as a stage in a more abstract workflow.  That stage would then call the various applets that are separate
 		#stages here.
@@ -385,8 +385,12 @@ def main():
 				stage_input={
 					'experiment': exp_rep1_ta,
 					'control': ctl_rep1_ta,
-					'xcor_scores_input': exp_rep1_cc
+					'xcor_scores_input': exp_rep1_cc,
+					'bigbed': True,
+					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+					'as_file': dxpy.dxlink(resolve_file(args.as_file))
 				}
+
 			)
 			spp_stages.append({'name': 'Peaks Rep1', 'stage_id': rep1_spp_stage_id})
 		if (args.rep2 and args.ctl2) or blank_workflow:
@@ -397,7 +401,10 @@ def main():
 				stage_input={
 					'experiment': exp_rep2_ta,
 					'control': ctl_rep2_ta,
-					'xcor_scores_input': exp_rep2_cc
+					'xcor_scores_input': exp_rep2_cc,
+					'bigbed': True,
+					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+					'as_file': dxpy.dxlink(resolve_file(args.as_file))
 				}
 			)
 			spp_stages.append({'name': 'Peaks Rep2', 'stage_id': rep2_spp_stage_id})
@@ -419,7 +426,9 @@ def main():
 					'rep1_xcor' : exp_rep1_cc,
 					'rep2_xcor' : exp_rep2_cc,
 					'rep1_paired_end': rep1_paired_end,
-					'rep2_paired_end': rep2_paired_end
+					'rep2_paired_end': rep2_paired_end,
+					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+					'as_file': dxpy.dxlink(resolve_file(args.as_file))
 				}
 			)
 		encode_spp_stages.append({'name': 'Peaks for IDR', 'stage_id': encode_spp_stage_id})
@@ -519,7 +528,9 @@ def main():
 					'pooledpr_peaks': dxpy.dxlink(
 						{'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Pooled Pseudoreplicates'),
 						 'outputField': 'IDR_peaks'}),
-					'blacklist': dxpy.dxlink(blacklist.get_id())
+					'blacklist': dxpy.dxlink(blacklist.get_id()),
+					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+					'as_file': dxpy.dxlink(resolve_file(args.as_file))
 				}
 			)
 			idr_stages.append({'name': 'Final IDR peak calls', 'stage_id': idr_stage_id})

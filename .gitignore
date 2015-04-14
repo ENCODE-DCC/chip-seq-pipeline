@@ -27,3 +27,5 @@ dnanexus/wgEncodeDacMapabilityConsensusExcludable.bed.gz
 output_comparisons/ENCSR000BUA/ENCFF001UPV.broadPeak
 
 output_comparisons/ENCSR000BUA/ENCFF001UPW.broadPeak
+
+*.bam
