@@ -11,7 +11,7 @@ tf_workflow.py --debug --name ENCSR000EEB-fullIDR --outf /ENCSR000EEB-fullIDR --
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz
 
 # ENCSR000EEB SE full IDR only (no naive peaks)
-tf_workflow.py --debug --name ENCSR000EEB-fullIDRonly --outf /ENCSR000EEB-fullIDRonly --idronly --yes \
+tf_workflow.py --debug --name ENCSR000EEB-fullIDRonly --outf /ENCSR000EEB-fullIDRonly-$(date +"%Y%m%d%H%M") --idronly --yes \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL.fastq.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK.fastq.gz \
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz \
@@ -25,7 +25,7 @@ tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr1 --outf /ENCSR000EEB-full
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF-chr1.tagAlign.gz
 
 # ENCSR000EEB chr21 IDR only from TA
-tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21  --outf /ENCSR000EEB-fullIDRtachr21 --idronly --nomap --yes \
+tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21  --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --idronly --nomap --yes \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr21.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr21.tagAlign.gz \
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz \
@@ -39,14 +39,14 @@ tf_workflow.py --debug --name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDR --
 --ctl2 /ENCSR000BUA/ctl2/ENCFF000RCP.fastq.gz
 
 # ENCSR000DMT SE full IDR
-tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDR --idr --yes \
+tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
 --rep1 /ENCSR000DMT/rep1/ENCFF000SBI.fastq.gz \
 --rep2 /ENCSR000DMT/rep2/ENCFF000SBK.fastq.gz \
 --ctl1 /ENCSR000DMT/ctl/ENCFF000SAZ.fastq.gz \
 --ctl2 /ENCSR000DMT/ctl/ENCFF000SAZ.fastq.gz
 
 # ENCSR769ZTN PE full IDR
-tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDR --idr --yes \
+tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
 --rep1 /ENCSR769ZTN/rep1/ENCFF002ELM.fastq.gz /ENCSR769ZTN/rep1/ENCFF002ELL.fastq.gz \
 --rep2 /ENCSR769ZTN/rep2/ENCFF002ELK.fastq.gz /ENCSR769ZTN/rep2/ENCFF002ELJ.fastq.gz \
 --ctl1 /ENCSR769ZTN/ctl1/ENCFF002EFT.fastq.gz /ENCSR769ZTN/ctl1/ENCFF002EFQ.fastq.gz \

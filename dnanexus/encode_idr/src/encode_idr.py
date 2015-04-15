@@ -118,10 +118,20 @@ def compress(filename):
 def bed2bb(bed_filename, chrom_sizes, as_file):
     bb_filename = bed_filename.rstrip('.bed') + '.bb'
     bed_filename_sorted = bed_filename + ".sorted"
-    out,err = run_pipe([
-        "sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename),
-        "bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)
-    ])
+    print "In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file)
+    for fn in [bed_filename, chrom_sizes, as_file]:
+        print "head %s" %(fn)
+        print subprocess.check_output('head %s' %(fn), shell=True, stderr=subprocess.STDOUT)
+
+    print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
+    print subprocess.check_output(shlex.split("bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)), shell=False, stderr=subprocess.STDOUT)
+
+    print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
+
+    print "head %s" %(bed_filename_sorted)
+    print subprocess.check_output('head %s' %(bed_filename_sorted), shell=True, stderr=subprocess.STDOUT)
+
+    print "Returning %s" %(bb_filename)
     return bb_filename
 
 @dxpy.entry_point("postprocess")

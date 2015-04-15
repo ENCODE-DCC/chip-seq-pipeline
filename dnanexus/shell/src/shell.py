@@ -17,12 +17,12 @@ import dxpy
 @dxpy.entry_point('main')
 def main(hours_to_live):
 
-    from time import sleep
+	from time import sleep
 
-    sleep(hours_to_live*60*60)
+	sleep(hours_to_live*60*60)
 
-    output = {}
+	output = {}
 
-    return output
+	return output
 
 dxpy.run()

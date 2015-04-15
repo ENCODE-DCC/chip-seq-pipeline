@@ -35,7 +35,11 @@
 			{"name": "libboost1.46-dev"},
 			{"name": "libboost-dev"},
 			{"name": "caTools", "package_manager": "cran"},
-			{"name": "snow", "package_manager": "cran"}
+			{"name": "snow", "package_manager": "cran"},
+			{"name": "dxencode",
+			 "package_manager": "git",
+			 "destdir": "/home/dnanexus",
+			 "url": "https://github.com/ENCODE-DCC/dxencode.git"}
 		]
 	},
 

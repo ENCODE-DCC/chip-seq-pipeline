@@ -58,10 +58,20 @@ def count_lines(fname):
 def bed2bb(bed_filename, chrom_sizes, as_file):
     bb_filename = bed_filename.rstrip('.bed') + '.bb'
     bed_filename_sorted = bed_filename + ".sorted"
-    out,err = run_pipe([
-        "sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename),
-        "bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)
-    ])
+    print "In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file)
+    for fn in [bed_filename, chrom_sizes, as_file]:
+        print "head %s" %(fn)
+        print subprocess.check_output('head %s' %(fn), shell=True, stderr=subprocess.STDOUT)
+
+    print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
+    print subprocess.check_output(shlex.split("bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)), shell=False, stderr=subprocess.STDOUT)
+
+    print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
+
+    print "head %s" %(bed_filename_sorted)
+    print subprocess.check_output('head %s' %(bed_filename_sorted), shell=True, stderr=subprocess.STDOUT)
+
+    print "Returning %s" %(bb_filename)
     return bb_filename
 
 @dxpy.entry_point('main')
@@ -154,9 +164,9 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed, chrom_s
         final_peaks_filename = fix_coordinate_peaks_filename + '.gz'
 
     print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
-    print subprocess.check_output('head %s' %(final_peaks_filename), shell=True, stderr=subprocess.STDOUT)
-    print subprocess.check_output('head %s' %(xcor_scores_filename), shell=True, stderr=subprocess.STDOUT)
-    
+    #print subprocess.check_output('head %s' %(final_peaks_filename), shell=True, stderr=subprocess.STDOUT)
+    #print subprocess.check_output('head %s' %(xcor_scores_filename), shell=True, stderr=subprocess.STDOUT)
+
     peaks = dxpy.upload_local_file(final_peaks_filename)
     xcor_plot = dxpy.upload_local_file(xcor_plot_filename)
     xcor_scores = dxpy.upload_local_file(xcor_scores_filename)
