@@ -92,12 +92,14 @@
     {
       "name": "conservative_set_bb",
       "label": "Final peak calls - conservative set bigBed",
-      "class": "file"
+      "class": "file",
+      "optional": true
     },
     {
       "name": "optimal_set_bb",
       "label": "Final peak calls - optimal set bigBed",
-      "class": "file"
+      "class": "file",
+      "optional": true
     },
     {
       "name": "rescue_ratio",

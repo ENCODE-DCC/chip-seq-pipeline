@@ -65,6 +65,7 @@ def get_args():
 	parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks",	default='ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz')
 	parser.add_argument('--idr', 	 help='Report peaks with and without IDR analysis',					default=False, action='store_true')
 	parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
+	parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default=1)
 	parser.add_argument('--yes', 	 help='Run the workflow',					default=False, action='store_true')
 
 	args = parser.parse_args()
@@ -451,7 +452,8 @@ def main():
 						 'outputField': 'rep2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
 						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
-						 'outputField': 'pooled_peaks'})
+						 'outputField': 'pooled_peaks'}),
+					'idr_version': int(args.idrversion)
 				}
 			)
 			idr_stages.append({'name': 'IDR True Replicates', 'stage_id': idr_stage_id})
@@ -469,7 +471,8 @@ def main():
 						 'outputField': 'rep1pr2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
 						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
-						 'outputField': 'rep1_peaks'})
+						 'outputField': 'rep1_peaks'}),
+					'idr_version': int(args.idrversion)
 				}
 			)
 			idr_stages.append({'name': 'IDR Rep 1 Self-pseudoreplicates', 'stage_id': idr_stage_id})
@@ -487,7 +490,8 @@ def main():
 						 'outputField': 'rep2pr2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
 						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
-						 'outputField': 'rep2_peaks'})
+						 'outputField': 'rep2_peaks'}),
+					'idr_version': int(args.idrversion)
 				}
 			)
 			idr_stages.append({'name': 'IDR Rep 2 Self-pseudoreplicates', 'stage_id': idr_stage_id})
@@ -505,7 +509,8 @@ def main():
 						 'outputField': 'pooledpr2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
 						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
-						 'outputField': 'pooled_peaks'})
+						 'outputField': 'pooled_peaks'}),
+					'idr_version': int(args.idrversion)
 				}
 			)
 			idr_stages.append({'name': 'IDR Pooled Pseudoreplicates', 'stage_id': idr_stage_id})

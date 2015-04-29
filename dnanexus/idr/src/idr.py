@@ -11,7 +11,7 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, re, logging, subprocess, shlex, sys, time
+import os, re, logging, subprocess, shlex, sys, time, math
 import dxpy
 
 def run_pipe(steps, outfile=None, debug=True):
@@ -106,8 +106,143 @@ def compress(filename):
         logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
         return new_filename
 
+def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep1_vs_rep2_prefix, rank=None, idr_version=1):
+
+    if idr_version == 1:
+        # =============================
+        # Find peaks in pooled set common to both replicates
+        # =============================
+        pooled_common_peaks_filename = '%s_pool_common.narrowPeak' %(os.path.basename(pooled_peaks_filename))
+        common_peaks(pooled_peaks_filename, rep1_peaks_filename, rep2_peaks_filename, pooled_common_peaks_filename)
+
+        # =============================
+        # Create 2 new peak file per replicate with coordinates from common pooled set
+        # but scores from replicates by first computing overlaps, then matching to closest summit,
+        # then recalibration coordinates to be +/- 2 bp from pooled set summit
+        # =============================
+        common_rep1_match_filename = '%s_common_match.narrowPeak' %(os.path.basename(rep1_peaks_filename))
+        common_rep2_match_filename = '%s_common_match.narrowPeak' %(os.path.basename(rep2_peaks_filename))
+
+        common_peaks_recalibrated(pooled_common_peaks_filename, rep1_peaks_filename, common_rep1_match_filename)
+        common_peaks_recalibrated(pooled_common_peaks_filename, rep2_peaks_filename, common_rep2_match_filename)
+
+        # =============================
+        # Pass recalibrated peak files to IDR
+        # Rscript batch-consistency-analysis.r [peakfile1] [peakfile2] [peak.half.width] [outfile.prefix] [min.overlap.ratio] [is.broadpeak] [ranking.measure]
+        # For SPP & GEM use [ranking.measure] as signal.value. For PeakSeq use q.value
+        # make sure the genome_table.txt file is set to the correct version of the genome
+        # =============================
+
+        #print subprocess.check_output('cp /idrCode.tar.gz ~', shell=True, stderr=subprocess.STDOUT)
+        print subprocess.check_output('tar -xf idrCode.tar.gz', shell=True, stderr=subprocess.STDOUT)
+        print subprocess.check_output('cp -r idrCode/* .', shell=True, stderr=subprocess.STDOUT)
+        print "Files before calling IDR"
+        print subprocess.check_output('ls -la', shell=True)
+        print "Rep1 head"
+        print subprocess.check_output('head %s' %(common_rep1_match_filename), shell=True)
+        print "Rep2 head"
+        print subprocess.check_output('head %s' %(common_rep2_match_filename), shell=True)
+        idr_command = ( "Rscript batch-consistency-analysis.r "
+                        "%s %s -1 %s 0 F %s" %(common_rep1_match_filename, common_rep2_match_filename, rep1_vs_rep2_prefix, rank))
+        print idr_command
+        process = subprocess.Popen(shlex.split(idr_command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        for line in iter(process.stdout.readline, ''):
+            sys.stdout.write(line)
+
+        # =============================
+        # Convert IDR overlap file to narrowPeak format 
+        # =============================
+        IDR_overlap_filename = rep1_vs_rep2_prefix + '-overlapped-peaks.txt'
+        IDR_overlap_narrowpeak_filename = rep1_vs_rep2_prefix + '-overlapped-peaks.narrowPeak'
+        run_pipe([
+            'sed 1d %s' %(IDR_overlap_filename),
+            r"""sed 's/"//g'""", # why was there a -r r"""sed -r 's/"//g'""" Don't need it bcz this is not an extended regex and some seds don't support -r
+            'sort -k11g,11g',
+            r"""awk '{if ($3 <=$7) st=$3 ; else st=$7 ; if ($4 >= $8) sto=$4 ; else sto=$8 ; printf "%s\t%d\t%d\t%d\t%s\t.\t%s\t%f\t%f\n",$2,st,sto,NR,$5,$9,$10,$11}'"""
+            #'gzip -c'
+        ], IDR_overlap_narrowpeak_filename)
+
+        # =============================
+        # Create a recalibrated vesion of ${POOLED_COMMON_PEAKS} where coordinates are to be +/- 2 bp from pooled set summit.
+        # This is so we can match it with IDR output and retranslate back to original pooled set coordinates
+        # =============================
+        recalibrated_pooled_common_peaks_filename = 'recalibrated_pooled_common.narrowPeak'
+        run_pipe([
+            'cat %s' %(pooled_common_peaks_filename),
+            r"""awk 'BEGIN{OFS="\t"}{$11=$2;$12=$3;$2=$2+$10-2;$3=$2+$10+2; print $0}'"""
+            #'gzip -c'
+        ], recalibrated_pooled_common_peaks_filename)
+
+        # =============================
+        # Overlap IDR output with ${RECAL_POOLED_COMMON_PEAKS} to add in IDR scores and switch back to original common pooled set coordinates
+        # Columns 1-10 are same as pooled common peaks columns
+        # Col 11: ranking measure from Rep1
+        # Col 12: ranking measure from Rep2
+        # Col 13: local IDR score
+        # Col 14: global IDR score
+        # IMPORTANT: DCC should store this file! All other files are temporary
+        # =============================
+        pooled_common_peaks_IDR_filename = rep1_vs_rep2_prefix + ".pooled_common_IDRv%d.narrowPeak" %(idr_version)
+        run_pipe([
+            'bedtools intersect -wa -wb -a %s -b %s' %(recalibrated_pooled_common_peaks_filename, IDR_overlap_narrowpeak_filename),
+            r"""awk 'BEGIN{OFS="\t"}{print $1,$11,$12,$4,$5,$6,$7,$8,$9,$10,$17,$19,$20,$21}'"""
+            #'gzip -c'
+        ], pooled_common_peaks_IDR_filename)
+
+        print "Files after IDR"
+        print subprocess.check_output('ls -la', shell=True)
+        print "Pooled common peaks head"
+        print subprocess.check_output(shlex.split('head %s' %(pooled_common_peaks_filename)))
+        print "IDR overlap peaks head"
+        print subprocess.check_output(shlex.split('head %s' %(IDR_overlap_narrowpeak_filename)))
+
+        return pooled_common_peaks_IDR_filename, IDR_overlap_narrowpeak_filename
+
+    elif idr_version == 2:
+        for command in [
+            "sudo mv /etc/apt/apt.conf.d/99dnanexus /tmp",
+            "sudo add-apt-repository -y ppa:fkrull/deadsnakes",
+            "sudo apt-get update",
+            "sudo apt-get -y install python3.4-dev libfreetype6-dev",
+            ]:
+            print subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT)
+        pooled_common_peaks_IDR_filename = rep1_vs_rep2_prefix + ".pooled_common_IDRv%d.narrowPeak" %(idr_version)
+        log_filename = rep1_vs_rep2_prefix + ".log.txt"
+        print "Files before calling IDR"
+        print subprocess.check_output('ls -la', shell=True)
+        print "Rep1 head"
+        print subprocess.check_output('head %s' %(rep1_peaks_filename), shell=True)
+        print "Rep2 head"
+        print subprocess.check_output('head %s' %(rep2_peaks_filename), shell=True)
+        print "Pool head"
+        print subprocess.check_output('head %s' %(pooled_peaks_filename), shell=True)
+        idr_command = ( "env3/bin/python env3/idr/bin/idr "
+                        "--plot "
+                        "--rank %s "
+                        "--output-file %s "
+                        "--log-output-file %s "
+                        "--peak-list %s "
+                        "--samples %s %s"
+                        %(  rank,
+                            pooled_common_peaks_IDR_filename,
+                            log_filename,
+                            pooled_peaks_filename,
+                            rep1_peaks_filename, rep2_peaks_filename))
+        print idr_command
+        process = subprocess.Popen(shlex.split(idr_command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        for line in iter(process.stdout.readline, ''):
+            sys.stdout.write(line)
+        print "Files after IDR"
+        print subprocess.check_output('ls -la', shell=True)
+        print "Head log %s" %(log_filename)
+        print subprocess.check_output(shlex.split('head %s' %(log_filename)))
+        print "Head peaks %s" %(pooled_common_peaks_IDR_filename)
+        print subprocess.check_output(shlex.split('head %s' %(pooled_common_peaks_IDR_filename)))
+        return pooled_common_peaks_IDR_filename, None
+
+
 @dxpy.entry_point('main')
-def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold):
+def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold, idr_version, rank):
 
     # Initialize the data object inputs on the platform into
     # dxpy.DXDataObject instances.
@@ -126,102 +261,35 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold):
     dxpy.download_dxfile(rep2_peaks_file.get_id(), rep2_peaks_filename)
     dxpy.download_dxfile(pooled_peaks_file.get_id(), pooled_peaks_filename)    
 
-    print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
 
     rep1_peaks_filename = uncompress(rep1_peaks_filename)
     rep2_peaks_filename = uncompress(rep2_peaks_filename)
     pooled_peaks_filename = uncompress(pooled_peaks_filename)
 
     print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
-    #print subprocess.check_output('intersectBed', shell=True)
 
-    #time.sleep(7200)
+    #rep1_vs_rep2_prefix = '%s_vs_%s.IDRv%d' %(os.path.basename(rep1_peaks_filename), os.path.basename(rep2_peaks_filename), idr_version)
+    rep1_vs_rep2_prefix = '%sv%s.IDRv%d' %(os.path.basename(rep1_peaks_filename)[0:11], os.path.basename(rep2_peaks_filename)[0:11], idr_version)
 
-    # =============================
-    # Find peaks in pooled set common to both replicates
-    # =============================
-    pooled_common_peaks_filename = 'pooled_common.narrowPeak'
-    common_peaks(pooled_peaks_filename, rep1_peaks_filename, rep2_peaks_filename, pooled_common_peaks_filename)
-
-    # =============================
-    # Create 2 new peak file per replicate with coordinates from common pooled set
-    # but scores from replicates by first computing overlaps, then matching to closest summit,
-    # then recalibration coordinates to be +/- 2 bp from pooled set summit
-    # =============================
-    common_rep1_match_filename = 'common_rep1_match.narrowPeak'
-    common_rep2_match_filename = 'common_rep2_match.narrowPeak'
-
-    common_peaks_recalibrated(pooled_common_peaks_filename, rep1_peaks_filename, common_rep1_match_filename)
-    common_peaks_recalibrated(pooled_common_peaks_filename, rep2_peaks_filename, common_rep2_match_filename)
-
-    # =============================
-    # Pass recalibrated peak files to IDR
-    # Rscript batch-consistency-analysis.r [peakfile1] [peakfile2] [peak.half.width] [outfile.prefix] [min.overlap.ratio] [is.broadpeak] [ranking.measure]
-    # For SPP & GEM use [ranking.measure] as signal.value. For PeakSeq use q.value
-    # make sure the genome_table.txt file is set to the correct version of the genome
-    # =============================
-    rep1_vs_rep2_prefix = 'rep1_vs_rep2'
-    #time.sleep(3600)
-    # print subprocess.check_output(shlex.split(
-        # 'Rscript /batch-consistency-analysis.r %s %s -1 %s 0 F signal.value'
-        # %(common_rep1_match_filename, common_rep2_match_filename, rep1_vs_rep2_prefix)), stderr=subprocess.STDOUT)
-    print subprocess.check_output('cp /idrCode.tar.gz ~', shell=True, stderr=subprocess.STDOUT)
-    print subprocess.check_output('tar -xf idrCode.tar.gz', shell=True, stderr=subprocess.STDOUT)
-    print subprocess.check_output('cp -r idrCode/* .', shell=True, stderr=subprocess.STDOUT)
-    print subprocess.check_output('ls -l', shell=True)
-    process = subprocess.Popen(shlex.split(
-        'Rscript batch-consistency-analysis.r %s %s -1 %s 0 F p.value'
-        %(common_rep1_match_filename, common_rep2_match_filename, rep1_vs_rep2_prefix)), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-    for line in iter(process.stdout.readline, ''):
-        sys.stdout.write(line)
-
-    # =============================
-    # Convert IDR overlap file to narrowPeak format 
-    # =============================
-    IDR_overlap_filename = rep1_vs_rep2_prefix + '-overlapped-peaks.txt'
-    IDR_overlap_narrowpeak_filename = rep1_vs_rep2_prefix + '.narrowPeak'
-    run_pipe([
-        'sed 1d %s' %(IDR_overlap_filename),
-        r"""sed 's/"//g'""", # why was there a -r r"""sed -r 's/"//g'""" Don't need it bcz this is not an extended regex and some seds don't support -r
-        'sort -k11g,11g',
-        r"""awk '{if ($3 <=$7) st=$3 ; else st=$7 ; if ($4 >= $8) sto=$4 ; else sto=$8 ; printf "%s\t%d\t%d\t%d\t%s\t.\t%s\t%f\t%f\n",$2,st,sto,NR,$5,$9,$10,$11}'"""
-        #'gzip -c'
-    ], IDR_overlap_narrowpeak_filename)
-
-    # =============================
-    # Create a recalibrated vesion of ${POOLED_COMMON_PEAKS} where coordinates are to be +/- 2 bp from pooled set summit.
-    # This is so we can match it with IDR output and retranslate back to original pooled set coordinates
-    # =============================
-    recalibrated_pooled_common_peaks_filename = 'recalibrated_pooled_common.narrowPeak'
-    run_pipe([
-        'cat %s' %(pooled_common_peaks_filename),
-        r"""awk 'BEGIN{OFS="\t"}{$11=$2;$12=$3;$2=$2+$10-2;$3=$2+$10+2; print $0}'"""
-        #'gzip -c'
-    ], recalibrated_pooled_common_peaks_filename)
-
-    # =============================
-    # Overlap IDR output with ${RECAL_POOLED_COMMON_PEAKS} to add in IDR scores and switch back to original common pooled set coordinates
-    # Columns 1-10 are same as pooled common peaks columns
-    # Col 11: ranking measure from Rep1
-    # Col 12: ranking measure from Rep2
-    # Col 13: local IDR score
-    # Col 14: global IDR score
-    # IMPORTANT: DCC should store this file! All other files are temporary
-    # =============================
-    pooled_common_peaks_IDR_filename = 'pooled_common_IDR.narrowPeak'
-    run_pipe([
-        'bedtools intersect -wa -wb -a %s -b %s' %(recalibrated_pooled_common_peaks_filename, IDR_overlap_narrowpeak_filename),
-        r"""awk 'BEGIN{OFS="\t"}{print $1,$11,$12,$4,$5,$6,$7,$8,$9,$10,$17,$19,$20,$21}'"""
-        #'gzip -c'
-    ], pooled_common_peaks_IDR_filename)
+    pooled_common_peaks_IDR_filename, IDR_overlap_narrowpeak_filename = run_idr(
+        rep1_peaks_filename,
+        rep2_peaks_filename,
+        pooled_peaks_filename,
+        rep1_vs_rep2_prefix,
+        rank=rank,
+        idr_version=idr_version)
 
     # =============================
     # Get peaks passing the IDR threshold
     # =============================
-    final_IDR_thresholded_filename = rep1_vs_rep2_prefix + '.IDR0.02.narrowPeak'
+    if idr_version == 1:
+        awk_string = r"""awk 'BEGIN{OFS="\t"} $14<=%2.2f {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}'""" %(idr_threshold)
+    elif idr_version ==2:
+        awk_string = r"""awk 'BEGIN{OFS="\t"} $12>=%2.2f {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}'""" %(-math.log10(idr_threshold))
+    final_IDR_thresholded_filename = rep1_vs_rep2_prefix + '.IDR%2.2f.narrowPeak' %(idr_threshold)
     run_pipe([
         'cat %s' %(pooled_common_peaks_IDR_filename),
-        r"""awk 'BEGIN{OFS="\t"} $14<=%2.2f {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}'""" %(idr_threshold),
+        awk_string,
         'sort -k7n,7n'
         #'gzip -c'
     ], final_IDR_thresholded_filename)
@@ -235,39 +303,51 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold):
 
     #TODO batch consistency plot
 
-    pooled_common_peaks_IDR_filename = compress(pooled_common_peaks_IDR_filename)
-    final_IDR_thresholded_filename = compress(final_IDR_thresholded_filename)
-    IDR_overlap_narrowpeak_filename = compress(IDR_overlap_narrowpeak_filename)
-
     # The following line(s) use the Python bindings to upload your file outputs
     # after you have created them on the local file system.  It assumes that you
     # have used the output field name for the filename for each output, but you
     # can change that behavior to suit your needs.
 
-    subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
+    output = {}
 
-    EM_fit_output = dxpy.upload_local_file(rep1_vs_rep2_prefix + '-em.sav')
-    empirical_curves_output = dxpy.upload_local_file(rep1_vs_rep2_prefix + '-uri.sav')
-    EM_parameters_log = dxpy.upload_local_file(rep1_vs_rep2_prefix + '-Rout.txt')
+    if idr_version == 1:
+        IDR_overlap_narrowpeak_filename = compress(IDR_overlap_narrowpeak_filename)
+        overlapped_peaks = dxpy.upload_local_file(IDR_overlap_narrowpeak_filename)
+        EM_fit_output = dxpy.upload_local_file(rep1_vs_rep2_prefix + '-em.sav')
+        empirical_curves_output = dxpy.upload_local_file(rep1_vs_rep2_prefix + '-uri.sav')
+        EM_parameters_log = dxpy.upload_local_file(rep1_vs_rep2_prefix + '-Rout.txt')
+        output.update({
+            "EM_fit_output": dxpy.dxlink(EM_fit_output),
+            "empirical_curves_output": dxpy.dxlink(empirical_curves_output),
+            "overlapped_peaks": dxpy.dxlink(overlapped_peaks)
+        })
+    elif idr_version == 2:
+        EM_fit_output = None
+        empirical_curves_output = None
+        overlapped_peaks = None
+        EM_parameters_log = dxpy.upload_local_file(rep1_vs_rep2_prefix + '.log.txt')
+        IDR2_plot = dxpy.upload_local_file(pooled_common_peaks_IDR_filename + '.png')
+        output.update({
+            "IDR2_plot": dxpy.dxlink(IDR2_plot)
+            })
+
     npeaks_pass = dxpy.upload_local_file(npeaks_pass_filename)
-    overlapped_peaks = dxpy.upload_local_file(IDR_overlap_narrowpeak_filename)
-    IDR_output = dxpy.upload_local_file(pooled_common_peaks_IDR_filename)
-    IDR_peaks = dxpy.upload_local_file(final_IDR_thresholded_filename)
+    IDR_output = dxpy.upload_local_file(compress(pooled_common_peaks_IDR_filename))
+    IDR_peaks = dxpy.upload_local_file(compress(final_IDR_thresholded_filename))
 
     #
     # return { "app_output_field": postprocess_job.get_output_ref("answer"), ...}
     #
 
-    output = {
-        "EM_fit_output": dxpy.dxlink(EM_fit_output),
-        "empirical_curves_output": dxpy.dxlink(empirical_curves_output),
+    subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
+
+    output.update({
         "EM_parameters_log": dxpy.dxlink(EM_parameters_log),
         "npeaks_pass": dxpy.dxlink(npeaks_pass),
-        "overlapped_peaks": dxpy.dxlink(overlapped_peaks),
         "IDR_output": dxpy.dxlink(IDR_output),
         "IDR_peaks": dxpy.dxlink(IDR_peaks),
         "N": n_peaks
-    }
+    })
 
     logging.info("Exiting with output: %s", output)
     return output

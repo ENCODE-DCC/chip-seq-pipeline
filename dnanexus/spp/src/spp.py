@@ -11,7 +11,7 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, subprocess, shlex, time, filecmp
+import os, subprocess, shlex, time, filecmp, sys
 from multiprocessing import Pool, cpu_count
 from subprocess import Popen, PIPE #debug only this should only need to be imported into run_pipe
 import dxpy
@@ -58,18 +58,28 @@ def count_lines(fname):
 def bed2bb(bed_filename, chrom_sizes, as_file):
     bb_filename = bed_filename.rstrip('.bed') + '.bb'
     bed_filename_sorted = bed_filename + ".sorted"
+
     print "In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file)
-    for fn in [bed_filename, chrom_sizes, as_file]:
+
+    print "Sorting"
+    print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
+
+    for fn in [bed_filename, bed_filename_sorted, chrom_sizes, as_file]:
         print "head %s" %(fn)
         print subprocess.check_output('head %s' %(fn), shell=True, stderr=subprocess.STDOUT)
 
-    print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
-    print subprocess.check_output(shlex.split("bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)), shell=False, stderr=subprocess.STDOUT)
+    command = "bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)
+    print command
+    try:
+        process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        for line in iter(process.stdout.readline, ''):
+            sys.stdout.write(line)
+    except:
+        e = sys.exc_info()[0]
+        sys.stderr.write('%s: bedToBigBed failed. Skipping bb creation.' %(e))
+        return None
 
     print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
-
-    print "head %s" %(bed_filename_sorted)
-    print subprocess.check_output('head %s' %(bed_filename_sorted), shell=True, stderr=subprocess.STDOUT)
 
     print "Returning %s" %(bb_filename)
     return bb_filename
@@ -128,17 +138,12 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed, chrom_s
     #install spp
     print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
     print subprocess.check_output(shlex.split('R CMD INSTALL %s' %(spp_tarball)), stderr=subprocess.STDOUT)
-    print subprocess.check_output(shlex.split('Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%d -savr=%s -savp=%s -rf -out=%s' \
-            %(run_spp, cpu_count(), experiment_filename, control_filename, npeaks, fragment_length, peaks_filename, xcor_plot_filename, xcor_scores_filename)), stderr=subprocess.STDOUT)
-    '''
-    out, err = run_pipe([
-        "Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%d -savr=%s -savp=%s -rf -out=%s" \
-            %(run_spp, cpu_count(), experiment_filename, control_filename, npeaks, fragment_length, peaks_filename, xcor_plot_filename, xcor_scores_filename)])
-    print "STDOUT:"
-    print out
-    print "STDERR:"
-    print err
-    '''
+    spp_command = "Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%d -savr=%s -savp=%s -rf -out=%s" %(run_spp, cpu_count(), experiment_filename, control_filename, npeaks, fragment_length, peaks_filename, xcor_plot_filename, xcor_scores_filename)
+    print spp_command
+    process = subprocess.Popen(shlex.split(spp_command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+    for line in iter(process.stdout.readline, ''):
+        sys.stdout.write(line)
+
     #when one of the peak coordinates are an exact multiple of 10, spp (R) outputs the coordinate in scientific notation
     #this changes any such coodinates to decimal notation
     #note this assumes 10-column output and that the 2nd and 3rd columns are coordinates
@@ -151,12 +156,20 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed, chrom_s
         r"""awk 'BEGIN{OFS="\t"}{print $1,sprintf("%i",$2),sprintf("%i",$3),$4,$5,$6,$7,$8,$9,$10}'"""
     ], fix_coordinate_peaks_filename)
 
+    #These lines transfer the peaks files to the temporary workspace for debugging later
+    #Only at the end are the final files uploaded that will be returned from the applet
+    dxpy.upload_local_file(peaks_filename)
+    dxpy.upload_local_file(fix_coordinate_peaks_filename)
+
     npeaks = count_lines(peaks_filename)
     print "%s peaks called." %(npeaks)
+    print "First 50 peaks"
+    print subprocess.check_output('head -50 %s' %(peaks_filename), shell=True, stderr=subprocess.STDOUT)
 
     if bigbed:
-        peaks_bb_filename = bed2bb(peaks_filename, chrom_sizes_filename, as_file_filename)
-        peaks_bb = dxpy.upload_local_file(peaks_bb_filename)
+        peaks_bb_filename = bed2bb(fix_coordinate_peaks_filename, chrom_sizes_filename, as_file_filename)
+        if peaks_bb_filename:
+            peaks_bb = dxpy.upload_local_file(peaks_bb_filename)
 
     if not filecmp.cmp(peaks_filename,fix_coordinate_peaks_filename):
         print "Found coordinates in scientific notation; coverted to decimal notation"
@@ -175,7 +188,7 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed, chrom_s
     output["peaks"] = dxpy.dxlink(peaks)
     output["xcor_plot"] = dxpy.dxlink(xcor_plot)
     output["xcor_scores"] = dxpy.dxlink(xcor_scores)
-    if bigbed:
+    if bigbed and peaks_bb_filename:
         output["peaks_bb"] = dxpy.dxlink(peaks_bb)
 
     return output

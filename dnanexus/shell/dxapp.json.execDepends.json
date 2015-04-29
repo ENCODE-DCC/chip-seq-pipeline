@@ -1,0 +1,52 @@
+{
+	"name": "shell",
+	"title": "Worker shell",
+	"summary": "Interactive worker shell",
+	"dxapi": "1.0.0",
+	"version": "0.0.1",
+	"categories": [],
+	"inputSpec": [
+		{
+			"name": "hours_to_live",
+			"label": "Hours for worker to remain open",
+			"class": "int",
+			"optional": false
+		}
+	],
+	"outputSpec": [],
+	"runSpec": {
+		"interpreter": "python2.7",
+		"file": "src/shell.py",
+		"execDepends": [
+			{"name": "samtools",
+			 "package_manager": "git",
+			 "url": "https://github.com/samtools/samtools.git",
+			 "destdir": "/tmp",
+			 "tag": "0.1.19",
+			 "build_commands": "make samtools && cp /tmp/samtools/samtools /usr/local/bin/samtools"},
+			{"name": "bedtools"},
+			{"name": "ant"},
+			{"name": "openjdk-6-jdk"},
+			{"name": "picard",
+			 "package_manager": "git",
+			 "url": "https://github.com/broadinstitute/picard.git",
+			 "tag": "1.92",
+			 "build_commands": "ant -Djava6.home=/usr/lib/jvm/java-6-openjdk-amd64/ -Ddist=/picard -lib lib/ant package-commands"},
+			{"name": "libboost1.46-dev"},
+			{"name": "libboost-dev"},
+			{"name": "caTools", "package_manager": "cran"},
+			{"name": "snow", "package_manager": "cran"},
+			{"name": "dxencode",
+			 "package_manager": "git",
+			 "destdir": "/home/dnanexus",
+			 "url": "https://github.com/ENCODE-DCC/dxencode.git"}		]
+	},
+
+	"access": {
+		"project": "CONTRIBUTE",
+		"network": [
+			"*"
+		]
+	},
+	"authorizedUsers": []
+}

@@ -1,0 +1,64 @@
+{
+  "name": "idr2",
+  "title": "idr2",
+  "summary": "IDR v2",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "rep1_peaks",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "rep2_peaks",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "pooled_peaks",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "outfile_prefix",
+      "class": "string",
+      "optional": true
+    },
+    {
+      "name": "ranking_measure",
+      "class": "string",
+      "optional": true
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "log_file",
+      "class": "file"
+    },
+    {
+      "name": "output_file",
+      "class": "file"
+    },
+    {
+      "name": "plot_file",
+      "class": "file"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "bash",
+    "file": "src/idr2.sh",
+    "bundledDepends": [
+      {"name": "idr_venv.tgz", "id": {"$dnanexus_link": "file-BZpp2zj0XFpx45KJ1527JXvJ"}}
+    ]
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}

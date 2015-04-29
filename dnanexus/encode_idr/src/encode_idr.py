@@ -13,7 +13,7 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, subprocess, logging, re, shlex
+import os, subprocess, logging, re, shlex, sys
 import dxpy
 
 def run_pipe(steps, outfile=None, debug=True):
@@ -118,18 +118,28 @@ def compress(filename):
 def bed2bb(bed_filename, chrom_sizes, as_file):
     bb_filename = bed_filename.rstrip('.bed') + '.bb'
     bed_filename_sorted = bed_filename + ".sorted"
+
     print "In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file)
-    for fn in [bed_filename, chrom_sizes, as_file]:
+
+    print "Sorting"
+    print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
+
+    for fn in [bed_filename, bed_filename_sorted, chrom_sizes, as_file]:
         print "head %s" %(fn)
         print subprocess.check_output('head %s' %(fn), shell=True, stderr=subprocess.STDOUT)
 
-    print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
-    print subprocess.check_output(shlex.split("bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)), shell=False, stderr=subprocess.STDOUT)
+    command = "bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)
+    print command
+    try:
+        process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        for line in iter(process.stdout.readline, ''):
+            sys.stdout.write(line)
+    except:
+        e = sys.exc_info()[0]
+        sys.stderr.write('%s: bedToBigBed failed. Skipping bb creation.' %(e))
+        return None
 
     print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
-
-    print "head %s" %(bed_filename_sorted)
-    print subprocess.check_output('head %s' %(bed_filename_sorted), shell=True, stderr=subprocess.STDOUT)
 
     print "Returning %s" %(bb_filename)
     return bb_filename
@@ -195,6 +205,8 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blackli
     dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
     dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
 
+    print subprocess.check_output('ls -l', shell=True)
+
     reps_peaks_filename = uncompress(reps_peaks_filename)
     r1pr_peaks_filename = uncompress(r1pr_peaks_filename)
     r2pr_peaks_filename = uncompress(r2pr_peaks_filename)
@@ -237,25 +249,32 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blackli
     else:
         reproducibility = 'pass'
 
-    #Upload the output files
-    conservative_set_bb_output = dxpy.upload_local_file(bed2bb(conservative_set_filename, chrom_sizes_filename, as_file_filename))
-    conservative_set_output = dxpy.upload_local_file(compress(conservative_set_filename))
-    optimal_set_bb_output = dxpy.upload_local_file(bed2bb(optimal_set_filename, chrom_sizes_filename, as_file_filename))
-    optimal_set_output = dxpy.upload_local_file(compress(optimal_set_filename))
+    output = {}
 
-    output = {
+    #Upload the output files
+    conservative_set_output = dxpy.upload_local_file(compress(conservative_set_filename))
+    optimal_set_output = dxpy.upload_local_file(compress(optimal_set_filename))
+    #bedtobigbed often fails, so skip creating the bb if it does
+    conservative_set_bb_filename = bed2bb(conservative_set_filename, chrom_sizes_filename, as_file_filename)
+    optimal_set_bb_filename = bed2bb(optimal_set_filename, chrom_sizes_filename, as_file_filename)
+    if conservative_set_bb_filename:
+        conservative_set_bb_output = dxpy.upload_local_file(conservative_set_bb_filename)
+        output.update({"conservative_set_bb": dxpy.dxlink(conservative_set_bb_output)})
+    if optimal_set_bb_filename:
+        optimal_set_bb_output = dxpy.upload_local_file(optimal_set_bb_filename)
+        output.update({"optimal_set_bb": dxpy.dxlink(optimal_set_bb_output)})
+
+    output.update({
         "Nt": Nt,
         "N1": N1,
         "N2": N2,
         "Np": Np,
         "conservative_set": dxpy.dxlink(conservative_set_output),
         "optimal_set": dxpy.dxlink(optimal_set_output),
-        "conservative_set_bb": dxpy.dxlink(conservative_set_bb_output),
-        "optimal_set_bb": dxpy.dxlink(optimal_set_bb_output),
         "rescue_ratio": rescue_ratio,
         "self_consistency_ratio": self_consistency_ratio,
         "reproducibility_test": reproducibility
-    }
+    })
 
     logging.info("Exiting with output: %s", output)
     return output
