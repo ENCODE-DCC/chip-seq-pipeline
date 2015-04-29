@@ -29,3 +29,9 @@ output_comparisons/ENCSR000BUA/ENCFF001UPV.broadPeak
 output_comparisons/ENCSR000BUA/ENCFF001UPW.broadPeak
 
 *.bam
+
+dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..pooled_common_IDRv2.narrowPeak.gz
+
+dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..IDR0.02.narrowPeak.gz
+
+dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..log.txt
