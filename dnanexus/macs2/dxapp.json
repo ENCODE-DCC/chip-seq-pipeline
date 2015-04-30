@@ -1,0 +1,117 @@
+{
+  "name": "macs2",
+  "title": "MACS2",
+  "summary": "MACS2 Peak Caller",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "experiment",
+      "label": "ChIP tagAlign",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "control",
+      "label": "Input or IgG control tagAlign",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "xcor_scores_input",
+      "label": "Cross-correlation scores file from previous pipeline step",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "chrom_sizes",
+      "label": "chrom.sizes file for BED processing",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "narrowPeak_as",
+      "label": ".as file for narrowPeak",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "broadPeak_as",
+      "label": ".as file for broadPeak",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "gappedPeak_as",
+      "label": ".as file for gappedPeak",
+      "class": "file",
+      "optional": false
+    },
+    {
+      "name": "genomesize",
+      "label": "string for MACS2, hs for human, mm for mouse",
+      "class": "string"
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "narrowPeak",
+      "label": "narrowPeak output",
+      "class": "file"
+    },
+    {
+      "name": "gappedPeak",
+      "label": "gappedPeak output",
+      "class": "file"
+    },
+    {
+      "name": "broadPeak",
+      "label": "broadPeak output",
+      "class": "file"
+    },
+    {
+      "name": "narrowPeak_bb",
+      "label": "narrowPeak output bigbed",
+      "class": "file"
+    },
+    {
+      "name": "gappedPeak_bb",
+      "label": "gappedPeak output bigbed",
+      "class": "file"
+    },
+    {
+      "name": "broadPeak_bb",
+      "label": "broadPeak output bigbed",
+      "class": "file"
+    },
+    {
+      "name": "fc_signal",
+      "label": "Signal track fold-enrichment over control",
+      "class": "file"
+    },
+    {
+      "name": "pvalue_signal",
+      "label": "Signal track p-value",
+      "class": "file"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/macs2.py",
+    "systemRequirements": {
+      "main":     {"instanceType": "mem3_ssd1_x2"}
+    },
+    "execDepends": [
+      {"name": "python-numpy"}
+    ]
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}

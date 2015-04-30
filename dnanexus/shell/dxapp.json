@@ -19,7 +19,9 @@
 		"file": "src/shell.sh",
 		"bundledDepends": [
 			{"name": "idr_venv.tgz", "id": {"$dnanexus_link": "file-BZzJy8Q0qb5yfjXyQv6P6VgX"}}
-		] 
+		],
+		"execDepends": [
+			{"name": "python-numpy"}		]
 	},
 
 	"access": {

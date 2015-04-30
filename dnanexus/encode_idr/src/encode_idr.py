@@ -134,6 +134,10 @@ def bed2bb(bed_filename, chrom_sizes, as_file):
         process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
         for line in iter(process.stdout.readline, ''):
             sys.stdout.write(line)
+        process.wait()
+        returncode = process.returncode
+        if returncode != 0:
+            raise subprocess.CalledProcessError
     except:
         e = sys.exc_info()[0]
         sys.stderr.write('%s: bedToBigBed failed. Skipping bb creation.' %(e))
@@ -141,7 +145,11 @@ def bed2bb(bed_filename, chrom_sizes, as_file):
 
     print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
 
-    print "Returning %s" %(bb_filename)
+    #this is necessary in case bedToBegBed failes to creat the bb file but doesn't return a non-zero returncode
+    if not os.path.isfile(bb_filename):
+        bb_filename = None
+
+    print "Returning bb file %s" %(bb_filename)
     return bb_filename
 
 @dxpy.entry_point("postprocess")

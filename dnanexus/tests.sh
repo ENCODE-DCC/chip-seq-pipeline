@@ -30,6 +30,7 @@ tf_workflow.py --debug --name ENCSR000EEB-fullIDRonly --outf /ENCSR000EEB-fullID
 
 # ENCSR000EEB IDRv2 only from TA
 tf_workflow.py --debug --name ENCSR000EEB-fullIDRnomap --outf /ENCSR000EEB-fullIDRnomap-$(date +"%Y%m%d%H%M") --idronly --nomap --yes \
+--rep1pe false --rep2pe false \
 --idrversion 2 \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
@@ -46,6 +47,7 @@ tf_workflow.py --debug --name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-
 
 # ENCSR000BUA SE full IDRv2 nomap
 tf_workflow.py --debug --name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
+--rep1pe false --rep2pe false \
 --idrversion 2 \
 --rep1 /ENCSR000BUA/rep1/ENCFF000RBI.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --rep2 /ENCSR000BUA/rep2/ENCFF000RBC.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
@@ -63,6 +65,7 @@ tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-
 # ENCSR000DMT SE full IDRv2 nomap
 tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
 --idrversion 2 \
+--rep1pe false --rep2pe false \
 --rep1 /ENCSR000DMT/rep1/ENCFF000SBI.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --rep2 /ENCSR000DMT/rep2/ENCFF000SBK.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --ctl1 /ENCSR000DMT/ctl/ENCFF000SAZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
@@ -78,6 +81,7 @@ tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-
 
 # ENCSR769ZTN PE full IDRv2 nomap
 tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
+--rep1pe true --rep2pe true \
 --idrversion 2 \
 --rep1 /ENCSR769ZTN/rep1/ENCFF002ELMENCFF002ELL.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz \
 --rep2 /ENCSR769ZTN/rep2/ENCFF002ELKENCFF002ELJ.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz \
@@ -95,6 +99,7 @@ tf_workflow.py --debug --name ENCSR795HTY-fullIDR --outf /ENCSR795HTY-fullIDR --
 # ENCSR795HTY PE full IDRv2 nomap
 tf_workflow.py --debug --name ENCSR795HTY-fullIDR --outf /ENCSR795HTY-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
 --idrversion 2 \
+--rep1pe true --rep2pe true \
 --rep1 file-BZ05pb80zp5PFPKxXxXV5ZV8 \
 --rep2 file-BZ0KG380YBv2BV14PxXqYfBJ \
 --ctl1 file-BZ0pPy00ByzPFPKxXxXV8BJ4 \
@@ -105,6 +110,7 @@ tf_workflow.py --debug --name ENCSR795HTY-fullIDR --outf /ENCSR795HTY-fullIDRv2-
 
 # ENCSR000EEB chr1 IDR only from TA
 tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr1 --outf /ENCSR000EEB-fullIDRtachr1 --idronly --nomap --yes \
+--rep1pe false --rep2pe false \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr1.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr1.tagAlign.gz \
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF-chr1.tagAlign.gz \
@@ -123,6 +129,7 @@ tf_workflow.py --debug --name ENCSR000EEBchr21-fullIDR --outf /ENCSR000EEBchr21-
 
 # ENCSR000EEB chr21 IDR only from TA
 tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --idronly --nomap --yes \
+--rep1pe false --rep2pe false \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr21.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr21.tagAlign.gz \
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz \
@@ -130,6 +137,7 @@ tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-ful
 
 # ENCSR000EEB chr21 IDRv2 only from TA
 tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --idronly --idrversion 2 --nomap --yes \
+--rep1pe false --rep2pe false \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr21.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr21.tagAlign.gz \
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz \
@@ -212,3 +220,40 @@ dx run \
 --yes \
 spp
 
+# Run MACS2 with ENCSR678FIT chr19
+dx run \
+--input "experiment=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "control=/test_data/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "xcor_scores_input=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
+--input "narrowPeak_as=ENCODE Reference Files:/narrowPeak.as" \
+--input "gappedPeak_as=ENCODE Reference Files:/gappedPeak.as" \
+--input "broadPeak_as=ENCODE Reference Files:/broadPeak.as" \
+--input "genomesize=mm" \
+--verbose \
+--destination /macs2_test \
+--name macs2_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+--watch \
+macs2
+
+# Run MACS2 with ENCSR678FIT
+dx run \
+--input "experiment=mm10_mapping:/e115/bams/ENCSR678FIT/rep1/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
+--input "control=mm10_mapping:/e115/bams/ENCSR817FFF/rep1/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
+--input "xcor_scores_input=mm10_mapping:/e115/bams/ENCSR678FIT/rep1/ENCFF926URZ.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
+--input "narrowPeak_as=ENCODE Reference Files:/narrowPeak.as" \
+--input "gappedPeak_as=ENCODE Reference Files:/gappedPeak.as" \
+--input "broadPeak_as=ENCODE Reference Files:/broadPeak.as" \
+--input "genomesize=mm" \
+--verbose \
+--destination /macs2_test \
+--name macs2_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+--watch \
+macs2

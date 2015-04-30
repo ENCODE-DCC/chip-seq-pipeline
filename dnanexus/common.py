@@ -1,4 +1,1 @@
-#!/usr/bin/env python
-
-def test():
-	print "In common.test"
+/Users/jseth/lib/common.py

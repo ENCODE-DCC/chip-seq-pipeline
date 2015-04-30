@@ -21,7 +21,7 @@ Examples:
 	%(prog)s --rep1 r1.fastq.gz --rep2 r2.fastq.gz --ctl1 c1.fastq.gz --ctl2 c2.fastq.gz --idronly --yes
 
 	Build and run a workflow, skipping mapping and starting from tagAligns from paired-end data, reporting both naive and IDR-processed peaks.
-	%(prog)s --rep1 f1.tagAlign.gz --rep2 r2.tagAlign.gz --ctl1 c1.tagAlign.gz --ctl2 c2.tagAlign.gz --rep1pe --rep2pe --idr --yes
+	%(prog)s --rep1 f1.tagAlign.gz --rep2 r2.tagAlign.gz --ctl1 c1.tagAlign.gz --ctl2 c2.tagAlign.gz --rep1_ended PE --rep2_ended PE --idr --yes
 
 '''
 
@@ -60,8 +60,8 @@ def get_args():
 	parser.add_argument('--name',    help="Name of new workflow", 				default="TF ChIP-Seq")
 	parser.add_argument('--applets', help="Name of project containing applets", default="E3 ChIP-seq")
 	parser.add_argument('--nomap',   help='Given tagAligns, skip to peak calling', default=False, action='store_true')
-	parser.add_argument('--rep1pe', help='Specify rep1 is paired end (only if --nomap)', default=False, action='store_true')
-	parser.add_argument('--rep2pe', help='Specify rep2 is paired end (only if --nomap)', default=False, action='store_true')
+	parser.add_argument('--rep1pe', help='Specify if rep1 is PE (required only if --nomap)', type=bool, default=None)
+	parser.add_argument('--rep2pe', help='Specify if rep2 is PE (required only if --nomap)', type=bool, default=None)
 	parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks",	default='ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz')
 	parser.add_argument('--idr', 	 help='Report peaks with and without IDR analysis',					default=False, action='store_true')
 	parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
@@ -78,6 +78,10 @@ def get_args():
 		logging.basicConfig(format='%(levelname)s:%(message)s')
 
 	logging.debug("rep1 is: %s" %(args.rep1))
+
+	if args.nomap and (args.rep1pe == None or args.rep2pe == None):
+		logging.error("With --nomap, endedness of replicates must be specified with --rep1pe and --rep2pe")
+		raise ValueError
 
 	return args
 
