@@ -1,4 +1,4 @@
-# test2 Developer Readme
+# encode_macs2 Developer Readme
 
 <!--
 TODO: Please edit this Readme.developer.md file to include information

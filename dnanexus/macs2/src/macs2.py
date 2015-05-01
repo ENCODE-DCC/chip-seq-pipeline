@@ -15,7 +15,7 @@ import os, time, common
 import dxpy
 
 @dxpy.entry_point('main')
-def main(experiment, control, xcor_scores_input, chrom_sizes, narrowPeak_as, broadPeak_as, gappedPeak_as, genomesize):
+def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize):
 
 	# Initialize data object inputs on the platform
 	# into dxpy.DXDataObject instances.
@@ -24,9 +24,9 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowPeak_as, bro
 	control           = dxpy.DXFile(control)
 	xcor_scores_input = dxpy.DXFile(xcor_scores_input)
 	chrom_sizes       = dxpy.DXFile(chrom_sizes)
-	narrowPeak_as     = dxpy.DXFile(narrowPeak_as)
-	gappedPeak_as     = dxpy.DXFile(gappedPeak_as)
-	broadPeak_as      = dxpy.DXFile(broadPeak_as)
+	narrowPeak_as     = dxpy.DXFile(narrowpeak_as)
+	gappedPeak_as     = dxpy.DXFile(gappedpeak_as)
+	broadPeak_as      = dxpy.DXFile(broadpeak_as)
 
 	# Download the file inputs to the local file system
 	# and use their own filenames.
@@ -225,12 +225,12 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowPeak_as, bro
 	# Build the output structure.
 
 	output = {
-		"narrowPeak":    dxpy.dxlink(narrowPeak),
-		"gappedPeak":    dxpy.dxlink(gappedPeak),
-		"broadPeak":     dxpy.dxlink(broadPeak),
-		"narrowPeak_bb": dxpy.dxlink(narrowPeak_bb),
-		"gappedPeak_bb": dxpy.dxlink(gappedPeak_bb),
-		"broadPeak_bb":  dxpy.dxlink(broadPeak_bb),
+		"narrowpeaks":    dxpy.dxlink(narrowPeak),
+		"gappedpeaks":    dxpy.dxlink(gappedPeak),
+		"broadpeaks":     dxpy.dxlink(broadPeak),
+		"narrowpeaks_bb": dxpy.dxlink(narrowPeak_bb),
+		"gappedpeaks_bb": dxpy.dxlink(gappedPeak_bb),
+		"broadpeaks_bb":  dxpy.dxlink(broadPeak_bb),
 		"fc_signal":     dxpy.dxlink(fc_signal),
 		"pvalue_signal": dxpy.dxlink(pvalue_signal)
 	}

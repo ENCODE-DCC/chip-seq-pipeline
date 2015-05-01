@@ -15,276 +15,281 @@
 
 import os, subprocess, logging, re, shlex, sys
 import dxpy
+import common
 
-def run_pipe(steps, outfile=None, debug=True):
-    #break this out into a recursive function
-    #TODO:  capture stderr
-    from subprocess import Popen, PIPE
+def XXrun_pipe(steps, outfile=None, debug=True):
+	#break this out into a recursive function
+	#TODO:  capture stderr
+	from subprocess import Popen, PIPE
 
-    if debug:
-        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-    else: # use the defaulf logging level
-        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+	if debug:
+		logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+	else: # use the defaulf logging level
+		logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
-    p = None
-    p_next = None
-    first_step_n = 1
-    last_step_n = len(steps)
-    for n,step in enumerate(steps, start=first_step_n):
-        #logging.info("step %d: %s" %(n,step))
-        print "step %d: %s" %(n,step)
-        if n == first_step_n:
-            if n == last_step_n and outfile: #one-step pipeline with outfile
-                with open(outfile, 'w') as fh:
-                    logging.info("one step shlex: %s to file: %s" %(shlex.split(step), outfile))
-                    p = Popen(shlex.split(step), stdout=fh)
-                break
-            #logging.info("first step shlex to stdout: %s" %(shlex.split(step)))
-            print "first step shlex to stdout: %s" %(shlex.split(step))
-            p = Popen(shlex.split(step), stdout=PIPE)
-            #need to close p.stdout here?
-        elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
-            with open(outfile, 'w') as fh:
-                #logging.info("last step shlex: %s to file: %s" %(shlex.split(step), outfile))
-                print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
-                p_last = Popen(shlex.split(step), stdin=p.stdout, stdout=fh)
-                p.stdout.close()
-                p = p_last
-        else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
-            #logging.info("intermediate step %d shlex to stdout: %s" %(n,shlex.split(step)))
-            print "intermediate step %d shlex to stdout: %s" %(n,shlex.split(step))
-            p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
-            p.stdout.close()
-            p = p_next
-    out,err = p.communicate()
-    if err:
-        #logging.warning(err)
-        print "stderr: %s" %(err)
-    return out,err
+	p = None
+	p_next = None
+	first_step_n = 1
+	last_step_n = len(steps)
+	for n,step in enumerate(steps, start=first_step_n):
+		#logging.info("step %d: %s" %(n,step))
+		print "step %d: %s" %(n,step)
+		if n == first_step_n:
+			if n == last_step_n and outfile: #one-step pipeline with outfile
+				with open(outfile, 'w') as fh:
+					logging.info("one step shlex: %s to file: %s" %(shlex.split(step), outfile))
+					p = Popen(shlex.split(step), stdout=fh)
+				break
+			#logging.info("first step shlex to stdout: %s" %(shlex.split(step)))
+			print "first step shlex to stdout: %s" %(shlex.split(step))
+			p = Popen(shlex.split(step), stdout=PIPE)
+			#need to close p.stdout here?
+		elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
+			with open(outfile, 'w') as fh:
+				#logging.info("last step shlex: %s to file: %s" %(shlex.split(step), outfile))
+				print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
+				p_last = Popen(shlex.split(step), stdin=p.stdout, stdout=fh)
+				p.stdout.close()
+				p = p_last
+		else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
+			#logging.info("intermediate step %d shlex to stdout: %s" %(n,shlex.split(step)))
+			print "intermediate step %d shlex to stdout: %s" %(n,shlex.split(step))
+			p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
+			p.stdout.close()
+			p = p_next
+	out,err = p.communicate()
+	if err:
+		#logging.warning(err)
+		print "stderr: %s" %(err)
+	return out,err
 
 
 def count_lines(fname):
-    wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
-    print wc_output
-    lines = wc_output.split()[0]
-    return int(lines)
+	wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
+	print wc_output
+	lines = wc_output.split()[0]
+	return int(lines)
 
 def blacklist_filter(input_fname, output_fname, input_blacklist_fname):
-    
-    with open(input_fname, 'rb') as fh:
-        gzipped = fh.read(2) == b'\x1f\x8b'
-    if gzipped:
-        peaks_fname = 'peaks.bed'
-        out,err = run_pipe(['gzip -dc %s' %(input_fname)], peaks_fname)
-    else:
-        peaks_fname = input_fname
+	
+	with open(input_fname, 'rb') as fh:
+		gzipped = fh.read(2) == b'\x1f\x8b'
+	if gzipped:
+		peaks_fname = 'peaks.bed'
+		out,err = common.run_pipe(['gzip -dc %s' %(input_fname)], peaks_fname)
+	else:
+		peaks_fname = input_fname
 
-    with open(input_blacklist_fname, 'rb') as fh:
-        gzipped = fh.read(2) == b'\x1f\x8b'
-    if gzipped:
-        blacklist_fname = 'blacklist.bed'
-        out, err = run_pipe(['gzip -dc %s' %(input_blacklist_fname)], blacklist_fname)
-    else:
-        blacklist_fname = input_blacklist_fname
+	with open(input_blacklist_fname, 'rb') as fh:
+		gzipped = fh.read(2) == b'\x1f\x8b'
+	if gzipped:
+		blacklist_fname = 'blacklist.bed'
+		out, err = common.run_pipe(['gzip -dc %s' %(input_blacklist_fname)], blacklist_fname)
+	else:
+		blacklist_fname = input_blacklist_fname
 
-    out, err = run_pipe([
-        'subtractBed -A -a %s -b %s' %(peaks_fname, blacklist_fname)
-        ], output_fname)
-    #subprocess.check_call(shlex.split('cp %s %s' %(peaks_fname, output_fname)))
+	out, err = common.run_pipe([
+		'subtractBed -A -a %s -b %s' %(peaks_fname, blacklist_fname)
+		], output_fname)
+	#subprocess.check_call(shlex.split('cp %s %s' %(peaks_fname, output_fname)))
 
 def uncompress(filename):
-    m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename)
-    if m:
-        basename = m.group(1)
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
-        logging.info("Decompressing %s" %(filename))
-        logging.info(subprocess.check_output(shlex.split('gzip -d %s' %(filename))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(basename))))
-        return basename
-    else:
-        return filename
+	m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename)
+	if m:
+		basename = m.group(1)
+		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
+		logging.info("Decompressing %s" %(filename))
+		logging.info(subprocess.check_output(shlex.split('gzip -d %s' %(filename))))
+		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(basename))))
+		return basename
+	else:
+		return filename
 
 def compress(filename):
-    if re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename):
-        return filename
-    else:
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
-        logging.info("Compressing %s" %(filename))
-        logging.info(subprocess.check_output(shlex.split('gzip %s' %(filename))))
-        new_filename = filename + '.gz'
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
-        return new_filename
+	if re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename):
+		return filename
+	else:
+		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
+		logging.info("Compressing %s" %(filename))
+		logging.info(subprocess.check_output(shlex.split('gzip %s' %(filename))))
+		new_filename = filename + '.gz'
+		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
+		return new_filename
 
-def bed2bb(bed_filename, chrom_sizes, as_file):
-    bb_filename = bed_filename.rstrip('.bed') + '.bb'
-    bed_filename_sorted = bed_filename + ".sorted"
+def XXbed2bb(bed_filename, chrom_sizes, as_file):
+	bb_filename = bed_filename.rstrip('.bed') + '.bb'
+	bed_filename_sorted = bed_filename + ".sorted"
 
-    print "In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file)
+	print "In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file)
 
-    print "Sorting"
-    print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
+	print "Sorting"
+	print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
 
-    for fn in [bed_filename, bed_filename_sorted, chrom_sizes, as_file]:
-        print "head %s" %(fn)
-        print subprocess.check_output('head %s' %(fn), shell=True, stderr=subprocess.STDOUT)
+	for fn in [bed_filename, bed_filename_sorted, chrom_sizes, as_file]:
+		print "head %s" %(fn)
+		print subprocess.check_output('head %s' %(fn), shell=True, stderr=subprocess.STDOUT)
 
-    command = "bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)
-    print command
-    try:
-        process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-        for line in iter(process.stdout.readline, ''):
-            sys.stdout.write(line)
-        process.wait()
-        returncode = process.returncode
-        if returncode != 0:
-            raise subprocess.CalledProcessError
-    except:
-        e = sys.exc_info()[0]
-        sys.stderr.write('%s: bedToBigBed failed. Skipping bb creation.' %(e))
-        return None
+	command = "bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)
+	print command
+	try:
+		process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+		for line in iter(process.stdout.readline, ''):
+			sys.stdout.write(line)
+		process.wait()
+		returncode = process.returncode
+		if returncode != 0:
+			raise subprocess.CalledProcessError
+	except:
+		e = sys.exc_info()[0]
+		sys.stderr.write('%s: bedToBigBed failed. Skipping bb creation.' %(e))
+		return None
 
-    print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
+	print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
 
-    #this is necessary in case bedToBegBed failes to creat the bb file but doesn't return a non-zero returncode
-    if not os.path.isfile(bb_filename):
-        bb_filename = None
+	#this is necessary in case bedToBegBed failes to creat the bb file but doesn't return a non-zero returncode
+	if not os.path.isfile(bb_filename):
+		bb_filename = None
 
-    print "Returning bb file %s" %(bb_filename)
-    return bb_filename
+	print "Returning bb file %s" %(bb_filename)
+	return bb_filename
 
 @dxpy.entry_point("postprocess")
 def postprocess(process_outputs):
-    # Change the following to process whatever input this stage
-    # receives.  You may also want to copy and paste the logic to download
-    # and upload files here as well if this stage receives file input
-    # and/or makes file output.
+	# Change the following to process whatever input this stage
+	# receives.  You may also want to copy and paste the logic to download
+	# and upload files here as well if this stage receives file input
+	# and/or makes file output.
 
-    print "In postprocess with process_outputs %s" %(process_outputs)
+	print "In postprocess with process_outputs %s" %(process_outputs)
 
-    for output in process_outputs:
-        pass
+	for output in process_outputs:
+		pass
 
-    return { "pooled": process_outputs[0] }
+	return { "pooled": process_outputs[0] }
 
 @dxpy.entry_point("process")
 def process(input1):
-    # Change the following to process whatever input this stage
-    # receives.  You may also want to copy and paste the logic to download
-    # and upload files here as well if this stage receives file input
-    # and/or makes file output.
+	# Change the following to process whatever input this stage
+	# receives.  You may also want to copy and paste the logic to download
+	# and upload files here as well if this stage receives file input
+	# and/or makes file output.
 
-    print input1
+	print input1
 
-    return { "output": "placeholder value" }
+	return { "output": "placeholder value" }
 
 @dxpy.entry_point("main")
-def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, blacklist, chrom_sizes, as_file):
+def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_sizes, as_file, blacklist=None):
 
-    #TODO for now just taking the peak files.  This applet should actually call IDR instead of 
-    #putting that in the workflow populator script
+	#TODO for now just taking the peak files.  This applet should actually call IDR instead of 
+	#putting that in the workflow populator script
 
-    # Initialize the data object inputs on the platform into
-    # dxpy.DXDataObject instances.
+	# Initialize the data object inputs on the platform into
+	# dxpy.DXDataObject instances.
 
-    reps_peaks_file = dxpy.DXFile(reps_peaks)
-    r1pr_peaks_file = dxpy.DXFile(r1pr_peaks)
-    r2pr_peaks_file = dxpy.DXFile(r2pr_peaks)
-    pooledpr_peaks_file = dxpy.DXFile(pooledpr_peaks)
-    blacklist_file = dxpy.DXFile(blacklist)
-    chrom_sizes_file = dxpy.DXFile(chrom_sizes)
-    as_file_file = dxpy.DXFile(as_file)
+	reps_peaks_file = dxpy.DXFile(reps_peaks)
+	r1pr_peaks_file = dxpy.DXFile(r1pr_peaks)
+	r2pr_peaks_file = dxpy.DXFile(r2pr_peaks)
+	pooledpr_peaks_file = dxpy.DXFile(pooledpr_peaks)
+	chrom_sizes_file = dxpy.DXFile(chrom_sizes)
+	as_file_file = dxpy.DXFile(as_file)
+	if blacklist is not None:
+		blacklist_file = dxpy.DXFile(blacklist)
+		blacklist_filename = 'blacklist_%s' %(blacklist_file.name)
+		dxpy.download_dxfile(blacklist_file.get_id(), blacklist_filename)
+		blacklist_filename = uncompress(blacklist_filename)
 
-    # Download the file inputs to the local file system.
+	# Download the file inputs to the local file system.
 
-    #Need to prepend something to ensure the local filenames will be unique
-    reps_peaks_filename = 'true_%s' %(reps_peaks_file.name)
-    r1pr_peaks_filename = 'r1pr_%s' %(r1pr_peaks_file.name)
-    r2pr_peaks_filename = 'r2pr_%s' %(r2pr_peaks_file.name)
-    pooledpr_peaks_filename = 'pooledpr_%s' %(pooledpr_peaks_file.name)
-    blacklist_filename = 'blacklist_%s' %(blacklist_file.name)
-    chrom_sizes_filename = chrom_sizes_file.name
-    as_file_filename = as_file_file.name
+	#Need to prepend something to ensure the local filenames will be unique
+	reps_peaks_filename = 'true_%s' %(reps_peaks_file.name)
+	r1pr_peaks_filename = 'r1pr_%s' %(r1pr_peaks_file.name)
+	r2pr_peaks_filename = 'r2pr_%s' %(r2pr_peaks_file.name)
+	pooledpr_peaks_filename = 'pooledpr_%s' %(pooledpr_peaks_file.name)
+	chrom_sizes_filename = chrom_sizes_file.name
+	as_file_filename = as_file_file.name
 
-    dxpy.download_dxfile(reps_peaks_file.get_id(), reps_peaks_filename)
-    dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_filename)
-    dxpy.download_dxfile(r2pr_peaks_file.get_id(), r2pr_peaks_filename)
-    dxpy.download_dxfile(pooledpr_peaks_file.get_id(), pooledpr_peaks_filename)
-    dxpy.download_dxfile(blacklist_file.get_id(), blacklist_filename)
-    dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
-    dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
+	dxpy.download_dxfile(reps_peaks_file.get_id(), reps_peaks_filename)
+	dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_filename)
+	dxpy.download_dxfile(r2pr_peaks_file.get_id(), r2pr_peaks_filename)
+	dxpy.download_dxfile(pooledpr_peaks_file.get_id(), pooledpr_peaks_filename)
+	dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
+	dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
 
-    print subprocess.check_output('ls -l', shell=True)
+	print subprocess.check_output('ls -l', shell=True)
 
-    reps_peaks_filename = uncompress(reps_peaks_filename)
-    r1pr_peaks_filename = uncompress(r1pr_peaks_filename)
-    r2pr_peaks_filename = uncompress(r2pr_peaks_filename)
-    pooledpr_peaks_filename = uncompress(pooledpr_peaks_filename)
-    blacklist_filename = uncompress(blacklist_filename)
+	reps_peaks_filename = uncompress(reps_peaks_filename)
+	r1pr_peaks_filename = uncompress(r1pr_peaks_filename)
+	r2pr_peaks_filename = uncompress(r2pr_peaks_filename)
+	pooledpr_peaks_filename = uncompress(pooledpr_peaks_filename)
 
-    Nt = count_lines(reps_peaks_filename)
-    print "%d peaks from true replicates" %(Nt)
-    N1 = count_lines(r1pr_peaks_filename)
-    print "%d peaks from rep1 self-pseudoreplicates" %(N1)
-    N2 = count_lines(r2pr_peaks_filename)
-    print "%d peaks from rep2 self-pseudoreplicates" %(N2)
-    Np = count_lines(pooledpr_peaks_filename)
-    print "%d peaks from pooled pseudoreplicates" %(Np)
+	Nt = count_lines(reps_peaks_filename)
+	print "%d peaks from true replicates" %(Nt)
+	N1 = count_lines(r1pr_peaks_filename)
+	print "%d peaks from rep1 self-pseudoreplicates" %(N1)
+	N2 = count_lines(r2pr_peaks_filename)
+	print "%d peaks from rep2 self-pseudoreplicates" %(N2)
+	Np = count_lines(pooledpr_peaks_filename)
+	print "%d peaks from pooled pseudoreplicates" %(Np)
 
-    conservative_set_filename = '%s_final_conservative.narrowPeak' %(experiment)
-    blacklist_filter(reps_peaks_filename, conservative_set_filename, blacklist_filename)
-    Ncb = count_lines(conservative_set_filename)
-    print "%d peaks blacklisted from the conservative set" %(Nt-Ncb)
+	conservative_set_filename = '%s_final_conservative.narrowPeak' %(experiment)
+	if blacklist is not None:
+		blacklist_filter(reps_peaks_filename, conservative_set_filename, blacklist_filename)
+	else:
+		conservative_set_filename = reps_peaks_filename
+	Ncb = count_lines(conservative_set_filename)
+	print "%d peaks blacklisted from the conservative set" %(Nt-Ncb)
 
-    if Nt >= Np:
-        peaks_to_filter_filename = reps_peaks_filename
-        No = Nt
-    else:
-        peaks_to_filter_filename = pooledpr_peaks_filename
-        No = Np
+	if Nt >= Np:
+		peaks_to_filter_filename = reps_peaks_filename
+		No = Nt
+	else:
+		peaks_to_filter_filename = pooledpr_peaks_filename
+		No = Np
 
-    optimal_set_filename = '%s_final_optimal.narrowPeak' %(experiment)
-    blacklist_filter(peaks_to_filter_filename, optimal_set_filename, blacklist_filename)
-    Nob = count_lines(optimal_set_filename)
-    print "%d peaks blacklisted from the optimal set" %(No-Nob)
+	optimal_set_filename = '%s_final_optimal.narrowPeak' %(experiment)
+	if blacklist is not None:
+		blacklist_filter(peaks_to_filter_filename, optimal_set_filename, blacklist_filename)
+	else:
+		optimal_set_filename = peaks_to_filter_filename
+	Nob = count_lines(optimal_set_filename)
+	print "%d peaks blacklisted from the optimal set" %(No-Nob)
 
-    rescue_ratio            = float(max(Np,Nt)) / float(min(Np,Nt))
-    self_consistency_ratio  = float(max(N1,N2)) / float(min(N1,N2))
+	rescue_ratio            = float(max(Np,Nt)) / float(min(Np,Nt))
+	self_consistency_ratio  = float(max(N1,N2)) / float(min(N1,N2))
 
-    if rescue_ratio > 2 and self_consistency_ratio > 2:
-        reproducibility = 'fail'
-    elif rescue_ratio > 2 or self_consistency_ratio > 2:
-        reproducibility = 'borderline'
-    else:
-        reproducibility = 'pass'
+	if rescue_ratio > 2 and self_consistency_ratio > 2:
+		reproducibility = 'fail'
+	elif rescue_ratio > 2 or self_consistency_ratio > 2:
+		reproducibility = 'borderline'
+	else:
+		reproducibility = 'pass'
 
-    output = {}
+	output = {}
 
-    #Upload the output files
-    conservative_set_output = dxpy.upload_local_file(compress(conservative_set_filename))
-    optimal_set_output = dxpy.upload_local_file(compress(optimal_set_filename))
-    #bedtobigbed often fails, so skip creating the bb if it does
-    conservative_set_bb_filename = bed2bb(conservative_set_filename, chrom_sizes_filename, as_file_filename)
-    optimal_set_bb_filename = bed2bb(optimal_set_filename, chrom_sizes_filename, as_file_filename)
-    if conservative_set_bb_filename:
-        conservative_set_bb_output = dxpy.upload_local_file(conservative_set_bb_filename)
-        output.update({"conservative_set_bb": dxpy.dxlink(conservative_set_bb_output)})
-    if optimal_set_bb_filename:
-        optimal_set_bb_output = dxpy.upload_local_file(optimal_set_bb_filename)
-        output.update({"optimal_set_bb": dxpy.dxlink(optimal_set_bb_output)})
+	#bedtobigbed often fails, so skip creating the bb if it does
+	conservative_set_bb_filename = common.bed2bb(conservative_set_filename, chrom_sizes_filename, as_file_filename)
+	optimal_set_bb_filename = common.bed2bb(optimal_set_filename, chrom_sizes_filename, as_file_filename)
+	if conservative_set_bb_filename:
+		conservative_set_bb_output = dxpy.upload_local_file(conservative_set_bb_filename)
+		output.update({"conservative_set_bb": dxpy.dxlink(conservative_set_bb_output)})
+	if optimal_set_bb_filename:
+		optimal_set_bb_output = dxpy.upload_local_file(optimal_set_bb_filename)
+		output.update({"optimal_set_bb": dxpy.dxlink(optimal_set_bb_output)})
 
-    output.update({
-        "Nt": Nt,
-        "N1": N1,
-        "N2": N2,
-        "Np": Np,
-        "conservative_set": dxpy.dxlink(conservative_set_output),
-        "optimal_set": dxpy.dxlink(optimal_set_output),
-        "rescue_ratio": rescue_ratio,
-        "self_consistency_ratio": self_consistency_ratio,
-        "reproducibility_test": reproducibility
-    })
+	output.update({
+		"Nt": Nt,
+		"N1": N1,
+		"N2": N2,
+		"Np": Np,
+		"conservative_set": dxpy.dxlink(dxpy.upload_local_file(compress(conservative_set_filename))),
+		"optimal_set": dxpy.dxlink(dxpy.upload_local_file(compress(optimal_set_filename))),
+		"rescue_ratio": rescue_ratio,
+		"self_consistency_ratio": self_consistency_ratio,
+		"reproducibility_test": reproducibility
+	})
 
-    logging.info("Exiting with output: %s", output)
-    return output
+	logging.info("Exiting with output: %s", output)
+	return output
 
 dxpy.run()

@@ -1,7 +1,7 @@
 <!-- dx-header -->
-# test2 (DNAnexus Platform App)
+# ENCODE Peaks with MACS2 (DNAnexus Platform App)
 
-test2
+Take experiment tagAlign file and a control tagAlign file and call peaks
 
 This is the source code for an app that runs on the DNAnexus Platform.
 For more information about how to run or modify it, see

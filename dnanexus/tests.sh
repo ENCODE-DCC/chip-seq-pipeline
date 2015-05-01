@@ -143,6 +143,26 @@ tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-ful
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz \
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz
 
+## histones
+
+# ENCSR678FIT chr19 IDRv2 from TA
+histone_workflow.py --debug --name ENCSR678FIT-chr19-ta-IDR2 --outf /ENCSR678FIT-chr19-ta-IDR2-$(date +"%Y%m%d%H%M") --idr --idrversion 2 --nomap --yes \
+--rep1pe false --rep2pe false \
+--rep1 /test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
+--rep2 /test_data/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
+--ctl1 /test_data/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
+--ctl2 /test_data/ENCFF482JNU-ENCFF249RWY-ENCFF118FEW_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
+--genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
+
+# ENCSR678FIT IDRv2 from TA
+histone_workflow.py --debug --name ENCSR678FIT-ta-IDR2 --outf /ENCSR678FIT-ta-IDR2-$(date +"%Y%m%d%H%M") --idr --idrversion 2 --nomap --yes \
+--rep1pe false --rep2pe false \
+--rep1 /mm10_mapping/e165_experiments/bams/ENCSR678FIT/rep1/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--rep2 /mm10_mapping/e165_experiments/bams/ENCSR678FIT/rep2/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--ctl1 /mm10_mapping/e165_controls/bams/ENCSR817FFF/rep1/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--ctl2 /mm10_mapping/e165_controls/bams/ENCSR817FFF/rep2/ENCFF482JNU-ENCFF249RWY-ENCFF118FEW_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
+
 
 ## single applets
 
@@ -223,8 +243,8 @@ spp
 # Run MACS2 with ENCSR678FIT chr19
 dx run \
 --input "experiment=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
---input "control=/test_data/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
 --input "xcor_scores_input=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "control=/test_data/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
 --input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
 --input "narrowPeak_as=ENCODE Reference Files:/narrowPeak.as" \
 --input "gappedPeak_as=ENCODE Reference Files:/gappedPeak.as" \
@@ -239,11 +259,11 @@ dx run \
 --watch \
 macs2
 
-# Run MACS2 with ENCSR678FIT
+# Run MACS2 with ENCSR678FIT (narrow mark)
 dx run \
 --input "experiment=mm10_mapping:/e115/bams/ENCSR678FIT/rep1/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
---input "control=mm10_mapping:/e115/bams/ENCSR817FFF/rep1/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
 --input "xcor_scores_input=mm10_mapping:/e115/bams/ENCSR678FIT/rep1/ENCFF926URZ.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "control=mm10_mapping:/e115/bams/ENCSR817FFF/rep1/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
 --input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
 --input "narrowPeak_as=ENCODE Reference Files:/narrowPeak.as" \
 --input "gappedPeak_as=ENCODE Reference Files:/gappedPeak.as" \
@@ -251,6 +271,25 @@ dx run \
 --input "genomesize=mm" \
 --verbose \
 --destination /macs2_test \
+--name macs2_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+--watch \
+macs2
+
+# Run MACS2 with ENCSR311TLE (broad mark)
+dx run \
+--input "experiment=/mm10_mapping/e115_50a/bams/ENCSR311TLE/rep1/ENCFF002BVQ-ENCFF002BVU_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
+--input "xcor_scores_input=/mm10_mapping/e115_50a/bams/ENCSR311TLE/rep1/ENCFF002BVQ-ENCFF002BVU_pooled.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "control=/mm10_mapping/e115_controls/bams/ENCSR081UQY/rep1/ENCFF001ZUV.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
+--input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
+--input "narrowPeak_as=ENCODE Reference Files:/narrowPeak.as" \
+--input "gappedPeak_as=ENCODE Reference Files:/gappedPeak.as" \
+--input "broadPeak_as=ENCODE Reference Files:/broadPeak.as" \
+--input "genomesize=mm" \
+--verbose \
+--destination /macs2_test_broad \
 --name macs2_test \
 --delay-workspace-destruction \
 --priority high \

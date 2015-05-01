@@ -1,0 +1,370 @@
+{
+	"name": "encode_macs2",
+	"title": "ENCODE Peaks with MACS2",
+	"summary": "Take experiment tagAlign file and a control tagAlign file and call peaks",
+	"dxapi": "1.0.0",
+	"version": "0.0.1",
+	"categories": [
+		"ENCODE Analysis Pipeline"
+	],
+	"inputSpec": [
+		{
+			"name": "rep1_ta",
+			"label": "Rep 1 tagAlign",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep2_ta",
+			"label": "Rep 2 tagAlign",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "ctl1_ta",
+			"label": "Control 1 tagAlign",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "ctl2_ta",
+			"label": "Control 2 tagAlign",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep1_xcor",
+			"label": "Rep 1 cross-correlation scores",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep2_xcor",
+			"label": "Rep 2 cross-correlation scores",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep1_paired_end",
+			"class": "boolean",
+			"optional": false
+		},
+		{
+			"name": "rep2_paired_end",
+			"label": "boolean",
+			"class": "boolean",
+			"optional": false
+		},
+		{
+			"name": "chrom_sizes",
+			"label": "chrom.sizes file for bedToBigBed",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "narrowpeak_as",
+			"label": ".as file for narrowPeak",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "gappedpeak_as",
+			"label": ".as file for gappedPeak",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "broadpeak_as",
+			"label": ".as file for broadPeak",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "genomesize",
+			"label": "string for MACS2, hs for human, mm for mouse",
+			"class": "string"
+		}
+	],
+	"outputSpec": [
+		{
+			"name": "rep1_narrowpeaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1_narrowpeaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "rep1_gappedpeaks",
+			"label": "Gappedpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1_gappedpeaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "rep1_broadpeaks",
+			"label": "Broadpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1_broadpeaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "rep1_fc_signal",
+			"label": "Signal track fold-enrichment over control",
+			"class": "file"
+		},
+		{
+			"name": "rep1_pvalue_signal",
+			"label": "Signal track p-value",
+			"class": "file"
+		},
+		{
+			"name": "rep2_narrowpeaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2_narrowpeaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "rep2_gappedpeaks",
+			"label": "Gappedpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2_gappedpeaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "rep2_broadpeaks",
+			"label": "Broadpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2_broadpeaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "rep2_fc_signal",
+			"label": "Signal track fold-enrichment over control",
+			"class": "file"
+		},
+		{
+			"name": "rep2_pvalue_signal",
+			"label": "Signal track p-value",
+			"class": "file"
+		},
+		{
+			"name": "pooled_narrowpeaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooled_narrowpeaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "pooled_gappedpeaks",
+			"label": "Gappedpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooled_gappedpeaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "pooled_broadpeaks",
+			"label": "Broadpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooled_broadpeaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "pooled_fc_signal",
+			"label": "Signal track fold-enrichment over control",
+			"class": "file"
+		},
+		{
+			"name": "pooled_pvalue_signal",
+			"label": "Signal track p-value",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr1_narrowpeaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr1_gappedpeaks",
+			"label": "Gappedpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr1_broadpeaks",
+			"label": "Broadpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr1_fc_signal",
+			"label": "Signal track fold-enrichment over control",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr1_pvalue_signal",
+			"label": "Signal track p-value",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr2_narrowpeaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr2_gappedpeaks",
+			"label": "Gappedpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr2_broadpeaks",
+			"label": "Broadpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr2_fc_signal",
+			"label": "Signal track fold-enrichment over control",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr2_pvalue_signal",
+			"label": "Signal track p-value",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr1_narrowpeaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr1_gappedpeaks",
+			"label": "Gappedpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr1_broadpeaks",
+			"label": "Broadpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr1_fc_signal",
+			"label": "Signal track fold-enrichment over control",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr1_pvalue_signal",
+			"label": "Signal track p-value",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr2_narrowpeaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr2_gappedpeaks",
+			"label": "Gappedpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr2_broadpeaks",
+			"label": "Broadpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr2_fc_signal",
+			"label": "Signal track fold-enrichment over control",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr2_pvalue_signal",
+			"label": "Signal track p-value",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr1_narrowpeaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr1_gappedpeaks",
+			"label": "Gappedpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr1_broadpeaks",
+			"label": "Broadpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr1_fc_signal",
+			"label": "Signal track fold-enrichment over control",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr1_pvalue_signal",
+			"label": "Signal track p-value",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr2_narrowpeaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr2_gappedpeaks",
+			"label": "Gappedpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr2_broadpeaks",
+			"label": "Broadpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr2_fc_signal",
+			"label": "Signal track fold-enrichment over control",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr2_pvalue_signal",
+			"label": "Signal track p-value",
+			"class": "file"
+		}
+	],
+	"runSpec": {
+		"interpreter": "python2.7",
+		"file": "src/encode_macs2.py"
+	},
+	"access": {
+		"network": [
+			"*"
+		]
+	},
+	"authorizedUsers": []
+}

@@ -1,246 +1,246 @@
 {
-  "name": "encode_spp",
-  "title": "ENCODE Peaks with SPP",
-  "summary": "Take experiment tagAlign file and a control tagAlign file and call peaks",
-  "dxapi": "1.0.0",
-  "version": "0.0.1",
-  "categories": [
-    "ENCODE Analysis Pipeline"
-  ],
-  "inputSpec": [
-    {
-      "name": "rep1_ta",
-      "label": "Rep 1 tagAlign",
-      "class": "file",
-      "optional": false
-    },
-    {
-      "name": "rep2_ta",
-      "label": "Rep 2 tagAlign",
-      "class": "file",
-      "optional": false
-    },
-    {
-      "name": "ctl1_ta",
-      "label": "Control 1 tagAlign",
-      "class": "file",
-      "optional": false
-    },
-    {
-      "name": "ctl2_ta",
-      "label": "Control 2 tagAlign",
-      "class": "file",
-      "optional": false
-    },
-    {
-      "name": "rep1_xcor",
-      "label": "Rep 1 cross-correlation scores",
-      "class": "file",
-      "optional": false
-    },
-    {
-      "name": "rep2_xcor",
-      "label": "Rep 2 cross-correlation scores",
-      "class": "file",
-      "optional": false
-    },
-    {
-      "name": "npeaks",
-      "label": "Maximum number of peaks to call",
-      "class": "int",
-      "optional": true,
-      "default": 300000
-    },
-    {
-      "name": "nodups",
-      "label": "Have duplicates been removed from the input tag files",
-      "class": "boolean",
-      "optional": true,
-      "default": true
-    },
-    {
-      "name": "rep1_paired_end",
-      "class": "boolean",
-      "optional": false
-    },
-    {
-      "name": "rep2_paired_end",
-      "class": "boolean",
-      "optional": false
-    },
-    {
-      "name": "chrom_sizes",
-      "label": "chrom.sizes file for bedToBigBed",
-      "class": "file",
-      "optional": true
-    },
-    {
-      "name": "as_file",
-      "label": ".as file for bedToBigBed",
-      "class": "file",
-      "optional": true
-    }
-  ],
-  "outputSpec": [
-    {
-      "name": "rep1_peaks",
-      "label": "Narrowpeaks file",
-      "class": "file"
-    },
-    {
-      "name": "rep1_peaks_bb",
-      "label": "Bigbed file",
-      "class": "file"
-    },
-    {
-      "name": "rep1_xcor_plot",
-      "label": "Cross-correlation plot",
-      "class": "file"
-    },
-    {
-      "name": "rep1_xcor_scores",
-      "label": "Cross-correlation scores",
-      "class": "file"
-    },
-    {
-      "name": "rep2_peaks",
-      "label": "Narrowpeaks file",
-      "class": "file"
-    },
-    {
-      "name": "rep2_peaks_bb",
-      "label": "Bigbed file",
-      "class": "file"
-    },
-    {
-      "name": "rep2_xcor_plot",
-      "label": "Cross-correlation plot",
-      "class": "file"
-    },
-    {
-      "name": "rep2_xcor_scores",
-      "label": "Cross-correlation scores",
-      "class": "file"
-    },
-    {
-      "name": "pooled_peaks",
-      "label": "Narrowpeaks file",
-      "class": "file"
-    },
-    {
-      "name": "pooled_peaks_bb",
-      "label": "Bigbed file",
-      "class": "file"
-    },
-    {
-      "name": "pooled_xcor_plot",
-      "label": "Cross-correlation plot",
-      "class": "file"
-    },
-    {
-      "name": "pooled_xcor_scores",
-      "label": "Cross-correlation scores",
-      "class": "file"
-    },
-    {
-      "name": "rep1pr1_peaks",
-      "label": "Narrowpeaks file",
-      "class": "file"
-    },
-    {
-      "name": "rep1pr1_xcor_plot",
-      "label": "Cross-correlation plot",
-      "class": "file"
-    },
-    {
-      "name": "rep1pr1_xcor_scores",
-      "label": "Cross-correlation scores",
-      "class": "file"
-    },
-    {
-      "name": "rep1pr2_peaks",
-      "label": "Narrowpeaks file",
-      "class": "file"
-    },
-    {
-      "name": "rep1pr2_xcor_plot",
-      "label": "Cross-correlation plot",
-      "class": "file"
-    },
-    {
-      "name": "rep1pr2_xcor_scores",
-      "label": "Cross-correlation scores",
-      "class": "file"
-    },
-    {
-      "name": "rep2pr1_peaks",
-      "label": "Narrowpeaks file",
-      "class": "file"
-    },
-    {
-      "name": "rep2pr1_xcor_plot",
-      "label": "Cross-correlation plot",
-      "class": "file"
-    },
-    {
-      "name": "rep2pr1_xcor_scores",
-      "label": "Cross-correlation scores",
-      "class": "file"
-    },
-    {
-      "name": "rep2pr2_peaks",
-      "label": "Narrowpeaks file",
-      "class": "file"
-    },
-    {
-      "name": "rep2pr2_xcor_plot",
-      "label": "Cross-correlation plot",
-      "class": "file"
-    },
-    {
-      "name": "rep2pr2_xcor_scores",
-      "label": "Cross-correlation scores",
-      "class": "file"
-    },
-    {
-      "name": "pooledpr1_peaks",
-      "label": "Narrowpeaks file",
-      "class": "file"
-    },
-    {
-      "name": "pooledpr1_xcor_plot",
-      "label": "Cross-correlation plot",
-      "class": "file"
-    },
-    {
-      "name": "pooledpr1_xcor_scores",
-      "label": "Cross-correlation scores",
-      "class": "file"
-    },
-    {
-      "name": "pooledpr2_peaks",
-      "label": "Narrowpeaks file",
-      "class": "file"
-    },
-    {
-      "name": "pooledpr2_xcor_plot",
-      "label": "Cross-correlation plot",
-      "class": "file"
-    },
-    {
-      "name": "pooledpr2_xcor_scores",
-      "label": "Cross-correlation scores",
-      "class": "file"
-    }
-  ],
-  "runSpec": {
-    "interpreter": "python2.7",
-    "file": "src/encode_spp.py"
-  },
-  "access": {
-    "network": [
-      "*"
-    ]
-  },
-  "authorizedUsers": []
+	"name": "encode_spp",
+	"title": "ENCODE Peaks with SPP",
+	"summary": "Take experiment tagAlign file and a control tagAlign file and call peaks",
+	"dxapi": "1.0.0",
+	"version": "0.0.1",
+	"categories": [
+		"ENCODE Analysis Pipeline"
+	],
+	"inputSpec": [
+		{
+			"name": "rep1_ta",
+			"label": "Rep 1 tagAlign",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep2_ta",
+			"label": "Rep 2 tagAlign",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "ctl1_ta",
+			"label": "Control 1 tagAlign",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "ctl2_ta",
+			"label": "Control 2 tagAlign",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep1_xcor",
+			"label": "Rep 1 cross-correlation scores",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep2_xcor",
+			"label": "Rep 2 cross-correlation scores",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "npeaks",
+			"label": "Maximum number of peaks to call",
+			"class": "int",
+			"optional": true,
+			"default": 300000
+		},
+		{
+			"name": "nodups",
+			"label": "Have duplicates been removed from the input tag files",
+			"class": "boolean",
+			"optional": true,
+			"default": true
+		},
+		{
+			"name": "rep1_paired_end",
+			"class": "boolean",
+			"optional": false
+		},
+		{
+			"name": "rep2_paired_end",
+			"class": "boolean",
+			"optional": false
+		},
+		{
+			"name": "chrom_sizes",
+			"label": "chrom.sizes file for bedToBigBed",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "as_file",
+			"label": ".as file for bedToBigBed",
+			"class": "file",
+			"optional": true
+		}
+	],
+	"outputSpec": [
+		{
+			"name": "rep1_peaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1_peaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "rep1_xcor_plot",
+			"label": "Cross-correlation plot",
+			"class": "file"
+		},
+		{
+			"name": "rep1_xcor_scores",
+			"label": "Cross-correlation scores",
+			"class": "file"
+		},
+		{
+			"name": "rep2_peaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2_peaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "rep2_xcor_plot",
+			"label": "Cross-correlation plot",
+			"class": "file"
+		},
+		{
+			"name": "rep2_xcor_scores",
+			"label": "Cross-correlation scores",
+			"class": "file"
+		},
+		{
+			"name": "pooled_peaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooled_peaks_bb",
+			"label": "Bigbed file",
+			"class": "file"
+		},
+		{
+			"name": "pooled_xcor_plot",
+			"label": "Cross-correlation plot",
+			"class": "file"
+		},
+		{
+			"name": "pooled_xcor_scores",
+			"label": "Cross-correlation scores",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr1_peaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr1_xcor_plot",
+			"label": "Cross-correlation plot",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr1_xcor_scores",
+			"label": "Cross-correlation scores",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr2_peaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr2_xcor_plot",
+			"label": "Cross-correlation plot",
+			"class": "file"
+		},
+		{
+			"name": "rep1pr2_xcor_scores",
+			"label": "Cross-correlation scores",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr1_peaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr1_xcor_plot",
+			"label": "Cross-correlation plot",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr1_xcor_scores",
+			"label": "Cross-correlation scores",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr2_peaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr2_xcor_plot",
+			"label": "Cross-correlation plot",
+			"class": "file"
+		},
+		{
+			"name": "rep2pr2_xcor_scores",
+			"label": "Cross-correlation scores",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr1_peaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr1_xcor_plot",
+			"label": "Cross-correlation plot",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr1_xcor_scores",
+			"label": "Cross-correlation scores",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr2_peaks",
+			"label": "Narrowpeaks file",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr2_xcor_plot",
+			"label": "Cross-correlation plot",
+			"class": "file"
+		},
+		{
+			"name": "pooledpr2_xcor_scores",
+			"label": "Cross-correlation scores",
+			"class": "file"
+		}
+	],
+	"runSpec": {
+		"interpreter": "python2.7",
+		"file": "src/encode_spp.py"
+	},
+	"access": {
+		"network": [
+			"*"
+		]
+	},
+	"authorizedUsers": []
 }
