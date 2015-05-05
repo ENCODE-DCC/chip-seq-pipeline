@@ -17,52 +17,6 @@ import os, subprocess, logging, re, shlex, sys
 import dxpy
 import common
 
-def XXrun_pipe(steps, outfile=None, debug=True):
-	#break this out into a recursive function
-	#TODO:  capture stderr
-	from subprocess import Popen, PIPE
-
-	if debug:
-		logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-	else: # use the defaulf logging level
-		logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-
-	p = None
-	p_next = None
-	first_step_n = 1
-	last_step_n = len(steps)
-	for n,step in enumerate(steps, start=first_step_n):
-		#logging.info("step %d: %s" %(n,step))
-		print "step %d: %s" %(n,step)
-		if n == first_step_n:
-			if n == last_step_n and outfile: #one-step pipeline with outfile
-				with open(outfile, 'w') as fh:
-					logging.info("one step shlex: %s to file: %s" %(shlex.split(step), outfile))
-					p = Popen(shlex.split(step), stdout=fh)
-				break
-			#logging.info("first step shlex to stdout: %s" %(shlex.split(step)))
-			print "first step shlex to stdout: %s" %(shlex.split(step))
-			p = Popen(shlex.split(step), stdout=PIPE)
-			#need to close p.stdout here?
-		elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
-			with open(outfile, 'w') as fh:
-				#logging.info("last step shlex: %s to file: %s" %(shlex.split(step), outfile))
-				print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
-				p_last = Popen(shlex.split(step), stdin=p.stdout, stdout=fh)
-				p.stdout.close()
-				p = p_last
-		else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
-			#logging.info("intermediate step %d shlex to stdout: %s" %(n,shlex.split(step)))
-			print "intermediate step %d shlex to stdout: %s" %(n,shlex.split(step))
-			p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
-			p.stdout.close()
-			p = p_next
-	out,err = p.communicate()
-	if err:
-		#logging.warning(err)
-		print "stderr: %s" %(err)
-	return out,err
-
 
 def count_lines(fname):
 	wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
@@ -116,67 +70,6 @@ def compress(filename):
 		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
 		return new_filename
 
-def XXbed2bb(bed_filename, chrom_sizes, as_file):
-	bb_filename = bed_filename.rstrip('.bed') + '.bb'
-	bed_filename_sorted = bed_filename + ".sorted"
-
-	print "In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file)
-
-	print "Sorting"
-	print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
-
-	for fn in [bed_filename, bed_filename_sorted, chrom_sizes, as_file]:
-		print "head %s" %(fn)
-		print subprocess.check_output('head %s' %(fn), shell=True, stderr=subprocess.STDOUT)
-
-	command = "bedToBigBed -type=bed6+4 -as=%s %s %s %s" %(as_file, bed_filename_sorted, chrom_sizes, bb_filename)
-	print command
-	try:
-		process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-		for line in iter(process.stdout.readline, ''):
-			sys.stdout.write(line)
-		process.wait()
-		returncode = process.returncode
-		if returncode != 0:
-			raise subprocess.CalledProcessError
-	except:
-		e = sys.exc_info()[0]
-		sys.stderr.write('%s: bedToBigBed failed. Skipping bb creation.' %(e))
-		return None
-
-	print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
-
-	#this is necessary in case bedToBegBed failes to creat the bb file but doesn't return a non-zero returncode
-	if not os.path.isfile(bb_filename):
-		bb_filename = None
-
-	print "Returning bb file %s" %(bb_filename)
-	return bb_filename
-
-@dxpy.entry_point("postprocess")
-def postprocess(process_outputs):
-	# Change the following to process whatever input this stage
-	# receives.  You may also want to copy and paste the logic to download
-	# and upload files here as well if this stage receives file input
-	# and/or makes file output.
-
-	print "In postprocess with process_outputs %s" %(process_outputs)
-
-	for output in process_outputs:
-		pass
-
-	return { "pooled": process_outputs[0] }
-
-@dxpy.entry_point("process")
-def process(input1):
-	# Change the following to process whatever input this stage
-	# receives.  You may also want to copy and paste the logic to download
-	# and upload files here as well if this stage receives file input
-	# and/or makes file output.
-
-	print input1
-
-	return { "output": "placeholder value" }
 
 @dxpy.entry_point("main")
 def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_sizes, as_file, blacklist=None):
