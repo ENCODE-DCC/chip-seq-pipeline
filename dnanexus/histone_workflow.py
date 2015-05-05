@@ -17,9 +17,6 @@ Examples:
 	Build and run a workflow, specifying fastq's for two replicates and matched controls, including naive peaks and IDR.
 	%(prog)s --rep1 r1.fastq.gz --rep2 r2.fastq.gz --ctl1 c1.fastq.gz --ctl2 c2.fastq.gz --idr --yes
 
-	Build and run a workflow, specifying fastq's for two replicates and matched controls, reporting only IDR-processed peaks.
-	%(prog)s --rep1 r1.fastq.gz --rep2 r2.fastq.gz --ctl1 c1.fastq.gz --ctl2 c2.fastq.gz --idronly --yes
-
 	Build and run a workflow, skipping mapping and starting from tagAligns from paired-end data, reporting both naive and IDR-processed peaks.
 	%(prog)s --rep1 f1.tagAlign.gz --rep2 r2.tagAlign.gz --ctl1 c1.tagAlign.gz --ctl2 c2.tagAlign.gz --rep1_ended PE --rep2_ended PE --idr --yes
 
@@ -69,7 +66,6 @@ def get_args():
 	parser.add_argument('--rep2pe', help='Specify if rep2 is PE (required only if --nomap)', type=bool, default=None)
 	parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks")
 	parser.add_argument('--idr', 	 help='Report peaks with and without IDR analysis',					default=False, action='store_true')
-	parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
 	parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default=1)
 	parser.add_argument('--yes', 	 help='Run the workflow',					default=False, action='store_true')
 
@@ -383,91 +379,55 @@ def main():
 		exp_rep2_cc = dxpy.dxlink(
 					{'stage': exp_rep2_cc_stage_id,
 					 'outputField': 'CC_scores_file'})
-	if not args.idronly:
-		macs2_applet = find_applet_by_name(MACS2_APPLET_NAME, applet_project.get_id())
-		peaks_output_folder = resolve_folder(output_project, output_folder + '/' + macs2_applet.name)
-		macs2_stages = []
-		if (args.rep1 and args.ctl1) or blank_workflow:
-			rep1_macs2_stage_id = workflow.add_stage(
-				macs2_applet,
-				name='Peaks Rep1',
-				folder=peaks_output_folder,
-				stage_input={
-					'experiment': exp_rep1_ta,
-					'control': ctl_rep1_ta,
-					'xcor_scores_input': exp_rep1_cc,
-					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-					'narrowpeak_as': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
-					'gappedpeak_as': dxpy.dxlink(resolve_file(args.gappedpeak_as)),
-					'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as)),
-					'genomesize': args.genomesize
-				}
 
-			)
-			macs2_stages.append({'name': 'Peaks Rep1', 'stage_id': rep1_macs2_stage_id})
-		if (args.rep2 and args.ctl2) or blank_workflow:
-			rep2_macs2_stage_id = workflow.add_stage(
-				macs2_applet,
-				name='Peaks Rep2',
-				folder=peaks_output_folder,
-				stage_input={
-					'experiment': exp_rep2_ta,
-					'control': ctl_rep2_ta,
-					'xcor_scores_input': exp_rep2_cc,
-					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-					'narrowpeak_as': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
-					'gappedpeak_as': dxpy.dxlink(resolve_file(args.gappedpeak_as)),
-					'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as)),
-					'genomesize': args.genomesize
-				}
-			)
-			macs2_stages.append({'name': 'Peaks Rep2', 'stage_id': rep2_macs2_stage_id})
+	encode_macs2_applet = find_applet_by_name(ENCODE_MACS2_APPLET_NAME, applet_project.get_id())
+	encode_macs2_stages = []
+	idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_macs2_applet.name)
+	if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
+		encode_macs2_stage_id = workflow.add_stage(
+			encode_macs2_applet,
+			name='ENCODE Peaks',
+			folder=idr_peaks_output_folder,
+			stage_input={
+				'rep1_ta' : exp_rep1_ta,
+				'rep2_ta' : exp_rep2_ta,
+				'ctl1_ta': ctl_rep1_ta,
+				'ctl2_ta' : ctl_rep2_ta,
+				'rep1_xcor' : exp_rep1_cc,
+				'rep2_xcor' : exp_rep2_cc,
+				'rep1_paired_end': rep1_paired_end,
+				'rep2_paired_end': rep2_paired_end,
+				'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+				'narrowpeak_as': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
+				'gappedpeak_as': dxpy.dxlink(resolve_file(args.gappedpeak_as)),
+				'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as)),
+				'genomesize': args.genomesize
+			}
+		)
+	encode_macs2_stages.append({'name': 'ENCODE Peaks', 'stage_id': encode_macs2_stage_id})
 
-	if args.idr or args.idronly:
-		encode_macs2_applet = find_applet_by_name(ENCODE_MACS2_APPLET_NAME, applet_project.get_id())
-		encode_macs2_stages = []
-		idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_macs2_applet.name)
-		if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
-			encode_macs2_stage_id = workflow.add_stage(
-				encode_macs2_applet,
-				name='Peaks for IDR',
-				folder=idr_peaks_output_folder,
-				stage_input={
-					'rep1_ta' : exp_rep1_ta,
-					'rep2_ta' : exp_rep2_ta,
-					'ctl1_ta': ctl_rep1_ta,
-					'ctl2_ta' : ctl_rep2_ta,
-					'rep1_xcor' : exp_rep1_cc,
-					'rep2_xcor' : exp_rep2_cc,
-					'rep1_paired_end': rep1_paired_end,
-					'rep2_paired_end': rep2_paired_end,
-					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-					'narrowpeak_as': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
-					'gappedpeak_as': dxpy.dxlink(resolve_file(args.gappedpeak_as)),
-					'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as)),
-					'genomesize': args.genomesize
-				}
-			)
-		encode_macs2_stages.append({'name': 'Peaks for IDR', 'stage_id': encode_macs2_stage_id})
+	#new applet here, similar to IDR, to do naive peak processing
 
+	#TODO - IDR on gapped and broad peaks
+	if args.idr:
 		idr_applet = find_applet_by_name(IDR_APPLET_NAME, applet_project.get_id())
 		encode_idr_applet = find_applet_by_name(ENCODE_IDR_APPLET_NAME, applet_project.get_id())
 		idr_stages = []
 		idr_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
-		if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow or args.idronly:
+		if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
 			idr_stage_id = workflow.add_stage(
 				idr_applet,
 				name='IDR True Replicates',
 				folder=idr_output_folder,
 				stage_input={
 					'rep1_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'rep1_narrowpeaks'}),
 					'rep2_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'rep2_narrowpeaks'}),
 					'pooled_peaks': dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'pooled_narrowpeaks'}),
 					'idr_version': int(args.idrversion)
 				}
@@ -480,13 +440,13 @@ def main():
 				folder=idr_output_folder,
 				stage_input={
 					'rep1_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'rep1pr1_narrowpeaks'}),
 					'rep2_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'rep1pr2_narrowpeaks'}),
 					'pooled_peaks': dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'rep1_narrowpeaks'}),
 					'idr_version': int(args.idrversion)
 				}
@@ -499,13 +459,13 @@ def main():
 				folder=idr_output_folder,
 				stage_input={
 					'rep1_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'rep2pr1_narrowpeaks'}),
 					'rep2_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'rep2pr2_narrowpeaks'}),
 					'pooled_peaks': dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'rep2_narrowpeaks'}),
 					'idr_version': int(args.idrversion)
 				}
@@ -518,13 +478,13 @@ def main():
 				folder=idr_output_folder,
 				stage_input={
 					'rep1_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'pooledpr1_narrowpeaks'}),
 					'rep2_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'pooledpr2_narrowpeaks'}),
 					'pooled_peaks': dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
 						 'outputField': 'pooled_narrowpeaks'}),
 					'idr_version': int(args.idrversion)
 				}
@@ -561,10 +521,8 @@ def main():
 		logging.debug("Mapping stages: %s" %(mapping_superstages))
 	else:
 		logging.debug("xcor only stages: %s" %(xcor_only_stages))
-	if not args.idronly:
-		logging.debug("Peak stages: %s" %(macs2_stages))
-	if args.idr or args.idronly:
-		logging.debug("Peaks for IDR stages: %s" %(encode_macs2_stages))
+	logging.debug("Peaks for ENCODE stages: %s" %(encode_macs2_stages))
+	if args.idr:
 		logging.debug("IDR stages: %s" %(idr_stages))
 
 	if args.yes:
