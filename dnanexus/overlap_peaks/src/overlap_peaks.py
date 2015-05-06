@@ -64,6 +64,7 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks,
 	dxpy.download_dxfile(chrom_sizes.get_id(), chrom_sizes_fn)
 	dxpy.download_dxfile(as_file.get_id(), as_file_fn)
 
+	'''
 	#find pooled peaks that are in (rep1 AND rep2)
 	out, err = common.run_pipe([
 		'intersectBed -wa -f 0.50 -r -a %s -b %s' %(pooled_peaks_fn, rep1_peaks_fn),
@@ -84,6 +85,40 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks,
 		'intersectBed -wa -u -a %s -b stdin' %(pooled_peaks_fn)
 		], overlapping_peaks_fn)
 	print "%d peaks overall with true replicates or with pooled pseudorepliates" %(common.count_lines(overlapping_peaks_fn))
+	'''
+
+	# Find pooled peaks that overlap Rep1 and Rep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  > 0.5
+	out, err = common.run_pipe([
+		'intersectBed -wo -a %s -b %s' %(pooled_peaks_fn, rep1_peaks_fn),
+		r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}'""",
+		'cut -f 1-10',
+		'sort -u',
+		'intersectBed -wo -a stdin -b %s' %(rep2_peaks_fn),
+		r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}'""",
+		'cut -f 1-10',
+		'sort -u'
+		], overlap_tr_fn)
+	print "%d peaks overlap with both true replicates" %(common.count_lines(overlap_tr_fn))
+
+	# Find pooled peaks that overlap PseudoRep1 and PseudoRep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  > 0.5
+	out, err = common.run_pipe([
+		'intersectBed -wo -a %s -b %s' %(pooled_peaks_fn, pooledpr1_peaks_fn),
+		r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}'""",
+		'cut -f 1-10',
+		'sort -u',
+		'intersectBed -wo -a stdin -b %s' %(pooledpr2_peaks_fn),
+		r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}'""",
+		'cut -f 1-10',
+		'sort -u'
+		], overlap_pr_fn)
+	print "%d peaks overlap with both pooled pseudoreplicates" %(common.count_lines(overlap_pr_fn))
+
+	# Combine peak lists
+	out, err = common.run_pipe([
+		'cat %s %s' %(overlap_tr_fn, overlap_pr_fn),
+		'sort -u'
+		], overlapping_peaks_fn)
+	print "%d peaks overlap with true replicates or with pooled pseudorepliates" %(common.count_lines(overlapping_peaks_fn))
 
 	#rejected peaks
 	out, err = common.run_pipe([
