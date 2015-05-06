@@ -296,3 +296,41 @@ dx run \
 --yes \
 --watch \
 macs2
+
+# Run peak overlap for ENCSR678FIT chr19
+dx run \
+--input "rep1_peaks=/ENCSR678FIT-chr19-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.narrowPeak.gz" \
+--input "rep2_peaks=/ENCSR678FIT-chr19-ta-IDR2-201505041839/encode_macs2/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.narrowPeak.gz" \
+--input "pooled_peaks=/ENCSR678FIT-chr19-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19_pooled.tagAlign.narrowPeak.gz" \
+--input "pooledpr1_peaks=/ENCSR678FIT-chr19-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.SE.pr1-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.SE.pr1_pooled.tagAlign.narrowPeak.gz" \
+--input "pooledpr2_peaks=/ENCSR678FIT-chr19-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz.SE.pr2-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz.SE.pr2_pooled.tagAlign.narrowPeak.gz" \
+--input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input "peak_type=narrowPeak" \
+--verbose \
+--destination /overlap_peaks_test_np \
+--name overlap_peaks_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+--watch \
+overlap_peaks
+
+# Run peak overlap for ENCSR678FIT
+dx run \
+--input "rep1_peaks=/ENCSR678FIT-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.tagAlign.narrowPeak.gz" \
+--input "rep2_peaks=/ENCSR678FIT-ta-IDR2-201505041839/encode_macs2/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.narrowPeak.gz" \
+--input "pooled_peaks=/ENCSR678FIT-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE_pooled.tagAlign.narrowPeak.gz" \
+--input "pooledpr1_peaks=/ENCSR678FIT-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.SE.pr1-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.SE.pr1_pooled.tagAlign.narrowPeak.gz" \
+--input "pooledpr2_peaks=/ENCSR678FIT-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz.SE.pr2-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.gz.SE.pr2_pooled.tagAlign.narrowPeak.gz" \
+--input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input "peak_type=narrowPeak" \
+--verbose \
+--destination /overlap_peaks_test_np \
+--name overlap_peaks_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+--watch \
+overlap_peaks

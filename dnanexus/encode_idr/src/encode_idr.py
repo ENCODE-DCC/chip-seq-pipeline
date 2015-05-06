@@ -18,12 +18,6 @@ import dxpy
 import common
 
 
-def count_lines(fname):
-	wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
-	print wc_output
-	lines = wc_output.split()[0]
-	return int(lines)
-
 def blacklist_filter(input_fname, output_fname, input_blacklist_fname):
 	
 	with open(input_fname, 'rb') as fh:
@@ -47,29 +41,6 @@ def blacklist_filter(input_fname, output_fname, input_blacklist_fname):
 		], output_fname)
 	#subprocess.check_call(shlex.split('cp %s %s' %(peaks_fname, output_fname)))
 
-def uncompress(filename):
-	m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename)
-	if m:
-		basename = m.group(1)
-		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
-		logging.info("Decompressing %s" %(filename))
-		logging.info(subprocess.check_output(shlex.split('gzip -d %s' %(filename))))
-		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(basename))))
-		return basename
-	else:
-		return filename
-
-def compress(filename):
-	if re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename):
-		return filename
-	else:
-		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
-		logging.info("Compressing %s" %(filename))
-		logging.info(subprocess.check_output(shlex.split('gzip %s' %(filename))))
-		new_filename = filename + '.gz'
-		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
-		return new_filename
-
 
 @dxpy.entry_point("main")
 def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_sizes, as_file, blacklist=None):
@@ -90,7 +61,7 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_s
 		blacklist_file = dxpy.DXFile(blacklist)
 		blacklist_filename = 'blacklist_%s' %(blacklist_file.name)
 		dxpy.download_dxfile(blacklist_file.get_id(), blacklist_filename)
-		blacklist_filename = uncompress(blacklist_filename)
+		blacklist_filename = common.uncompress(blacklist_filename)
 
 	# Download the file inputs to the local file system.
 
@@ -111,18 +82,18 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_s
 
 	print subprocess.check_output('ls -l', shell=True)
 
-	reps_peaks_filename = uncompress(reps_peaks_filename)
-	r1pr_peaks_filename = uncompress(r1pr_peaks_filename)
-	r2pr_peaks_filename = uncompress(r2pr_peaks_filename)
-	pooledpr_peaks_filename = uncompress(pooledpr_peaks_filename)
+	reps_peaks_filename = common.uncompress(reps_peaks_filename)
+	r1pr_peaks_filename = common.uncompress(r1pr_peaks_filename)
+	r2pr_peaks_filename = common.uncompress(r2pr_peaks_filename)
+	pooledpr_peaks_filename = common.uncompress(pooledpr_peaks_filename)
 
-	Nt = count_lines(reps_peaks_filename)
+	Nt = common.count_lines(reps_peaks_filename)
 	print "%d peaks from true replicates" %(Nt)
-	N1 = count_lines(r1pr_peaks_filename)
+	N1 = common.count_lines(r1pr_peaks_filename)
 	print "%d peaks from rep1 self-pseudoreplicates" %(N1)
-	N2 = count_lines(r2pr_peaks_filename)
+	N2 = common.count_lines(r2pr_peaks_filename)
 	print "%d peaks from rep2 self-pseudoreplicates" %(N2)
-	Np = count_lines(pooledpr_peaks_filename)
+	Np = common.count_lines(pooledpr_peaks_filename)
 	print "%d peaks from pooled pseudoreplicates" %(Np)
 
 	conservative_set_filename = '%s_final_conservative.narrowPeak' %(experiment)
@@ -130,7 +101,7 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_s
 		blacklist_filter(reps_peaks_filename, conservative_set_filename, blacklist_filename)
 	else:
 		conservative_set_filename = reps_peaks_filename
-	Ncb = count_lines(conservative_set_filename)
+	Ncb = common.count_lines(conservative_set_filename)
 	print "%d peaks blacklisted from the conservative set" %(Nt-Ncb)
 
 	if Nt >= Np:
@@ -145,7 +116,7 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_s
 		blacklist_filter(peaks_to_filter_filename, optimal_set_filename, blacklist_filename)
 	else:
 		optimal_set_filename = peaks_to_filter_filename
-	Nob = count_lines(optimal_set_filename)
+	Nob = common.count_lines(optimal_set_filename)
 	print "%d peaks blacklisted from the optimal set" %(No-Nob)
 
 	rescue_ratio            = float(max(Np,Nt)) / float(min(Np,Nt))
@@ -175,8 +146,8 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_s
 		"N1": N1,
 		"N2": N2,
 		"Np": Np,
-		"conservative_set": dxpy.dxlink(dxpy.upload_local_file(compress(conservative_set_filename))),
-		"optimal_set": dxpy.dxlink(dxpy.upload_local_file(compress(optimal_set_filename))),
+		"conservative_set": dxpy.dxlink(dxpy.upload_local_file(common.compress(conservative_set_filename))),
+		"optimal_set": dxpy.dxlink(dxpy.upload_local_file(common.compress(optimal_set_filename))),
 		"rescue_ratio": rescue_ratio,
 		"self_consistency_ratio": self_consistency_ratio,
 		"reproducibility_test": reproducibility

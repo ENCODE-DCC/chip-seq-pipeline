@@ -1,0 +1,107 @@
+{
+	"name": "overlap_peaks",
+	"title": "Overlap Peaks",
+	"summary": "Find peaks common to both replicates or both pooled pseudoreplicates",
+	"dxapi": "1.0.0",
+	"version": "0.0.1",
+	"categories": [
+		"ENCODE Analysis Pipeline"
+	],
+	"inputSpec": [
+		{
+			"name": "rep1_peaks",
+			"label": "First replicate peak file",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep2_peaks",
+			"label": "Second replicate peak file",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "pooled_peaks",
+			"label": "Pooled replicates peak file",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "pooledpr1_peaks",
+			"label": "Pooled pseudoreplicate 1 peaks",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "pooledpr2_peaks",
+			"label": "Pooled pseudoreplicate 2 peaks",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "chrom_sizes",
+			"label": "chrom.sizes for bedToBigBed",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "as_file",
+			"label": ".as file for bedToBigBed",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "peak_type",
+			"label": "narrowPeak, gappedPeak, or broadPeak",
+			"class": "string",
+			"optional": false
+		}
+	],
+	"outputSpec": [
+		{
+			"name": "overlapping_peaks",
+			"label": "Overlapping peaks",
+			"class": "file"
+		},
+		{
+			"name": "overlapping_peaks_bb",
+			"label": "Overlapping peaks bigBed",
+			"class": "file"
+		},
+		{
+			"name": "rejected_peaks",
+			"label": "Rejected peaks",
+			"class": "file"
+		},
+		{
+			"name": "rejected_peaks_bb",
+			"label": "Rejected peaks bigBed",
+			"class": "file"
+		},
+		{
+			"name": "npeaks_in",
+			"label": "Number of peaks input",
+			"class": "int"
+		},
+		{
+			"name": "npeaks_out",
+			"label": "Number of peaks output",
+			"class": "int"
+		},
+		{
+			"name": "npeaks_rejected",
+			"label": "Number of peaks rejected",
+			"class": "int"
+		}
+	],
+	"runSpec": {
+		"interpreter": "python2.7",
+		"file": "src/overlap_peaks.py"
+	},
+	"access": {
+		"network": [
+			"*"
+		]
+	},
+	"authorizedUsers": []
+}

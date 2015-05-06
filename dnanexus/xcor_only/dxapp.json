@@ -1,61 +1,61 @@
 {
-  "name": "xcor_only",
-  "title": "ENCODE TF ChIP-seq Cross-Correlation Analysis",
-  "summary": "Take a tagAlign file from SE or PE sequencing, subsample and generate cross-corelation scores and plot",
-  "dxapi": "1.0.0",
-  "version": "0.0.1",
-  "categories": [
-    "ENCODE Analysis Pipeline"
-  ],
-  "inputSpec": [
-    {
-      "name": "input_tagAlign",
-      "label": "Filtered tagAlign file",
-      "class": "file",
-      "optional": false
-    },
-    {
-      "name": "paired_end",
-      "class": "boolean",
-      "optional": true,
-      "default": true
-    }
-  ],
-  "outputSpec": [
-    {
-      "name": "CC_scores_file",
-      "label": "Tab-delimited NSC/RSC results",
-      "class": "file"
-    },
-    {
-      "name": "CC_plot_file",
-      "label": "Cross-correlation plot",
-      "class": "file"
-    },
-    {
-      "name": "paired_end",
-      "label": "True if the bam was derived from paired-end reads.",
-      "class": "boolean"
-    }
+	"name": "xcor_only",
+	"title": "ENCODE TF ChIP-seq Cross-Correlation Analysis",
+	"summary": "Take a tagAlign file from SE or PE sequencing, subsample and generate cross-corelation scores and plot",
+	"dxapi": "1.0.0",
+	"version": "0.0.1",
+	"categories": [
+		"ENCODE Analysis Pipeline"
+	],
+	"inputSpec": [
+		{
+			"name": "input_tagAlign",
+			"label": "Filtered tagAlign file",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "paired_end",
+			"class": "boolean",
+			"optional": true,
+			"default": true
+		}
+	],
+	"outputSpec": [
+		{
+			"name": "CC_scores_file",
+			"label": "Tab-delimited NSC/RSC results",
+			"class": "file"
+		},
+		{
+			"name": "CC_plot_file",
+			"label": "Cross-correlation plot",
+			"class": "file"
+		},
+		{
+			"name": "paired_end",
+			"label": "True if the bam was derived from paired-end reads.",
+			"class": "boolean"
+		}
 
-  ],
-  "runSpec": {
-    "interpreter": "python2.7",
-    "file": "src/xcor_only.py",
-    "execDepends": [
-      {"name": "libboost1.46-dev"},
-      {"name": "libboost-dev"},
-      {"name": "caTools", "package_manager": "cran"},
-      {"name": "snow", "package_manager": "cran"}
-    ],
-    "systemRequirements": {
-      "main": {"instanceType": "mem3_hdd2_x2"}
-    }
-  },
-  "access": {
-    "network": [
-      "*"
-    ]
-  },
-  "authorizedUsers": []
+	],
+	"runSpec": {
+		"interpreter": "python2.7",
+		"file": "src/xcor_only.py",
+		"execDepends": [
+			{"name": "libboost1.46-dev"},
+			{"name": "libboost-dev"},
+			{"name": "caTools", "package_manager": "cran"},
+			{"name": "snow", "package_manager": "cran"}
+		],
+		"systemRequirements": {
+			"main": {"instanceType": "mem3_hdd2_x2"}
+		}
+	},
+	"access": {
+		"network": [
+			"*"
+		]
+	},
+	"authorizedUsers": []
 }

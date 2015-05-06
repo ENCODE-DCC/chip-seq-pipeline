@@ -37,6 +37,7 @@ ENCODE_SPP_APPLET_NAME = 'encode_spp'
 ENCODE_MACS2_APPLET_NAME = 'encode_macs2'
 IDR_APPLET_NAME='idr'
 ENCODE_IDR_APPLET_NAME='encode_idr'
+OVERLAP_PEAKS_APPLET_NAME='overlap_peaks'
 
 APPLETS = {}
 
@@ -382,12 +383,12 @@ def main():
 
 	encode_macs2_applet = find_applet_by_name(ENCODE_MACS2_APPLET_NAME, applet_project.get_id())
 	encode_macs2_stages = []
-	idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_macs2_applet.name)
+	peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_macs2_applet.name)
 	if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
 		encode_macs2_stage_id = workflow.add_stage(
 			encode_macs2_applet,
 			name='ENCODE Peaks',
-			folder=idr_peaks_output_folder,
+			folder=peaks_output_folder,
 			stage_input={
 				'rep1_ta' : exp_rep1_ta,
 				'rep2_ta' : exp_rep2_ta,
@@ -407,9 +408,39 @@ def main():
 	encode_macs2_stages.append({'name': 'ENCODE Peaks', 'stage_id': encode_macs2_stage_id})
 
 	#new applet here, similar to IDR, to do naive peak processing
+	overlap_peaks_applet = find_applet_by_name(OVERLAP_PEAKS_APPLET_NAME, applet_project.get_id())
+	overlap_peaks_stages = []
+	if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
+		overlap_peaks_stage_id = workflow.add_stage(
+			overlap_peaks_applet,
+			name='Overlap Peaks',
+			folder=peaks_output_folder,
+			stage_input={
+				'rep1_peaks' : dxpy.dxlink(
+					{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+					 'outputField': 'rep1_narrowpeaks'}),
+				'rep2_peaks' : dxpy.dxlink(
+					{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+					 'outputField': 'rep2_narrowpeaks'}),
+				'pooled_peaks': dxpy.dxlink(
+					{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+					 'outputField': 'pooled_narrowpeaks'}),
+				'pooledpr1_peaks' : dxpy.dxlink(
+					{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+					 'outputField': 'pooledpr1_narrowpeaks'}),
+				'pooledpr2_peaks' : dxpy.dxlink(
+					{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+					 'outputField': 'pooledpr2_narrowpeaks'}),
+				'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+				'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
+				'peak_type': 'narrowPeak'
+			}
+		)
+	overlap_peaks_stages.append({'name': 'Overlap Peaks', 'stage_id': overlap_peaks_stage_id})
 
 	#TODO - IDR on gapped and broad peaks
 	if args.idr:
+		idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
 		idr_applet = find_applet_by_name(IDR_APPLET_NAME, applet_project.get_id())
 		encode_idr_applet = find_applet_by_name(ENCODE_IDR_APPLET_NAME, applet_project.get_id())
 		idr_stages = []

@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 
-import sys, os, subprocess, shlex
+import sys, os, subprocess, shlex, logging, re
 
 def test():
 	print "In common.test"
+
+def rstrips(string, substring):
+	if not string.endswith(substring):
+		return string
+	else:
+		return string[:len(string)-len(substring)]
 
 def block_on(command):
 	process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
@@ -44,6 +50,41 @@ def run_pipe(steps, outfile=None):
 			p = p_next
 	out,err = p.communicate()
 	return out,err
+
+def uncompress(filename):
+	#leaves compressed file intact
+	m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename)
+	if m:
+		basename = m.group(1)
+		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
+		logging.info("Decompressing %s" %(filename))
+		#logging.info(subprocess.check_output(shlex.split('gzip -dc %s' %(filename))))
+		out,err = run_pipe([
+			'gzip -dc %s' %(filename)],
+			basename)
+		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(basename))))
+		return basename
+	else:
+		return filename
+
+def compress(filename):
+	#leaves uncompressed file intact
+	if re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename):
+		return filename
+	else:
+		logging.info(subprocess.check_output(shlex.split('cp %s tmp' %(filename))))
+		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
+		logging.info("Compressing %s" %(filename))
+		logging.info(subprocess.check_output(shlex.split('gzip %s' %(filename))))
+		new_filename = filename + '.gz'
+		logging.info(subprocess.check_output(shlex.split('cp tmp %s' %(filename))))
+		logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
+		return new_filename
+
+def count_lines(fname):
+	wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
+	lines = wc_output.split()[0]
+	return int(lines)
 
 def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
 	if bed_filename.endswith('.bed'):
