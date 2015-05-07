@@ -405,38 +405,53 @@ def main():
 				'genomesize': args.genomesize
 			}
 		)
-	encode_macs2_stages.append({'name': 'ENCODE Peaks', 'stage_id': encode_macs2_stage_id})
+		encode_macs2_stages.append({'name': 'ENCODE Peaks', 'stage_id': encode_macs2_stage_id})
 
 	#new applet here, similar to IDR, to do naive peak processing
-	overlap_peaks_applet = find_applet_by_name(OVERLAP_PEAKS_APPLET_NAME, applet_project.get_id())
-	overlap_peaks_stages = []
 	if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
-		overlap_peaks_stage_id = workflow.add_stage(
-			overlap_peaks_applet,
-			name='Overlap Peaks',
-			folder=peaks_output_folder,
-			stage_input={
-				'rep1_peaks' : dxpy.dxlink(
-					{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
-					 'outputField': 'rep1_narrowpeaks'}),
-				'rep2_peaks' : dxpy.dxlink(
-					{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
-					 'outputField': 'rep2_narrowpeaks'}),
-				'pooled_peaks': dxpy.dxlink(
-					{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
-					 'outputField': 'pooled_narrowpeaks'}),
-				'pooledpr1_peaks' : dxpy.dxlink(
-					{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
-					 'outputField': 'pooledpr1_narrowpeaks'}),
-				'pooledpr2_peaks' : dxpy.dxlink(
-					{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
-					 'outputField': 'pooledpr2_narrowpeaks'}),
-				'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-				'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
-				'peak_type': 'narrowPeak'
-			}
-		)
-	overlap_peaks_stages.append({'name': 'Overlap Peaks', 'stage_id': overlap_peaks_stage_id})
+
+		overlap_peaks_applet = find_applet_by_name(OVERLAP_PEAKS_APPLET_NAME, applet_project.get_id())
+		overlap_peaks_stages = []
+		for peaktype in ['narrowpeaks', 'gappedpeaks', 'broadpeaks']:
+
+			if peaktype == 'narrowpeaks':
+				as_file = dxpy.dxlink(resolve_file(args.narrowpeak_as))
+				peak_type_extension = 'narrowPeak'
+
+			elif peaktype == 'gappedpeaks':
+				as_file = dxpy.dxlink(resolve_file(args.gappedpeak_as))
+				peak_type_extension = 'gappedPeak'
+
+			elif peaktype == 'broadpeaks':
+				as_file = dxpy.dxlink(resolve_file(args.broadpeak_as))
+				peak_type_extension = 'broadPeak'
+
+			overlap_peaks_stage_id = workflow.add_stage(
+				overlap_peaks_applet,
+				name='Overlap %s' %(peaktype),
+				folder=peaks_output_folder,
+				stage_input={
+					'rep1_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+						 'outputField': 'rep1_%s' %(peaktype)}),
+					'rep2_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+						 'outputField': 'rep2_%s' %(peaktype)}),
+					'pooled_peaks': dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+						 'outputField': 'pooled_%s' %(peaktype)}),
+					'pooledpr1_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+						 'outputField': 'pooledpr1_%s' %(peaktype)}),
+					'pooledpr2_peaks' : dxpy.dxlink(
+						{'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+						 'outputField': 'pooledpr2_%s' %(peaktype)}),
+					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+					'as_file': as_file,
+					'peak_type': peak_type_extension
+				}
+			)
+			overlap_peaks_stages.append({'name': 'Overlap %s' %(peaktype), 'stage_id': overlap_peaks_stage_id})
 
 	#TODO - IDR on gapped and broad peaks
 	if args.idr:
@@ -553,6 +568,7 @@ def main():
 	else:
 		logging.debug("xcor only stages: %s" %(xcor_only_stages))
 	logging.debug("Peaks for ENCODE stages: %s" %(encode_macs2_stages))
+	logging.debug("Peak overlap stages: %s" %(overlap_peaks_stages))
 	if args.idr:
 		logging.debug("IDR stages: %s" %(idr_stages))
 

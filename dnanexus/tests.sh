@@ -163,6 +163,23 @@ histone_workflow.py --debug --name ENCSR678FIT-ta-IDR2 --outf /ENCSR678FIT-ta-ID
 --ctl2 /mm10_mapping/e165_controls/bams/ENCSR817FFF/rep2/ENCFF482JNU-ENCFF249RWY-ENCFF118FEW_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
 
+# ENCSR678FIT chr19 overlap only from TA
+histone_workflow.py --debug --name ENCSR678FIT-chr19-ta-OL --outf /ENCSR678FIT-chr19-ta-OL-$(date +"%Y%m%d%H%M") --nomap --yes \
+--rep1pe false --rep2pe false \
+--rep1 /test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
+--rep2 /test_data/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
+--ctl1 /test_data/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
+--ctl2 /test_data/ENCFF482JNU-ENCFF249RWY-ENCFF118FEW_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
+--genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
+
+# ENCSR678FIT overlap only from TA
+histone_workflow.py --debug --name ENCSR678FIT-ta-OL --outf /ENCSR678FIT-ta-OL-$(date +"%Y%m%d%H%M") --nomap --yes \
+--rep1pe false --rep2pe false \
+--rep1 /mm10_mapping/e165_experiments/bams/ENCSR678FIT/rep1/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--rep2 /mm10_mapping/e165_experiments/bams/ENCSR678FIT/rep2/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--ctl1 /mm10_mapping/e165_controls/bams/ENCSR817FFF/rep1/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--ctl2 /mm10_mapping/e165_controls/bams/ENCSR817FFF/rep2/ENCFF482JNU-ENCFF249RWY-ENCFF118FEW_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
 
 ## single applets
 

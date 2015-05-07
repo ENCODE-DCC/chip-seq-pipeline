@@ -11,7 +11,7 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, re
+import sys, os, re
 import dxpy
 import common
 
@@ -86,16 +86,32 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks,
 		], overlapping_peaks_fn)
 	print "%d peaks overall with true replicates or with pooled pseudorepliates" %(common.count_lines(overlapping_peaks_fn))
 	'''
+	#the only difference between the peak_types is how the extra columns are handled
+	if peak_type == "narrowPeak":
+		awk_command = r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}'"""
+		cut_command = 'cut -f 1-10'
+		bed_type = 'bed6+4'
+	elif peak_type == "gappedPeak":
+		awk_command = r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$18-$17; if (($31/s1 >= 0.5) || ($31/s2 >= 0.5)) {print $0}}'"""
+		cut_command = 'cut -f 1-15'
+		bed_type = 'bed12+3'
+	elif peak_type == "broadPeak":
+		awk_command = r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$12-$11; if (($19/s1 >= 0.5) || ($19/s2 >= 0.5)) {print $0}}'"""
+		cut_command = 'cut -f 1-9'
+		bed_type = 'bed6+3'
+	else:
+		print "%s is unrecognized.  peak_type should be narrowPeak, gappedPeak or broadPeak."
+		sys.exit()
 
 	# Find pooled peaks that overlap Rep1 and Rep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  > 0.5
 	out, err = common.run_pipe([
 		'intersectBed -wo -a %s -b %s' %(pooled_peaks_fn, rep1_peaks_fn),
-		r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}'""",
-		'cut -f 1-10',
+		awk_command,
+		cut_command,
 		'sort -u',
 		'intersectBed -wo -a stdin -b %s' %(rep2_peaks_fn),
-		r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}'""",
-		'cut -f 1-10',
+		awk_command,
+		cut_command,
 		'sort -u'
 		], overlap_tr_fn)
 	print "%d peaks overlap with both true replicates" %(common.count_lines(overlap_tr_fn))
@@ -103,12 +119,12 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks,
 	# Find pooled peaks that overlap PseudoRep1 and PseudoRep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  > 0.5
 	out, err = common.run_pipe([
 		'intersectBed -wo -a %s -b %s' %(pooled_peaks_fn, pooledpr1_peaks_fn),
-		r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}'""",
-		'cut -f 1-10',
+		awk_command,
+		cut_command,
 		'sort -u',
 		'intersectBed -wo -a stdin -b %s' %(pooledpr2_peaks_fn),
-		r"""awk 'BEGIN{FS="\t";OFS="\t"}{s1=$3-$2; s2=$13-$12; if (($21/s1 >= 0.5) || ($21/s2 >= 0.5)) {print $0}}'""",
-		'cut -f 1-10',
+		awk_command,
+		cut_command,
 		'sort -u'
 		], overlap_pr_fn)
 	print "%d peaks overlap with both pooled pseudoreplicates" %(common.count_lines(overlap_pr_fn))
@@ -131,8 +147,6 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks,
 	npeaks_rejected = common.count_lines(rejected_peaks_fn)
 
 	#make bigBed files for visualization
-	if peak_type == 'narrowPeak':
-		bed_type = 'bed6+4'
 	overlapping_peaks_bb_fn = common.bed2bb(overlapping_peaks_fn, chrom_sizes_fn, as_file_fn, bed_type=bed_type)
 	rejected_peaks_bb_fn 	= common.bed2bb(rejected_peaks_fn, chrom_sizes_fn, as_file_fn, bed_type=bed_type)
 
