@@ -61,34 +61,34 @@ def get_args():
 
 def processkey(key):
 
-    if key:
-        keysf = open(KEYFILE,'r')
-        keys_json_string = keysf.read()
-        keysf.close()
-        keys = json.loads(keys_json_string)
-        key_dict = keys[key]
-    else:
-        key_dict = {}
-    AUTHID = key_dict.get('key')
-    AUTHPW = key_dict.get('secret')
-    if key:
-        SERVER = key_dict.get('server')
-    else:
-        SERVER = DEFAULT_SERVER
+	if key:
+		keysf = open(KEYFILE,'r')
+		keys_json_string = keysf.read()
+		keysf.close()
+		keys = json.loads(keys_json_string)
+		key_dict = keys[key]
+	else:
+		key_dict = {}
+	AUTHID = key_dict.get('key')
+	AUTHPW = key_dict.get('secret')
+	if key:
+		SERVER = key_dict.get('server')
+	else:
+		SERVER = DEFAULT_SERVER
 
-    if not SERVER.endswith("/"):
-        SERVER += "/"
+	if not SERVER.endswith("/"):
+		SERVER += "/"
 
-    return (AUTHID,AUTHPW,SERVER)
+	return (AUTHID,AUTHPW,SERVER)
 
 def encoded_get(url, keypair=None):
-    HEADERS = {'content-type': 'application/json'}
-    url = urlparse.urljoin(url,'?format=json&frame=embedded&datastore=database')
-    if keypair:
-        response = requests.get(url, auth=keypair, headers=HEADERS)
-    else:
-        response = requests.get(url, headers=HEADERS)
-    return response.json()
+	HEADERS = {'content-type': 'application/json'}
+	url = urlparse.urljoin(url,'?format=json&frame=embedded&datastore=database')
+	if keypair:
+		response = requests.get(url, auth=keypair, headers=HEADERS)
+	else:
+		response = requests.get(url, headers=HEADERS)
+	return response.json()
 
 def resolve_project(identifier, privs='r'):
 	project = dxpy.find_one_project(name=identifier, level='VIEW', name_mode='exact', return_handler=True, zero_ok=True)
@@ -148,7 +148,7 @@ def files_to_map(exp_obj):
 				file_obj.get('file_format') == 'fastq' and \
 				file_obj.get('replicate') and \
 				file_obj.get('submitted_file_name') not in filenames_in(files):
-			  	files.extend([file_obj])
+				files.extend([file_obj])
 			elif file_obj.get('submitted_file_name') in filenames_in(files):
 				logging.warning('%s:%s Duplicate filename, ignoring.' %(exp_obj.get('accession'),file_obj.get('accession')))
 			elif file_obj.get('output_type') == 'reads' and \

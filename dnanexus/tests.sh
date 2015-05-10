@@ -181,6 +181,9 @@ histone_workflow.py --debug --name ENCSR678FIT-ta-OL --outf /ENCSR678FIT-ta-OL-$
 --ctl2 /mm10_mapping/e165_controls/bams/ENCSR817FFF/rep2/ENCFF482JNU-ENCFF249RWY-ENCFF118FEW_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
 
+# ENCSR
+
+
 ## single applets
 
 # Run IDRv1 applet with ENCSR000EEB chr21 rep1 vs rep2
