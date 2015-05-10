@@ -24,6 +24,7 @@ def get_args():
 	parser.add_argument('--project',    help="Project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/")
 	parser.add_argument('--nodownload',   help="Don't transfer data files, only make hub", default=False, action='store_true')
+	parser.add_argument('--truncate', help="Replace existing trackDb file", default=False, action='store_true')
 	parser.add_argument('--tag',   help="String to add to the workflow name", default="")
 	parser.add_argument('--key', help="The keypair identifier from the keyfile.", default='www')
 	parser.add_argument('--ddir', help="The local directory to store data files", default=os.path.expanduser('~/tracks'))
@@ -99,13 +100,13 @@ def viewpeaks_stanza(accession):
 		"\tscoreFilterLimits 0:1000\n" + \
 		"\tviewUi on\n\n")
 
-def peaks_stanza(accession, url, name, n):
+def peaks_stanza(accession, url, name, n, tracktype='bigBed 6 +'):
 	return(
 		"\t\ttrack %s%d\n" %(accession,n) + \
 		"\t\tbigDataUrl %s\n" %(url) + \
 		"\t\tshortLabel %s\n" %(name[:17]) + \
 		"\t\tparent %sviewpeaks on\n" %(accession) + \
-		"\t\ttype bigBed 6 +\n" + \
+		"\t\ttype %s\n" %(tracktype) + \
 		"\t\tvisibility dense\n" + \
 		"\t\tview PK\n" + \
 		"\t\tpriority %d\n\n" %(n))
@@ -121,13 +122,13 @@ def viewsignal_stanza(accession):
 		"\ttype bigWig\n" + \
 		"\tviewUi on\n\n")
 
-def signal_stanza(accession, url, name, n):
+def signal_stanza(accession, url, name, n, tracktype='bigWig'):
 	return(
 		"\t\ttrack %s%d\n" %(accession,n) + \
 		"\t\tbigDataUrl %s\n" %(url) + \
 		"\t\tshortLabel %s\n" %(name[:17]) + \
 		"\t\tparent %sviewsignals on\n" %(accession) + \
-		"\t\ttype bigWig\n" + \
+		"\t\ttype %s\n" %(tracktype) + \
 		"\t\tview SIG\n" + \
 		"\t\tvisibility full\n" + \
 		"\t\tviewLimits 1:10\n" + \
@@ -140,7 +141,8 @@ def main():
 	authid, authpw, server = processkey(args.key)
 	keypair = (authid,authpw)
 
-	for analysis_id in args.infile:
+	for (i, analysis_id) in enumerate(args.infile):
+		first_analysis = not i
 		analysis_id = analysis_id.strip()
 		analysis = dxpy.describe(analysis_id)
 
@@ -171,20 +173,28 @@ def main():
 
 		outputs = dict(zip(output_names,[{'dx': dxpy.DXFile(peaks_stage['output'][output_name])} for output_name in output_names]))
 
+		output_names.insert(3,'replicated_narrowpeaks_bb')
 		outputs.update({'replicated_narrowpeaks_bb' : {'dx': dxpy.DXFile(next(stage['execution']['output']['overlapping_peaks_bb'] for stage in stages if stage['execution']['name'] == 'Overlap narrowpeaks'))}})
+		output_names.insert(7,'replicated_gappedpeaks_bb')
 		outputs.update({'replicated_gappedpeaks_bb' : {'dx': dxpy.DXFile(next(stage['execution']['output']['overlapping_peaks_bb'] for stage in stages if stage['execution']['name'] == 'Overlap gappedpeaks'))}})
 
 		track_directory = os.path.join(args.ddir, experiment_accession)
 		url_base = urlparse.urljoin(args.turl, experiment_accession+'/')
 		print "url_base %s" %(url_base)
-		if not os.path.exists(track_directory):
-			os.makedirs(track_directory)
-		if os.path.exists(args.tdbpath):
-			trackDb = open(args.tdbpath,'a')
+		if first_analysis:
+			if not os.path.exists(track_directory):
+				os.makedirs(track_directory)
+			if os.path.exists(args.tdbpath):
+				if args.truncate:
+					trackDb = open(args.tdbpath,'w')
+				else:
+					trackDb = open(args.tdbpath,'a')
+			else:
+				if not os.path.exists(os.path.dirname(args.tdbpath)):
+					os.makedirs(os.path.dirname(args.tdbpath))
+				trackDb = open(args.tdbpath, 'w')
 		else:
-			if not os.path.exists(os.path.dirname(args.tdbpath)):
-				os.makedirs(os.path.dirname(args.tdbpath))
-			trackDb = open(args.tdbpath, 'w')
+			trackDb = open(args.tdbpath,'a')			
 
 		for (output_name, output) in outputs.iteritems():
 			local_path = os.path.join(track_directory, output['dx'].name)
@@ -208,16 +218,21 @@ def main():
 		first_peaks = True
 		first_signal = True
 		for (n, output_name) in enumerate(output_names,start=1):
-			if output_name.endswith('_bb'):
+			if output_name.endswith('narrowpeaks_bb'):
 				if first_peaks:
 					trackDb.write(viewpeaks_stanza(experiment_accession))
 					first_peaks = False
-				trackDb.write(peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, n))
+				trackDb.write(peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, n, tracktype="bigBed 6 +"))
+			elif output_name.endswith('gappedpeaks_bb'):
+				if first_peaks:
+					trackDb.write(viewpeaks_stanza(experiment_accession))
+					first_peaks = False
+				trackDb.write(peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, n, tracktype="bigBed 12 +"))
 			elif output_name.endswith('_signal'):
 				if first_signal:
 					trackDb.write(viewsignal_stanza(experiment_accession))
 					first_signal = False
-				trackDb.write(signal_stanza(experiment_accession, outputs[output_name]['url'], output_name, n))
+				trackDb.write(signal_stanza(experiment_accession, outputs[output_name]['url'], output_name, n, tracktype="bigWig"))
 
 		trackDb.close()
 
