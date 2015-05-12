@@ -18,7 +18,8 @@ try:
     DX_FS_ROOT = os.environ['DX_FS_ROOT']
 except:
     DX_FS_ROOT = ""
-KEYFILE = DX_FS_ROOT + '/keypairs.json'
+#KEYFILE = DX_FS_ROOT + '/keypairs.json'
+KEYFILE = os.path.expanduser('~/keypairs.json')
 
 GET_MAX_TRIES = 5
 GET_TRY_DELAY = 5
@@ -350,6 +351,7 @@ def main(folder_name, key_name, assembly, noupload, force, debug):
         calculated_md5 = md5_output.partition(' ')[0].rstrip()
         encode_object = FILE_OBJ_TEMPLATE
         encode_object.update({'assembly': assembly})
+
 
         notes = {
             'filtered_qc': flagstat_parse(bamqc_fh),
