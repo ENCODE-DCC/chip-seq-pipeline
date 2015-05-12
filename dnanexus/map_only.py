@@ -9,7 +9,7 @@ Examples:
 
 	%(prog)s
 '''
-
+FILE_STATUSES_TO_MAP = ['in progress', 'released']
 DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
 INPUT_SHIELD_APPLET_NAME = 'input_shield'
 MAPPING_APPLET_NAME = 'encode_bwa'
@@ -37,7 +37,6 @@ def get_args():
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
 	parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
-	parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout)
 	parser.add_argument('--build', help="Genome build, e.g. GRCh38, hg19, or mm10")
 	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--outp',    help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
@@ -138,13 +137,15 @@ def filenames_in(files=None):
 	else:
 		return [f.get('submitted_file_name') for f in files]
 
-def files_to_map(exp_obj):
+def files_to_map(exp_obj, server, keypair):
 	if not exp_obj or not exp_obj.get('files'):
 		return []
 	else:
 		files = []
-		for file_obj in exp_obj.get('files'):
-			if file_obj.get('output_type') == 'reads' and \
+		for file_uri in exp_obj.get('original_files'):
+			file_obj = encoded_get(urlparse.urljoin(server, file_uri), keypair=keypair)
+			if file_obj.get('status') in FILE_STATUSES_TO_MAP and \
+				file_obj.get('output_type') == 'reads' and \
 				file_obj.get('file_format') == 'fastq' and \
 				file_obj.get('replicate') and \
 				file_obj.get('submitted_file_name') not in filenames_in(files):
@@ -351,7 +352,7 @@ def main():
 		encode_url = urlparse.urljoin(server,exp_id.rstrip())
 		experiment = encoded_get(encode_url, keypair)
 		outstrings.append(exp_id.rstrip())
-		files = files_to_map(experiment)
+		files = files_to_map(experiment, server, keypair)
 		outstrings.append(str(len(files)))
 		outstrings.append(str([f.get('accession') for f in files]))
 		replicates = replicates_to_map(files)
