@@ -18,18 +18,17 @@ def get_args():
 		description=__doc__, epilog=EPILOG,
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
-	parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
-	parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout)
-	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
-	parser.add_argument('--project',    help="Project name or ID", 			default=dxpy.WORKSPACE_ID)
-	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/")
-	parser.add_argument('--nodownload',   help="Don't transfer data files, only make hub", default=False, action='store_true')
-	parser.add_argument('--truncate', help="Replace existing trackDb file", default=False, action='store_true')
-	parser.add_argument('--tag',   help="String to add to the workflow name", default="")
-	parser.add_argument('--key', help="The keypair identifier from the keyfile.", default='www')
-	parser.add_argument('--ddir', help="The local directory to store data files", default=os.path.expanduser('~/tracks'))
-	parser.add_argument('--tdbpath', help="The local path to the trackhub trackDb", default=os.path.expanduser('~/tracks/E3_ChIP_hub/mm10/trackDb.txt'))
-	parser.add_argument('--turl', help="The base URL to the tracks", default='http://'+socket.getfqdn()+'/'+getpass.getuser()+'/tracks/')
+	parser.add_argument('infile',		nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+	parser.add_argument('outfile',		nargs='?', type=argparse.FileType('w'), default=sys.stdout)
+	parser.add_argument('--debug',		help="Print debug messages", 				default=False, action='store_true')
+	parser.add_argument('--project',	help="Project name or ID", 			default=dxpy.WORKSPACE_ID)
+	parser.add_argument('--nodownload',	help="Don't transfer data files, only make the hub", default=False, action='store_true')
+	parser.add_argument('--truncate',	help="Replace existing trackDb file", default=False, action='store_true')
+	parser.add_argument('--key',		help="The keypair identifier from the keyfile.", default='www')
+	parser.add_argument('--ddir',		help="The local directory to store data files", default=os.path.expanduser('~/tracks'))
+	parser.add_argument('--tdbpath',	help="The local path to the trackhub trackDb", default=os.path.expanduser('~/tracks/E3_ChIP_hub/mm10/trackDb.txt'))
+	parser.add_argument('--turl',		help="The base URL to the tracks", default='http://'+socket.getfqdn()+'/'+getpass.getuser()+'/tracks/')
+	parser.add_argument('--tag',		help="A short string to add to the composite track longLabel")
 
 	args = parser.parse_args()
 
@@ -180,10 +179,10 @@ def main():
 
 		track_directory = os.path.join(args.ddir, experiment_accession)
 		url_base = urlparse.urljoin(args.turl, experiment_accession+'/')
-		print "url_base %s" %(url_base)
+		#print "url_base %s" %(url_base)
+		if not args.nodownload and not os.path.exists(track_directory):
+			os.makedirs(track_directory)
 		if first_analysis:
-			if not os.path.exists(track_directory):
-				os.makedirs(track_directory)
 			if os.path.exists(args.tdbpath):
 				if args.truncate:
 					trackDb = open(args.tdbpath,'w')
@@ -198,13 +197,13 @@ def main():
 
 		for (output_name, output) in outputs.iteritems():
 			local_path = os.path.join(track_directory, output['dx'].name)
-			print output_name, output['dx'].name, local_path
+			print output_name, output['dx'].get_id(), local_path
 			if not args.nodownload:
 				dxpy.download_dxfile(output['dx'].get_id(), local_path)
 			outputs[output_name].update({'local_path' : local_path})
-			print "Joining %s and %s" %(url_base, os.path.basename(local_path))
+			#print "Joining %s and %s" %(url_base, os.path.basename(local_path))
 			outputs[output_name].update({'url': urlparse.urljoin(url_base,os.path.basename(local_path))})
-			print outputs[output_name]['url']
+			#print outputs[output_name]['url']
 
 		experiment = encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
 		description = '%s %s %s %s' %(
@@ -213,6 +212,8 @@ def main():
 			experiment['replicates'][0]['library']['biosample']['life_stage'],
 			experiment['replicates'][0]['library']['biosample']['age_display'])
 		longLabel = 'E3 Histone ChIP - %s - %s' %(experiment_accession, description)
+		if args.tag:
+			longLabel += ' - %s' %(args.tag)
 		trackDb.write(composite_stanza(experiment_accession, longLabel))
 
 		first_peaks = True
