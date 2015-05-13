@@ -35,3 +35,5 @@ dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..poo
 dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..IDR0.02.narrowPeak.gz
 
 dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..log.txt
+
+*.pyc
