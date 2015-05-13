@@ -12,7 +12,7 @@ Examples:
 DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
 GENOME_SIZE = 'mm'
 CHROM_SIZES = "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
-POSSIBLE_FOLDERS =["/mm10_mapping","mm10_mapping:/e115"]
+#POSSIBLE_FOLDERS =["/mm10_mapping","mm10_mapping:/e115"]
 KEYFILE = os.path.expanduser("~/keypairs.json")
 
 def get_args():
@@ -22,10 +22,10 @@ def get_args():
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
 	parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
-	parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout)
 	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--project',    help="Project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/")
+	parser.add_argument('--inf', nargs='*',    help="Folder(s) name or ID with tagAligns", 			default="/")
 	parser.add_argument('--yes',   help="Run the workflows created", 			default=False, action='store_true')
 	parser.add_argument('--tag',   help="String to add to the workflow name", default="")
 	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default",
@@ -98,9 +98,9 @@ def resolve_project(identifier, privs='r'):
 		raise ValueError(identifier)
 	return project
 
-def get_tas(exp_id, default_project):
+def get_tas(exp_id, default_project, ta_folders):
 	possible_files = []
-	for base_folder in POSSIBLE_FOLDERS:
+	for base_folder in ta_folders:
 		if ':' in base_folder:
 			project_name, path = base_folder.split(':')
 			project = resolve_project(project_name)
@@ -140,8 +140,8 @@ def main():
 		print "Experiment %s" %(exp_id)
 		ctl_id = get_control_id(exp_id, keypair, server)
 		print "Control %s" %(ctl_id)
-		rep1_ta, rep2_ta = get_tas(exp_id, args.project)
-		ctl1_ta, ctl2_ta = get_tas(ctl_id, args.project)
+		rep1_ta, rep2_ta = get_tas(exp_id, args.project, args.inf)
+		ctl1_ta, ctl2_ta = get_tas(ctl_id, args.project, args.inf)
 		if not (rep1_ta and rep2_ta and ctl1_ta and ctl2_ta):
 			print "Skipping %s" %(exp_id)
 			continue
