@@ -266,9 +266,9 @@ dx run \
 --input "xcor_scores_input=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
 --input "control=/test_data/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
 --input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
---input "narrowPeak_as=ENCODE Reference Files:/narrowPeak.as" \
---input "gappedPeak_as=ENCODE Reference Files:/gappedPeak.as" \
---input "broadPeak_as=ENCODE Reference Files:/broadPeak.as" \
+--input "narrowpeak_as=ENCODE Reference Files:/narrowPeak.as" \
+--input "gappedpeak_as=ENCODE Reference Files:/gappedPeak.as" \
+--input "broadpeak_as=ENCODE Reference Files:/broadPeak.as" \
 --input "genomesize=mm" \
 --verbose \
 --destination /macs2_test \
@@ -285,9 +285,9 @@ dx run \
 --input "xcor_scores_input=mm10_mapping:/e115/bams/ENCSR678FIT/rep1/ENCFF926URZ.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
 --input "control=mm10_mapping:/e115/bams/ENCSR817FFF/rep1/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
 --input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
---input "narrowPeak_as=ENCODE Reference Files:/narrowPeak.as" \
---input "gappedPeak_as=ENCODE Reference Files:/gappedPeak.as" \
---input "broadPeak_as=ENCODE Reference Files:/broadPeak.as" \
+--input "narrowpeak_as=ENCODE Reference Files:/narrowPeak.as" \
+--input "gappedpeak_as=ENCODE Reference Files:/gappedPeak.as" \
+--input "broadpeak_as=ENCODE Reference Files:/broadPeak.as" \
 --input "genomesize=mm" \
 --verbose \
 --destination /macs2_test \
@@ -304,9 +304,9 @@ dx run \
 --input "xcor_scores_input=/mm10_mapping/e115_50a/bams/ENCSR311TLE/rep1/ENCFF002BVQ-ENCFF002BVU_pooled.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
 --input "control=/mm10_mapping/e115_controls/bams/ENCSR081UQY/rep1/ENCFF001ZUV.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
 --input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
---input "narrowPeak_as=ENCODE Reference Files:/narrowPeak.as" \
---input "gappedPeak_as=ENCODE Reference Files:/gappedPeak.as" \
---input "broadPeak_as=ENCODE Reference Files:/broadPeak.as" \
+--input "narrowpeak_as=ENCODE Reference Files:/narrowPeak.as" \
+--input "gappedpeak_as=ENCODE Reference Files:/gappedPeak.as" \
+--input "broadpeak_as=ENCODE Reference Files:/broadPeak.as" \
 --input "genomesize=mm" \
 --verbose \
 --destination /macs2_test_broad \
