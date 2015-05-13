@@ -78,8 +78,11 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
 	returncode = common.block_on(command)
 	print "MACS2 exited with returncode %d" %(returncode)
 
+	# Rescale Col5 scores to range 10-1000 to conform to narrowPeak.as format (score must be <1000)
+	rescaled_narrowpeak_fn = common.rescale_scores('%s/%s_peaks.narrowPeak' %(peaks_dirname, prefix), scores_col=5)
+
 	# Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-	pipe = ['sort -k 8gr,8gr %s/%s_peaks.narrowPeak' %(peaks_dirname, prefix),
+	pipe = ['sort -k 8gr,8gr %s' %(rescaled_narrowpeak_fn),
 			r"""awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}'""",
 			'tee %s' %(narrowPeak_fn),
 			'gzip -c']
@@ -101,15 +104,21 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
 	returncode = common.block_on(command)
 	print "MACS2 exited with returncode %d" %(returncode)
 
+	# Rescale Col5 scores to range 10-1000 to conform to narrowPeak.as format (score must be <1000)
+	rescaled_broadpeak_fn = common.rescale_scores('%s/%s_peaks.broadPeak' %(peaks_dirname, prefix), scores_col=5)
+
 	# Sort by Col8 (for broadPeak) or Col 14(for gappedPeak)  in descending order and replace long peak names in Column 4 with Peak_<peakRank>
-	pipe = ['sort -k 8gr,8gr %s/%s_peaks.broadPeak' %(peaks_dirname, prefix),
+	pipe = ['sort -k 8gr,8gr %s' %(rescaled_broadpeak_fn),
 			r"""awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}'""",
 			'tee %s' %(broadPeak_fn),
 			'gzip -c']
 	print pipe
 	out,err = common.run_pipe(pipe,'%s' %(broadPeak_gz_fn))
 
-	pipe = ['sort -k 14gr,14gr %s/%s_peaks.gappedPeak' %(peaks_dirname, prefix),
+	# Rescale Col5 scores to range 10-1000 to conform to narrowPeak.as format (score must be <1000)
+	rescaled_gappedpeak_fn = common.rescale_scores('%s/%s_peaks.gappedPeak' %(peaks_dirname, prefix), scores_col=5)
+
+	pipe = ['sort -k 14gr,14gr %s' %(rescaled_gappedpeak_fn),
 			r"""awk 'BEGIN{OFS="\t"}{$4="Peak_"NR ; print $0}'""",
 			'tee %s' %(gappedPeak_fn),
 			'gzip -c']

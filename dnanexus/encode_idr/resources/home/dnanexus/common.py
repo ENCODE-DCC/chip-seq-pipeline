@@ -125,3 +125,26 @@ def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
 
 	print "Returning bb file %s" %(bb_filename)
 	return bb_filename
+
+def rescale_scores(fn, scores_col, new_min=10, new_max=1000):
+	n_peaks = count_lines(fn)
+	sorted_fn = '%s-sorted' %(fn)
+	rescaled_fn = '%s-rescaled' %(fn)
+	out,err = run_pipe([
+		'sort -k %dgr,%dgr %s' %(scores_col, scores_col, fn),
+		r"""awk 'BEGIN{FS="\t";OFS="\t"}{if (NF != 0) print $0}'"""],
+		sorted_fn)
+	out, err = run_pipe([
+		'head -n 1 %s' %(sorted_fn),
+		'cut -f %s' %(scores_col)])
+	max_score = float(out.strip())
+	out, err = run_pipe([
+		'tail -n 1 %s' %(sorted_fn),
+		'cut -f %s' %(scores_col)])
+	min_score = float(out.strip())
+	out,err = run_pipe([
+		'cat %s' %(sorted_fn),
+		r"""awk 'BEGIN{OFS="\t"}{n=$%d;a=%d;b=%d;x=%d;y=%d}""" %(scores_col, min_score, max_score, new_min, new_max) + \
+		r"""{$%d=int(((n-a)*(y-x)/(b-a))+x) ; print $0}'""" %(scores_col)],
+		rescaled_fn)
+	return rescaled_fn
