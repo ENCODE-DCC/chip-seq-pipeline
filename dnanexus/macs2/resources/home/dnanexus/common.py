@@ -148,3 +148,69 @@ def rescale_scores(fn, scores_col, new_min=10, new_max=1000):
 		r"""{$%d=int(((n-a)*(y-x)/(b-a))+x) ; print $0}'""" %(scores_col)],
 		rescaled_fn)
 	return rescaled_fn
+
+def processkey(key, keyfile=None):
+
+	import json
+
+	if not keyfile:
+		try:
+			keyfile = KEYFILE
+		except:
+			print >> sys.stderr, "No keyfile was specified."
+			raise
+	if key:
+		keysf = open(keyfile,'r')
+		keys_json_string = keysf.read()
+		keysf.close()
+		keys = json.loads(keys_json_string)
+		key_dict = keys[key]
+	else:
+		key_dict = {}
+	AUTHID = key_dict.get('key')
+	AUTHPW = key_dict.get('secret')
+	if key:
+		SERVER = key_dict.get('server')
+	else:
+		SERVER = DEFAULT_SERVER
+
+	if not SERVER.endswith("/"):
+		SERVER += "/"
+
+	return (AUTHID,AUTHPW,SERVER)
+
+def encoded_get(url, keypair=None, frame='object'):
+	import urlparse, requests
+	HEADERS = {'content-type': 'application/json'}
+	url = urlparse.urljoin(url,'?format=json&frame=%s' %(frame))
+	if keypair:
+		response = requests.get(url, auth=keypair, headers=HEADERS)
+	else:
+		response = requests.get(url, headers=HEADERS)
+	return response.json()
+
+def pprint_json(JSON_obj):
+	import json
+	print json.dumps(JSON_obj, sort_keys=True, indent=4, separators=(',', ': '))
+
+def merge_dicts(*dict_args):
+	'''
+	Given any number of dicts, shallow copy and merge into a new dict,
+	precedence goes to key value pairs in latter dicts.
+	'''
+	result = {}
+	for dictionary in dict_args:
+		result.update(dictionary)
+	return result
+
+def md5(fn):
+	if 'md5_command' not in globals():
+		global md5_command
+		if not subprocess.check_call('which md5', shell=True):
+			md5_command = 'md5 -q'
+		elif not subprocess.check_call('which md5sum', shell=True):
+			md5_command = 'md5sum'
+		else:
+			md5_command = ''
+	md5_output = subprocess.check_output(' '.join([md5_command, fn]), shell=True)
+	return md5_output.partition(' ')[0].rstrip()
