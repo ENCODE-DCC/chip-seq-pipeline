@@ -206,9 +206,9 @@ def merge_dicts(*dict_args):
 def md5(fn):
 	if 'md5_command' not in globals():
 		global md5_command
-		if not subprocess.check_call('which md5', shell=True):
+		if not subprocess.call('which md5', shell=True):
 			md5_command = 'md5 -q'
-		elif not subprocess.check_call('which md5sum', shell=True):
+		elif not subprocess.call('which md5sum', shell=True):
 			md5_command = 'md5sum'
 		else:
 			md5_command = ''
