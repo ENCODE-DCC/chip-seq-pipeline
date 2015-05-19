@@ -22,7 +22,8 @@ def get_args():
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
 	parser.add_argument('analysis_ids',	nargs='*', default=None)
-	parser.add_argument('--infile',		type=argparse.FileType('r'), default=sys.stdin)
+	parser.add_argument('--infile',		help='File containing analysis IDs to accession', type=argparse.FileType('r'), default=sys.stdin)
+	parser.add_argument('--outfile', 	help='tsv table of files with metadata', type=argparse.FileType('w'), default=sys.stdout)
 	parser.add_argument('--assembly', 	help='Genome assembly like hg19 or mm10', required=True)
 	parser.add_argument('--debug',		help="Print debug messages", default=False, action='store_true')
 	parser.add_argument('--project',	help="Project name or ID", default=dxpy.WORKSPACE_ID)
@@ -79,6 +80,8 @@ def accession_file(f, keypair, server, dryrun, force):
 	#calculate md5 and add to f.md5sum
 	#post file and get accession, upload credentials
 	#upload to S3
+	#remove the local file (to save space)
+	#return the ENCODEd file object
 	already_accessioned = False
 	dx = f.pop('dx')
 	for tag in dx.tags:
@@ -184,8 +187,7 @@ def accession_file(f, keypair, server, dryrun, force):
 	except:
 		pass
 
-	print "POST response %s" %(new_file_object)
-	return
+	return common.encoded_get(urlparse.urljoin(server,'/files/%s' %(new_file_object.get('accession')), keypair))
 
 def accession_analysis(analysis_id, keypair, server, assembly, dryrun, force):
 	analysis_id = analysis_id.strip()
@@ -295,8 +297,9 @@ def accession_analysis(analysis_id, keypair, server, assembly, dryrun, force):
 			files.append(file_metadata)
 
 	for f in files:
-		accession_file(f, keypair, server, dryrun, force)
+		f.update({'new_file_object' : accession_file(f, keypair, server, dryrun, force)})
 
+	return files
 
 def main():
 
@@ -316,8 +319,7 @@ def main():
 
 	for (i, analysis_id) in enumerate(ids):
 		logger.info('%s' %(analysis_id))
-		accession_analysis(analysis_id, keypair, server, args.assembly, args.dryrun, args.force)
-
+		accessioned_files = accession_analysis(analysis_id, keypair, server, args.assembly, args.dryrun, args.force)
 
 if __name__ == '__main__':
 	main()
