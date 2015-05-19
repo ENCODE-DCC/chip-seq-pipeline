@@ -79,8 +79,7 @@ def get_control_id(exp_id, keypair, server):
 	experiment = encoded_get(url, keypair)
 	possible_controls = experiment.get('possible_controls')
 	if not possible_controls or len(possible_controls) != 1:
-		print "Tried to find one possible control, found %s" %(possible_controls)
-		print experiment
+		logging.error("Tried to find one possible control, found %s" %(possible_controls))
 		return None
 	return possible_controls[0].get('accession')
 
@@ -151,7 +150,7 @@ def main():
 			outf = '/'+outf
 		outf += '/%s/peaks/' %(exp_id) 
 		run_command = \
-			'histone_workflow.py --debug --name "%s" --outf "%s" --nomap --yes ' %(workflow_name, outf) + \
+			'~/tf_chipseq/dnanexus/histone_workflow.py --debug --name "%s" --outf "%s" --nomap --yes ' %(workflow_name, outf) + \
 			'--rep1pe false --rep2pe false ' + \
 			'--rep1 %s --rep2 %s ' %(rep1_ta, rep2_ta) + \
 			'--ctl1 %s --ctl2 %s ' %(ctl1_ta, ctl2_ta) + \
@@ -160,7 +159,7 @@ def main():
 		try:
 			subprocess.check_call(run_command, shell=True)
 		except subprocess.CalledProcessError as e:
-			print "histone_workflow exited with non-zero code %d" %(e.returncode)
+			logging.error("histone_workflow exited with non-zero code %d" %(e.returncode))
 
 
 if __name__ == '__main__':
