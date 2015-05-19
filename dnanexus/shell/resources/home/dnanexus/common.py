@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import sys, os, subprocess, shlex, logging, re
+import sys, os, subprocess, shlex, logging, re, urlparse
+import dateutil.parser
 
 def test():
 	print "In common.test"
@@ -214,3 +215,41 @@ def md5(fn):
 			md5_command = ''
 	md5_output = subprocess.check_output(' '.join([md5_command, fn]), shell=True)
 	return md5_output.partition(' ')[0].rstrip()
+
+def after(date1, date2):
+	try:
+		result = dateutil.parser.parse(date1) > dateutil.parser.parse(date2)
+	except TypeError:
+		if not re.search('\+.*$', date1):
+			date1 += 'T00:00:00-07:00'
+		if not re.search('\+.*$', date2):
+			date1 += 'T00:00:00-07:00'
+	try:
+		result = dateutil.parser.parse(date1) > dateutil.parser.parse(date2)
+	except Exception as e:
+		logger.error("%s Cannot compare bam date %s with fastq date %s" %(e, bam.get('date_created'), f.get('date_created')))
+		raise
+	
+	return result
+
+def biorep_ns_generator(file_accession,server,keypair):
+	m = re.match('^/?(files)?/?(\w*)', file_accession)
+	if m:
+		acc = m.group(2)
+	else:
+		return
+	url = urlparse.urljoin(server, '/files/%s' %(acc))
+	file_object = encoded_get(url, keypair)
+	if file_object.get('derived_from'):
+		for f in file_object.get('derived_from'):
+			for repnum in biorep_ns_generator(f,server,keypair):
+				yield repnum
+	else:
+		url = urlparse.urljoin(server, '%s' %(file_object.get('replicate')))
+		replicate_object = encoded_get(url, keypair)
+		yield replicate_object.get('biological_replicate_number')
+
+def biorep_ns(file_accession,server,keypair):
+	return list(set(biorep_ns_generator(file_accession,server,keypair)))
+
+
