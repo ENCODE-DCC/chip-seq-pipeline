@@ -23,6 +23,7 @@ def get_args():
 	parser.add_argument('--debug',		help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--project',	help="Project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--nodownload',	help="Don't transfer data files, only make the hub", default=False, action='store_true')
+	parser.add_argument('--dxf',		help="Generate DNAnexus URL's. Implies --nodownload", default=False, action='store_true')
 	parser.add_argument('--truncate',	help="Replace existing trackDb file", default=False, action='store_true')
 	parser.add_argument('--key',		help="The keypair identifier from the keyfile.", default='www')
 	parser.add_argument('--ddir',		help="The local directory to store data files", default=os.path.expanduser('~/tracks'))
@@ -36,6 +37,9 @@ def get_args():
 		logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 	else: #use the defaulf logging level
 		logging.basicConfig(format='%(levelname)s:%(message)s')
+
+	if args.dxf:
+		args.nodownload = True
 
 	return args
 
@@ -117,7 +121,7 @@ def viewsignal_stanza(accession):
 		"\tshortLabel Signals\n" + \
 		"\tlongLabel Signals\n" + \
 		"\tview SIG\n" + \
-		"\tvisibility full\n" + \
+		"\tvisibility dense\n" + \
 		"\ttype bigWig\n" + \
 		"\tviewUi on\n\n")
 
@@ -129,7 +133,7 @@ def signal_stanza(accession, url, name, n, tracktype='bigWig'):
 		"\t\tparent %sviewsignals on\n" %(accession) + \
 		"\t\ttype %s\n" %(tracktype) + \
 		"\t\tview SIG\n" + \
-		"\t\tvisibility full\n" + \
+		"\t\tvisibility dense\n" + \
 		"\t\tviewLimits 1:10\n" + \
 		"\t\tmaxHeightPixels 127:64:2\n" + \
 		"\t\tpriority %d\n\n" %(n))
@@ -139,11 +143,14 @@ def main():
 	args = get_args()
 	authid, authpw, server = processkey(args.key)
 	keypair = (authid,authpw)
-
+	first_analysis = True
 	for (i, analysis_id) in enumerate(args.infile):
-		first_analysis = not i
 		analysis_id = analysis_id.strip()
-		analysis = dxpy.describe(analysis_id)
+		try:
+			analysis = dxpy.describe(analysis_id)
+		except:
+			print "Invalid analysis ID %s. Skipping."
+			continue
 
 		m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
 		if m:
@@ -202,7 +209,11 @@ def main():
 				dxpy.download_dxfile(output['dx'].get_id(), local_path)
 			outputs[output_name].update({'local_path' : local_path})
 			#print "Joining %s and %s" %(url_base, os.path.basename(local_path))
-			outputs[output_name].update({'url': urlparse.urljoin(url_base,os.path.basename(local_path))})
+			if args.dxf:
+				url, headers = output['dx'].get_download_url(duration=sys.maxint, preauthenticated=True)
+				outputs[output_name].update({'url': url})
+			else:
+				outputs[output_name].update({'url': urlparse.urljoin(url_base,os.path.basename(local_path))})
 			#print outputs[output_name]['url']
 
 		experiment = encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
@@ -236,6 +247,7 @@ def main():
 				trackDb.write(signal_stanza(experiment_accession, outputs[output_name]['url'], output_name, n, tracktype="bigWig"))
 
 		trackDb.close()
+		first_analysis = False
 
 if __name__ == '__main__':
 	main()

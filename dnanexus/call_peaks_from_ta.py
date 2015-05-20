@@ -114,6 +114,7 @@ def get_tas(exp_id, default_project, ta_folders):
 			desc = dxfile.get('describe')
 			if exp_id in desc.get('folder') and '/bams' in desc.get('folder') and desc.get('name').endswith(('tagAlign', 'tagAlign.gz')):
 				possible_files.append(desc)
+	print "%s %i possible files" %(exp_id, len(possible_files))
 	rep1_files = [f for f in possible_files if 'rep1' in f.get('folder')]
 	rep2_files = [f for f in possible_files if 'rep2' in f.get('folder')]
 	if len(rep1_files) != 1:
