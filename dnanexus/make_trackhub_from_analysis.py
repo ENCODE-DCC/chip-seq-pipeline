@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import os, sys, subprocess, logging, dxpy, json, re, socket, getpass, urlparse
+from posixpath import basename, dirname
+import common
 
 EPILOG = '''Notes:
 
@@ -30,6 +32,7 @@ def get_args():
 	parser.add_argument('--tdbpath',	help="The local path to the trackhub trackDb", default=os.path.expanduser('~/tracks/E3_ChIP_hub/mm10/trackDb.txt'))
 	parser.add_argument('--turl',		help="The base URL to the tracks", default='http://'+socket.getfqdn()+'/'+getpass.getuser()+'/tracks/')
 	parser.add_argument('--tag',		help="A short string to add to the composite track longLabel")
+	parser.add_argument('--lowpass',	help="Add replicated peak tracks with peaks less than this(these) width(s)", nargs='*', type=int)
 
 	args = parser.parse_args()
 
@@ -103,8 +106,8 @@ def viewpeaks_stanza(accession):
 		"\tscoreFilterLimits 0:1000\n" + \
 		"\tviewUi on\n\n")
 
-def peaks_stanza(accession, url, name, n, tracktype='bigBed 6 +'):
-	return(
+def peaks_stanza(accession, url, name, n, tracktype='bigBed 6 +', lowpass=[], dx=None):
+	return_string = \
 		"\t\ttrack %s%d\n" %(accession,n) + \
 		"\t\tbigDataUrl %s\n" %(url) + \
 		"\t\tshortLabel %s\n" %(name[:17]) + \
@@ -112,7 +115,54 @@ def peaks_stanza(accession, url, name, n, tracktype='bigBed 6 +'):
 		"\t\ttype %s\n" %(tracktype) + \
 		"\t\tvisibility dense\n" + \
 		"\t\tview PK\n" + \
-		"\t\tpriority %d\n\n" %(n))
+		"\t\tpriority %d\n\n" %(n)
+	n_stanzas = 1
+	if not lowpass:
+		lowpass = []
+	if isinstance(lowpass,int):
+		lowpass = [lowpass]
+	extra_stanza_count = 0
+	for (i, cutoff) in enumerate(lowpass,start=1):
+		fn = dx.get_id()
+		if not os.path.isfile(fn):
+			dxpy.download_dxfile(dx.get_id(),fn)
+		cutoffstr = '-lt%d' %(cutoff)
+		outfn = fn + cutoffstr
+		print fn, os.path.getsize(fn), subprocess.check_output('wc -l %s' %(fn), shell=True).split()[0]
+		bed_fn = fn + '.bed'
+		common.block_on('bigBedToBed %s %s' %(fn, bed_fn))
+		common.run_pipe([
+			'cat %s' %(bed_fn),
+			r"""awk 'BEGIN{FS="\t";OFS="\t"}{if (($3-$2) < %d) {print $0}}'""" %(cutoff)], outfn)
+		print outfn, os.path.getsize(outfn), subprocess.check_output('wc -l %s' %(outfn), shell=True).split()[0]
+		if tracktype =='bigBed 6 +':
+			as_file = 'narrowPeak.as'
+		elif tracktype == 'bigBed 12 +':
+			as_file = 'gappedPeak.as'
+		else:
+			print "Cannot match tracktype %s to any .as file" %(tracktype)
+		bb_fn = common.bed2bb(outfn,'mm10.chrom.sizes',as_file)
+		newdx = dxpy.upload_local_file(filename=bb_fn, folder="/tracks", wait_on_close=True)
+		new_url, headers = newdx.get_download_url(duration=sys.maxint, preauthenticated=True)
+
+		new_lines = [
+			"\t\ttrack %s%d" %(accession,n+i),
+			"\t\tbigDataUrl %s" %(new_url),
+			"\t\tshortLabel %s" %(name[:17-len(cutoffstr)] + cutoffstr),
+			"\t\tparent %sviewpeaks on" %(accession),
+			"\t\ttype %s" %(tracktype),
+			"\t\tvisibility dense",
+			"\t\tview PK",
+			"\t\tpriority %d\n\n" %(n+i)]
+		new_stanza = '\n'.join(new_lines)
+		return_string += new_stanza
+		n_stanzas += 1
+		os.remove(bed_fn)
+		os.remove(bb_fn)
+		os.remove(outfn)
+		os.remove(fn)
+
+	return(return_string, n_stanzas)
 
 def viewsignal_stanza(accession):
 	return(
@@ -229,22 +279,28 @@ def main():
 
 		first_peaks = True
 		first_signal = True
+		priority = 1
 		for (n, output_name) in enumerate(output_names,start=1):
 			if output_name.endswith('narrowpeaks_bb'):
 				if first_peaks:
 					trackDb.write(viewpeaks_stanza(experiment_accession))
 					first_peaks = False
-				trackDb.write(peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, n, tracktype="bigBed 6 +"))
+				stanzas, n_stanzas = peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigBed 6 +", lowpass=args.lowpass, dx=outputs[output_name]['dx'])
+				trackDb.write(stanzas)
+				priority += n_stanzas
 			elif output_name.endswith('gappedpeaks_bb'):
 				if first_peaks:
 					trackDb.write(viewpeaks_stanza(experiment_accession))
 					first_peaks = False
-				trackDb.write(peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, n, tracktype="bigBed 12 +"))
+				stanzas, n_stanzas = peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigBed 12 +", lowpass=args.lowpass, dx=outputs[output_name]['dx'])
+				trackDb.write(stanzas)
+				priority += n_stanzas
 			elif output_name.endswith('_signal'):
 				if first_signal:
 					trackDb.write(viewsignal_stanza(experiment_accession))
 					first_signal = False
-				trackDb.write(signal_stanza(experiment_accession, outputs[output_name]['url'], output_name, n, tracktype="bigWig"))
+				trackDb.write(signal_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigWig"))
+				priority += 1
 
 		trackDb.close()
 		first_analysis = False
