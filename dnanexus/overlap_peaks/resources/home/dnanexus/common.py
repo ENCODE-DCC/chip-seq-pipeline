@@ -118,9 +118,13 @@ def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
 		sys.stderr.write('%s: bedToBigBed failed. Skipping bb creation.' %(e))
 		return None
 
-	print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
+	#print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
 
 	#this is necessary in case bedToBegBed failes to create the bb file but doesn't return a non-zero returncode
+	try:
+		os.remove(bed_filename_sorted)
+	except:
+		pass
 	if not os.path.isfile(bb_filename):
 		bb_filename = None
 
