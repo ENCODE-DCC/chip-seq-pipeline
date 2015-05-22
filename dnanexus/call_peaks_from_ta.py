@@ -139,7 +139,11 @@ def main():
 		exp_id = exp_id.rstrip()
 		print "Experiment %s" %(exp_id)
 		ctl_id = get_control_id(exp_id, keypair, server)
-		print "Control %s" %(ctl_id)
+		if ctl_id:
+			print "Control %s" %(ctl_id)
+		else:
+			print "Found no control ... skipping"
+			continue
 		rep1_ta, rep2_ta = get_tas(exp_id, args.project, args.inf)
 		ctl1_ta, ctl2_ta = get_tas(ctl_id, args.project, args.inf)
 		if not (rep1_ta and rep2_ta and ctl1_ta and ctl2_ta):
