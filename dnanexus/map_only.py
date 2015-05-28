@@ -36,7 +36,7 @@ def get_args():
 		description=__doc__, epilog=EPILOG,
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
-	parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+	parser.add_argument('infile', nargs='?', help="Experiment accessions to map", type=argparse.FileType('r'), default=sys.stdin)
 	parser.add_argument('--build', help="Genome build, e.g. GRCh38, hg19, or mm10")
 	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--outp',    help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
