@@ -315,12 +315,16 @@ def main():
 		ids = args.infile
 
 	formats = ['bed_narrowPeak', 'bed_gappedPeak']
-	fieldnames = ['file','experiment','replicates','output_name','file_format','output_type','target','biosample_term_name','biosample_term_id','biosample_type','biosample_life_stage','biosample_age','biosample_organism']
+	fieldnames = ['file','analysis','experiment','replicates','output_name','file_format','output_type','target','biosample_term_name','biosample_term_id','biosample_type','biosample_life_stage','biosample_age','biosample_organism']
 	writer = csv.DictWriter(args.outfile, fieldnames, delimiter='\t')
 	writer.writeheader()
 	for (i, analysis_id) in enumerate(ids):
+		analysis_id = analysis_id.rstrip()
 		logger.info('%s' %(analysis_id))
-		files = analysis_files(analysis_id, keypair, server, args.assembly)
+		try:
+			files = analysis_files(analysis_id, keypair, server, args.assembly)
+		except:
+			logger.error('%s error finding analysis_files.  Check experiment metadata.' %(analysis_id))
 		for f in [f_obj for f_obj in files if f_obj.get('file_format') in formats]:
 			fid = f['dx'].get_id()
 			local_path = os.path.join(args.outdir,fid)
@@ -339,6 +343,7 @@ def main():
 			biosample = common.encoded_get(urlparse.urljoin(server, lib['biosample']), keypair)
 			writer.writerow({
 				'file': fid,
+				'analysis': analysis_id,
 				'experiment': experiment.get('accession'),
 				'replicates': replicates,
 				'output_name': f.get('name'),
