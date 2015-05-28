@@ -1,0 +1,89 @@
+{
+  "name": "accession_histone_analysis",
+  "title": "Accession histone analysis",
+  "summary": "accession_histone_analysis",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [
+    "ENCODE Analysis Pipeline"
+  ],
+  "inputSpec": [
+    {
+      "name": "analysis_ids",
+      "class": "array:string",
+      "optional": true
+    },
+    {
+      "name": "infile",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "outfn",
+      "class": "string",
+      "optional": true,
+      "default": "accession_histone_analysis.tsv"
+    },
+    {
+      "name": "assembly",
+      "class": "string",
+      "optional": false
+    },
+    {
+      "name": "debug",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    },
+    {
+      "name": "project",
+      "class": "string",
+      "optional": true
+    },
+    {
+      "name": "key",
+      "class": "string",
+      "optional": true,
+      "default": "default"
+    },
+    {
+      "name": "keyfile",
+      "class": "string",
+      "optional": true,
+      "default": "keypairs.json"
+    },
+    {
+      "name": "dryrun",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    },
+    {
+      "name": "force",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "outfile",
+      "class": "file"
+    }
+  ],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/accession_histone_analysis.py",
+    "execDepends": [
+      {"name": "awscli", "package_manager": "pip"}
+    ]
+
+  },
+  "access": {
+    "project": "CONTRIBUTE",
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}
