@@ -1,0 +1,320 @@
+* histone_chip_seq (ENCSR066XXZ Peaks) (done) analysis-BbP2Z0Q0bpZj6p7YX1kBfqFX
+  jseth 2015-05-21 11:54:58
+* histone_chip_seq (ENCSR333QJO Peaks) (done) analysis-BbP2Yp00bpZyG3fKyGGvfzzy
+  jseth 2015-05-21 11:54:31
+* histone_chip_seq (ENCSR972WEN Peaks) (done) analysis-BbP2YZ80bpZv9J44QQVJp9F2
+  jseth 2015-05-21 11:54:08
+* histone_chip_seq (ENCSR417TXZ Peaks) (done) analysis-BbP2Y8j0bpZpj7512k55gQ9q
+  jseth 2015-05-21 11:53:22
+* histone_chip_seq (ENCSR007XTC Peaks) (done) analysis-BbP2Xj00bpZfb5jYGGVFzXPQ
+  jseth 2015-05-21 11:52:16
+* histone_chip_seq (ENCSR037HLB Peaks) (done) analysis-BbP2XX00bpZXF95xb5kK6yGJ
+  jseth 2015-05-21 11:51:52
+* histone_chip_seq (ENCSR556ZUY Peaks) (done) analysis-BbKf8V80bpZqb6b41GJ8bBFz
+  jseth 2015-05-20 21:51:16
+* histone_chip_seq (ENCSR080GQM Peaks) (done) analysis-BbKf7z00bpZbJ16yxQGgXVJx
+  jseth 2015-05-20 21:50:04
+* histone_chip_seq (ENCSR529ERN Peaks) (done) analysis-BbKf7k00bpZbJ16yxQGgXVJX
+  jseth 2015-05-20 21:49:40
+* histone_chip_seq (ENCSR234ISO Peaks) (done) analysis-BbKf7Y00bpZQ3j07zZGb03xX
+  jseth 2015-05-20 21:49:16
+* histone_chip_seq (ENCSR977DCO Peaks) (done) analysis-BbKf7J00bpZbJ16yxQGgXVJ7
+  jseth 2015-05-20 21:48:51
+* histone_chip_seq (ENCSR264TXI Peaks) (done) analysis-BbKf7180bpZQ3j07zZGb03x4
+  jseth 2015-05-20 21:48:05
+* histone_chip_seq (ENCSR755SGK Peaks) (done) analysis-BbKf6q80bpZQ3j07zZGb03vp
+  jseth 2015-05-20 21:47:40
+* histone_chip_seq (ENCSR234YTN Peaks) (done) analysis-BbKf6b80bpZZkJzFvjGXb3Gz
+  jseth 2015-05-20 21:47:17
+* histone_chip_seq (ENCSR534HMF Peaks) (done) analysis-BbKf6PQ0bpZQ3j07zZGb03vP
+  jseth 2015-05-20 21:46:53
+* histone_chip_seq (ENCSR631QAE Peaks) (done) analysis-BbKf69Q0bpZbJ16yxQGgXVGf
+  jseth 2015-05-20 21:46:30
+* histone_chip_seq (ENCSR344BPJ Peaks) (done) analysis-BbKf63j0bpZQ3j07zZGb03v1
+  jseth 2015-05-20 21:46:06
+* histone_chip_seq (ENCSR579RZO Peaks) (done) analysis-BbKf5xj0bpZZkJzFvjGXb3GY
+  jseth 2015-05-20 21:45:42
+* histone_chip_seq (ENCSR886DWH Peaks) (done) analysis-BbKf5gj0bpZZkJzFvjGXb3G6
+  jseth 2015-05-20 21:45:18
+* histone_chip_seq (ENCSR172XOZ Peaks) (done) analysis-BbKf5Vj0bpZqb6b41GJ8bBBV
+  jseth 2015-05-20 21:44:54
+* histone_chip_seq (ENCSR203KIB Peaks) (done) analysis-BbKf5Fj0bpZQ3j07zZGb03qY
+  jseth 2015-05-20 21:44:30
+* histone_chip_seq (ENCSR185JBL Peaks) (done) analysis-BbKf55Q0bpZQ3j07zZGb03q6
+  jseth 2015-05-20 21:44:06
+* histone_chip_seq (ENCSR052CDF Peaks) (done) analysis-BbKf4zj0bpZqb6b41GJ8bBB5
+  jseth 2015-05-20 21:43:42
+* histone_chip_seq (ENCSR176BXC Peaks) (done) analysis-BbKf4kj0bpZvGKPV3ZJ06ZPx
+  jseth 2015-05-20 21:43:18
+* histone_chip_seq (ENCSR433ESG Peaks) (done) analysis-BbKf4YQ0bpZbJ16yxQGgXVG4
+  jseth 2015-05-20 21:42:54
+* histone_chip_seq (ENCSR093BYV Peaks) (done) analysis-BbKf4JQ0bpZQ3j07zZGb03pg
+  jseth 2015-05-20 21:42:30
+* histone_chip_seq (ENCSR059LYY Peaks) (done) analysis-BbKf47Q0bpZvGKPV3ZJ06ZPY
+  jseth 2015-05-20 21:42:06
+* histone_chip_seq (ENCSR320EEW Peaks) (done) analysis-BbKf41j0bpZjq11J2QJJB1Z1
+  jseth 2015-05-20 21:41:43
+* histone_chip_seq (ENCSR254AHA Peaks) (done) analysis-BbKf3qj0bpZZkJzFvjGXb3FX
+  jseth 2015-05-20 21:41:19
+* histone_chip_seq (ENCSR054JHZ Peaks) (done) analysis-BbKf3f00bpZqb6b41GJ8bB9Y
+  jseth 2015-05-20 21:40:55
+* histone_chip_seq (ENCSR360ANE Peaks) (done) analysis-BbKf3Q80bpZQ3j07zZGb03pB
+  jseth 2015-05-20 21:40:33
+* histone_chip_seq (ENCSR021ALF Peaks) (done) analysis-BbKf3B80bpZvGKPV3ZJ06ZP3
+  jseth 2015-05-20 21:40:09
+* histone_chip_seq (ENCSR075SNV Peaks) (done) analysis-BbKf34Q0bpZp18VF0QJ6JZgq
+  jseth 2015-05-20 21:39:45
+* histone_chip_seq (ENCSR265NBM Peaks) (done) analysis-BbKf2y80bpZyG3fKyGGvfvgk
+  jseth 2015-05-20 21:39:21
+* histone_chip_seq (ENCSR481SGM Peaks) (done) analysis-BbKf2jQ0bpZvGKPV3ZJ06ZKQ
+  jseth 2015-05-20 21:38:57
+* histone_chip_seq (ENCSR128ZCB Peaks) (done) analysis-BbKf2XQ0bpZyG3fKyGGvfvgK
+  jseth 2015-05-20 21:38:34
+* histone_chip_seq (ENCSR067FKP Peaks) (done) analysis-BbKf2GQ0bpZbJ16yxQGgXVFX
+  jseth 2015-05-20 21:38:10
+* histone_chip_seq (ENCSR186PIV Peaks) (done) analysis-BbKf26Q0bpZqb6b41GJ8bB91
+  jseth 2015-05-20 21:37:46
+* histone_chip_seq (ENCSR345RKE Peaks) (done) analysis-BbKf20Q0bpZp18VF0QJ6JZgF
+  jseth 2015-05-20 21:37:21
+* histone_chip_seq (ENCSR274ACJ Peaks) (done) analysis-BbKf1p80bpZZkJzFvjGXb3Bv
+  jseth 2015-05-20 21:36:57
+* histone_chip_seq (ENCSR898WIS Peaks) (done) analysis-BbKf1ZQ0bpZjq11J2QJJB1YK
+  jseth 2015-05-20 21:36:33
+* histone_chip_seq (ENCSR511LWL Peaks) (done) analysis-BbKf1Kj0bpZvGKPV3ZJ06ZK0
+  jseth 2015-05-20 21:36:10
+* histone_chip_seq (ENCSR964RRJ Peaks) (done) analysis-BbKf18j0bpZyG3fKyGGvfvfy
+  jseth 2015-05-20 21:35:46
+* histone_chip_seq (ENCSR270WWV Peaks) (done) analysis-BbKf12j0bpZqb6b41GJ8bB8V
+  jseth 2015-05-20 21:35:23
+* histone_chip_seq (ENCSR948VPV Peaks) (done) analysis-BbKf0x00bpZQ3j07zZGb03kf
+  jseth 2015-05-20 21:35:00
+* histone_chip_seq (ENCSR689NXE Peaks) (done) analysis-BbKf0g00bpZjq11J2QJJB1Xy
+  jseth 2015-05-20 21:34:36
+* histone_chip_seq (ENCSR125VVG Peaks) (done) analysis-BbKf04j0bpZQ3j07zZGb03k6
+  jseth 2015-05-20 21:33:23
+* histone_chip_seq (ENCSR223FDX Peaks) (done) analysis-BbKbzyQ0bpZbJ16yxQGgXVBG
+  jseth 2015-05-20 21:32:58
+* histone_chip_seq (ENCSR706SZI Peaks) (done) analysis-BbKbzjj0bpZZkJzFvjGXb3B1
+  jseth 2015-05-20 21:32:34
+* histone_chip_seq (ENCSR831YAX Peaks) (done) analysis-BbKbzXQ0bpZQ3j07zZGb03jq
+  jseth 2015-05-20 21:32:10
+* histone_chip_seq (ENCSR929GXP Peaks) (done) analysis-BbKbzGQ0bpZZkJzFvjGXb39Z
+  jseth 2015-05-20 21:31:45
+* histone_chip_seq (ENCSR953LFI Peaks) (done) analysis-BbKbz680bpZZkJzFvjGXb396
+  jseth 2015-05-20 21:31:21
+* histone_chip_seq (ENCSR357OED Peaks) (done) analysis-BbKbz0j0bpZQ3j07zZGb03jP
+  jseth 2015-05-20 21:30:58
+* histone_chip_seq (ENCSR765SJF Peaks) (done) analysis-BbKbypj0bpZyG3fKyGGvfvf5
+  jseth 2015-05-20 21:30:34
+* histone_chip_seq (ENCSR337XUK Peaks) (done) analysis-BbKbyZQ0bpZbJ16yxQGgXV9v
+  jseth 2015-05-20 21:30:10
+* histone_chip_seq (ENCSR099BYW Peaks) (done) analysis-BbKbyKj0bpZjq11J2QJJB1XB
+  jseth 2015-05-20 21:29:47
+* histone_chip_seq (ENCSR457HDY Peaks) (done) analysis-BbKby8Q0bpZqb6b41GJ8bB7g
+  jseth 2015-05-20 21:29:22
+* histone_chip_seq (ENCSR227UTY Peaks) (done) analysis-BbKby2j0bpZZkJzFvjGXb38f
+  jseth 2015-05-20 21:28:58
+* histone_chip_seq (ENCSR702JYV Peaks) (done) analysis-BbKbxvj0bpZqb6b41GJ8bB7F
+  jseth 2015-05-20 21:28:35
+* histone_chip_seq (ENCSR641EME Peaks) (done) analysis-BbKbxQj0bpZbJ16yxQGgXV9J
+  jseth 2015-05-20 21:27:46
+* histone_chip_seq (ENCSR871CGP Peaks) (done) analysis-BbKbxBj0bpZZkJzFvjGXb387
+  jseth 2015-05-20 21:27:23
+* histone_chip_seq (ENCSR670YXP Peaks) (done) analysis-BbKbx4Q0bpZy6gY020x1V58P
+  jseth 2015-05-20 21:26:58
+* histone_chip_seq (ENCSR776QRL Peaks) (done) analysis-BbKbvy00bpZy8xpbjVyx57z3
+  jseth 2015-05-20 21:26:31
+* histone_chip_seq (ENCSR604DCI Peaks) (done) analysis-BbKbvgQ0bpZyp2x5f9k1JB5K
+  jseth 2015-05-20 21:26:06
+* histone_chip_seq (ENCSR014YAY Peaks) (done) analysis-BbKbvK80bpZp18VF0QJ6JZbz
+  jseth 2015-05-20 21:25:29
+* histone_chip_seq (ENCSR399UVI Peaks) (done) analysis-BbKbv800bpZZkJzFvjGXb37p
+  jseth 2015-05-20 21:25:04
+* histone_chip_seq (ENCSR148IGO Peaks) (done) analysis-BbKbv1Q0bpZp18VF0QJ6JZbY
+  jseth 2015-05-20 21:24:38
+* histone_chip_seq (ENCSR064DGY Peaks) (done) analysis-BbKbqqQ0bpZyG3fKyGGvfvbY
+  jseth 2015-05-20 21:24:14
+* histone_chip_seq (ENCSR953KTY Peaks) (done) analysis-BbKbqbj0bpZQ3j07zZGb03gj
+  jseth 2015-05-20 21:23:51
+* histone_chip_seq (ENCSR425FLT Peaks) (done) analysis-BbKbqPj0bpZjq11J2QJJB1Vj
+  jseth 2015-05-20 21:23:27
+* histone_chip_seq (ENCSR108TWE Peaks) (done) analysis-BbKbqB00bpZvGKPV3ZJ06ZGK
+  jseth 2015-05-20 21:23:04
+* histone_chip_seq (ENCSR581FAT Peaks) (done) analysis-BbKbq400bpZyG3fKyGGvfvb8
+  jseth 2015-05-20 21:22:40
+* histone_chip_seq (ENCSR260OUP Peaks) (done) analysis-BbKbpy80bpZyG3fKyGGvfvZy
+  jseth 2015-05-20 21:22:17
+* histone_chip_seq (ENCSR569UCG Peaks) (done) analysis-BbKbpj80bpZqb6b41GJ8bB69
+  jseth 2015-05-20 21:21:53
+* histone_chip_seq (ENCSR249AUA Peaks) (done) analysis-BbKbpXQ0bpZZkJzFvjGXb375
+  jseth 2015-05-20 21:21:29
+* histone_chip_seq (ENCSR293ORS Peaks) (done) analysis-BbKbpGQ0bpZQ3j07zZGb03g8
+  jseth 2015-05-20 21:21:05
+* histone_chip_seq (ENCSR698WCJ Peaks) (done) analysis-BbKbp6Q0bpZQppyb0GxGbv6Z
+  jseth 2015-05-20 21:20:41
+* histone_chip_seq (ENCSR405TGI Peaks) (done) analysis-BbKbp0Q0bpZpY4yV70xKk9j6
+  jseth 2015-05-20 21:20:17
+* histone_chip_seq (ENCSR311LZM Peaks) (done) analysis-BbKbkp00bpZVfgqB14x0vvYp
+  jseth 2015-05-20 21:19:52
+* histone_chip_seq (ENCSR976GSO Peaks) (done) analysis-BbKbkYj0bpZgJB3F40xBVpk2
+  jseth 2015-05-20 21:19:26
+* histone_chip_seq (ENCSR464MQU Peaks) (done) analysis-BbKbkJQ0bpZpY4yV70xKk9gk
+  jseth 2015-05-20 21:19:01
+* histone_chip_seq (ENCSR669AQL Peaks) (done) analysis-BbKbk780bpZVfgqB14x0vvYG
+  jseth 2015-05-20 21:18:37
+* histone_chip_seq (ENCSR839WFP Peaks) (done) analysis-BbKbk180bpZy6gY020x1V57v
+  jseth 2015-05-20 21:18:12
+* histone_chip_seq (ENCSR023VJO Peaks) (done) analysis-BbKbjq00bpZVJ0Zk915952X9
+  jseth 2015-05-20 21:17:47
+* histone_chip_seq (ENCSR424END Peaks) (done) analysis-BbKbjZj0bpZjqZ3B6V5975V0
+  jseth 2015-05-20 21:17:23
+* histone_chip_seq (ENCSR057SHA Peaks) (done) analysis-BbKbjKj0bpZZX3gG1556qBzY
+  jseth 2015-05-20 21:16:58
+* histone_chip_seq (ENCSR452WYC Peaks) (done) analysis-BbKbj8Q0bpZpj7512k55gK7F
+  jseth 2015-05-20 21:16:34
+* histone_chip_seq (ENCSR316CNR Peaks) (done) analysis-BbKbj280bpZyqfbb7x59ZJ36
+  jseth 2015-05-20 21:16:08
+* histone_chip_seq (ENCSR157LYR Peaks) (done) analysis-BbKbgqj0bpZZX3gG1556qBz8
+  jseth 2015-05-20 21:15:43
+* histone_chip_seq (ENCSR196ENU Peaks) (done) analysis-BbKbgbj0bpZXbJQv5V54yQpf
+  jseth 2015-05-20 21:15:18
+* histone_chip_seq (ENCSR825OWH Peaks) (done) analysis-BbKbgP80bpZjqZ3B6V5975Q8
+  jseth 2015-05-20 21:14:53
+* histone_chip_seq (ENCSR335WME Peaks) (done) analysis-BbKbg8j0bpZVJ0Zk915952Vp
+  jseth 2015-05-20 21:14:27
+* histone_chip_seq (ENCSR485GTY Peaks) (done) analysis-BbKbg2j0bpZb5B3ZZVyv6fQZ
+  jseth 2015-05-20 21:14:02
+* histone_chip_seq (ENCSR658TDS Peaks) (done) analysis-BbKbfvQ0bpZVfgqB14x0vvXz
+  jseth 2015-05-20 21:13:38
+* histone_chip_seq (ENCSR924FJQ Peaks) (done) analysis-BbKbffQ0bpZbJ16yxQGgXV8q
+  jseth 2015-05-20 21:13:14
+* histone_chip_seq (ENCSR076MXH Peaks) (done) analysis-BbKbfQQ0bpZZJkb0FQVJbBF8
+  jseth 2015-05-20 21:12:39
+* histone_chip_seq (ENCSR450ITF Peaks) (done) analysis-BbJg3qQ0bpZjXVbkv4fVb8PQ
+  jseth 2015-05-19 10:25:02
+* histone_chip_seq (ENCSR894JAS Peaks) (done) analysis-BbJg2700bpZX6Gk4yGyVvqGJ
+  jseth 2015-05-19 10:21:31
+* histone_chip_seq (ENCSR739DVM Peaks) (done) analysis-BbJg1g80bpZk7v5kvvyzJ5Z6
+  jseth 2015-05-19 10:20:29
+* histone_chip_seq (ENCSR400TGE Peaks) (done) analysis-BbJg0zj0bpZbZ4ZYzv6XyYbx
+  jseth 2015-05-19 10:18:55
+* histone_chip_seq (ENCSR275KPI Peaks) (done) analysis-BbJg0g00bpZv2b1FBV9k84pv
+  jseth 2015-05-19 10:18:19
+* histone_chip_seq (ENCSR961MEP Peaks) (done) analysis-BbJFQPj0bpZbvqxYk4fY7XPb
+  jseth 2015-05-18 21:12:46
+* histone_chip_seq (ENCSR948RYN Peaks) (done) analysis-BbJFQBQ0bpZfgFgVpZfxqJg5
+  jseth 2015-05-18 21:12:25
+* histone_chip_seq (ENCSR928CYU Peaks) (done) analysis-BbJFQ580bpZfgFgVpZfxqJfq
+  jseth 2015-05-18 21:12:05
+* histone_chip_seq (ENCSR897WBY Peaks) (done) analysis-BbJFQ000bpZZP6ZkyGfvZJ98
+  jseth 2015-05-18 21:11:44
+* histone_chip_seq (ENCSR886IHN Peaks) (done) analysis-BbJFPjQ0bpZZP6ZkyGfvZJ8v
+  jseth 2015-05-18 21:11:14
+* histone_chip_seq (ENCSR846ZCW Peaks) (done) analysis-BbJFPYQ0bpZY7Bb0kvfXgXpf
+  jseth 2015-05-18 21:10:53
+* histone_chip_seq (ENCSR751HEG Peaks) (done) analysis-BbJFPK00bpZY7Bb0kvfXgXpG
+  jseth 2015-05-18 21:10:31
+* histone_chip_seq (ENCSR748BQH Peaks) (done) analysis-BbJFP8j0bpZZ13p4vvfVXG0p
+  jseth 2015-05-18 21:10:10
+* histone_chip_seq (ENCSR734IEL Peaks) (done) analysis-BbJFP1Q0bpZbvqxYk4fY7XP2
+  jseth 2015-05-18 21:09:41
+* histone_chip_seq (ENCSR693UWX Peaks) (done) analysis-BbJFKv00bpZfgFgVpZfxqJf3
+  jseth 2015-05-18 21:09:20
+* histone_chip_seq (ENCSR654VMK Peaks) (done) analysis-BbJFKfj0bpZZP6ZkyGfvZJ8G
+  jseth 2015-05-18 21:08:59
+* histone_chip_seq (ENCSR592GQI Peaks) (done) analysis-BbJFKVj0bpZjXVbkv4fVb75p
+  jseth 2015-05-18 21:08:38
+* histone_chip_seq (ENCSR547PLI Peaks) (done) analysis-BbJFKGQ0bpZxV67GxZfxXb82
+  jseth 2015-05-18 21:08:17
+* histone_chip_seq (ENCSR531RZS Peaks) (done) analysis-BbJFK780bpZjXVbkv4fVb75G
+  jseth 2015-05-18 21:07:56
+* histone_chip_seq (ENCSR526JRI Peaks) (done) analysis-BbJFK200bpZxV67GxZfxXb7f
+  jseth 2015-05-18 21:07:35
+* histone_chip_seq (ENCSR502WUI Peaks) (done) analysis-BbJFJqj0bpZZP6ZkyGfvZJ80
+  jseth 2015-05-18 21:07:11
+* histone_chip_seq (ENCSR489HYX Peaks) (done) analysis-BbJFJfQ0bpZkV810qGfYYgzF
+  jseth 2015-05-18 21:06:50
+* histone_chip_seq (ENCSR466ZQC Peaks) (done) analysis-BbJFJV80bpZZ13p4vvfVXG0B
+  jseth 2015-05-18 21:06:29
+* histone_chip_seq (ENCSR463GJL Peaks) (done) analysis-BbJFJG00bpZxV67GxZfxXb76
+  jseth 2015-05-18 21:06:07
+* histone_chip_seq (ENCSR447DOF Peaks) (done) analysis-BbJFJ4j0bpZjXVbkv4fVb74q
+  jseth 2015-05-18 21:05:39
+* histone_chip_seq (ENCSR427OZM Peaks) (done) analysis-BbJFGzQ0bpZjXVbkv4fVb74V
+  jseth 2015-05-18 21:05:17
+* histone_chip_seq (ENCSR406VPQ Peaks) (done) analysis-BbJFGp80bpZZ13p4vvfVXFzx
+  jseth 2015-05-18 21:04:57
+* histone_chip_seq (ENCSR401GRX Peaks) (done) analysis-BbJFGb80bpZjXVbkv4fVb747
+  jseth 2015-05-18 21:04:37
+* histone_chip_seq (ENCSR323NOC Peaks) (done) analysis-BbJFGJQ0bpZZP6ZkyGfvZJ7V
+  jseth 2015-05-18 21:04:05
+* histone_chip_seq (ENCSR320CCJ Peaks) (done) analysis-BbJFG880bpZZ13p4vvfVXFzX
+  jseth 2015-05-18 21:03:45
+* histone_chip_seq (ENCSR311TLE Peaks) (done) analysis-BbJFG380bpZxx3PQ7bZ0y2fy
+  jseth 2015-05-18 21:03:24
+* histone_chip_seq (ENCSR299NCJ Peaks) (done) analysis-BbJFFy00bpZqP04jg42vPx1J
+  jseth 2015-05-18 21:03:03
+* histone_chip_seq (ENCSR286IGS Peaks) (done) analysis-BbJFFgQ0bpZxVppxJ88142q4
+  jseth 2015-05-18 21:02:37
+* histone_chip_seq (ENCSR283RFW Peaks) (done) analysis-BbJF9G80bpZVkjkQ0Zz9Bpqz
+  jseth 2015-05-18 20:57:37
+* histone_chip_seq (ENCSR261OAK Peaks) (done) analysis-BbJF9500bpZQzgbxv4yk0Fzf
+  jseth 2015-05-18 20:57:07
+* histone_chip_seq (ENCSR222IHX Peaks) (done) analysis-BbJF8zj0bpZzk446zvygGkyV
+  jseth 2015-05-18 20:56:47
+* histone_chip_seq (ENCSR129LAP Peaks) (done) analysis-BbJF8pj0bpZVkjkQ0Zz9BpqZ
+  jseth 2015-05-18 20:56:26
+* histone_chip_seq (ENCSR115FTP Peaks) (done) analysis-BbJF8b80bpZp1qzXz4yx5YPQ
+  jseth 2015-05-18 20:56:04
+* histone_chip_seq (ENCSR088UKA Peaks) (done) analysis-BbJF8Q00bpZxV67GxZfxXb6Q
+  jseth 2015-05-18 20:55:44
+* histone_chip_seq (ENCSR076FAM Peaks) (done) analysis-BbJF8Bj0bpZXxzV4gZ2j8g4K
+  jseth 2015-05-18 20:55:23
+* histone_chip_seq (ENCSR058DOA Peaks) (done) analysis-BbJF85j0bpZyzXZ2xZybfyx4
+  jseth 2015-05-18 20:55:02
+* histone_chip_seq (ENCSR975QSF Peaks) (done) analysis-BbJF5g00bpZxPxZ4j42Y8yB3
+  jseth 2015-05-18 20:49:48
+* histone_chip_seq (ENCSR963OLG Peaks) (done) analysis-BbJF5Xj0bpZqP04jg42vPx0q
+  jseth 2015-05-18 20:49:31
+* histone_chip_seq (ENCSR944XPB Peaks) (done) analysis-BbJF5K00bpZk6fXKf42bQ6z6
+  jseth 2015-05-18 20:49:12
+* histone_chip_seq (ENCSR932BNP Peaks) (done) analysis-BbJF59Q0bpZqP04jg42vPx0V
+  jseth 2015-05-18 20:48:53
+* histone_chip_seq (ENCSR871YCT Peaks) (done) analysis-BbJF54j0bpZqK7p4b42jppGF
+  jseth 2015-05-18 20:48:35
+* histone_chip_seq (ENCSR701GKO Peaks) (done) analysis-BbJF50Q0bpZqP04jg42vPx05
+  jseth 2015-05-18 20:48:18
+* histone_chip_seq (ENCSR695FPP Peaks) (done) analysis-BbJF4v00bpZyJ3K3ZZ2z7bVQ
+  jseth 2015-05-18 20:48:00
+* histone_chip_seq (ENCSR631KAJ Peaks) (done) analysis-BbJF4gQ0bpZqP04jg42vPvzq
+  jseth 2015-05-18 20:47:42
+* histone_chip_seq (ENCSR548BCO Peaks) (done) analysis-BbJF4Y00bpZV8x67fZ2vQ325
+  jseth 2015-05-18 20:47:24
+* histone_chip_seq (ENCSR545BRW Peaks) (done) analysis-BbJF4KQ0bpZyJ3K3ZZ2z7bV2
+  jseth 2015-05-18 20:47:06
+* histone_chip_seq (ENCSR535NVF Peaks) (done) analysis-BbJF4B80bpZVy0x1bZ2g4G6p
+  jseth 2015-05-18 20:46:48
+* histone_chip_seq (ENCSR511WPK Peaks) (done) analysis-BbJF45j0bpZqP04jg42vPvzP
+  jseth 2015-05-18 20:46:30
+* histone_chip_seq (ENCSR448TTC Peaks) (done) analysis-BbJF41Q0bpZk6fXKf42bQ6yQ
+  jseth 2015-05-18 20:46:13
+* histone_chip_seq (ENCSR445UYH Peaks) (done) analysis-BbJF3x00bpZVy0x1bZ2g4G6G
+  jseth 2015-05-18 20:45:55
+* histone_chip_seq (ENCSR419MSI Peaks) (done) analysis-BbJF3jQ0bpZyJ3K3ZZ2z7bQX
+  jseth 2015-05-18 20:45:38
+* histone_chip_seq (ENCSR375GSG Peaks) (done) analysis-BbJF3Z00bpZV8x67fZ2vQ31j
+  jseth 2015-05-18 20:45:20
+* histone_chip_seq (ENCSR244KCW Peaks) (done) analysis-BbJF3PQ0bpZqK7p4b42jppFY
+  jseth 2015-05-18 20:45:02
+* histone_chip_seq (ENCSR240OUM Peaks) (done) analysis-BbJF3Bj0bpZV8x67fZ2vQ31K
+  jseth 2015-05-18 20:44:43
+* histone_chip_seq (ENCSR175QZX Peaks) (done) analysis-BbJF3600bpZqK7p4b42jppF6
+  jseth 2015-05-18 20:44:24
+* histone_chip_seq (ENCSR085EYQ Peaks) (done) analysis-BbJF31Q0bpZV8x67fZ2vQ310
+  jseth 2015-05-18 20:44:05
+* histone_chip_seq (ENCSR067ZDE Peaks) (done) analysis-BbJF2vj0bpZXv1k34bZBG8Q7
+  jseth 2015-05-18 20:43:47
+* histone_chip_seq (ENCSR066LZB Peaks) (done) analysis-BbJF2j80bpZX6Gk4yGyVvp43
+  jseth 2015-05-18 20:43:28
+* histone_chip_seq (ENCSR027DMG Peaks) (done) analysis-BbJF2Y80bpZQgy4jJV9pXg98
+  jseth 2015-05-18 20:42:57

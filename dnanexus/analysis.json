@@ -1,0 +1,3000 @@
+{
+    "originalInput": {
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.narrowpeak_as": {
+            "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.rep1_peaks": {
+            "$dnanexus_link": {
+                "field": "rep1_gappedpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_xcor": {
+            "$dnanexus_link": {
+                "field": "CC_scores_file", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7x80bpZbJ16yxQGgXVJq"
+            }
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_xcor": {
+            "$dnanexus_link": {
+                "field": "CC_scores_file", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7x80bpZjq11J2QJJB1b0"
+            }
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.pooled_peaks": {
+            "$dnanexus_link": {
+                "field": "pooled_gappedpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.chrom_sizes": {
+            "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.pooledpr2_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr2_broadpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.pooled_peaks": {
+            "$dnanexus_link": {
+                "field": "pooled_narrowpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7x80bpZjq11J2QJJB1b0.input_tagAlign": {
+            "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.rep1_peaks": {
+            "$dnanexus_link": {
+                "field": "rep1_broadpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.rep2_peaks": {
+            "$dnanexus_link": {
+                "field": "rep2_broadpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.pooledpr1_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr1_narrowpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.pooled_peaks": {
+            "$dnanexus_link": {
+                "field": "pooled_broadpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.pooledpr2_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr2_gappedpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.peak_type": "gappedPeak", 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.gappedpeak_as": {
+            "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.chrom_sizes": {
+            "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.rep2_peaks": {
+            "$dnanexus_link": {
+                "field": "rep2_gappedpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_ta": {
+            "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.as_file": {
+            "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.as_file": {
+            "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.pooledpr1_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr1_broadpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.pooledpr2_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr2_narrowpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.broadpeak_as": {
+            "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.chrom_sizes": {
+            "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_paired_end": true, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.ctl2_ta": {
+            "$dnanexus_link": "file-BZ44j300B1XVP4f3f8ZZJzKb"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.as_file": {
+            "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+        }, 
+        "stage-BbKf7x80bpZjq11J2QJJB1b0.paired_end": true, 
+        "stage-BbKf7x80bpZbJ16yxQGgXVJq.paired_end": true, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.ctl1_ta": {
+            "$dnanexus_link": "file-BZ44j5j0pyxGkqKVP5Xz8V9q"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.peak_type": "narrowPeak", 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.rep2_peaks": {
+            "$dnanexus_link": {
+                "field": "rep2_narrowpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7x80bpZbJ16yxQGgXVJq.input_tagAlign": {
+            "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.pooledpr1_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr1_gappedpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.rep1_peaks": {
+            "$dnanexus_link": {
+                "field": "rep1_narrowpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_paired_end": true, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.peak_type": "broadPeak", 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.chrom_sizes": {
+            "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.genomesize": "mm", 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_ta": {
+            "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+        }
+    }, 
+    "totalPrice": 3.104737484722221, 
+    "parentAnalysis": null, 
+    "launchedBy": "user-jseth", 
+    "id": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+    "stateTransitions": [
+        {
+            "newState": "done", 
+            "setAt": 1432227310149
+        }
+    ], 
+    "executable": "workflow-BbKf7vQ0bpZQ3j07zZGb03xx", 
+    "executableName": "ENCSR080GQM Peaks", 
+    "workflow": {
+        "links": [], 
+        "inputSpec": [
+            {
+                "group": "stage-BbKf7x80bpZjq11J2QJJB1b0", 
+                "name": "stage-BbKf7x80bpZjq11J2QJJB1b0.input_tagAlign", 
+                "default": {
+                    "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+                }, 
+                "label": "Filtered tagAlign file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "default": true, 
+                "group": "stage-BbKf7x80bpZjq11J2QJJB1b0", 
+                "optional": true, 
+                "name": "stage-BbKf7x80bpZjq11J2QJJB1b0.paired_end", 
+                "class": "boolean"
+            }, 
+            {
+                "group": "stage-BbKf7x80bpZbJ16yxQGgXVJq", 
+                "name": "stage-BbKf7x80bpZbJ16yxQGgXVJq.input_tagAlign", 
+                "default": {
+                    "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+                }, 
+                "label": "Filtered tagAlign file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "default": true, 
+                "group": "stage-BbKf7x80bpZbJ16yxQGgXVJq", 
+                "optional": true, 
+                "name": "stage-BbKf7x80bpZbJ16yxQGgXVJq.paired_end", 
+                "class": "boolean"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_ta", 
+                "default": {
+                    "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+                }, 
+                "label": "Rep 1 tagAlign", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_ta", 
+                "default": {
+                    "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+                }, 
+                "label": "Rep 2 tagAlign", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.ctl1_ta", 
+                "default": {
+                    "$dnanexus_link": "file-BZ44j5j0pyxGkqKVP5Xz8V9q"
+                }, 
+                "label": "Control 1 tagAlign", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.ctl2_ta", 
+                "default": {
+                    "$dnanexus_link": "file-BZ44j300B1XVP4f3f8ZZJzKb"
+                }, 
+                "label": "Control 2 tagAlign", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_xcor", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "CC_scores_file", 
+                        "stage": "stage-BbKf7x80bpZjq11J2QJJB1b0"
+                    }
+                }, 
+                "label": "Rep 1 cross-correlation scores", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_xcor", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "CC_scores_file", 
+                        "stage": "stage-BbKf7x80bpZbJ16yxQGgXVJq"
+                    }
+                }, 
+                "label": "Rep 2 cross-correlation scores", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "default": true, 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "optional": false, 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_paired_end", 
+                "class": "boolean"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_paired_end", 
+                "default": true, 
+                "label": "boolean", 
+                "optional": false, 
+                "class": "boolean"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.chrom_sizes", 
+                "default": {
+                    "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                }, 
+                "label": "chrom.sizes file for bedToBigBed", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.narrowpeak_as", 
+                "default": {
+                    "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+                }, 
+                "label": ".as file for narrowPeak", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.gappedpeak_as", 
+                "default": {
+                    "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+                }, 
+                "label": ".as file for gappedPeak", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.broadpeak_as", 
+                "default": {
+                    "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+                }, 
+                "label": ".as file for broadPeak", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "default": "mm", 
+                "label": "string for MACS2, hs for human, mm for mouse", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.genomesize", 
+                "class": "string"
+            }, 
+            {
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.rep1_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "rep1_narrowpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "First replicate peak file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.rep2_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "rep2_narrowpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Second replicate peak file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.pooled_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "pooled_narrowpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Pooled replicates peak file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.pooledpr1_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "pooledpr1_narrowpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Pooled pseudoreplicate 1 peaks", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.pooledpr2_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "pooledpr2_narrowpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Pooled pseudoreplicate 2 peaks", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.chrom_sizes", 
+                "default": {
+                    "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                }, 
+                "label": "chrom.sizes for bedToBigBed", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.as_file", 
+                "default": {
+                    "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+                }, 
+                "label": ".as file for bedToBigBed", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.peak_type", 
+                "default": "narrowPeak", 
+                "label": "narrowPeak, gappedPeak, or broadPeak", 
+                "optional": false, 
+                "class": "string"
+            }, 
+            {
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.rep1_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "rep1_gappedpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "First replicate peak file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.rep2_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "rep2_gappedpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Second replicate peak file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.pooled_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "pooled_gappedpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Pooled replicates peak file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.pooledpr1_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "pooledpr1_gappedpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Pooled pseudoreplicate 1 peaks", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.pooledpr2_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "pooledpr2_gappedpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Pooled pseudoreplicate 2 peaks", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.chrom_sizes", 
+                "default": {
+                    "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                }, 
+                "label": "chrom.sizes for bedToBigBed", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.as_file", 
+                "default": {
+                    "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+                }, 
+                "label": ".as file for bedToBigBed", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.peak_type", 
+                "default": "gappedPeak", 
+                "label": "narrowPeak, gappedPeak, or broadPeak", 
+                "optional": false, 
+                "class": "string"
+            }, 
+            {
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.rep1_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "rep1_broadpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "First replicate peak file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.rep2_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "rep2_broadpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Second replicate peak file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.pooled_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "pooled_broadpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Pooled replicates peak file", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.pooledpr1_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "pooledpr1_broadpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Pooled pseudoreplicate 1 peaks", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.pooledpr2_peaks", 
+                "default": {
+                    "$dnanexus_link": {
+                        "outputField": "pooledpr2_broadpeaks", 
+                        "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                    }
+                }, 
+                "label": "Pooled pseudoreplicate 2 peaks", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.chrom_sizes", 
+                "default": {
+                    "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                }, 
+                "label": "chrom.sizes for bedToBigBed", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.as_file", 
+                "default": {
+                    "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+                }, 
+                "label": ".as file for bedToBigBed", 
+                "optional": false, 
+                "class": "file"
+            }, 
+            {
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.peak_type", 
+                "default": "broadPeak", 
+                "label": "narrowPeak, gappedPeak, or broadPeak", 
+                "optional": false, 
+                "class": "string"
+            }
+        ], 
+        "id": "workflow-BbKf7vQ0bpZQ3j07zZGb03xx", 
+        "title": "histone_chip_seq", 
+        "state": "open", 
+        "editVersion": 6, 
+        "details": {}, 
+        "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks", 
+        "temporary": false, 
+        "description": "ENCODE Histone ChIP-Seq Pipeline", 
+        "tags": [], 
+        "outputSpec": [
+            {
+                "label": "Tab-delimited NSC/RSC results", 
+                "group": "stage-BbKf7x80bpZjq11J2QJJB1b0", 
+                "name": "stage-BbKf7x80bpZjq11J2QJJB1b0.CC_scores_file", 
+                "class": "file"
+            }, 
+            {
+                "label": "Cross-correlation plot", 
+                "group": "stage-BbKf7x80bpZjq11J2QJJB1b0", 
+                "name": "stage-BbKf7x80bpZjq11J2QJJB1b0.CC_plot_file", 
+                "class": "file"
+            }, 
+            {
+                "label": "True if the bam was derived from paired-end reads.", 
+                "group": "stage-BbKf7x80bpZjq11J2QJJB1b0", 
+                "name": "stage-BbKf7x80bpZjq11J2QJJB1b0.paired_end", 
+                "class": "boolean"
+            }, 
+            {
+                "label": "Tab-delimited NSC/RSC results", 
+                "group": "stage-BbKf7x80bpZbJ16yxQGgXVJq", 
+                "name": "stage-BbKf7x80bpZbJ16yxQGgXVJq.CC_scores_file", 
+                "class": "file"
+            }, 
+            {
+                "label": "Cross-correlation plot", 
+                "group": "stage-BbKf7x80bpZbJ16yxQGgXVJq", 
+                "name": "stage-BbKf7x80bpZbJ16yxQGgXVJq.CC_plot_file", 
+                "class": "file"
+            }, 
+            {
+                "label": "True if the bam was derived from paired-end reads.", 
+                "group": "stage-BbKf7x80bpZbJ16yxQGgXVJq", 
+                "name": "stage-BbKf7x80bpZbJ16yxQGgXVJq.paired_end", 
+                "class": "boolean"
+            }, 
+            {
+                "label": "Narrowpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_narrowpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Bigbed file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_narrowpeaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Gappedpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_gappedpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Bigbed file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_gappedpeaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Broadpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_broadpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Bigbed file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_broadpeaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track fold-enrichment over control", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_fc_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track p-value", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_pvalue_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Narrowpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_narrowpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Bigbed file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_narrowpeaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Gappedpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_gappedpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Bigbed file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_gappedpeaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Broadpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_broadpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Bigbed file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_broadpeaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track fold-enrichment over control", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_fc_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track p-value", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_pvalue_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Narrowpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_narrowpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Bigbed file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_narrowpeaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Gappedpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_gappedpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Bigbed file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_gappedpeaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Broadpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_broadpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Bigbed file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_broadpeaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track fold-enrichment over control", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_fc_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track p-value", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_pvalue_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Narrowpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr1_narrowpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Gappedpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr1_gappedpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Broadpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr1_broadpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track fold-enrichment over control", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr1_fc_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track p-value", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr1_pvalue_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Narrowpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr2_narrowpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Gappedpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr2_gappedpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Broadpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr2_broadpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track fold-enrichment over control", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr2_fc_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track p-value", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr2_pvalue_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Narrowpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr1_narrowpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Gappedpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr1_gappedpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Broadpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr1_broadpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track fold-enrichment over control", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr1_fc_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track p-value", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr1_pvalue_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Narrowpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr2_narrowpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Gappedpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr2_gappedpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Broadpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr2_broadpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track fold-enrichment over control", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr2_fc_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track p-value", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr2_pvalue_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Narrowpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr1_narrowpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Gappedpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr1_gappedpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Broadpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr1_broadpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track fold-enrichment over control", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr1_fc_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track p-value", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr1_pvalue_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Narrowpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr2_narrowpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Gappedpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr2_gappedpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Broadpeaks file", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr2_broadpeaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track fold-enrichment over control", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr2_fc_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Signal track p-value", 
+                "group": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr2_pvalue_signal", 
+                "class": "file"
+            }, 
+            {
+                "label": "Overlapping peaks", 
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.overlapping_peaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Overlapping peaks bigBed", 
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.overlapping_peaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Rejected peaks", 
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.rejected_peaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Rejected peaks bigBed", 
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.rejected_peaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Number of peaks input", 
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.npeaks_in", 
+                "class": "int"
+            }, 
+            {
+                "label": "Number of peaks output", 
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.npeaks_out", 
+                "class": "int"
+            }, 
+            {
+                "label": "Number of peaks rejected", 
+                "group": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "stage-BbKf7y80bpZyG3fKyGGvfvk2.npeaks_rejected", 
+                "class": "int"
+            }, 
+            {
+                "label": "Overlapping peaks", 
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.overlapping_peaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Overlapping peaks bigBed", 
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.overlapping_peaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Rejected peaks", 
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.rejected_peaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Rejected peaks bigBed", 
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.rejected_peaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Number of peaks input", 
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.npeaks_in", 
+                "class": "int"
+            }, 
+            {
+                "label": "Number of peaks output", 
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.npeaks_out", 
+                "class": "int"
+            }, 
+            {
+                "label": "Number of peaks rejected", 
+                "group": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.npeaks_rejected", 
+                "class": "int"
+            }, 
+            {
+                "label": "Overlapping peaks", 
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.overlapping_peaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Overlapping peaks bigBed", 
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.overlapping_peaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Rejected peaks", 
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.rejected_peaks", 
+                "class": "file"
+            }, 
+            {
+                "label": "Rejected peaks bigBed", 
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.rejected_peaks_bb", 
+                "class": "file"
+            }, 
+            {
+                "label": "Number of peaks input", 
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.npeaks_in", 
+                "class": "int"
+            }, 
+            {
+                "label": "Number of peaks output", 
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.npeaks_out", 
+                "class": "int"
+            }, 
+            {
+                "label": "Number of peaks rejected", 
+                "group": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "stage-BbKf7yj0bpZjq11J2QJJB1b2.npeaks_rejected", 
+                "class": "int"
+            }
+        ], 
+        "sponsored": false, 
+        "createdBy": {
+            "user": "user-jseth"
+        }, 
+        "outputFolder": null, 
+        "class": "workflow", 
+        "types": [], 
+        "hidden": false, 
+        "name": "ENCSR080GQM Peaks", 
+        "created": 1432183794000, 
+        "modified": 1432183803811, 
+        "summary": "", 
+        "project": "project-BKp5K980bpZZ096Xp1XQ02fZ", 
+        "stages": [
+            {
+                "accessible": true, 
+                "executable": "applet-BZfj40j0bpZjv8fGQ8gqf29F", 
+                "name": "Rep1 cross-correlation", 
+                "systemRequirements": {}, 
+                "executionPolicy": {}, 
+                "input": {
+                    "input_tagAlign": {
+                        "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+                    }, 
+                    "paired_end": true
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/xcor_only", 
+                "id": "stage-BbKf7x80bpZjq11J2QJJB1b0"
+            }, 
+            {
+                "accessible": true, 
+                "executable": "applet-BZfj40j0bpZjv8fGQ8gqf29F", 
+                "name": "Rep2 cross-correlation", 
+                "systemRequirements": {}, 
+                "executionPolicy": {}, 
+                "input": {
+                    "input_tagAlign": {
+                        "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+                    }, 
+                    "paired_end": true
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/xcor_only", 
+                "id": "stage-BbKf7x80bpZbJ16yxQGgXVJq"
+            }, 
+            {
+                "accessible": true, 
+                "executable": "applet-Bb595Pj0bpZzq8Bkxx0VQv4v", 
+                "name": "ENCODE Peaks", 
+                "systemRequirements": {}, 
+                "executionPolicy": {}, 
+                "input": {
+                    "rep2_paired_end": true, 
+                    "rep1_ta": {
+                        "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+                    }, 
+                    "ctl2_ta": {
+                        "$dnanexus_link": "file-BZ44j300B1XVP4f3f8ZZJzKb"
+                    }, 
+                    "narrowpeak_as": {
+                        "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+                    }, 
+                    "rep2_xcor": {
+                        "$dnanexus_link": {
+                            "outputField": "CC_scores_file", 
+                            "stage": "stage-BbKf7x80bpZbJ16yxQGgXVJq"
+                        }
+                    }, 
+                    "rep2_ta": {
+                        "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep1_xcor": {
+                        "$dnanexus_link": {
+                            "outputField": "CC_scores_file", 
+                            "stage": "stage-BbKf7x80bpZjq11J2QJJB1b0"
+                        }
+                    }, 
+                    "genomesize": "mm", 
+                    "rep1_paired_end": true, 
+                    "gappedpeak_as": {
+                        "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+                    }, 
+                    "broadpeak_as": {
+                        "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+                    }, 
+                    "ctl1_ta": {
+                        "$dnanexus_link": "file-BZ44j5j0pyxGkqKVP5Xz8V9q"
+                    }
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/encode_macs2", 
+                "id": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }, 
+            {
+                "accessible": true, 
+                "executable": "applet-Bb595FQ0bpZXp036bGJV6GKX", 
+                "name": "Overlap narrowpeaks", 
+                "systemRequirements": {}, 
+                "executionPolicy": {}, 
+                "input": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "rep1_narrowpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "rep2_narrowpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "peak_type": "narrowPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "pooledpr2_narrowpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "pooledpr1_narrowpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "pooled_narrowpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+                    }
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/encode_macs2", 
+                "id": "stage-BbKf7y80bpZyG3fKyGGvfvk2"
+            }, 
+            {
+                "accessible": true, 
+                "executable": "applet-Bb595FQ0bpZXp036bGJV6GKX", 
+                "name": "Overlap gappedpeaks", 
+                "systemRequirements": {}, 
+                "executionPolicy": {}, 
+                "input": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "rep1_gappedpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "rep2_gappedpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "peak_type": "gappedPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "pooledpr2_gappedpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "pooledpr1_gappedpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "pooled_gappedpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+                    }
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/encode_macs2", 
+                "id": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3"
+            }, 
+            {
+                "accessible": true, 
+                "executable": "applet-Bb595FQ0bpZXp036bGJV6GKX", 
+                "name": "Overlap broadpeaks", 
+                "systemRequirements": {}, 
+                "executionPolicy": {}, 
+                "input": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "rep1_broadpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "rep2_broadpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "peak_type": "broadPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "pooledpr2_broadpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "pooledpr1_broadpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": {
+                            "outputField": "pooled_broadpeaks", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+                    }
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/encode_macs2", 
+                "id": "stage-BbKf7yj0bpZjq11J2QJJB1b2"
+            }
+        ]
+    }, 
+    "properties": {}, 
+    "priority": "high", 
+    "runInput": {}, 
+    "state": "done", 
+    "details": {}, 
+    "input": {
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.narrowpeak_as": {
+            "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.rep1_peaks": {
+            "$dnanexus_link": {
+                "field": "rep1_gappedpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_xcor": {
+            "$dnanexus_link": {
+                "field": "CC_scores_file", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7x80bpZbJ16yxQGgXVJq"
+            }
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_xcor": {
+            "$dnanexus_link": {
+                "field": "CC_scores_file", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7x80bpZjq11J2QJJB1b0"
+            }
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.pooled_peaks": {
+            "$dnanexus_link": {
+                "field": "pooled_gappedpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.chrom_sizes": {
+            "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.pooledpr2_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr2_broadpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.pooled_peaks": {
+            "$dnanexus_link": {
+                "field": "pooled_narrowpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7x80bpZjq11J2QJJB1b0.input_tagAlign": {
+            "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.rep1_peaks": {
+            "$dnanexus_link": {
+                "field": "rep1_broadpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.rep2_peaks": {
+            "$dnanexus_link": {
+                "field": "rep2_broadpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.pooledpr1_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr1_narrowpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.pooled_peaks": {
+            "$dnanexus_link": {
+                "field": "pooled_broadpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.pooledpr2_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr2_gappedpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.peak_type": "gappedPeak", 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.gappedpeak_as": {
+            "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.chrom_sizes": {
+            "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.rep2_peaks": {
+            "$dnanexus_link": {
+                "field": "rep2_gappedpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_ta": {
+            "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.as_file": {
+            "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.as_file": {
+            "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.pooledpr1_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr1_broadpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.pooledpr2_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr2_narrowpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.broadpeak_as": {
+            "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.chrom_sizes": {
+            "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_paired_end": true, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.ctl2_ta": {
+            "$dnanexus_link": "file-BZ44j300B1XVP4f3f8ZZJzKb"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.as_file": {
+            "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+        }, 
+        "stage-BbKf7x80bpZjq11J2QJJB1b0.paired_end": true, 
+        "stage-BbKf7x80bpZbJ16yxQGgXVJq.paired_end": true, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.ctl1_ta": {
+            "$dnanexus_link": "file-BZ44j5j0pyxGkqKVP5Xz8V9q"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.peak_type": "narrowPeak", 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.rep2_peaks": {
+            "$dnanexus_link": {
+                "field": "rep2_narrowpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7x80bpZbJ16yxQGgXVJq.input_tagAlign": {
+            "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.pooledpr1_peaks": {
+            "$dnanexus_link": {
+                "field": "pooledpr1_gappedpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.rep1_peaks": {
+            "$dnanexus_link": {
+                "field": "rep1_narrowpeaks", 
+                "wasInternal": true, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+            }
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_paired_end": true, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.peak_type": "broadPeak", 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.chrom_sizes": {
+            "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.genomesize": "mm", 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_ta": {
+            "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+        }
+    }, 
+    "folder": "/", 
+    "tags": [], 
+    "dependsOn": [], 
+    "billTo": "org-cherrylab", 
+    "delayWorkspaceDestruction": true, 
+    "class": "analysis", 
+    "stage": null, 
+    "name": "histone_chip_seq", 
+    "created": 1432183804093, 
+    "modified": 1432227312436, 
+    "analysis": null, 
+    "project": "project-BKp5K980bpZZ096Xp1XQ02fZ", 
+    "workspace": "container-BbKf7z00bpZbJ16yxQGgXVJy", 
+    "rootExecution": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+    "parentJob": null, 
+    "output": {
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr1_fc_signal": {
+            "$dnanexus_link": "file-BbP0VkQ07bpPvZkG2JF2qGB2"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.rejected_peaks": {
+            "$dnanexus_link": "file-BbP0qkj0XvfQf9QyvjybffQ0"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr2_broadpeaks": {
+            "$dnanexus_link": "file-BbP0BVj0vkg3F3pJ1VFKpf56"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.overlapping_peaks_bb": {
+            "$dnanexus_link": "file-BbP0qZ80jkpj93VJq02V3x7y"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr2_pvalue_signal": {
+            "$dnanexus_link": "file-BbP02g80XQfq5q17bZ1FF2xy"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr2_gappedpeaks": {
+            "$dnanexus_link": "file-BbP0BVQ0vkgPZZGzz9Bb0Xz3"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_broadpeaks": {
+            "$dnanexus_link": "file-BbKzzp804FzgPKf44VF28yfz"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr2_pvalue_signal": {
+            "$dnanexus_link": "file-BbP0V680829YxB0QfQ1K4Jxq"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr1_pvalue_signal": {
+            "$dnanexus_link": "file-BbP0VqQ07bp3F3pJ1VFKpfBp"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr1_fc_signal": {
+            "$dnanexus_link": "file-BbKzyFj0Gz1f4b390JF01vYx"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_gappedpeaks": {
+            "$dnanexus_link": "file-BbP0pXQ0BQ2jVxP9VZ146BP0"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_narrowpeaks": {
+            "$dnanexus_link": "file-BbP0ByQ0bqzJf9Vqfv2Y1fj7"
+        }, 
+        "stage-BbKf7x80bpZjq11J2QJJB1b0.CC_plot_file": {
+            "$dnanexus_link": "file-BbKjz8004pv7PKf44VF267gJ"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_gappedpeaks": {
+            "$dnanexus_link": "file-BbP0Byj0bqzJf9Vqfv2Y1fjB"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_narrowpeaks": {
+            "$dnanexus_link": "file-BbKzzkj04FzyQ3zPxbBVxJ9Y"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr1_narrowpeaks": {
+            "$dnanexus_link": "file-BbP0B7005VZybB5qf42qy3Bz"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_broadpeaks": {
+            "$dnanexus_link": "file-BbP0Bz00bqzBYxvJjj2YY174"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_pvalue_signal": {
+            "$dnanexus_link": "file-BbP0F2j0bqzBYxvJjj2YY17G"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr1_pvalue_signal": {
+            "$dnanexus_link": "file-BbKzyGj0Gz1gvGZkyJBYJJYv"
+        }, 
+        "stage-BbKf7x80bpZjq11J2QJJB1b0.CC_scores_file": {
+            "$dnanexus_link": "file-BbKjz7j04pvFQvyq3VF7P8f3"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr2_broadpeaks": {
+            "$dnanexus_link": "file-BbP02b00XQfq5q17bZ1FF2x3"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.rejected_peaks_bb": {
+            "$dnanexus_link": "file-BbP0qZj0jkpj93VJq02V3x8b"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_broadpeaks": {
+            "$dnanexus_link": "file-BbP0pXj0BQ2jVxP9VZ146BP2"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.overlapping_peaks": {
+            "$dnanexus_link": "file-BbP0qk00Xvfz35vx1QzFqB2B"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr1_fc_signal": {
+            "$dnanexus_link": "file-BbP0B8Q05VZbgq3pgj2jjqK3"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_pvalue_signal": {
+            "$dnanexus_link": "file-BbP0q300BQ2q9k7vgZ14p6bj"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_narrowpeaks_bb": {
+            "$dnanexus_link": "file-BbKzzpQ04FzyQ3zPxbBVxJ9j"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.rejected_peaks_bb": {
+            "$dnanexus_link": "file-BbP0qp00Xvfp13QpyGyYXP1j"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.overlapping_peaks_bb": {
+            "$dnanexus_link": "file-BbP0qk80Xvfv317FzZyXyvQf"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_fc_signal": {
+            "$dnanexus_link": "file-BbKzzq804FzyQ3zPxbBVxJ9q"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_gappedpeaks": {
+            "$dnanexus_link": "file-BbKzzp004FzYF3pJ1VFKpZ66"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.npeaks_rejected": 50000, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.npeaks_rejected": 50000, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_broadpeaks_bb": {
+            "$dnanexus_link": "file-BbP0Bzj0bqz00xJgkv2VkbjK"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.rejected_peaks": {
+            "$dnanexus_link": "file-BbP0qZj0P0QP35vx1QzFqB25"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_gappedpeaks_bb": {
+            "$dnanexus_link": "file-BbKzzpj04FzqQvyq3VF7X7X4"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr1_narrowpeaks": {
+            "$dnanexus_link": "file-BbP0Vgj07bpPvZkG2JF2qG9z"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.npeaks_rejected": 105923, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr2_gappedpeaks": {
+            "$dnanexus_link": "file-BbP02ZQ0XQfk8qfxYQ14kGvq"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_narrowpeaks_bb": {
+            "$dnanexus_link": "file-BbP0Bz80bqz5gq3pgj2jjqK8"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr1_gappedpeaks": {
+            "$dnanexus_link": "file-BbKzyB80Gz1zvZkG2JF2q6pZ"
+        }, 
+        "stage-BbKf7x80bpZbJ16yxQGgXVJq.CC_scores_file": {
+            "$dnanexus_link": "file-BbKjyJQ0KKpKbB5qf42qqQPK"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr2_narrowpeaks": {
+            "$dnanexus_link": "file-BbP0V300829zqY4gZQ1BBb1K"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.overlapping_peaks": {
+            "$dnanexus_link": "file-BbP0qZ00jkpj93VJq02V3x7j"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_gappedpeaks_bb": {
+            "$dnanexus_link": "file-BbP0BzQ0bqz893VJq02V3fyQ"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr2_narrowpeaks": {
+            "$dnanexus_link": "file-BbP0BV80vkgKQ3zPxbBVxb2j"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr2_pvalue_signal": {
+            "$dnanexus_link": "file-BbP0BZ80vkgPZZGzz9Bb0Xz6"
+        }, 
+        "stage-BbKf7x80bpZjq11J2QJJB1b0.paired_end": true, 
+        "stage-BbKf7x80bpZbJ16yxQGgXVJq.paired_end": true, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr2_fc_signal": {
+            "$dnanexus_link": "file-BbP0V480829zqY4gZQ1BBb1g"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr2_broadpeaks": {
+            "$dnanexus_link": "file-BbP0V380829Vg70fXG19z4ZP"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr2_fc_signal": {
+            "$dnanexus_link": "file-BbP0BXj0vkg64b390JF01y3z"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.overlapping_peaks": {
+            "$dnanexus_link": "file-BbP0qZ80P0Q1b1BJxQyy8Xk8"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.npeaks_in": 223898, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.overlapping_peaks_bb": {
+            "$dnanexus_link": "file-BbP0qZQ0P0QP35vx1QzFqB23"
+        }, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.npeaks_out": 131392, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.npeaks_in": 181392, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2_fc_signal": {
+            "$dnanexus_link": "file-BbP0F000bqz00xJgkv2VkbjQ"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_pvalue_signal": {
+            "$dnanexus_link": "file-BbKzzvj04FzzvZkG2JF2q6qx"
+        }, 
+        "stage-BbKf7x80bpZbJ16yxQGgXVJq.CC_plot_file": {
+            "$dnanexus_link": "file-BbKjyJQ0KKp00xJgkv2Vbk07"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_broadpeaks_bb": {
+            "$dnanexus_link": "file-BbP0pYQ0BQ2YxB0QfQ1K4XfQ"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.rejected_peaks_bb": {
+            "$dnanexus_link": "file-BbP0qb00P0QB13QpyGyYXP0v"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr1_broadpeaks": {
+            "$dnanexus_link": "file-BbP0Vj807bp7PKf44VF293J0"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr1_narrowpeaks": {
+            "$dnanexus_link": "file-BbKzyB00Gz1gPKf44VF28ybq"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_narrowpeaks_bb": {
+            "$dnanexus_link": "file-BbP0pY00BQ2zqY4gZQ1BBjVp"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr2_gappedpeaks": {
+            "$dnanexus_link": "file-BbP0V300829k8qfxYQ14kQyG"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr2_fc_signal": {
+            "$dnanexus_link": "file-BbP02f00XQfYxB0QfQ1K4F2J"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr1_pvalue_signal": {
+            "$dnanexus_link": "file-BbP0BB005VZj93VJq02V3ffy"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr2_narrowpeaks": {
+            "$dnanexus_link": "file-BbP02ZQ0XQfxpk2ZjG185xxK"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.npeaks_out": 117975, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_narrowpeaks": {
+            "$dnanexus_link": "file-BbP0pX80BQ2xpk2ZjG1861yq"
+        }, 
+        "stage-BbKf7yj0bpZjq11J2QJJB1b2.npeaks_out": 131392, 
+        "stage-BbKf7yQ0bpZyG3fKyGGvfvk3.npeaks_in": 181392, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr1_broadpeaks": {
+            "$dnanexus_link": "file-BbP0B7805VZbgq3pgj2jjqJk"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1pr1_broadpeaks": {
+            "$dnanexus_link": "file-BbKzyBQ0Gz1YF3pJ1VFKpYy4"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep2pr1_gappedpeaks": {
+            "$dnanexus_link": "file-BbP0B7005VZybB5qf42qy3F1"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooledpr1_gappedpeaks": {
+            "$dnanexus_link": "file-BbP0Vj007bp7vGZkyJBYJYpF"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.rep1_broadpeaks_bb": {
+            "$dnanexus_link": "file-BbKzzq004FzzvZkG2JF2q6qp"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_fc_signal": {
+            "$dnanexus_link": "file-BbP0pYQ0BQ2jVxP9VZ146BP5"
+        }, 
+        "stage-BbKf7y80bpZyG3fKyGGvfvk2.rejected_peaks": {
+            "$dnanexus_link": "file-BbP0qZQ0jkpxf9Vqfv2Y1q2x"
+        }, 
+        "stage-BbKf7xj0bpZjq11J2QJJB1b1.pooled_gappedpeaks_bb": {
+            "$dnanexus_link": "file-BbP0pY00BQ2q9k7vgZ14p6ZQ"
+        }
+    }, 
+    "stages": [
+        {
+            "execution": {
+                "originalInput": {
+                    "input_tagAlign": {
+                        "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+                    }, 
+                    "paired_end": true
+                }, 
+                "totalPrice": 0.10105510166666666, 
+                "parentAnalysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stoppedRunning": 1432194977873, 
+                "launchedBy": "user-jseth", 
+                "id": "job-BbKf7z00bpZbJ16yxQGgXVK0", 
+                "originJob": "job-BbKf7z00bpZbJ16yxQGgXVK0", 
+                "stateTransitions": [
+                    {
+                        "newState": "runnable", 
+                        "setAt": 1432183807248
+                    }, 
+                    {
+                        "newState": "running", 
+                        "setAt": 1432193950194
+                    }, 
+                    {
+                        "newState": "done", 
+                        "setAt": 1432194978574
+                    }
+                ], 
+                "executable": "applet-BZfj40j0bpZjv8fGQ8gqf29F", 
+                "executableName": "xcor_only", 
+                "startedRunning": 1432193950194, 
+                "properties": {}, 
+                "priority": "high", 
+                "runInput": {
+                    "input_tagAlign": {
+                        "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+                    }, 
+                    "paired_end": true
+                }, 
+                "state": "done", 
+                "isFree": false, 
+                "details": {}, 
+                "input": {
+                    "input_tagAlign": {
+                        "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+                    }, 
+                    "paired_end": true
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/xcor_only", 
+                "function": "main", 
+                "tags": [], 
+                "dependsOn": [], 
+                "billTo": "org-cherrylab", 
+                "debug": {}, 
+                "invoiceMetadata": null, 
+                "delayWorkspaceDestruction": true, 
+                "executionPolicy": {
+                    "restartOn": {
+                        "JMInternalError": 1, 
+                        "UnresponsiveWorker": 2, 
+                        "ExecutionError": 1
+                    }
+                }, 
+                "networkAccess": [
+                    "*"
+                ], 
+                "class": "job", 
+                "stage": "stage-BbKf7x80bpZjq11J2QJJB1b0", 
+                "name": "Rep1 cross-correlation", 
+                "created": 1432183804741, 
+                "modified": 1432194981388, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "project": "project-BKp5K980bpZZ096Xp1XQ02fZ", 
+                "applet": "applet-BZfj40j0bpZjv8fGQ8gqf29F", 
+                "workspace": "container-BbKf7zj04pvGy839kj8BqFzX", 
+                "rootExecution": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "parentJob": null, 
+                "output": {
+                    "CC_plot_file": {
+                        "$dnanexus_link": "file-BbKjz8004pv7PKf44VF267gJ"
+                    }, 
+                    "CC_scores_file": {
+                        "$dnanexus_link": "file-BbKjz7j04pvFQvyq3VF7P8f3"
+                    }, 
+                    "paired_end": true
+                }, 
+                "instanceType": "mem3_hdd2_x2", 
+                "systemRequirements": {
+                    "main": {
+                        "instanceType": "mem3_hdd2_x2"
+                    }
+                }
+            }, 
+            "id": "stage-BbKf7x80bpZjq11J2QJJB1b0"
+        }, 
+        {
+            "execution": {
+                "originalInput": {
+                    "input_tagAlign": {
+                        "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+                    }, 
+                    "paired_end": true
+                }, 
+                "totalPrice": 0.09070079833333332, 
+                "parentAnalysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stoppedRunning": 1432194872628, 
+                "launchedBy": "user-jseth", 
+                "id": "job-BbKf7z00bpZbJ16yxQGgXVK1", 
+                "originJob": "job-BbKf7z00bpZbJ16yxQGgXVK1", 
+                "stateTransitions": [
+                    {
+                        "newState": "runnable", 
+                        "setAt": 1432183807201
+                    }, 
+                    {
+                        "newState": "running", 
+                        "setAt": 1432193950247
+                    }, 
+                    {
+                        "newState": "waiting_on_output", 
+                        "setAt": 1432194873604
+                    }, 
+                    {
+                        "newState": "done", 
+                        "setAt": 1432194875918
+                    }
+                ], 
+                "executable": "applet-BZfj40j0bpZjv8fGQ8gqf29F", 
+                "executableName": "xcor_only", 
+                "startedRunning": 1432193950247, 
+                "properties": {}, 
+                "priority": "high", 
+                "runInput": {
+                    "input_tagAlign": {
+                        "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+                    }, 
+                    "paired_end": true
+                }, 
+                "state": "done", 
+                "isFree": false, 
+                "details": {}, 
+                "input": {
+                    "input_tagAlign": {
+                        "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+                    }, 
+                    "paired_end": true
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/xcor_only", 
+                "function": "main", 
+                "tags": [], 
+                "dependsOn": [], 
+                "billTo": "org-cherrylab", 
+                "debug": {}, 
+                "invoiceMetadata": null, 
+                "delayWorkspaceDestruction": true, 
+                "executionPolicy": {
+                    "restartOn": {
+                        "JMInternalError": 1, 
+                        "UnresponsiveWorker": 2, 
+                        "ExecutionError": 1
+                    }
+                }, 
+                "networkAccess": [
+                    "*"
+                ], 
+                "class": "job", 
+                "stage": "stage-BbKf7x80bpZbJ16yxQGgXVJq", 
+                "name": "Rep2 cross-correlation", 
+                "created": 1432183804800, 
+                "modified": 1432194877272, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "project": "project-BKp5K980bpZZ096Xp1XQ02fZ", 
+                "applet": "applet-BZfj40j0bpZjv8fGQ8gqf29F", 
+                "workspace": "container-BbKf7zj0KKpGy839kj8BqFzY", 
+                "rootExecution": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "parentJob": null, 
+                "output": {
+                    "CC_plot_file": {
+                        "$dnanexus_link": "file-BbKjyJQ0KKp00xJgkv2Vbk07"
+                    }, 
+                    "CC_scores_file": {
+                        "$dnanexus_link": "file-BbKjyJQ0KKpKbB5qf42qqQPK"
+                    }, 
+                    "paired_end": true
+                }, 
+                "instanceType": "mem3_hdd2_x2", 
+                "systemRequirements": {
+                    "main": {
+                        "instanceType": "mem3_hdd2_x2"
+                    }
+                }
+            }, 
+            "id": "stage-BbKf7x80bpZbJ16yxQGgXVJq"
+        }, 
+        {
+            "execution": {
+                "originalInput": {
+                    "rep2_paired_end": true, 
+                    "rep1_ta": {
+                        "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+                    }, 
+                    "ctl2_ta": {
+                        "$dnanexus_link": "file-BZ44j300B1XVP4f3f8ZZJzKb"
+                    }, 
+                    "narrowpeak_as": {
+                        "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+                    }, 
+                    "rep2_xcor": {
+                        "$dnanexus_link": {
+                            "field": "CC_scores_file", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7x80bpZbJ16yxQGgXVJq"
+                        }
+                    }, 
+                    "rep2_ta": {
+                        "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep1_xcor": {
+                        "$dnanexus_link": {
+                            "field": "CC_scores_file", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7x80bpZjq11J2QJJB1b0"
+                        }
+                    }, 
+                    "genomesize": "mm", 
+                    "rep1_paired_end": true, 
+                    "gappedpeak_as": {
+                        "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+                    }, 
+                    "broadpeak_as": {
+                        "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+                    }, 
+                    "ctl1_ta": {
+                        "$dnanexus_link": "file-BZ44j5j0pyxGkqKVP5Xz8V9q"
+                    }
+                }, 
+                "totalPrice": 2.9018176083333325, 
+                "parentAnalysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stoppedRunning": 1432195080556, 
+                "launchedBy": "user-jseth", 
+                "id": "job-BbKf7z00bpZbJ16yxQGgXVK2", 
+                "originJob": "job-BbKf7z00bpZbJ16yxQGgXVK2", 
+                "stateTransitions": [
+                    {
+                        "newState": "waiting_on_input", 
+                        "setAt": 1432183807068
+                    }, 
+                    {
+                        "newState": "runnable", 
+                        "setAt": 1432194980887
+                    }, 
+                    {
+                        "newState": "running", 
+                        "setAt": 1432194981532
+                    }, 
+                    {
+                        "newState": "waiting_on_output", 
+                        "setAt": 1432195082036
+                    }, 
+                    {
+                        "newState": "done", 
+                        "setAt": 1432227233392
+                    }
+                ], 
+                "executable": "applet-Bb595Pj0bpZzq8Bkxx0VQv4v", 
+                "executableName": "encode_macs2", 
+                "startedRunning": 1432194981532, 
+                "properties": {}, 
+                "priority": "high", 
+                "runInput": {
+                    "rep2_paired_end": true, 
+                    "rep1_ta": {
+                        "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+                    }, 
+                    "ctl2_ta": {
+                        "$dnanexus_link": "file-BZ44j300B1XVP4f3f8ZZJzKb"
+                    }, 
+                    "narrowpeak_as": {
+                        "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+                    }, 
+                    "rep2_xcor": {
+                        "$dnanexus_link": {
+                            "field": "CC_scores_file", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7x80bpZbJ16yxQGgXVJq"
+                        }
+                    }, 
+                    "rep2_ta": {
+                        "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep1_xcor": {
+                        "$dnanexus_link": {
+                            "field": "CC_scores_file", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7x80bpZjq11J2QJJB1b0"
+                        }
+                    }, 
+                    "genomesize": "mm", 
+                    "rep1_paired_end": true, 
+                    "gappedpeak_as": {
+                        "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+                    }, 
+                    "broadpeak_as": {
+                        "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+                    }, 
+                    "ctl1_ta": {
+                        "$dnanexus_link": "file-BZ44j5j0pyxGkqKVP5Xz8V9q"
+                    }
+                }, 
+                "state": "done", 
+                "isFree": false, 
+                "details": {}, 
+                "input": {
+                    "rep2_paired_end": true, 
+                    "rep1_ta": {
+                        "$dnanexus_link": "file-BZ3q1g00QPk7xkXxg1g5KyZ6"
+                    }, 
+                    "ctl2_ta": {
+                        "$dnanexus_link": "file-BZ44j300B1XVP4f3f8ZZJzKb"
+                    }, 
+                    "narrowpeak_as": {
+                        "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+                    }, 
+                    "rep2_xcor": {
+                        "$dnanexus_link": "file-BbKjyJQ0KKpKbB5qf42qqQPK"
+                    }, 
+                    "rep2_ta": {
+                        "$dnanexus_link": "file-BZ3q6zQ0PZbzqGGPKJXb38BQ"
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep1_xcor": {
+                        "$dnanexus_link": "file-BbKjz7j04pvFQvyq3VF7P8f3"
+                    }, 
+                    "genomesize": "mm", 
+                    "rep1_paired_end": true, 
+                    "gappedpeak_as": {
+                        "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+                    }, 
+                    "broadpeak_as": {
+                        "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+                    }, 
+                    "ctl1_ta": {
+                        "$dnanexus_link": "file-BZ44j5j0pyxGkqKVP5Xz8V9q"
+                    }
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/encode_macs2", 
+                "function": "main", 
+                "tags": [], 
+                "dependsOn": [], 
+                "billTo": "org-cherrylab", 
+                "debug": {}, 
+                "invoiceMetadata": null, 
+                "delayWorkspaceDestruction": true, 
+                "executionPolicy": {
+                    "restartOn": {
+                        "JMInternalError": 1, 
+                        "UnresponsiveWorker": 2, 
+                        "ExecutionError": 1
+                    }
+                }, 
+                "networkAccess": [
+                    "*"
+                ], 
+                "class": "job", 
+                "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1", 
+                "name": "ENCODE Peaks", 
+                "created": 1432183804830, 
+                "modified": 1432227234376, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "project": "project-BKp5K980bpZZ096Xp1XQ02fZ", 
+                "applet": "applet-Bb595Pj0bpZzq8Bkxx0VQv4v", 
+                "workspace": "container-BbKjz9001yBGy839kj8BvxkX", 
+                "rootExecution": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "parentJob": null, 
+                "output": {
+                    "rep2pr1_narrowpeaks": {
+                        "$dnanexus_link": "file-BbP0B7005VZybB5qf42qy3Bz"
+                    }, 
+                    "rep2pr2_fc_signal": {
+                        "$dnanexus_link": "file-BbP0BXj0vkg64b390JF01y3z"
+                    }, 
+                    "rep1pr1_narrowpeaks": {
+                        "$dnanexus_link": "file-BbKzyB00Gz1gPKf44VF28ybq"
+                    }, 
+                    "rep1_gappedpeaks_bb": {
+                        "$dnanexus_link": "file-BbKzzpj04FzqQvyq3VF7X7X4"
+                    }, 
+                    "pooledpr1_broadpeaks": {
+                        "$dnanexus_link": "file-BbP0Vj807bp7PKf44VF293J0"
+                    }, 
+                    "rep2pr2_pvalue_signal": {
+                        "$dnanexus_link": "file-BbP0BZ80vkgPZZGzz9Bb0Xz6"
+                    }, 
+                    "rep2pr1_pvalue_signal": {
+                        "$dnanexus_link": "file-BbP0BB005VZj93VJq02V3ffy"
+                    }, 
+                    "rep2_narrowpeaks": {
+                        "$dnanexus_link": "file-BbP0ByQ0bqzJf9Vqfv2Y1fj7"
+                    }, 
+                    "pooledpr1_pvalue_signal": {
+                        "$dnanexus_link": "file-BbP0VqQ07bp3F3pJ1VFKpfBp"
+                    }, 
+                    "pooledpr2_narrowpeaks": {
+                        "$dnanexus_link": "file-BbP0V300829zqY4gZQ1BBb1K"
+                    }, 
+                    "rep2pr1_broadpeaks": {
+                        "$dnanexus_link": "file-BbP0B7805VZbgq3pgj2jjqJk"
+                    }, 
+                    "pooledpr1_fc_signal": {
+                        "$dnanexus_link": "file-BbP0VkQ07bpPvZkG2JF2qGB2"
+                    }, 
+                    "rep1_narrowpeaks_bb": {
+                        "$dnanexus_link": "file-BbKzzpQ04FzyQ3zPxbBVxJ9j"
+                    }, 
+                    "rep2_gappedpeaks": {
+                        "$dnanexus_link": "file-BbP0Byj0bqzJf9Vqfv2Y1fjB"
+                    }, 
+                    "rep1pr1_pvalue_signal": {
+                        "$dnanexus_link": "file-BbKzyGj0Gz1gvGZkyJBYJJYv"
+                    }, 
+                    "rep1pr2_narrowpeaks": {
+                        "$dnanexus_link": "file-BbP02ZQ0XQfxpk2ZjG185xxK"
+                    }, 
+                    "rep1pr1_fc_signal": {
+                        "$dnanexus_link": "file-BbKzyFj0Gz1f4b390JF01vYx"
+                    }, 
+                    "rep1pr2_broadpeaks": {
+                        "$dnanexus_link": "file-BbP02b00XQfq5q17bZ1FF2x3"
+                    }, 
+                    "rep1_narrowpeaks": {
+                        "$dnanexus_link": "file-BbKzzkj04FzyQ3zPxbBVxJ9Y"
+                    }, 
+                    "rep1_gappedpeaks": {
+                        "$dnanexus_link": "file-BbKzzp004FzYF3pJ1VFKpZ66"
+                    }, 
+                    "pooled_fc_signal": {
+                        "$dnanexus_link": "file-BbP0pYQ0BQ2jVxP9VZ146BP5"
+                    }, 
+                    "rep2pr1_gappedpeaks": {
+                        "$dnanexus_link": "file-BbP0B7005VZybB5qf42qy3F1"
+                    }, 
+                    "pooledpr2_broadpeaks": {
+                        "$dnanexus_link": "file-BbP0V380829Vg70fXG19z4ZP"
+                    }, 
+                    "rep2_broadpeaks": {
+                        "$dnanexus_link": "file-BbP0Bz00bqzBYxvJjj2YY174"
+                    }, 
+                    "rep2_fc_signal": {
+                        "$dnanexus_link": "file-BbP0F000bqz00xJgkv2VkbjQ"
+                    }, 
+                    "rep2pr2_narrowpeaks": {
+                        "$dnanexus_link": "file-BbP0BV80vkgKQ3zPxbBVxb2j"
+                    }, 
+                    "rep1pr2_pvalue_signal": {
+                        "$dnanexus_link": "file-BbP02g80XQfq5q17bZ1FF2xy"
+                    }, 
+                    "pooledpr1_gappedpeaks": {
+                        "$dnanexus_link": "file-BbP0Vj007bp7vGZkyJBYJYpF"
+                    }, 
+                    "pooled_narrowpeaks_bb": {
+                        "$dnanexus_link": "file-BbP0pY00BQ2zqY4gZQ1BBjVp"
+                    }, 
+                    "pooledpr1_narrowpeaks": {
+                        "$dnanexus_link": "file-BbP0Vgj07bpPvZkG2JF2qG9z"
+                    }, 
+                    "rep2_narrowpeaks_bb": {
+                        "$dnanexus_link": "file-BbP0Bz80bqz5gq3pgj2jjqK8"
+                    }, 
+                    "rep1_broadpeaks_bb": {
+                        "$dnanexus_link": "file-BbKzzq004FzzvZkG2JF2q6qp"
+                    }, 
+                    "rep1_broadpeaks": {
+                        "$dnanexus_link": "file-BbKzzp804FzgPKf44VF28yfz"
+                    }, 
+                    "rep1_pvalue_signal": {
+                        "$dnanexus_link": "file-BbKzzvj04FzzvZkG2JF2q6qx"
+                    }, 
+                    "pooledpr2_gappedpeaks": {
+                        "$dnanexus_link": "file-BbP0V300829k8qfxYQ14kQyG"
+                    }, 
+                    "rep2pr1_fc_signal": {
+                        "$dnanexus_link": "file-BbP0B8Q05VZbgq3pgj2jjqK3"
+                    }, 
+                    "rep1_fc_signal": {
+                        "$dnanexus_link": "file-BbKzzq804FzyQ3zPxbBVxJ9q"
+                    }, 
+                    "pooledpr2_fc_signal": {
+                        "$dnanexus_link": "file-BbP0V480829zqY4gZQ1BBb1g"
+                    }, 
+                    "rep2_gappedpeaks_bb": {
+                        "$dnanexus_link": "file-BbP0BzQ0bqz893VJq02V3fyQ"
+                    }, 
+                    "pooled_narrowpeaks": {
+                        "$dnanexus_link": "file-BbP0pX80BQ2xpk2ZjG1861yq"
+                    }, 
+                    "pooled_gappedpeaks": {
+                        "$dnanexus_link": "file-BbP0pXQ0BQ2jVxP9VZ146BP0"
+                    }, 
+                    "rep1pr1_broadpeaks": {
+                        "$dnanexus_link": "file-BbKzyBQ0Gz1YF3pJ1VFKpYy4"
+                    }, 
+                    "rep1pr2_fc_signal": {
+                        "$dnanexus_link": "file-BbP02f00XQfYxB0QfQ1K4F2J"
+                    }, 
+                    "pooled_broadpeaks_bb": {
+                        "$dnanexus_link": "file-BbP0pYQ0BQ2YxB0QfQ1K4XfQ"
+                    }, 
+                    "rep2pr2_broadpeaks": {
+                        "$dnanexus_link": "file-BbP0BVj0vkg3F3pJ1VFKpf56"
+                    }, 
+                    "rep2_broadpeaks_bb": {
+                        "$dnanexus_link": "file-BbP0Bzj0bqz00xJgkv2VkbjK"
+                    }, 
+                    "pooled_gappedpeaks_bb": {
+                        "$dnanexus_link": "file-BbP0pY00BQ2q9k7vgZ14p6ZQ"
+                    }, 
+                    "pooled_broadpeaks": {
+                        "$dnanexus_link": "file-BbP0pXj0BQ2jVxP9VZ146BP2"
+                    }, 
+                    "pooledpr2_pvalue_signal": {
+                        "$dnanexus_link": "file-BbP0V680829YxB0QfQ1K4Jxq"
+                    }, 
+                    "rep1pr1_gappedpeaks": {
+                        "$dnanexus_link": "file-BbKzyB80Gz1zvZkG2JF2q6pZ"
+                    }, 
+                    "rep2_pvalue_signal": {
+                        "$dnanexus_link": "file-BbP0F2j0bqzBYxvJjj2YY17G"
+                    }, 
+                    "pooled_pvalue_signal": {
+                        "$dnanexus_link": "file-BbP0q300BQ2q9k7vgZ14p6bj"
+                    }, 
+                    "rep2pr2_gappedpeaks": {
+                        "$dnanexus_link": "file-BbP0BVQ0vkgPZZGzz9Bb0Xz3"
+                    }, 
+                    "rep1pr2_gappedpeaks": {
+                        "$dnanexus_link": "file-BbP02ZQ0XQfk8qfxYQ14kGvq"
+                    }
+                }, 
+                "instanceType": "mem2_hdd2_x2", 
+                "systemRequirements": {}
+            }, 
+            "id": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+        }, 
+        {
+            "execution": {
+                "originalInput": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep1_narrowpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep2_narrowpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "peak_type": "narrowPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr2_narrowpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr1_narrowpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooled_narrowpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+                    }
+                }, 
+                "totalPrice": 0.0032041747222222227, 
+                "parentAnalysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stoppedRunning": 1432227285028, 
+                "launchedBy": "user-jseth", 
+                "id": "job-BbKf7z00bpZbJ16yxQGgXVK3", 
+                "originJob": "job-BbKf7z00bpZbJ16yxQGgXVK3", 
+                "stateTransitions": [
+                    {
+                        "newState": "waiting_on_input", 
+                        "setAt": 1432183807069
+                    }, 
+                    {
+                        "newState": "runnable", 
+                        "setAt": 1432227235737
+                    }, 
+                    {
+                        "newState": "running", 
+                        "setAt": 1432227239435
+                    }, 
+                    {
+                        "newState": "waiting_on_output", 
+                        "setAt": 1432227285861
+                    }, 
+                    {
+                        "newState": "done", 
+                        "setAt": 1432227289084
+                    }
+                ], 
+                "executable": "applet-Bb595FQ0bpZXp036bGJV6GKX", 
+                "executableName": "overlap_peaks", 
+                "startedRunning": 1432227239435, 
+                "properties": {}, 
+                "priority": "high", 
+                "runInput": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep1_narrowpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep2_narrowpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "peak_type": "narrowPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr2_narrowpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr1_narrowpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooled_narrowpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+                    }
+                }, 
+                "state": "done", 
+                "isFree": false, 
+                "details": {}, 
+                "input": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": "file-BbKzzkj04FzyQ3zPxbBVxJ9Y"
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": "file-BbP0ByQ0bqzJf9Vqfv2Y1fj7"
+                    }, 
+                    "peak_type": "narrowPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": "file-BbP0V300829zqY4gZQ1BBb1K"
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": "file-BbP0Vgj07bpPvZkG2JF2qG9z"
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": "file-BbP0pX80BQ2xpk2ZjG1861yq"
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-BZf39gQ0Qy55g7gBF52kkPqz"
+                    }
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/encode_macs2", 
+                "function": "main", 
+                "tags": [], 
+                "dependsOn": [], 
+                "billTo": "org-cherrylab", 
+                "debug": {}, 
+                "invoiceMetadata": null, 
+                "delayWorkspaceDestruction": true, 
+                "executionPolicy": {
+                    "restartOn": {
+                        "JMInternalError": 1, 
+                        "UnresponsiveWorker": 2, 
+                        "ExecutionError": 1
+                    }
+                }, 
+                "networkAccess": [
+                    "*"
+                ], 
+                "class": "job", 
+                "stage": "stage-BbKf7y80bpZyG3fKyGGvfvk2", 
+                "name": "Overlap narrowpeaks", 
+                "created": 1432183804905, 
+                "modified": 1432227290383, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "project": "project-BKp5K980bpZZ096Xp1XQ02fZ", 
+                "applet": "applet-Bb595FQ0bpZXp036bGJV6GKX", 
+                "workspace": "container-BbP0q8Q0jkpvy839kj8F08jj", 
+                "rootExecution": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "parentJob": null, 
+                "output": {
+                    "overlapping_peaks": {
+                        "$dnanexus_link": "file-BbP0qZ00jkpj93VJq02V3x7j"
+                    }, 
+                    "rejected_peaks_bb": {
+                        "$dnanexus_link": "file-BbP0qZj0jkpj93VJq02V3x8b"
+                    }, 
+                    "npeaks_rejected": 105923, 
+                    "npeaks_out": 117975, 
+                    "npeaks_in": 223898, 
+                    "overlapping_peaks_bb": {
+                        "$dnanexus_link": "file-BbP0qZ80jkpj93VJq02V3x7y"
+                    }, 
+                    "rejected_peaks": {
+                        "$dnanexus_link": "file-BbP0qZQ0jkpxf9Vqfv2Y1q2x"
+                    }
+                }, 
+                "instanceType": "mem2_hdd2_x2", 
+                "systemRequirements": {}
+            }, 
+            "id": "stage-BbKf7y80bpZyG3fKyGGvfvk2"
+        }, 
+        {
+            "execution": {
+                "originalInput": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep1_gappedpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep2_gappedpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "peak_type": "gappedPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr2_gappedpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr1_gappedpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooled_gappedpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+                    }
+                }, 
+                "totalPrice": 0.004692658055555556, 
+                "parentAnalysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stoppedRunning": 1432227306256, 
+                "launchedBy": "user-jseth", 
+                "id": "job-BbKf7z80bpZbJ16yxQGgXVK4", 
+                "originJob": "job-BbKf7z80bpZbJ16yxQGgXVK4", 
+                "stateTransitions": [
+                    {
+                        "newState": "waiting_on_input", 
+                        "setAt": 1432183807074
+                    }, 
+                    {
+                        "newState": "runnable", 
+                        "setAt": 1432227235695
+                    }, 
+                    {
+                        "newState": "running", 
+                        "setAt": 1432227239483
+                    }, 
+                    {
+                        "newState": "waiting_on_output", 
+                        "setAt": 1432227306924
+                    }, 
+                    {
+                        "newState": "done", 
+                        "setAt": 1432227308125
+                    }
+                ], 
+                "executable": "applet-Bb595FQ0bpZXp036bGJV6GKX", 
+                "executableName": "overlap_peaks", 
+                "startedRunning": 1432227239483, 
+                "properties": {}, 
+                "priority": "high", 
+                "runInput": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep1_gappedpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep2_gappedpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "peak_type": "gappedPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr2_gappedpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr1_gappedpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooled_gappedpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+                    }
+                }, 
+                "state": "done", 
+                "isFree": false, 
+                "details": {}, 
+                "input": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": "file-BbKzzp004FzYF3pJ1VFKpZ66"
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": "file-BbP0Byj0bqzJf9Vqfv2Y1fjB"
+                    }, 
+                    "peak_type": "gappedPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": "file-BbP0V300829k8qfxYQ14kQyG"
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": "file-BbP0Vj007bp7vGZkyJBYJYpF"
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": "file-BbP0pXQ0BQ2jVxP9VZ146BP0"
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-Bb0Xf2j0Qy5G652P0G43kjYq"
+                    }
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/encode_macs2", 
+                "function": "main", 
+                "tags": [], 
+                "dependsOn": [], 
+                "billTo": "org-cherrylab", 
+                "debug": {}, 
+                "invoiceMetadata": null, 
+                "delayWorkspaceDestruction": true, 
+                "executionPolicy": {
+                    "restartOn": {
+                        "JMInternalError": 1, 
+                        "UnresponsiveWorker": 2, 
+                        "ExecutionError": 1
+                    }
+                }, 
+                "networkAccess": [
+                    "*"
+                ], 
+                "class": "job", 
+                "stage": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3", 
+                "name": "Overlap gappedpeaks", 
+                "created": 1432183804973, 
+                "modified": 1432227310438, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "project": "project-BKp5K980bpZZ096Xp1XQ02fZ", 
+                "applet": "applet-Bb595FQ0bpZXp036bGJV6GKX", 
+                "workspace": "container-BbP0q8Q0Xvfvy839kj8F08jp", 
+                "rootExecution": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "parentJob": null, 
+                "output": {
+                    "overlapping_peaks": {
+                        "$dnanexus_link": "file-BbP0qk00Xvfz35vx1QzFqB2B"
+                    }, 
+                    "rejected_peaks_bb": {
+                        "$dnanexus_link": "file-BbP0qp00Xvfp13QpyGyYXP1j"
+                    }, 
+                    "npeaks_rejected": 50000, 
+                    "npeaks_out": 131392, 
+                    "npeaks_in": 181392, 
+                    "overlapping_peaks_bb": {
+                        "$dnanexus_link": "file-BbP0qk80Xvfv317FzZyXyvQf"
+                    }, 
+                    "rejected_peaks": {
+                        "$dnanexus_link": "file-BbP0qkj0XvfQf9QyvjybffQ0"
+                    }
+                }, 
+                "instanceType": "mem2_hdd2_x2", 
+                "systemRequirements": {}
+            }, 
+            "id": "stage-BbKf7yQ0bpZyG3fKyGGvfvk3"
+        }, 
+        {
+            "execution": {
+                "originalInput": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep1_broadpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep2_broadpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "peak_type": "broadPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr2_broadpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr1_broadpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooled_broadpeaks", 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+                    }
+                }, 
+                "totalPrice": 0.0032671436111111115, 
+                "parentAnalysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "stoppedRunning": 1432227286021, 
+                "launchedBy": "user-jseth", 
+                "id": "job-BbKf7z80bpZbJ16yxQGgXVK5", 
+                "originJob": "job-BbKf7z80bpZbJ16yxQGgXVK5", 
+                "stateTransitions": [
+                    {
+                        "newState": "waiting_on_input", 
+                        "setAt": 1432183807070
+                    }, 
+                    {
+                        "newState": "runnable", 
+                        "setAt": 1432227235630
+                    }, 
+                    {
+                        "newState": "running", 
+                        "setAt": 1432227239532
+                    }, 
+                    {
+                        "newState": "waiting_on_output", 
+                        "setAt": 1432227286865
+                    }, 
+                    {
+                        "newState": "done", 
+                        "setAt": 1432227290081
+                    }
+                ], 
+                "executable": "applet-Bb595FQ0bpZXp036bGJV6GKX", 
+                "executableName": "overlap_peaks", 
+                "startedRunning": 1432227239532, 
+                "properties": {}, 
+                "priority": "high", 
+                "runInput": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep1_broadpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "rep2_broadpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "peak_type": "broadPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr2_broadpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooledpr1_broadpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": {
+                            "field": "pooled_broadpeaks", 
+                            "wasInternal": true, 
+                            "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                            "stage": "stage-BbKf7xj0bpZjq11J2QJJB1b1"
+                        }
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+                    }
+                }, 
+                "state": "done", 
+                "isFree": false, 
+                "details": {}, 
+                "input": {
+                    "rep1_peaks": {
+                        "$dnanexus_link": "file-BbKzzp804FzgPKf44VF28yfz"
+                    }, 
+                    "chrom_sizes": {
+                        "$dnanexus_link": "file-BVfVq9Q0Zpx9fgb2zG8YxgBv"
+                    }, 
+                    "rep2_peaks": {
+                        "$dnanexus_link": "file-BbP0Bz00bqzBYxvJjj2YY174"
+                    }, 
+                    "peak_type": "broadPeak", 
+                    "pooledpr2_peaks": {
+                        "$dnanexus_link": "file-BbP0V380829Vg70fXG19z4ZP"
+                    }, 
+                    "pooledpr1_peaks": {
+                        "$dnanexus_link": "file-BbP0Vj807bp7PKf44VF293J0"
+                    }, 
+                    "pooled_peaks": {
+                        "$dnanexus_link": "file-BbP0pXj0BQ2jVxP9VZ146BP2"
+                    }, 
+                    "as_file": {
+                        "$dnanexus_link": "file-Bb0Xf4Q0Qy5G1g589v0V8x2k"
+                    }
+                }, 
+                "folder": "/mm10_e145_production_peaks/ENCSR080GQM/peaks/encode_macs2", 
+                "function": "main", 
+                "tags": [], 
+                "dependsOn": [], 
+                "billTo": "org-cherrylab", 
+                "debug": {}, 
+                "invoiceMetadata": null, 
+                "delayWorkspaceDestruction": true, 
+                "executionPolicy": {
+                    "restartOn": {
+                        "JMInternalError": 1, 
+                        "UnresponsiveWorker": 2, 
+                        "ExecutionError": 1
+                    }
+                }, 
+                "networkAccess": [
+                    "*"
+                ], 
+                "class": "job", 
+                "stage": "stage-BbKf7yj0bpZjq11J2QJJB1b2", 
+                "name": "Overlap broadpeaks", 
+                "created": 1432183805022, 
+                "modified": 1432227291384, 
+                "analysis": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "project": "project-BKp5K980bpZZ096Xp1XQ02fZ", 
+                "applet": "applet-Bb595FQ0bpZXp036bGJV6GKX", 
+                "workspace": "container-BbP0q8Q0P0QGy839kj8F08jk", 
+                "rootExecution": "analysis-BbKf7z00bpZbJ16yxQGgXVJx", 
+                "parentJob": null, 
+                "output": {
+                    "overlapping_peaks": {
+                        "$dnanexus_link": "file-BbP0qZ80P0Q1b1BJxQyy8Xk8"
+                    }, 
+                    "rejected_peaks_bb": {
+                        "$dnanexus_link": "file-BbP0qb00P0QB13QpyGyYXP0v"
+                    }, 
+                    "npeaks_rejected": 50000, 
+                    "npeaks_out": 131392, 
+                    "npeaks_in": 181392, 
+                    "overlapping_peaks_bb": {
+                        "$dnanexus_link": "file-BbP0qZQ0P0QP35vx1QzFqB23"
+                    }, 
+                    "rejected_peaks": {
+                        "$dnanexus_link": "file-BbP0qZj0P0QP35vx1QzFqB25"
+                    }
+                }, 
+                "instanceType": "mem2_hdd2_x2", 
+                "systemRequirements": {}
+            }, 
+            "id": "stage-BbKf7yj0bpZjq11J2QJJB1b2"
+        }
+    ]
+}
