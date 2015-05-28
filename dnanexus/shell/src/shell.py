@@ -11,15 +11,23 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os
+import os, logging
 import dxpy
 
 @dxpy.entry_point('main')
 def main(hours_to_live):
 
-	from time import sleep
+	logger = logging.getLogger(__name__)
+	logger.setLevel(logging.INFO)
 
-	sleep(hours_to_live*60*60)
+	logger.info('myinfo')
+	logger.warning('mywarning')
+	logger.error('myerror')
+
+
+	#from time import sleep
+
+	#sleep(hours_to_live*60*60)
 
 	output = {}
 
