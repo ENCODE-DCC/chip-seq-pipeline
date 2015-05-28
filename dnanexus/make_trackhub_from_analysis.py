@@ -199,7 +199,7 @@ def main():
 		try:
 			analysis = dxpy.describe(analysis_id)
 		except:
-			print "Invalid analysis ID %s. Skipping."
+			print "Invalid analysis ID %s. Skipping." %(analysis_id)
 			continue
 
 		m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
