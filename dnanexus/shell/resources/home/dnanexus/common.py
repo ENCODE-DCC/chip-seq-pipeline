@@ -12,6 +12,10 @@ def rstrips(string, substring):
 	else:
 		return string[:len(string)-len(substring)]
 
+def touch(fname, times=None):
+	with open(fname, 'a'):
+		os.utime(fname, times)
+
 def block_on(command):
 	process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
 	for line in iter(process.stdout.readline, ''):
@@ -211,9 +215,9 @@ def merge_dicts(*dict_args):
 def md5(fn):
 	if 'md5_command' not in globals():
 		global md5_command
-		if not subprocess.call('which md5', shell=True):
+		if not subprocess.check_call('which md5', shell=True):
 			md5_command = 'md5 -q'
-		elif not subprocess.call('which md5sum', shell=True):
+		elif not subprocess.check_call('which md5sum', shell=True):
 			md5_command = 'md5sum'
 		else:
 			md5_command = ''
