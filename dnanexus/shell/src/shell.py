@@ -25,9 +25,9 @@ def main(hours_to_live):
 	logger.error('myerror')
 
 
-	#from time import sleep
+	from time import sleep
 
-	#sleep(hours_to_live*60*60)
+	sleep(hours_to_live*60*60)
 
 	output = {}
 
