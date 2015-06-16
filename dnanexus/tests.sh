@@ -6,14 +6,14 @@ tf_workflow.py --debug --name IDR_Template --outp "E3 ChIP-seq"
 
 ## Complete experiments
 
-# ECSR000EEB SE full IDR
+# ECSR000EEB SE IDR
 tf_workflow.py --debug --name ENCSR000EEB-fullIDR --outf /ENCSR000EEB-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL.fastq.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK.fastq.gz \
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz \
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz
 
-# ECSR000EEB SE full IDRv2
+# ECSR000EEB SE IDRv2
 tf_workflow.py --debug --name ENCSR000EEB-fullIDR --outf /ENCSR000EEB-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
 --idrversion 2 \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL.fastq.gz \
@@ -21,15 +21,8 @@ tf_workflow.py --debug --name ENCSR000EEB-fullIDR --outf /ENCSR000EEB-fullIDR-$(
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz \
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz
 
-# ENCSR000EEB SE full IDR only (no naive peaks)
-tf_workflow.py --debug --name ENCSR000EEB-fullIDRonly --outf /ENCSR000EEB-fullIDRonly-$(date +"%Y%m%d%H%M") --idronly --yes \
---rep1 /ENCSR000EEB/rep1/ENCFF000XUL.fastq.gz \
---rep2 /ENCSR000EEB/rep2/ENCFF000XUK.fastq.gz \
---ctl1 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz \
---ctl2 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz
-
-# ENCSR000EEB IDRv2 only from TA
-tf_workflow.py --debug --name ENCSR000EEB-fullIDRnomap --outf /ENCSR000EEB-fullIDRnomap-$(date +"%Y%m%d%H%M") --idronly --nomap --yes \
+# ENCSR000EEB IDRv2 from TA
+tf_workflow.py --debug --name ENCSR000EEB-fullIDRnomap --outf /ENCSR000EEB-fullIDRnomap-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
 --rep1pe false --rep2pe false \
 --idrversion 2 \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
@@ -37,7 +30,7 @@ tf_workflow.py --debug --name ENCSR000EEB-fullIDRnomap --outf /ENCSR000EEB-fullI
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF.raw.srt.filt.nodup.srt.SE.tagAlign.gz
 
-# ENCSR000BUA SE full IDRv2
+# ENCSR000BUA SE IDRv2
 tf_workflow.py --debug --name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --yes \
 --idrversion 2 \
 --rep1 /ENCSR000BUA/rep1/ENCFF000RBI.fastq.gz \
@@ -45,7 +38,7 @@ tf_workflow.py --debug --name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-
 --ctl1 /ENCSR000BUA/ctl1/ENCFF000RCK.fastq.gz \
 --ctl2 /ENCSR000BUA/ctl2/ENCFF000RCP.fastq.gz
 
-# ENCSR000BUA SE full IDRv2 nomap
+# ENCSR000BUA SE IDRv2 from TA
 tf_workflow.py --debug --name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
 --rep1pe false --rep2pe false \
 --idrversion 2 \
@@ -54,7 +47,7 @@ tf_workflow.py --debug --name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-
 --ctl1 /ENCSR000BUA/ctl1/ENCFF000RCK.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --ctl2 /ENCSR000BUA/ctl2/ENCFF000RCP.raw.srt.filt.nodup.srt.SE.tagAlign.gz
 
-# ENCSR000DMT SE full IDRv2
+# ENCSR000DMT SE IDRv2
 tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --yes \
 --idrversion 2 \
 --rep1 /ENCSR000DMT/rep1/ENCFF000SBI.fastq.gz \
@@ -62,7 +55,7 @@ tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-
 --ctl1 /ENCSR000DMT/ctl/ENCFF000SAZ.fastq.gz \
 --ctl2 /ENCSR000DMT/ctl/ENCFF000SAZ.fastq.gz
 
-# ENCSR000DMT SE full IDRv2 nomap
+# ENCSR000DMT SE IDRv2 from TA
 tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
 --idrversion 2 \
 --rep1pe false --rep2pe false \
@@ -71,7 +64,7 @@ tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-
 --ctl1 /ENCSR000DMT/ctl/ENCFF000SAZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --ctl2 /ENCSR000DMT/ctl/ENCFF000SAZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz
 
-# ENCSR769ZTN PE full IDRv2
+# ENCSR769ZTN PE IDRv2
 tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --yes \
 --idrversion 2 \
 --rep1 /ENCSR769ZTN/rep1/ENCFF002ELM.fastq.gz /ENCSR769ZTN/rep1/ENCFF002ELL.fastq.gz \
@@ -79,7 +72,7 @@ tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-
 --ctl1 /ENCSR769ZTN/ctl1/ENCFF002EFT.fastq.gz /ENCSR769ZTN/ctl1/ENCFF002EFQ.fastq.gz \
 --ctl2 /ENCSR769ZTN/ctl2/ENCFF002EFU.fastq.gz /ENCSR769ZTN/ctl2/ENCFF002EFS.fastq.gz
 
-# ENCSR769ZTN PE full IDRv2 nomap
+# ENCSR769ZTN PE IDRv2 from TA
 tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
 --rep1pe true --rep2pe true \
 --idrversion 2 \
@@ -88,7 +81,7 @@ tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-
 --ctl1 /ENCSR769ZTN/ctl1/ENCFF002EFTENCFF002EFQ.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz \
 --ctl2 /ENCSR769ZTN/ctl2/ENCFF002EFUENCFF002EFS.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz
 
-# ENCSR795HTY PE full IDRv2
+# ENCSR795HTY PE IDRv2
 tf_workflow.py --debug --name ENCSR795HTY-fullIDR --outf /ENCSR795HTY-fullIDR --idr --yes \
 --idrversion 2 \
 --rep1 /ENCSR795HTY/rep1/ENCFF240UHP.fastq.gz /ENCSR795HTY/rep1/ENCFF555NNB.fastq.gz \
@@ -96,7 +89,7 @@ tf_workflow.py --debug --name ENCSR795HTY-fullIDR --outf /ENCSR795HTY-fullIDR --
 --ctl1 /ENCSR795HTY/ctl1/ENCFF445UEI.fastq.gz /ENCSR795HTY/ctl1/ENCFF141YIN.fastq.gz \
 --ctl2 /ENCSR795HTY/ctl2/ENCFF210VLR.fastq.gz /ENCSR795HTY/ctl2/ENCFF057GZE.fastq.gz
 
-# ENCSR795HTY PE full IDRv2 nomap
+# ENCSR795HTY PE IDRv2 from TA
 tf_workflow.py --debug --name ENCSR795HTY-fullIDR --outf /ENCSR795HTY-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
 --idrversion 2 \
 --rep1pe true --rep2pe true \
@@ -108,8 +101,8 @@ tf_workflow.py --debug --name ENCSR795HTY-fullIDR --outf /ENCSR795HTY-fullIDRv2-
 
 ## chr1 extracts
 
-# ENCSR000EEB chr1 IDR only from TA
-tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr1 --outf /ENCSR000EEB-fullIDRtachr1 --idronly --nomap --yes \
+# ENCSR000EEB chr1 IDR from TA
+tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr1 --outf /ENCSR000EEB-fullIDRtachr1 --idr --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr1.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr1.tagAlign.gz \
@@ -119,7 +112,7 @@ tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr1 --outf /ENCSR000EEB-full
 
 ## chr21 extracts
 
-# ECSR000EEB chr21 SE full IDRv2
+# ECSR000EEB chr21 SE IDRv2
 tf_workflow.py --debug --name ENCSR000EEBchr21-fullIDR --outf /ENCSR000EEBchr21-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
 --idrversion 2 \
 --rep1 /test_data/ENCFF000XUL.chr21.fq.gz \
@@ -127,16 +120,24 @@ tf_workflow.py --debug --name ENCSR000EEBchr21-fullIDR --outf /ENCSR000EEBchr21-
 --ctl1 /test_data/ENCFF000XTF.chr21.fq.gz \
 --ctl2 /test_data/ENCFF000XTF.chr21.fq.gz
 
-# ENCSR000EEB chr21 IDR only from TA
-tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --idronly --nomap --yes \
+# ENCSR000EEB chr21 IDR from TA
+tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr21.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr21.tagAlign.gz \
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz \
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz
 
-# ENCSR000EEB chr21 IDRv2 only from TA
-tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --idronly --idrversion 2 --nomap --yes \
+# ENCSR000EEB chr21 IDRv2 from TA
+tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --idr --idrversion 2 --nomap --yes \
+--rep1pe false --rep2pe false \
+--rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr21.tagAlign.gz \
+--rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr21.tagAlign.gz \
+--ctl1 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz \
+--ctl2 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz
+
+# ENCSR000EEB chr21 no idr from TA
+tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr21.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr21.tagAlign.gz \
