@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 def after(date1, date2):
 	return(dateutil.parser.parse(date1) > dateutil.parser.parse(date2))
 
-def get_rep_bams(experiment, keypair, server):
+def get_rep_bams(experiment, assembly, keypair, server):
 
 	original_files = [common.encoded_get(urlparse.urljoin(server,'%s' %(uri)), keypair) for uri in experiment.get('original_files')]
 
@@ -29,7 +29,7 @@ def get_rep_bams(experiment, keypair, server):
 		replicate = common.encoded_get(urlparse.urljoin(server,'%s' %(fastq.get('replicate'))), keypair)
 		fastq.update({'biorep_n' : replicate.get('biological_replicate_number')})
 	#resolve the biorep_n's from derived_from for each bam
-	for bam in [f for f in original_files if f.get('file_format') == 'bam']:
+	for bam in [f for f in original_files if f.get('file_format') == 'bam' and f.get('assembly') == assembly]:
 		biorep_ns = set()
 		for derived_from_uri in bam.get('derived_from'):
 			derived_from_accession = os.path.basename(derived_from_uri.strip('/')) #this assumes frame=object
@@ -178,7 +178,7 @@ def accession_analysis(analysis_id, keypair, server, assembly, dryrun, force):
 		return
 
 	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-	bams = get_rep_bams(experiment, keypair, server)
+	bams = get_rep_bams(experiment, assembly, keypair, server)
 	rep1_bam = bams[0]['accession']
 	rep2_bam = bams[1]['accession']
 
@@ -248,7 +248,7 @@ def accession_analysis(analysis_id, keypair, server, assembly, dryrun, force):
 		}
 
 	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-	rep1_bam, rep2_bam = get_rep_bams(experiment, keypair, server)
+	rep1_bam, rep2_bam = get_rep_bams(experiment, assembly, keypair, server)
 
 	files = []
 	for (stage_name, outputs) in stage_outputs.iteritems():
