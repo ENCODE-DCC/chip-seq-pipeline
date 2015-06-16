@@ -25,7 +25,7 @@ Examples:
 
 '''
 
-WF_TITLE = 'tf_chip_seq'
+WF_NAME = 'tf_chip_seq'
 WF_DESCRIPTION = 'ENCODE TF ChIP-Seq Pipeline'
 
 MAPPING_APPLET_NAME = 'encode_bwa'
@@ -50,6 +50,7 @@ def get_args():
 	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--reference', help="Reference tar to map to", 			default='ENCODE Reference Files:/hg19/hg19_XY.tar.gz')
 	parser.add_argument('--chrom_sizes', help="chrom.sizes file for bed to bigbed", default='ENCODE Reference Files:/hg19/male.hg19.chrom.sizes')
+	parser.add_argument('--genomesize', help="Genome size string for MACS2, e.g. mm or hs", default='hs')
 	parser.add_argument('--as_file', help=".as file for bed to bigbed", default='ENCODE Reference Files:narrowPeak.as')
 	parser.add_argument('--rep1',    help="Replicate 1 fastq or tagAlign", 				default=None, nargs='*')
 	parser.add_argument('--rep2',    help="Replicate 2 fastq or tagAlign", 				default=None, nargs='*')
@@ -57,14 +58,14 @@ def get_args():
 	parser.add_argument('--ctl2',    help="Control for replicate 2 fastq or tagAlign", 	default=None, nargs='*')
 	parser.add_argument('--outp',    help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/analysis_run")
-	parser.add_argument('--name',    help="Name of new workflow", 				default="TF ChIP-Seq")
+	parser.add_argument('--name',    help="Title of new workflow", 				default="TF ChIP-Seq")
 	parser.add_argument('--applets', help="Name of project containing applets", default="E3 ChIP-seq")
 	parser.add_argument('--nomap',   help='Given tagAligns, skip to peak calling', default=False, action='store_true')
 	parser.add_argument('--rep1pe', help='Specify if rep1 is PE (required only if --nomap)', type=bool, default=None)
 	parser.add_argument('--rep2pe', help='Specify if rep2 is PE (required only if --nomap)', type=bool, default=None)
 	parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks",	default='ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz')
 	parser.add_argument('--idr', 	 help='Report peaks with and without IDR analysis',					default=False, action='store_true')
-	parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
+	#parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
 	parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default=1)
 	parser.add_argument('--yes', 	 help='Run the workflow',					default=False, action='store_true')
 
@@ -242,8 +243,8 @@ def main():
 	logging.info('Found applet project %s' %(applet_project.name))
 
 	workflow = dxpy.new_dxworkflow(
-		title=WF_TITLE,
-		name=args.name,
+		name=WF_NAME,
+		title=args.name,
 		description=WF_DESCRIPTION,
 		project=output_project.get_id(),
 		folder=output_folder)
@@ -378,84 +379,88 @@ def main():
 		exp_rep2_cc = dxpy.dxlink(
 					{'stage': exp_rep2_cc_stage_id,
 					 'outputField': 'CC_scores_file'})
-	if not args.idronly:
-		spp_applet = find_applet_by_name(SPP_APPLET_NAME, applet_project.get_id())
-		peaks_output_folder = resolve_folder(output_project, output_folder + '/' + spp_applet.name)
-		spp_stages = []
-		if (args.rep1 and args.ctl1) or blank_workflow:
-			rep1_spp_stage_id = workflow.add_stage(
-				spp_applet,
-				name='Peaks Rep1',
-				folder=peaks_output_folder,
-				stage_input={
-					'experiment': exp_rep1_ta,
-					'control': ctl_rep1_ta,
-					'xcor_scores_input': exp_rep1_cc,
-					'bigbed': True,
-					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-					'as_file': dxpy.dxlink(resolve_file(args.as_file))
-				}
 
-			)
-			spp_stages.append({'name': 'Peaks Rep1', 'stage_id': rep1_spp_stage_id})
-		if (args.rep2 and args.ctl2) or blank_workflow:
-			rep2_spp_stage_id = workflow.add_stage(
-				spp_applet,
-				name='Peaks Rep2',
-				folder=peaks_output_folder,
-				stage_input={
-					'experiment': exp_rep2_ta,
-					'control': ctl_rep2_ta,
-					'xcor_scores_input': exp_rep2_cc,
-					'bigbed': True,
-					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-					'as_file': dxpy.dxlink(resolve_file(args.as_file))
-				}
-			)
-			spp_stages.append({'name': 'Peaks Rep2', 'stage_id': rep2_spp_stage_id})
+	# if not args.idronly:
+	# 	spp_applet = find_applet_by_name(SPP_APPLET_NAME, applet_project.get_id())
+	# 	peaks_output_folder = resolve_folder(output_project, output_folder + '/' + spp_applet.name)
+	# 	spp_stages = []
+	# 	if (args.rep1 and args.ctl1) or blank_workflow:
+	# 		rep1_spp_stage_id = workflow.add_stage(
+	# 			spp_applet,
+	# 			name='Peaks Rep1',
+	# 			folder=peaks_output_folder,
+	# 			stage_input={
+	# 				'experiment': exp_rep1_ta,
+	# 				'control': ctl_rep1_ta,
+	# 				'xcor_scores_input': exp_rep1_cc,
+	# 				'bigbed': True,
+	# 				'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+	# 				'as_file': dxpy.dxlink(resolve_file(args.as_file))
+	# 			}
 
-	if args.idr or args.idronly:
-		encode_spp_applet = find_applet_by_name(ENCODE_SPP_APPLET_NAME, applet_project.get_id())
-		encode_spp_stages = []
-		idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_spp_applet.name)
-		if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
-			encode_spp_stage_id = workflow.add_stage(
-				encode_spp_applet,
-				name='Peaks for IDR',
-				folder=idr_peaks_output_folder,
-				stage_input={
-					'rep1_ta' : exp_rep1_ta,
-					'rep2_ta' : exp_rep2_ta,
-					'ctl1_ta': ctl_rep1_ta,
-					'ctl2_ta' : ctl_rep2_ta,
-					'rep1_xcor' : exp_rep1_cc,
-					'rep2_xcor' : exp_rep2_cc,
-					'rep1_paired_end': rep1_paired_end,
-					'rep2_paired_end': rep2_paired_end,
-					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-					'as_file': dxpy.dxlink(resolve_file(args.as_file))
-				}
-			)
-		encode_spp_stages.append({'name': 'Peaks for IDR', 'stage_id': encode_spp_stage_id})
+	# 		)
+	# 		spp_stages.append({'name': 'Peaks Rep1', 'stage_id': rep1_spp_stage_id})
+	# 	if (args.rep2 and args.ctl2) or blank_workflow:
+	# 		rep2_spp_stage_id = workflow.add_stage(
+	# 			spp_applet,
+	# 			name='Peaks Rep2',
+	# 			folder=peaks_output_folder,
+	# 			stage_input={
+	# 				'experiment': exp_rep2_ta,
+	# 				'control': ctl_rep2_ta,
+	# 				'xcor_scores_input': exp_rep2_cc,
+	# 				'bigbed': True,
+	# 				'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+	# 				'as_file': dxpy.dxlink(resolve_file(args.as_file))
+	# 			}
+	# 		)
+	# 		spp_stages.append({'name': 'Peaks Rep2', 'stage_id': rep2_spp_stage_id})
 
+
+	encode_spp_applet = find_applet_by_name(ENCODE_SPP_APPLET_NAME, applet_project.get_id())
+	encode_spp_stages = []
+	idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_spp_applet.name)
+	PEAKS_STAGE_NAME = 'SPP Peaks'
+	if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
+		encode_spp_stage_id = workflow.add_stage(
+			encode_spp_applet,
+			name=PEAKS_STAGE_NAME,
+			folder=idr_peaks_output_folder,
+			stage_input={
+				'rep1_ta' : exp_rep1_ta,
+				'rep2_ta' : exp_rep2_ta,
+				'ctl1_ta': ctl_rep1_ta,
+				'ctl2_ta' : ctl_rep2_ta,
+				'rep1_xcor' : exp_rep1_cc,
+				'rep2_xcor' : exp_rep2_cc,
+				'rep1_paired_end': rep1_paired_end,
+				'rep2_paired_end': rep2_paired_end,
+				'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+				'as_file': dxpy.dxlink(resolve_file(args.as_file)),
+				'idr_peaks': args.idr
+			}
+		)
+	encode_spp_stages.append({'name': PEAKS_STAGE_NAME, 'stage_id': encode_spp_stage_id})
+
+	if args.idr:
 		idr_applet = find_applet_by_name(IDR_APPLET_NAME, applet_project.get_id())
 		encode_idr_applet = find_applet_by_name(ENCODE_IDR_APPLET_NAME, applet_project.get_id())
 		idr_stages = []
 		idr_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
-		if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow or args.idronly:
+		if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
 			idr_stage_id = workflow.add_stage(
 				idr_applet,
 				name='IDR True Replicates',
 				folder=idr_output_folder,
 				stage_input={
 					'rep1_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'rep1_peaks'}),
 					'rep2_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'rep2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'pooled_peaks'}),
 					'idr_version': int(args.idrversion)
 				}
@@ -468,13 +473,13 @@ def main():
 				folder=idr_output_folder,
 				stage_input={
 					'rep1_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'rep1pr1_peaks'}),
 					'rep2_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'rep1pr2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'rep1_peaks'}),
 					'idr_version': int(args.idrversion)
 				}
@@ -487,13 +492,13 @@ def main():
 				folder=idr_output_folder,
 				stage_input={
 					'rep1_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'rep2pr1_peaks'}),
 					'rep2_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'rep2pr2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'rep2_peaks'}),
 					'idr_version': int(args.idrversion)
 				}
@@ -506,13 +511,13 @@ def main():
 				folder=idr_output_folder,
 				stage_input={
 					'rep1_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'pooledpr1_peaks'}),
 					'rep2_peaks' : dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'pooledpr2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
-						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == 'Peaks for IDR'),
+						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
 						 'outputField': 'pooled_peaks'}),
 					'idr_version': int(args.idrversion)
 				}
@@ -548,10 +553,10 @@ def main():
 		logging.debug("Mapping stages: %s" %(mapping_superstages))
 	else:
 		logging.debug("xcor only stages: %s" %(xcor_only_stages))
-	if not args.idronly:
-		logging.debug("Peak stages: %s" %(spp_stages))
-	if args.idr or args.idronly:
-		logging.debug("Peaks for IDR stages: %s" %(encode_spp_stages))
+	# if not args.idronly:
+	# 	logging.debug("Peak stages: %s" %(spp_stages))
+	logging.debug("Peak stages: %s" %(encode_spp_stages))
+	if args.idr:
 		logging.debug("IDR stages: %s" %(idr_stages))
 
 	if args.yes:
