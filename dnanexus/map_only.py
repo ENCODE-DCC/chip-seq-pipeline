@@ -38,16 +38,15 @@ def get_args():
 
 	parser.add_argument('infile', nargs='?', help="Experiment accessions to map", type=argparse.FileType('r'), default=sys.stdin)
 	parser.add_argument('--build', help="Genome build, e.g. GRCh38, hg19, or mm10")
-	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
-	parser.add_argument('--outp',    help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
-	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/")
+	parser.add_argument('--debug', help="Print debug messages", 				default=False, action='store_true')
+	parser.add_argument('--outp', help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
+	parser.add_argument('--outf', help="Output folder name or ID", 			default="/")
 	parser.add_argument('--applets', help="Name of project containing applets", default=DEFAULT_APPLET_PROJECT)
 	#parser.add_argument('--instance_type', help="Instance type for mapping",	default=None)
-	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default",
-		default='default')
-	parser.add_argument('--yes',   help="Run the workflows created", 			default=False, action='store_true')
-	parser.add_argument('--raw',   help="Produce only raw (unfiltered) bams", default=False, action='store_true')
-	parser.add_argument('--tag',   help="String to add to the workflow name", default="")
+	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default", default='default')
+	parser.add_argument('--yes', help="Run the workflows created", 			default=False, action='store_true')
+	parser.add_argument('--raw', help="Produce only raw (unfiltered) bams", default=False, action='store_true')
+	parser.add_argument('--tag', help="String to add to the workflow name", default="")
 
 	args = parser.parse_args()
 
