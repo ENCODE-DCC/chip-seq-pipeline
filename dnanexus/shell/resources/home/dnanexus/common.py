@@ -98,7 +98,7 @@ def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
 		bb_filename = bed_filename + '.bb'
 	bed_filename_sorted = bed_filename + ".sorted"
 
-	print "In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file)
+	logging.debug("In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file))
 
 	print "Sorting"
 	print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)

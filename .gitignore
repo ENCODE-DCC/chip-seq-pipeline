@@ -39,3 +39,7 @@ dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..log
 *.pyc
 
 .DS_Store
+
+dnanexus/accession_histone_analysis/resources/home/dnanexus/.aws/credentials
+
+dnanexus/accession_histone_analysis/resources/home/dnanexus/.aws/credentials
