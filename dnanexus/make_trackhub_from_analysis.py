@@ -20,7 +20,7 @@ def get_args():
 		description=__doc__, epilog=EPILOG,
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
-	parser.add_argument('infile',		nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+	parser.add_argument('infile',		help="analysis ID's", nargs='?', type=argparse.FileType('r'), default=sys.stdin)
 	parser.add_argument('outfile',		nargs='?', type=argparse.FileType('w'), default=sys.stdout)
 	parser.add_argument('--debug',		help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--project',	help="Project name or ID", 			default=dxpy.WORKSPACE_ID)

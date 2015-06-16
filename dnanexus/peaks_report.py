@@ -91,6 +91,7 @@ def main():
 		exp_ids = args.infile
 
 	for (i, exp_id) in enumerate(exp_ids):
+		exp_id = exp_id.rstrip()
 		logger.info('%s' %(exp_id))
 		url = urlparse.urljoin(server, 'metadata/type=experiment&accession=%s/metadata.tsv' %(exp_id))
 		r = requests.get(url, auth=keypair)

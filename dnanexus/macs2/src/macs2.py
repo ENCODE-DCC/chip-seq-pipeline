@@ -77,6 +77,7 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
 	print command
 	returncode = common.block_on(command)
 	print "MACS2 exited with returncode %d" %(returncode)
+	assert returncode == 0, "MACS2 non-zero return"
 
 	# Rescale Col5 scores to range 10-1000 to conform to narrowPeak.as format (score must be <1000)
 	rescaled_narrowpeak_fn = common.rescale_scores('%s/%s_peaks.narrowPeak' %(peaks_dirname, prefix), scores_col=5)
@@ -103,6 +104,7 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
 	print command
 	returncode = common.block_on(command)
 	print "MACS2 exited with returncode %d" %(returncode)
+	assert returncode == 0, "MACS2 non-zero return"
 
 	# Rescale Col5 scores to range 10-1000 to conform to narrowPeak.as format (score must be <1000)
 	rescaled_broadpeak_fn = common.rescale_scores('%s/%s_peaks.broadPeak' %(peaks_dirname, prefix), scores_col=5)
@@ -142,7 +144,8 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
 	print command
 	returncode = common.block_on(command)
 	print "MACS2 exited with returncode %d" %(returncode)
-
+	assert returncode == 0, "MACS2 non-zero return"
+	
 	# Remove coordinates outside chromosome sizes (stupid MACS2 bug)
 	pipe = ['slopBed -i %s/%s_FE.bdg -g %s -b 0' %(peaks_dirname, prefix, chrom_sizes.name),
 			'bedClip stdin %s %s/%s.fc.signal.bedgraph' %(chrom_sizes.name, peaks_dirname, prefix)]
@@ -159,7 +162,7 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
 	print command
 	returncode = common.block_on(command)
 	print "bedGraphToBigWig exited with returncode %d" %(returncode)
-
+	assert returncode == 0, "bedGraphToBigWig non-zero return"
 	#rm -f ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.fc.signal.bedgraph
 	
 	#===========================================
@@ -187,6 +190,7 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
 		'--outdir %s -o %s_ppois.bdg ' %(peaks_dirname, prefix) + \
 		'-m ppois -S %s' %(sval))
 	print "MACS2 exited with returncode %d" %(returncode)
+	assert returncode == 0, "MACS2 non-zero return"
 
 	# Remove coordinates outside chromosome sizes (stupid MACS2 bug)
 	pipe = ['slopBed -i %s/%s_ppois.bdg -g %s -b 0' %(peaks_dirname, prefix, chrom_sizes.name),
@@ -204,6 +208,7 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
 	print command
 	returncode = common.block_on(command)
 	print "bedGraphToBigWig exited with returncode %d" %(returncode)
+	assert returncode == 0, "bedGraphToBigWig non-zero return"
 
 	#rm -f ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}.pval.signal.bedgraph
 	#rm -f ${PEAK_OUTPUT_DIR}/${CHIP_TA_PREFIX}_treat_pileup.bdg ${peakFile}_control_lambda.bdg

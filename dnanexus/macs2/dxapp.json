@@ -102,7 +102,7 @@
 		"interpreter": "python2.7",
 		"file": "src/macs2.py",
 		"systemRequirements": {
-			"main":     {"instanceType": "mem1_ssd1_x4"}
+			"main":     {"instanceType": "mem2_ssd1_x4"}
 		},
 		"execDepends": [
 			{"name": "python-numpy"}

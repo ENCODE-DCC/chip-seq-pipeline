@@ -21,15 +21,18 @@ def get_args():
 		description=__doc__, epilog=EPILOG,
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
-	parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+	parser.add_argument('infile', help="Experiment accessions", nargs='?', type=argparse.FileType('r'), default=sys.stdin)
 	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--project',    help="Project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/")
 	parser.add_argument('--inf', nargs='*',    help="Folder(s) name or ID with tagAligns", 			default="/")
 	parser.add_argument('--yes',   help="Run the workflows created", 			default=False, action='store_true')
-	parser.add_argument('--tag',   help="String to add to the workflow name", default="")
-	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default",
-		default='default')
+	parser.add_argument('--tag',   help="String to add to the workflow name")
+	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default", default='default')
+	parser.add_argument('--gsize', help="Genome size string for MACS2, e.g. mm or hs", required=True)
+	parser.add_argument('--csizes', help="chrom.sizes file for bedtobigbed, e.g. ENCODE Reference Files:/mm10/male.mm10.chrom.sizes", required=True)
+	parser.add_argument('--idr', help="Run IDR", default=False, action='store_true')
+	parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default=None)
 
 	args = parser.parse_args()
 
@@ -74,9 +77,9 @@ def encoded_get(url, keypair=None):
 		response = requests.get(url, headers=HEADERS)
 	return response.json()
 
-def get_control_id(exp_id, keypair, server):
-	url = server + '/experiments/%s/' %(exp_id)
-	experiment = encoded_get(url, keypair)
+def get_control_id(experiment):
+	# url = server + '/experiments/%s/' %(exp_id)
+	# experiment = encoded_get(url, keypair)
 	possible_controls = experiment.get('possible_controls')
 	if not possible_controls or len(possible_controls) != 1:
 		logging.error("Tried to find one possible control, found %s" %(possible_controls))
@@ -109,6 +112,8 @@ def get_tas(exp_id, default_project, ta_folders):
 			project = default_project
 			project_name = ""
 			path = base_folder
+		if not path.startswith('/'):
+			path = '/' + path
 		print project, project_name, path
 		for dxfile in dxpy.find_data_objects(classname='file', state='closed', folder=path, describe=True, recurse=True, project=project):
 			desc = dxfile.get('describe')
@@ -130,6 +135,20 @@ def get_tas(exp_id, default_project, ta_folders):
 	
 	return rep1, rep2
 
+def get_exp_tas(exp_id, default_project, ta_folders):
+	return get_tas(exp_id, default_project, ta_folders)
+
+def get_ctl_tas(exp_id, default_project, ta_folders):
+	rep1, rep2 = get_tas(exp_id, default_project, ta_folders)
+	if rep1 and rep2:
+		return rep1,rep2
+	elif rep1:
+		return rep1,rep1
+	elif rep2:
+		return rep2,rep2
+	else: #both are None - just pass it on and let the calling code deal with it
+		return rep1,rep2
+
 def main():
 	args = get_args()
 	authid, authpw, server = processkey(args.key)
@@ -138,34 +157,55 @@ def main():
 	for exp_id in args.infile:
 		exp_id = exp_id.rstrip()
 		print "Experiment %s" %(exp_id)
-		ctl_id = get_control_id(exp_id, keypair, server)
+		url = server + '/experiments/%s/' %(exp_id)
+		experiment = encoded_get(url, keypair)
+		print "%s %s %s" %(experiment['accession'], experiment.get('target')['investigated_as'], experiment.get('description'))
+		ctl_id = get_control_id(experiment)
 		if ctl_id:
 			print "Control %s" %(ctl_id)
 		else:
-			print "Found no control ... skipping"
+			print "Found no control ... skipping %s" %(exp_id)
 			continue
-		rep1_ta, rep2_ta = get_tas(exp_id, args.project, args.inf)
-		ctl1_ta, ctl2_ta = get_tas(ctl_id, args.project, args.inf)
+		rep1_ta, rep2_ta = get_exp_tas(exp_id, args.project, args.inf)
+		ctl1_ta, ctl2_ta = get_ctl_tas(ctl_id, args.project, args.inf)
 		if not (rep1_ta and rep2_ta and ctl1_ta and ctl2_ta):
 			print "Skipping %s" %(exp_id)
 			continue
 		workflow_name = '%s Peaks' %(exp_id)
+		if args.tag:
+			workflow_name += ' %s' %(args.tag)
 		outf = args.outf
 		if not outf.startswith('/'):
 			outf = '/'+outf
-		outf += '/%s/peaks/' %(exp_id) 
+		outf += '/%s/peaks/' %(exp_id)
+		try:
+			investigated_as = experiment.get('target')['investigated_as']
+			print investigated_as
+		except:
+			print "Failed to determine target type ... skipping %s" %(exp_id)
+			continue
+		if any('histone' in target_type for target_type in investigated_as):
+			print "Found to be histone"
+			workflow_spinner = '~/tf_chipseq/dnanexus/histone_workflow.py'
+		else:
+			print "Assumed to be tf"
+			workflow_spinner = '~/tf_chipseq/dnanexus/tf_workflow.py'
 		run_command = \
-			'~/tf_chipseq/dnanexus/histone_workflow.py --debug --name "%s" --outf "%s" --nomap --yes ' %(workflow_name, outf) + \
+			'%s --debug --name "%s" --outf "%s" --nomap --yes ' %(workflow_spinner, workflow_name, outf) + \
 			'--rep1pe false --rep2pe false ' + \
 			'--rep1 %s --rep2 %s ' %(rep1_ta, rep2_ta) + \
 			'--ctl1 %s --ctl2 %s ' %(ctl1_ta, ctl2_ta) + \
-			'--genomesize %s --chrom_sizes "%s"' %(GENOME_SIZE, CHROM_SIZES)
+			'--genomesize %s --chrom_sizes "%s"' %(args.gsize, args.csizes)
+		if args.idr:
+			run_command += ' --idr'
+			if args.idrversion:
+				run_command += ' --idrversion %s' %(args.idrversion)
+
 		print run_command
 		try:
 			subprocess.check_call(run_command, shell=True)
 		except subprocess.CalledProcessError as e:
-			logging.error("histone_workflow exited with non-zero code %d" %(e.returncode))
-
+			logging.error("%s exited with non-zero code %d" %(workflow_spinner, e.returncode))
 
 if __name__ == '__main__':
 	main()
