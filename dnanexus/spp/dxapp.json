@@ -49,9 +49,9 @@
     },
     {
       "name": "chrom_sizes",
-      "label": "chrom.sizes file for bedToBigBed",
+      "label": "chrom.sizes file",
       "class": "file",
-      "optional": true
+      "optional": false
     },
     {
       "name": "as_file",
