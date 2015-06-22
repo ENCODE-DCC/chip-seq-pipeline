@@ -102,6 +102,7 @@ def accession_file(f, keypair, server, dryrun, force):
 					duplicate_found = False
 				else:
 					logger.info("Found potential duplicate: %s" %(duplicate_item.get('accession')))
+					submitted_file_size = dx.describe().get('size')
 					if submitted_file_size ==  duplicate_item.get('file_size'):
 						logger.info("%s %s: File sizes match, assuming duplicate." %(str(submitted_file_size), duplicate_item.get('file_size')))
 						duplicate_found = True
