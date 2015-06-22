@@ -438,8 +438,9 @@ def main():
 				'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
 				'as_file': dxpy.dxlink(resolve_file(args.as_file)),
 				'idr_peaks': args.idr
-			}
-		)
+				}
+			)
+
 	encode_spp_stages.append({'name': PEAKS_STAGE_NAME, 'stage_id': encode_spp_stage_id})
 
 	if args.idr:
