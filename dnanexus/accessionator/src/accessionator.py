@@ -27,7 +27,7 @@ DEFAULT_SERVER = 'https://www.encodeproject.org'
 logger = logging.getLogger(__name__)
 
 FILE_OBJ_TEMPLATE = {
-		'lab': 'j-michael-cherry',
+		'lab': 'encode-processing-pipeline',
 		'award': 'U41HG006992',
 		'file_format': 'bam',
 		'output_type': 'alignments'
