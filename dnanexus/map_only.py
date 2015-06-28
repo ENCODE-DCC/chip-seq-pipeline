@@ -137,7 +137,7 @@ def filenames_in(files=None):
 		return [f.get('submitted_file_name') for f in files]
 
 def files_to_map(exp_obj, server, keypair):
-	if not exp_obj or not exp_obj.get('files'):
+	if not exp_obj or not (exp_obj.get('files') or exp_obj.get('original_files')):
 		return []
 	else:
 		files = []
