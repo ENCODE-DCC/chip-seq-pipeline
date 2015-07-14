@@ -209,8 +209,7 @@
 		{
 			"name": "rep1pr1_narrowpeaks",
 			"label": "Narrowpeaks file",
-			"class": "file",
-			"optional": 
+			"class": "file"
 		},
 		{
 			"name": "rep1pr1_gappedpeaks",
