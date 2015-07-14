@@ -1,3 +1,4 @@
+*~
 local_tests/**
 
 dnanexus/temp
@@ -40,6 +41,8 @@ dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..log
 
 .DS_Store
 
-dnanexus/accession_histone_analysis/resources/home/dnanexus/.aws/credentials
+**/.aws/credentials
+**/.aws/config
+**/keypairs.json
 
-dnanexus/accession_histone_analysis/resources/home/dnanexus/.aws/credentials
+
