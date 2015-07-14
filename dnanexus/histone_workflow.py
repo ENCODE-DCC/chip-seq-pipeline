@@ -61,7 +61,7 @@ def get_args():
 	parser.add_argument('--outp',    help="Output project name or ID", default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf',    help="Output folder name or ID", default="/analysis_run")
 	parser.add_argument('--name',    help="Name of new workflow", default="Histone ChIP-Seq")
-	parser.add_argument('--applets', help="Name of project containing applets", default="E3 ChIP-seq")
+	parser.add_argument('--applets', help="Name of project containing applets", default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--nomap',   help='Given tagAligns, skip to peak calling', default=False, action='store_true')
 	parser.add_argument('--rep1pe', help='Specify if rep1 is PE (required only if --nomap)', type=bool, default=None)
 	parser.add_argument('--rep2pe', help='Specify if rep2 is PE (required only if --nomap)', type=bool, default=None)
