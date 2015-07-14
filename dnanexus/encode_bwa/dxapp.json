@@ -1,7 +1,7 @@
 {
   "name": "encode_bwa",
   "title": "ENCODE BWA",
-  "summary": "Map reads with BWA 0.7.7",
+  "summary": "Map reads with BWA",
   "dxapi": "1.0.0",
   "version": "0.0.1",
   "categories": [
@@ -12,7 +12,7 @@
       "name": "reads1",
       "label": "reads1",
       "class": "file",
-      "optional": true
+      "optional": false
     },
     {
       "name": "reads2",
@@ -24,7 +24,7 @@
       "name": "reference_tar",
       "label": "E.g. male or female hg19; mm9.",
       "class": "file",
-      "optional": true
+      "optional": false
     },
     {
       "name": "bwa_aln_params",
