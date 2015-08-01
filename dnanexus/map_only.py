@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os.path, sys, subprocess, logging, re, json, urlparse, requests
+import common
 import dxpy
 
 EPILOG = '''Notes:
@@ -17,16 +18,13 @@ FILTER_QC_APPLET_NAME = 'filter_qc'
 XCOR_APPLET_NAME = 'xcor'
 POOL_APPLET_NAME = 'pool'
 REFERENCES = [
-	{'build': 'GRCh38', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
-	{'build': 'GRCh38', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
-	{'build': 'mm10',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
-	{'build': 'mm10',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'},
-	{'build': 'hg19',   'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/hg19_XY.tar.gz'},
-	{'build': 'hg19',   'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/hg19_X.tar.gz'}
+	{'assembly': 'GRCh38', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
+	{'assembly': 'GRCh38', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
+	{'assembly': 'mm10',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
+	{'assembly': 'mm10',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'},
+	{'assembly': 'hg19',   'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/hg19_XY.tar.gz'},
+	{'assembly': 'hg19',   'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/hg19_X.tar.gz'}
 	]
-KEYFILE = os.path.expanduser("~/keypairs.json")
-DEFAULT_SERVER = 'https://www.encodeproject.org'
-DNANEXUS_ENCODE_SNAPSHOT = 'ENCODE-SDSC-snapshot-20140505'
 
 APPLETS = {}
 
@@ -36,17 +34,20 @@ def get_args():
 		description=__doc__, epilog=EPILOG,
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
-	parser.add_argument('infile', nargs='?', help="Experiment accessions to map", type=argparse.FileType('r'), default=sys.stdin)
-	parser.add_argument('--build', help="Genome build, e.g. GRCh38, hg19, or mm10")
+	parser.add_argument('experiments',	help='List of ENCSR accessions to report on', nargs='*', default=None)
+	parser.add_argument('--infile',		help='File containing ENCSR accessions', type=argparse.FileType('r'), default=sys.stdin)
+	parser.add_argument('--assembly', help="Reference genome assembly, e.g. GRCh38, hg19, or mm10")
 	parser.add_argument('--debug', help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--outp', help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf', help="Output folder name or ID", 			default="/")
 	parser.add_argument('--applets', help="Name of project containing applets", default=DEFAULT_APPLET_PROJECT)
 	#parser.add_argument('--instance_type', help="Instance type for mapping",	default=None)
 	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default", default='default')
+	parser.add_argument('--keyfile', help="The keypair filename.", default=os.path.expanduser("~/keypairs.json"))
 	parser.add_argument('--yes', help="Run the workflows created", 			default=False, action='store_true')
 	parser.add_argument('--raw', help="Produce only raw (unfiltered) bams", default=False, action='store_true')
 	parser.add_argument('--tag', help="String to add to the workflow name", default="")
+	parser.add_argument('--sfn_dupes', help="Warn for duplicate submitted_file_name, but use files anyway.", default=False, action='store_true')
 
 	args = parser.parse_args()
 
@@ -56,37 +57,6 @@ def get_args():
 		logging.basicConfig(format='%(levelname)s:%(message)s')
 
 	return args
-
-def processkey(key):
-
-	if key:
-		keysf = open(KEYFILE,'r')
-		keys_json_string = keysf.read()
-		keysf.close()
-		keys = json.loads(keys_json_string)
-		key_dict = keys[key]
-	else:
-		key_dict = {}
-	AUTHID = key_dict.get('key')
-	AUTHPW = key_dict.get('secret')
-	if key:
-		SERVER = key_dict.get('server')
-	else:
-		SERVER = DEFAULT_SERVER
-
-	if not SERVER.endswith("/"):
-		SERVER += "/"
-
-	return (AUTHID,AUTHPW,SERVER)
-
-def encoded_get(url, keypair=None):
-	HEADERS = {'content-type': 'application/json'}
-	url = urlparse.urljoin(url,'?format=json&frame=embedded&datastore=database')
-	if keypair:
-		response = requests.get(url, auth=keypair, headers=HEADERS)
-	else:
-		response = requests.get(url, headers=HEADERS)
-	return response.json()
 
 def resolve_project(identifier, privs='r'):
 	project = dxpy.find_one_project(name=identifier, level='VIEW', name_mode='exact', return_handler=True, zero_ok=True)
@@ -136,46 +106,57 @@ def filenames_in(files=None):
 	else:
 		return [f.get('submitted_file_name') for f in files]
 
-def files_to_map(exp_obj, server, keypair):
+def files_to_map(exp_obj, server, keypair, sfn_dupes=False):
 	if not exp_obj or not (exp_obj.get('files') or exp_obj.get('original_files')):
+		logging.warning('Experiment %s or experiment has no files' %(exp_obj.get('accession')))
 		return []
 	else:
 		files = []
 		for file_uri in exp_obj.get('original_files'):
-			file_obj = encoded_get(urlparse.urljoin(server, file_uri), keypair=keypair)
+			file_obj = common.encoded_get(urlparse.urljoin(server, file_uri), keypair=keypair)
 			if file_obj.get('status') in FILE_STATUSES_TO_MAP and \
-				file_obj.get('output_type') == 'reads' and \
-				file_obj.get('file_format') == 'fastq' and \
-				file_obj.get('replicate') and \
-				file_obj.get('submitted_file_name') not in filenames_in(files):
-				files.extend([file_obj])
-			elif file_obj.get('submitted_file_name') in filenames_in(files):
-				logging.warning('%s:%s Duplicate filename, ignoring.' %(exp_obj.get('accession'),file_obj.get('accession')))
+					file_obj.get('output_type') == 'reads' and \
+					file_obj.get('file_format') == 'fastq' and \
+					file_obj.get('replicate'):
+				if file_obj.get('submitted_file_name') in filenames_in(files):
+					if sfn_dupes:
+						logging.warning('%s:%s Duplicate submitted_file_name found, but allowing duplicates.' %(exp_obj.get('accession'),file_obj.get('accession')))
+						files.extend([file_obj])
+					else:
+						logging.error('%s:%s Duplicate submitted_file_name found, skipping that file.' %(exp_obj.get('accession'),file_obj.get('accession')))
+				else:
+					files.extend([file_obj])
 			elif file_obj.get('output_type') == 'reads' and \
 				file_obj.get('file_format') == 'fastq' and not file_obj.get('replicate'):
-				logging.warning('%s: Fastq has no replicate' %(file_obj.get('accession')))
+				logging.error('%s: Fastq has no replicate' %(file_obj.get('accession')))
 		return files
 
-def replicates_to_map(files):
+def replicates_to_map(files, server, keypair):
 	if not files:
 		return []
 	else:
-		return [f.get('replicate') for f in files]
+		replicate_objects = []
+		for f in files:
+			replicate = common.encoded_get(urlparse.urljoin(server,f.get('replicate')),keypair)
+			if not replicate in replicate_objects:
+				replicate_objects.append(replicate)
 
-def choose_reference(experiment, biorep_n):
+		return replicate_objects
+
+def choose_reference(experiment, biorep_n, server, keypair):
+
+	replicates = [common.encoded_get(urlparse.urljoin(server,rep_uri), keypair, frame='embedded') for rep_uri in experiment['replicates']]
+	replicate = next(rep for rep in replicates if rep.get('biological_replicate_number') == biorep_n)
+	logging.debug('Replicate uuid %s' %(replicate.get('uuid')))
+	organism_uri = replicate.get('library').get('biosample').get('organism')
+	organism_obj = common.encoded_get(urlparse.urljoin(server,organism_uri), keypair)
 
 	try:
-		replicate = next(rep for rep in experiment.get('replicates') if rep.get('biological_replicate_number') == biorep_n)
-		logging.debug('Replicate uuid %s' %(replicate.get('uuid')))
-	except:
-		logging.error('%s cannot resolve biological_replicate_number %s' %(experiment.get('accession'), biorep_n))
-		return None
-
-	try:
-		organism_name = replicate.get('library').get('biosample').get('organism').get('name')
+		organism_name = organism_obj['name']
 		logging.debug("Organism name %s" %(organism_name))
 	except:
 		logging.error('%s:rep%d Cannot determine organism.' %(experiment.get('accession'), biorep_n))
+		raise
 		return None
 
 	try:
@@ -187,9 +168,9 @@ def choose_reference(experiment, biorep_n):
 		sex = 'male'
 
 	logging.debug('Organism %s sex %s' %(organism_name, sex))
-	genome_build = args.build
+	genome_assembly = args.assembly
 
-	reference = next((ref.get('file') for ref in REFERENCES if ref.get('organism') == organism_name and ref.get('sex') == sex and ref.get('build') == genome_build), None)
+	reference = next((ref.get('file') for ref in REFERENCES if ref.get('organism') == organism_name and ref.get('sex') == sex and ref.get('assembly') == genome_assembly), None)
 	logging.debug('Found reference %s' %(reference))
 	return reference
 
@@ -213,10 +194,10 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 	mapping_output_folder = resolve_folder(output_project, args.outf + '/raw_bams/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
 
 	if args.raw:
-		workflow_title = 'Map %s rep%d to %s (no filter)' %(experiment.get('accession'), biorep_n, args.build)
+		workflow_title = 'Map %s rep%d to %s (no filter)' %(experiment.get('accession'), biorep_n, args.assembly)
 		workflow_name = 'ENCODE raw mapping pipeline'
 	else:
-		workflow_title = 'Map %s rep%d to %s and filter' %(experiment.get('accession'), biorep_n, args.build)
+		workflow_title = 'Map %s rep%d to %s and filter' %(experiment.get('accession'), biorep_n, args.assembly)
 		workflow_name = 'ENCODE mapping pipeline'
 
 	if args.tag:
@@ -299,7 +280,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 	'''
 	return workflow
 
-def map_only(experiment, biorep_n, files, key):
+def map_only(experiment, biorep_n, files, key, server, keypair):
 
 	if not files:
 		logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
@@ -309,7 +290,7 @@ def map_only(experiment, biorep_n, files, key):
 	workflows = []
 	input_shield_stage_input = {}
 
-	reference_tar = choose_reference(experiment, biorep_n)
+	reference_tar = choose_reference(experiment, biorep_n, server, keypair)
 	if not reference_tar:
 		logging.warning('%s:%s Cannot determine reference' %(experiment.get('accession'), biorep_n))
 		return
@@ -342,24 +323,29 @@ def main():
 	global args
 	args = get_args()
 
-	authid, authpw, server = processkey(args.key)
+	authid, authpw, server = common.processkey(args.key, args.keyfile)
 	keypair = (authid,authpw)
 
+	if args.experiments:
+		exp_ids = args.experiments
+	else:
+		exp_ids = args.infile
 
-	for exp_id in args.infile:
+
+	for exp_id in exp_ids:
 		outstrings = []
 		encode_url = urlparse.urljoin(server,exp_id.rstrip())
-		experiment = encoded_get(encode_url, keypair)
+		experiment = common.encoded_get(encode_url, keypair)
 		outstrings.append(exp_id.rstrip())
-		files = files_to_map(experiment, server, keypair)
+		files = files_to_map(experiment, server, keypair, args.sfn_dupes)
 		outstrings.append(str(len(files)))
 		outstrings.append(str([f.get('accession') for f in files]))
-		replicates = replicates_to_map(files)
+		replicates = replicates_to_map(files, server, keypair)
 
 		if files:
 			for biorep_n in set([rep.get('biological_replicate_number') for rep in replicates]):
 				outstrings.append('rep%s' %(biorep_n))
-				biorep_files = [f for f in files if f.get('replicate').get('biological_replicate_number') == biorep_n]
+				biorep_files = [f for f in files if biorep_n in common.biorep_ns(f,server,keypair)]
 				paired_files = []
 				unpaired_files = []
 				while biorep_files:
@@ -380,9 +366,9 @@ def main():
 				if biorep_files:
 					logging.warning('%s: leftover file(s) %s' %(experiment.get('accession'), biorep_files))
 				if paired_files:
-					pe_jobs = map_only(experiment, biorep_n, paired_files, args.key)
+					pe_jobs = map_only(experiment, biorep_n, paired_files, args.key, server, keypair)
 				if unpaired_files:
-					se_jobs = map_only(experiment, biorep_n, unpaired_files, args.key)
+					se_jobs = map_only(experiment, biorep_n, unpaired_files, args.key, server, keypair)
 				if paired_files and pe_jobs:
 					outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))
 					outstrings.append('paired jobs:%s' %([j.get_id() for j in pe_jobs]))
