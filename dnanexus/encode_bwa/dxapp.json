@@ -12,7 +12,7 @@
       "name": "reads1",
       "label": "reads1",
       "class": "file",
-      "optional": false
+      "optional": true
     },
     {
       "name": "reads2",
@@ -24,7 +24,7 @@
       "name": "reference_tar",
       "label": "E.g. male or female hg19; mm9.",
       "class": "file",
-      "optional": false
+      "optional": true
     },
     {
       "name": "bwa_aln_params",
