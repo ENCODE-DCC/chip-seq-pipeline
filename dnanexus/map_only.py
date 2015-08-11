@@ -34,7 +34,7 @@ def get_args():
 		description=__doc__, epilog=EPILOG,
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
-	parser.add_argument('experiments',	help='List of ENCSR accessions to report on', nargs='*', default=None)
+	parser.add_argument('experiments',	help='List of ENCSR accessions. Can be ENCSR,biorep_i,biorep_j,.. to restrict mapping to specific replicate(s).', nargs='*', default=None)
 	parser.add_argument('--infile',		help='File containing ENCSR accessions', type=argparse.FileType('r'), default=sys.stdin)
 	parser.add_argument('--assembly', help="Reference genome assembly, e.g. GRCh38, hg19, or mm10")
 	parser.add_argument('--debug', help="Print debug messages", 				default=False, action='store_true')
@@ -131,7 +131,7 @@ def files_to_map(exp_obj, server, keypair, sfn_dupes=False):
 				logging.error('%s: Fastq has no replicate' %(file_obj.get('accession')))
 		return files
 
-def replicates_to_map(files, server, keypair):
+def replicates_to_map(files, server, keypair, biorep_ns=[]):
 	if not files:
 		return []
 	else:
@@ -139,7 +139,8 @@ def replicates_to_map(files, server, keypair):
 		for f in files:
 			replicate = common.encoded_get(urlparse.urljoin(server,f.get('replicate')),keypair)
 			if not replicate in replicate_objects:
-				replicate_objects.append(replicate)
+				if not biorep_ns or (biorep_ns and replicate['biological_replicate_number'] in biorep_ns):
+					replicate_objects.append(replicate)
 
 		return replicate_objects
 
@@ -332,15 +333,22 @@ def main():
 		exp_ids = args.infile
 
 
-	for exp_id in exp_ids:
+	for instring in exp_ids:
 		outstrings = []
-		encode_url = urlparse.urljoin(server,exp_id.rstrip())
+		instring = instring.rstrip()
+		instrings = instring.split(',')
+		exp_id = instrings.pop(0).strip()
+		if instrings: #comma-delimited biological replicate numbers follow 
+			biorep_ns = [int(s.strip()) for s in instrings]
+		else:
+			biorep_ns = [] #empty list results in all reps with files being mapped
+		encode_url = urlparse.urljoin(server,exp_id)
 		experiment = common.encoded_get(encode_url, keypair)
-		outstrings.append(exp_id.rstrip())
+		outstrings.append(exp_id)
 		files = files_to_map(experiment, server, keypair, args.sfn_dupes)
 		outstrings.append(str(len(files)))
 		outstrings.append(str([f.get('accession') for f in files]))
-		replicates = replicates_to_map(files, server, keypair)
+		replicates = replicates_to_map(files, server, keypair, biorep_ns)
 
 		if files:
 			for biorep_n in set([rep.get('biological_replicate_number') for rep in replicates]):
