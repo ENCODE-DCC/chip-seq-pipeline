@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os.path, sys, subprocess, logging, re, json, urlparse, requests
+import os.path, sys, subprocess, logging, re, json, urlparse, requests, csv, StringIO
 import common
 import dxpy
 
@@ -35,7 +35,7 @@ def get_args():
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
 	parser.add_argument('experiments',	help='List of ENCSR accessions. Can be ENCSR,biorep_i,biorep_j,.. to restrict mapping to specific replicate(s).', nargs='*', default=None)
-	parser.add_argument('--infile',		help='File containing ENCSR accessions', type=argparse.FileType('r'), default=sys.stdin)
+	parser.add_argument('--infile',		help='File containing ENCSR accessions', type=argparse.FileType('rU'), default=sys.stdin)
 	parser.add_argument('--assembly', help="Reference genome assembly, e.g. GRCh38, hg19, or mm10")
 	parser.add_argument('--debug', help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--outp', help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
@@ -328,20 +328,20 @@ def main():
 	keypair = (authid,authpw)
 
 	if args.experiments:
-		exp_ids = args.experiments
+		exp_ids = csv.reader(StringIO.StringIO('\n'.join([s.rstrip() for s in args.experiments])))
 	else:
-		exp_ids = args.infile
-
+		exp_ids = csv.reader(args.infile)
 
 	for instring in exp_ids:
-		outstrings = []
-		instring = instring.rstrip()
-		instrings = instring.split(',')
-		exp_id = instrings.pop(0).strip()
-		if instrings: #comma-delimited biological replicate numbers follow 
-			biorep_ns = [int(s.strip()) for s in instrings]
+		exp_id = instring[0].strip()
+		if len(instring) > 1:
+			repns = []
+			for s in instring[1:]:
+				repns.extend(s.split(','))
+			biorep_ns = list(set([int(s) for s in repns]))
 		else:
-			biorep_ns = [] #empty list results in all reps with files being mapped
+			biorep_ns = []
+		outstrings = []
 		encode_url = urlparse.urljoin(server,exp_id)
 		experiment = common.encoded_get(encode_url, keypair)
 		outstrings.append(exp_id)
