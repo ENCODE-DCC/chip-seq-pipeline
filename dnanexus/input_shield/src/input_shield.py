@@ -17,7 +17,6 @@ import dxpy
 KEYFILE = 'keypairs.json'
 DEFAULT_SERVER = 'https://www.encodeproject.org'
 S3_SERVER='s3://encode-files/'
-APPLET_FOLDER='/'
 DATA_CACHE_PROJECT = None #if specified, look anywhere in this project for ENCFF files
 
 logger = logging.getLogger(__name__)
@@ -238,7 +237,7 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
 	reads1_files = [resolve_file(read, key) for read in reads1]
 	if len(reads1_files) > 1:
 		pool_applet = dxpy.find_one_data_object(
-			classname='applet', name='pool', folder=APPLET_FOLDER, project=dxpy.PROJECT_CONTEXT_ID,
+			classname='applet', name='pool', project=dxpy.PROJECT_CONTEXT_ID,
 			zero_ok=False, more_ok=False, return_handler=True)
 		logger.debug('reads1_files:%s' %(reads1_files))
 		logger.debug('reads1_files ids:%s' %([dxf.get_id() for dxf in reads1_files]))

@@ -28,7 +28,8 @@ def count_lines(filename):
 
 def macs2(experiment, control, xcor_scores, chrom_sizes, narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize):
 		macs2_applet = dxpy.find_one_data_object(
-				classname='applet', name='macs2', zero_ok=False, more_ok=False, return_handler=True)
+				classname='applet', name='macs2', project=dxpy.PROJECT_CONTEXT_ID,
+				project=zero_ok=False, more_ok=False, return_handler=True)
 		macs2_input = { "experiment": experiment,
 						"control": control,
 						"xcor_scores_input": xcor_scores,

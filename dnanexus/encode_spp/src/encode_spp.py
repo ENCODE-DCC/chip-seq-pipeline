@@ -62,7 +62,8 @@ def count_lines(filename):
 
 def spp(experiment, control, xcor_scores, chrom_sizes, bigbed=False, as_file=None):
 		spp_applet = dxpy.find_one_data_object(
-				classname='applet', name='spp', zero_ok=False, more_ok=False, return_handler=True)
+				classname='applet', name='spp', project=dxpy.PROJECT_CONTEXT_ID,
+				zero_ok=False, more_ok=False, return_handler=True)
 		spp_input = {"experiment": experiment,
 								 "control": control,
 								 "xcor_scores_input": xcor_scores,
@@ -74,7 +75,8 @@ def spp(experiment, control, xcor_scores, chrom_sizes, bigbed=False, as_file=Non
 
 def xcor_only(tags, paired_end):
 		xcor_only_applet = dxpy.find_one_data_object(
-				classname='applet', name='xcor_only', zero_ok=False, more_ok=False, return_handler=True)
+				classname='applet', name='xcor_only', project=dxpy.PROJECT_CONTEXT_ID,
+				zero_ok=False, more_ok=False, return_handler=True)
 		return xcor_only_applet.run({"input_tagAlign": tags, "paired_end": paired_end})
 
  
@@ -125,7 +127,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 		print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
 
 		pool_applet = dxpy.find_one_data_object(
-				classname='applet', name='pool', zero_ok=False, more_ok=False, return_handler=True)
+				classname='applet', name='pool', project=dxpy.PROJECT_CONTEXT_ID,
+				zero_ok=False, more_ok=False, return_handler=True)
 		pool_controls_subjob = pool_applet.run({"inputs": [ctl1_ta, ctl2_ta]})
 		pool_replicates_subjob = pool_applet.run({"inputs": [rep1_ta, rep2_ta]})
 
@@ -192,7 +195,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 
 		if idr_peaks: #also call peaks on pseudoreplicates for IDR
 			pseudoreplicator_applet = dxpy.find_one_data_object(
-				classname='applet', name='pseudoreplicator', zero_ok=False, more_ok=False, return_handler=True)
+				classname='applet', name='pseudoreplicator', project=dxpy.PROJECT_CONTEXT_ID,
+				zero_ok=False, more_ok=False, return_handler=True)
 
 			rep1_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep1_ta})
 			rep2_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep2_ta})
