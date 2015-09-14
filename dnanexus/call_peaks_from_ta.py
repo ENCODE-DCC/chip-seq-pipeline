@@ -10,9 +10,6 @@ Examples:
 '''
 
 DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
-GENOME_SIZE = 'mm'
-CHROM_SIZES = "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
-#POSSIBLE_FOLDERS =["/mm10_mapping","mm10_mapping:/e115"]
 KEYFILE = os.path.expanduser("~/keypairs.json")
 
 def get_args():
@@ -186,10 +183,10 @@ def main():
 			continue
 		if any('histone' in target_type for target_type in investigated_as):
 			print "Found to be histone"
-			workflow_spinner = '~/tf_chipseq/dnanexus/histone_workflow.py'
+			workflow_spinner = '~/chip-seq-pipeline/dnanexus/histone_workflow.py'
 		else:
 			print "Assumed to be tf"
-			workflow_spinner = '~/tf_chipseq/dnanexus/tf_workflow.py'
+			workflow_spinner = '~/chip-seq-pipeline/dnanexus/tf_workflow.py'
 		run_command = \
 			'%s --debug --name "%s" --outf "%s" --nomap --yes ' %(workflow_spinner, workflow_name, outf) + \
 			'--rep1pe false --rep2pe false ' + \
