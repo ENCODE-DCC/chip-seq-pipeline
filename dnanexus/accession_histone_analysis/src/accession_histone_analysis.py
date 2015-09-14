@@ -17,9 +17,6 @@ import dateutil.parser
 
 logger = logging.getLogger(__name__)
 
-def after(date1, date2):
-	return(dateutil.parser.parse(date1) > dateutil.parser.parse(date2))
-
 def get_rep_bams(experiment, assembly, keypair, server):
 
 	original_files = [common.encoded_get(urlparse.urljoin(server,'%s' %(uri)), keypair) for uri in experiment.get('original_files')]
@@ -219,9 +216,9 @@ def accession_analysis(analysis_id, keypair, server, assembly, dryrun, force):
 				common.merge_dicts({'name': 'rep1_narrowpeaks', 		'derived_from': [rep1_bam]},			narrowpeak_metadata),
 				common.merge_dicts({'name': 'rep2_narrowpeaks', 		'derived_from': [rep2_bam]},			narrowpeak_metadata),
 				common.merge_dicts({'name': 'pooled_narrowpeaks',		'derived_from': [rep1_bam, rep2_bam]},	narrowpeak_metadata),
-				common.merge_dicts({'name': 'rep1_narrowpeaks_bb', 		'derived_from': [rep1_bam]},			narrowpeak_bb_metadata),
-				common.merge_dicts({'name': 'rep2_narrowpeaks_bb', 		'derived_from': [rep2_bam]},			narrowpeak_bb_metadata),
-				common.merge_dicts({'name': 'pooled_narrowpeaks_bb',	'derived_from': [rep1_bam, rep2_bam]},	narrowpeak_bb_metadata),
+				common.merge_dicts({'name': 'rep1_narrowpeaks_bb', 		'derived_from': [rep1_bam]},			narrowpeak_bb_metadata), # TODO derived from bed
+				common.merge_dicts({'name': 'rep2_narrowpeaks_bb', 		'derived_from': [rep2_bam]},			narrowpeak_bb_metadata), # TODO derived from bed
+				common.merge_dicts({'name': 'pooled_narrowpeaks_bb',	'derived_from': [rep1_bam, rep2_bam]},	narrowpeak_bb_metadata), # TODO derived from bed
 				# common.merge_dicts({'name': 'rep1_gappedpeaks', 		'derived_from': [rep1_bam]},			gappedpeak_metadata),
 				# common.merge_dicts({'name': 'rep2_gappedpeaks', 		'derived_from': [rep2_bam]},			gappedpeak_metadata),
 				# common.merge_dicts({'name': 'pooled_gappedpeaks', 		'derived_from': [rep1_bam, rep2_bam]},	gappedpeak_metadata),
@@ -237,8 +234,8 @@ def accession_analysis(analysis_id, keypair, server, assembly, dryrun, force):
 			'qc': []},
 		"Overlap narrowpeaks": {
 			'files': [
-				common.merge_dicts({'name': 'overlapping_peaks',		'derived_from': [rep1_bam, rep2_bam]},	replicated_narrowpeak_metadata),
-				common.merge_dicts({'name': 'overlapping_peaks_bb',		'derived_from': [rep1_bam, rep2_bam]},	replicated_narrowpeak_bb_metadata)],
+				common.merge_dicts({'name': 'overlapping_peaks',		'derived_from': [rep1_bam, rep2_bam]},	replicated_narrowpeak_metadata), #TODO derived from beds
+				common.merge_dicts({'name': 'overlapping_peaks_bb',		'derived_from': [rep1_bam, rep2_bam]},	replicated_narrowpeak_bb_metadata)], #TOD derived from overlapping bed
 			'qc': ['npeaks_in', 'npeaks_out', 'npeaks_rejected']},
 		# "Overlap gappedpeaks": {
 		# 	'files': [
