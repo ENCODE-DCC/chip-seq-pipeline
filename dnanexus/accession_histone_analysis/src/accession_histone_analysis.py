@@ -258,7 +258,7 @@ def accession_analysis(analysis_id, keypair, server, assembly, dryrun, force):
 				'notes': {
 					'dx-id': dx.get_id(),
 					'dx-createdBy': {
-						'job': stage_metadata['id'],
+						'job': stage_metadata['id'], #TODO this should be the most proximal job that created the file, not the stage (i.e. MACS2 for rep1 rather than ENCODE Peaks) 
 						'executable': stage_metadata['executable'], #todo get applet ID
 						'user': stage_metadata['launchedBy']},
 					'qc': dict(zip(outputs['qc'],[stage_metadata['output'][metric] for metric in outputs['qc']]))}, #'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
