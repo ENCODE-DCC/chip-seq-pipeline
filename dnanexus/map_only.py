@@ -20,6 +20,12 @@ POOL_APPLET_NAME = 'pool'
 REFERENCES = [
 	{'assembly': 'GRCh38', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
 	{'assembly': 'GRCh38', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
+	#warning these are not sex-specific yet
+	{'assembly': 'GRCh38-no-alt', 'organism': 'human', 'sex': 'male',   'file': 'E3 ChIP-seq:/reference_files_local/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz'},
+	{'assembly': 'GRCh38-no-alt', 'organism': 'human', 'sex': 'female', 'file': 'E3 ChIP-seq:/reference_files_local/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz'},
+	#warning these are not sex-specific yet
+	{'assembly': 'GRCh38-full', 'organism': 'human', 'sex': 'male',   'file': 'E3 ChIP-seq:/reference_files_local/GCA_000001405.15_GRCh38_full_analysis_set.bwa.tar.gz'},
+	{'assembly': 'GRCh38-full', 'organism': 'human', 'sex': 'female', 'file': 'E3 ChIP-seq:/reference_files_local/GCA_000001405.15_GRCh38_full_analysis_set.bwa.tar.gz'},
 	{'assembly': 'mm10',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
 	{'assembly': 'mm10',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'},
 	{'assembly': 'hg19',   'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/hg19_XY.tar.gz'},
@@ -307,9 +313,13 @@ def map_only(experiment, biorep_n, files, key, server, keypair):
 		workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key))
 	elif all(isinstance(f, tuple) for f in files): #paired-end
 		for readpair in files:
-			input_shield_stage_input.update(
-				{'reads1': [next(f.get('accession') for f in readpair if f.get('paired_end') == '1')],
-				 'reads2': next(f.get('accession') for f in readpair if f.get('paired_end') == '2')})
+			try:
+				input_shield_stage_input.update(
+					{'reads1': [next(f.get('accession') for f in readpair if f.get('paired_end') == '1')],
+					 'reads2': next(f.get('accession') for f in readpair if f.get('paired_end') == '2')})
+			except StopIteration:
+				logging.error('%s rep %s: Unmatched read pairs' %(experiment.get('accession'),biorep_n))
+				return []
 			workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key))
 	else:
 		logging.error('%s: List of files to map appears to be mixed single-end and paired-end: %s' %(experiment.get('accession'), files))
