@@ -15,7 +15,15 @@ import os, sys, subprocess, logging, dxpy, json, re, socket, getpass, urlparse, 
 import common
 import dateutil.parser
 
+#logging.getLogger("requests").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+logger.propagate = False
+# logger = logging.getLogger(__name__)
+# logger.addHandler()
+
+# class Accessionable_File(object):
+# 	def __init__(self, ):
 
 def get_rep_bams(experiment, assembly, keypair, server):
 
@@ -37,14 +45,70 @@ def get_rep_bams(experiment, assembly, keypair, server):
 		else:
 			biorep_n = biorep_ns.pop()
 			bam.update({'biorep_n': biorep_n})
-	#remove any bams that are older than another bam (resultsing in only the most recent surviving)
-	for bam in [f for f in original_files if f.get('file_format') == 'bam' and f.get('biorep_n') == biorep_n and after(bam.get('date_created'), f.get('date_created'))]:
+	#remove any bams that are older than another bam (resulting in only the most recent surviving)
+	for bam in [f for f in original_files if f.get('file_format') == 'bam' and f.get('biorep_n') == biorep_n and common.after(bam.get('date_created'), f.get('date_created'))]:
 		original_files.remove(bam)
-
-	rep1_bam = next(f for f in original_files if f.get('file_format') == 'bam' and f.get('biorep_n') == 1)
-	rep2_bam = next(f for f in original_files if f.get('file_format') == 'bam' and f.get('biorep_n') == 2)
-
+	print original_files
+	try:
+		rep1_bam = next(f for f in original_files if f.get('file_format') == 'bam' and f.get('biorep_n') == 1)
+	except StopIteration:
+		logger.error('%s has no rep1 bam.' %(experiment.get('accession')))
+		rep1_bam = None
+	try:
+		rep2_bam = next(f for f in original_files if f.get('file_format') == 'bam' and f.get('biorep_n') == 2)
+	except StopIteration:
+		logger.error('%s has no rep2 bam.' %(experiment.get('accession')))
+		rep2_bam = None
+	logger.debug('get_rep_bams returning %s, %s' %(rep1_bam.get('accession'),rep2_bam.get('accession')))
 	return rep1_bam, rep2_bam
+
+def get_rep_fastqs(experiment, keypair, server):
+
+	original_files = [common.encoded_get(urlparse.urljoin(server,'%s' %(uri)), keypair) for uri in experiment.get('original_files')]
+
+	#resolve the biorep_n for each fastq
+	rep1_fastqs = []
+	rep2_fastqs = []
+	for fastq in [f for f in original_files if f.get('file_format') == 'fastq']:
+		replicate = common.encoded_get(urlparse.urljoin(server,'%s' %(fastq.get('replicate'))), keypair)
+		rep_n = replicate.get('biological_replicate_number')
+		if rep_n == 1:
+			rep1_fastqs.append(fastq)
+		elif rep_n == 2:
+			rep2_fastqs.append(fastq)
+		else:
+			logger.error('%s: Found fastq with biorep_n %d not in (1,2)' %(experiment['accession'], rep_n)) 
+	logger.debug('get_rep_fastqs returning %s, %s' %([f.get('accession') for f in rep1_fastqs], [f.get('accession') for f in rep2_fastqs]))
+	return rep1_fastqs, rep2_fastqs
+
+def resolve_name_to_accession(stages, output_name):
+	#given a dict of named stages, and the name of one of the stages' outputs, return that output's
+	#ENCODE accession number
+	logger.debug('resolve_name_to_accession %s' %(output_name))
+	for stage_name in stages:
+		for output in stages[stage_name]['files']:
+			if output['name'] == output_name:
+				return output['encode_object'].get('accession')
+
+def patch_file(payload, keypair, server, dryrun, force):
+	logger.debug('in patch_file with %s' %(payload))
+	accession = payload.pop('accession')
+	url = urlparse.urljoin(server,'files/%s' %(accession))
+	if dryrun:
+		logger.info("Dry run.  Would PATCH: %s with %s" %(accession, payload))
+	else:
+		r = requests.patch(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
+		try:
+			r.raise_for_status()
+		except:
+			logger.warning('PATCH file object failed: %s %s' % (r.status_code, r.reason))
+			logger.warning(r.text)
+			new_file_object = None
+		else:
+			new_file_object = r.json()['@graph'][0]
+			logger.info("Patched: %s" %(new_file_object.get('accession')))
+	
+	return new_file_object
 
 def accession_file(f, keypair, server, dryrun, force):
 	#check for duplication
@@ -54,40 +118,39 @@ def accession_file(f, keypair, server, dryrun, force):
 	#upload to S3
 	#remove the local file (to save space)
 	#return the ENCODEd file object
-	already_accessioned = False
 	dx = f.pop('dx')
 	for tag in dx.tags:
 		m = re.search(r'(ENCFF\d{3}\D{3})|(TSTFF\D{6})', tag)
 		if m:
 			logger.info('%s appears to contain ENCODE accession number in tag %s ... skipping' %(dx.get_id(),m.group(0)))
-			already_accessioned = True
-			break
-	if already_accessioned and not force:
-		return
-	url = urlparse.urljoin(server, 'search/?type=file&submitted_file_name=%s&format=json&frame=object' %(f.get('submitted_file_name')))
+			if not force:
+				return
+	url = urlparse.urljoin(server, 'search/?type=file&submitted_file_name=%s&format=json&frame=object&limit=all' %(f.get('submitted_file_name')))
 	r = requests.get(url,auth=keypair)
 	try:
 		r.raise_for_status()
-		if r.json()['@graph']:
-			for duplicate_item in r.json()['@graph']:
-				if duplicate_item.get('status')  == 'deleted':
-					logger.info("A potential duplicate file was found but its status=deleted ... proceeding")
-					duplicate_found = False
-				else:
-					logger.info("Found potential duplicate: %s" %(duplicate_item.get('accession')))
-					if submitted_file_size ==  duplicate_item.get('file_size'):
-						logger.info("%s %s: File sizes match, assuming duplicate." %(str(submitted_file_size), duplicate_item.get('file_size')))
-						duplicate_found = True
-						break
-					else:
-						logger.info("%s %s: File sizes differ, assuming new file." %(str(submitted_file_size), duplicate_item.get('file_size')))
-						duplicate_found = False
-		else:
-			duplicate_found = False
 	except:
 		logger.warning('Duplicate accession check failed: %s %s' % (r.status_code, r.reason))
 		logger.debug(r.text)
 		duplicate_found = False
+	else:
+		if r.json()['@graph']:
+			for duplicate_item in r.json()['@graph']:
+				if duplicate_item.get('status')  in ['deleted', 'replaced', 'revoked']:
+					logger.info("A potential duplicate file was found but its status=%s ... proceeding" %(duplicate_item.get('status')))
+					duplicate_found = False
+				else:
+					logger.info("Found potential duplicate: %s" %(duplicate_item.get('accession')))
+					local_file_size = dx.describe()['size']
+					if local_file_size ==  duplicate_item.get('file_size'):
+						logger.info("%s %s: File sizes match, assuming duplicate." %(str(local_file_size), duplicate_item.get('file_size')))
+						duplicate_found = True
+						break
+					else:
+						logger.info("%s %s: File sizes differ, assuming new file." %(str(local_file_size), duplicate_item.get('file_size')))
+						duplicate_found = False
+		else:
+			duplicate_found = False
 
 	if duplicate_found:
 		if force:
@@ -159,9 +222,37 @@ def accession_file(f, keypair, server, dryrun, force):
 	except:
 		pass
 
-	return common.encoded_get(urlparse.urljoin(server,'/files/%s' %(new_file_object.get('accession')), keypair))
+	if dryrun:
+		return
+	else:
+		# logger.debug('Getting new file object for %s', %(new_file_object.get('accession')))
+		# return common.encoded_get(urlparse.urljoin(server,'/files/%s' %(new_file_object.get('accession')), keypair))
+		return new_file_object
 
-def accession_analysis(analysis_id, keypair, server, assembly, dryrun, force):
+def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force):
+	url = urlparse.urljoin(server,'/analysis-step-runs/')
+	if dryrun:
+		logger.info("Dry run.  Would POST %s" %(analysis_step_run_metadata))
+		new_object = {}
+	else:
+		r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(analysis_step_run_metadata))
+		try:
+			r.raise_for_status()
+		except:
+			logger.warning('POST analysis_step_run object failed: %s %s' % (r.status_code, r.reason))
+			logger.warning(r.text)
+			if r.status_code == 409:
+				url = urlparse.urljoin(server,"/%s" %(analysis_step_run_metadata['aliases'][0])) #assumes there's only one alias
+				new_object = common.encoded_get(url, keypair)
+				logger.info('Using existing analysis_step_run object %s' %(new_object.get('@id')))
+			else:
+				new_object = {}
+		else:
+			new_object = r.json()['@graph'][0]
+			logger.info("New analysis_step_run uuid: %s" %(new_object.get('uuid')))
+	return new_object
+
+def accession_analysis_files(analysis_id, keypair, server, assembly, dryrun, force):
 	analysis_id = analysis_id.strip()
 	analysis = dxpy.describe(analysis_id)
 	project = analysis.get('project')
@@ -175,6 +266,418 @@ def accession_analysis(analysis_id, keypair, server, assembly, dryrun, force):
 		return
 
 	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
+	rep1_bam, rep2_bam = get_rep_bams(experiment, assembly, keypair, server)
+	rep1_fastqs, rep2_fastqs = get_rep_fastqs(experiment, keypair, server)
+
+	common_metadata = {
+		'assembly': assembly,
+		'lab': 'encode-processing-pipeline',
+		'award': 'U41HG006992',
+		}
+
+	narrowpeak_metadata = common.merge_dicts(
+		{
+			'file_format': 'bed',
+			'file_format_type': 'narrowPeak',
+			'file_format_specifications': ['ENCODE:narrowPeak.as'],
+			'output_type': 'peaks'
+		}, common_metadata)
+	replicated_narrowpeak_metadata = common.merge_dicts(
+		{
+			'file_format': 'bed',
+			'file_format_type': 'narrowPeak',
+			'file_format_specifications': ['ENCODE:narrowPeak.as'],
+			'output_type': 'replicated peaks'
+		}, common_metadata)
+
+	narrowpeak_bb_metadata = common.merge_dicts(
+		{'file_format': 'bigBed', 'file_format_type': 'narrowPeak', 'file_format_specifications': ['ENCODE:narrowPeak.as'], 'output_type': 'peaks'}, common_metadata)
+	replicated_narrowpeak_bb_metadata = common.merge_dicts(
+		{'file_format': 'bigBed', 'file_format_type': 'narrowPeak', 'file_format_specifications': ['ENCODE:narrowPeak.as'], 'output_type': 'replicated peaks'}, common_metadata)
+
+	fc_signal_metadata = 	common.merge_dicts(
+		{'file_format': 'bigWig', 'output_type': 'fold change over control'}, common_metadata)
+	pvalue_signal_metadata = common.merge_dicts(
+		{'file_format': 'bigWig', 'output_type': 'signal p-value'}, common_metadata)
+
+	# mapping_stages = {
+	# 	"_inputs": {
+	# 		'files': [
+	# 			{'name': 'rep1_fastqs',				'derived_from': None,					'metadata': rep1_fastqs},
+	# 			{'name': 'rep2_fastqs',				'derived_from': None,					'metadata': rep2_fastqs}
+	# 		],
+	# 		'qc': []
+	# 	},
+	# 	"Map ENCSR*" : {
+	# 		'files': [
+	# 			{'name': 'rep1_bam',				'derived_from': 'rep1_fastqs',			'metadata': rep1_bam},
+	# 			{'name': 'rep2_bam',				'derived_from': 'rep2_fastqs',			'metadata': rep2_bam}
+	# 		],
+	# 		'qc': []
+	# 	}
+	# }
+
+	peak_stages = { #derived_from is by name now, will be patched into the file metadata after all files are accessioned
+		"_inputs": {
+			'files': [
+				{'name': 'rep1_bam',				'derived_from': 'rep1_fastqs',			'metadata': {}, 'encode_object': rep1_bam},
+				{'name': 'rep2_bam',				'derived_from': 'rep2_fastqs',			'metadata': {}, 'encode_object': rep2_bam}
+			],
+			'qc': []
+		},
+		"ENCODE Peaks" : {
+			'files': [
+				{'name': 'rep1_narrowpeaks',		'derived_from': ['rep1_bam'],				'metadata': narrowpeak_metadata},
+				{'name': 'rep2_narrowpeaks',		'derived_from': ['rep2_bam'],				'metadata': narrowpeak_metadata},
+				{'name': 'pooled_narrowpeaks',		'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': narrowpeak_metadata},
+				{'name': 'rep1_narrowpeaks_bb',		'derived_from': ['rep1_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
+				{'name': 'rep2_narrowpeaks_bb',		'derived_from': ['rep2_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
+				{'name': 'pooled_narrowpeaks_bb',	'derived_from': ['rep1_narrowpeaks', 'rep2_narrowpeaks'],	'metadata': narrowpeak_bb_metadata},
+				{'name': 'rep1_pvalue_signal',		'derived_from': ['rep1_bam'],				'metadata': pvalue_signal_metadata},
+				{'name': 'rep2_pvalue_signal',		'derived_from': ['rep2_bam'],				'metadata': pvalue_signal_metadata},
+				{'name': 'pooled_pvalue_signal',	'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': pvalue_signal_metadata},
+				{'name': 'rep1_fc_signal',			'derived_from': ['rep1_bam'],				'metadata': fc_signal_metadata},
+				{'name': 'rep2_fc_signal',			'derived_from': ['rep2_bam'],				'metadata': fc_signal_metadata},
+				{'name': 'pooled_fc_signal',		'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': fc_signal_metadata}
+			],
+			'qc': []
+		},
+		"Overlap narrowpeaks": {
+			'files': [
+				{'name': 'overlapping_peaks',		'derived_from': ['rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks'], 'metadata': replicated_narrowpeak_metadata},
+				{'name': 'overlapping_peaks_bb',	'derived_from': ['overlapping_peaks'], 'metadata': replicated_narrowpeak_bb_metadata}
+			],
+			'qc': ['npeaks_in', 'npeaks_out', 'npeaks_rejected']
+		}
+	}
+
+	for (stage_name, outputs) in peak_stages.iteritems():
+		if not stage_name.startswith('_'):
+			stage_metadata = next(s['execution'] for s in analysis.get('stages') if s['execution']['name'] == stage_name)
+			outputs.update({'stage_metadata': stage_metadata})
+			for file_metadata in outputs['files']:
+				dx = dxpy.DXFile(stage_metadata['output'][file_metadata['name']], project=project)
+				dx_desc = dx.describe()
+				post_metadata = {
+					'dx': dx,
+					'notes': {
+						'dx-id': dx.get_id(),
+						'dx-createdBy': dx_desc.get('createdBy'),
+						'qc': dict(zip(outputs['qc'],[stage_metadata['output'][metric] for metric in outputs['qc']]))}, #'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
+					'dataset': experiment.get('accession'),
+					'file_size': dx_desc.get('size'),
+					'submitted_file_name': dx.get_proj_id() + ':' + '/'.join([dx.folder,dx.name])}
+				post_metadata.update(file_metadata['metadata'])
+				file_metadata.update({'encode_object': accession_file(post_metadata, keypair, server, dryrun, force)})
+
+	#now that we have accessions, loop again and patch derived_from
+	files = []
+	for (stage_name, outputs) in peak_stages.iteritems():
+		if not stage_name.startswith('_'):
+			for file_metadata in outputs['files']:
+				if file_metadata.get('encode_object'):
+					accession = file_metadata['encode_object'].get('accession')
+					patch_metadata = {
+						'accession': accession,
+						'derived_from':
+							[resolve_name_to_accession(peak_stages, derived_from_name) for derived_from_name in file_metadata['derived_from']]
+					}
+					patched_file = patch_file(patch_metadata, keypair, server, dryrun, force)
+					if patched_file:
+						file_metadata['encode_object'] = patched_file
+						files.append(patched_file)
+					else:
+						logger.error("%s PATCH failed ... skipping" %(accession))
+				else:
+					logger.warning('%s,%s: No encode object found ... skipping' %(stage_name, file_metadata['name']))
+					continue
+
+	analysis_step_versions = {
+		'bwa-indexing-step-v-1' : {
+			'stage_name' : "",
+			'file_names' : [],
+			'status' : 'finished'
+		},
+		'histone-bwa-alignment-step-v-1' : {
+			'stage_name' : "",
+			'file_names' : [],
+			'status' : 'finished'
+		},
+		'histone-spp-peak-calling-step-v-1' : {
+			'stage_name' : "ENCODE Peaks",
+			'file_names' : ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal', 'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal', 'rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks'],
+			'status' : 'finished'
+		},
+		'histone-overlap-peaks-step-v-1' : {
+			'stage_name' : "Overlap narrowpeaks",
+			'file_names' : ['overlapping_peaks'],
+			'status' : 'finished'
+		},
+		'histone-spp-peaks-to-bigbed-step-v-1' : {
+			'stage_name' : "ENCODE Peaks",
+			'file_names' : ['rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb', 'pooled_narrowpeaks_bb'],
+			'status' : 'virtual'
+		},
+		'histone-spp-replicated-peaks-to-bigbed-step-v-1' : {
+			'stage_name' : "Overlap narrowpeaks",
+			'file_names' : ['overlapping_peaks_bb'],
+			'status' : 'virtual'
+		}
+	}
+
+	for (analysis_step_version_name, step) in analysis_step_versions.iteritems():
+		if not (step['stage_name'] and step['file_names']):
+			logger.warning('%s missing stage metadata (files or stage_name) ... skipping' %(analysis_step_version_name))
+			continue
+		jobid = peak_stages[step['stage_name']]['stage_metadata']['id']
+		analysis_step_version = 'versionof:%s' %(analysis_step_version_name)
+		alias = 'dnanexus:%s' %(jobid)
+		if step.get('status') == 'virtual':
+			alias += '-virtual-file-conversion-step'
+		analysis_step_run_metadata = {
+			'aliases': [alias],
+			'analysis_step_version': analysis_step_version,
+			'status': step['status'],
+			'dx_applet_details': [{
+				'dx_status': 'finished',
+				'dx_job_id': 'dnanexus:%s' %(jobid),
+			}]
+		}
+		analysis_step_run = accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force)
+		for file_name in step['file_names']:
+			file_accession = resolve_name_to_accession(peak_stages, file_name)
+			patch_metadata = {
+				'accession': file_accession,
+				'step_run': analysis_step_run['@id']
+			}
+			patched_file = patch_file(patch_metadata, keypair, server, dryrun, force)
+
+	return files
+
+
+@dxpy.entry_point('main')
+def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline, analysis_ids=None, infile=None, project=None):
+
+	if debug:
+		logger.setLevel(logging.DEBUG)
+	else:
+		logger.setLevel(logging.INFO)
+
+	if infile is not None:
+		infile = dxpy.DXFile(infile)
+		dxpy.download_dxfile(infile.get_id(), "infile")
+		ids = open("infile",'r')
+	elif analysis_ids is not None:
+		ids = analysis_ids
+	else:
+		logger.error("Must supply one of --infile or a list of one or more analysis-ids")
+		return
+
+	authid, authpw, server = common.processkey(key, keyfile)
+	keypair = (authid,authpw)
+
+	for (i, analysis_id) in enumerate(ids):
+		logger.debug('debug %s' %(analysis_id))
+		accessioned_files = accession_analysis_files(analysis_id, keypair, server, assembly, dryrun, force)
+
+	logger.info("Accessioned: %s" %([f.get('accession') for f in accessioned_files]))
+
+	common.touch(outfn)
+	outfile = dxpy.upload_local_file(outfn)
+
+	output = {}
+	output["outfile"] = dxpy.dxlink(outfile)
+
+	return output
+
+dxpy.run()
+
+def new_accession_analysis(analysis_id, pipeline, keypair, server, assembly, dryrun, force):
+	analysis_id = analysis_id.strip()
+	analysis = dxpy.describe(analysis_id)
+	project = analysis.get('project')
+
+	m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
+	if m:
+		experiment_accession = m.group(1)
+		logger.info(experiment_accession)
+	else:
+		logger.error("No accession in %s, skipping." %(analysis['executableName']))
+		return
+
+	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
+
+	pipeline_id = pipeline
+	pipeline = common.encoded_get(urlparse.urljoin(server,'/pipelines/%s' %(pipeline_id)), keypair)
+
+	#loop through pipeline analysis_steps
+	#	pull current_version analysis_step_version (or overridden by command-line arg?)
+	#	build derived_from list from input_file_types
+	#	loop through list of output_file_types
+	#		look in ouput_map with output_file_type key for list of stage_name.outputs
+	#	if there are output_files
+	#		create analysis_step_run
+	#		accession each file, including derived_from
+
+	analysis_step_uris = pipeline.get('analysis_steps')
+	if not analysis_step_uris:
+		logger.error('Pipeline %s has no analysis_steps, skipping.' %(pipeline['accession']))
+		return
+
+	analysis_step_map = {
+
+		'bwa-indexing-step-v-1' : {
+			'input_file_types' : {
+				'genome reference': [
+					{'stage_name': None, 'output_name': None, 'optional': False, 'dx_file': None, 'end_file': None}
+				]
+			},
+			'output_file_types' : {
+				'genome index': [
+					{'stage_name': None, 'output_name': None, 'optional': False, 'dx_file': None, 'end_file': None}
+				]
+			}
+		},
+
+		'histone-bwa-alignment-step-v-1' : {
+			'input_file_types' : {
+				'genome index' : [ #same as bwa-indexing-step-v-1.output_file_types.genome index
+					None
+				],
+				'reads' : [
+					{'stage_name': 'Map *', 'output_name': 'reads1', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'Map *', 'output_name': 'reads2', 'optional': True, 'dx_file': None, 'enc_file': None}
+				]
+			},
+			'output_file_types' : {
+				'alignments' : [
+					{'stage_name': 'Filter and QC *', 'output_name': 'mapped_reads', 'optional': False, 'dx_file': None, 'enc_file': None}
+				]
+			}
+		},
+
+		'histone-spp-peak-calling-step-v-1' : {
+			'input_file_types' : {
+				'alignments' : [ #same as histone-bwa-alignment-step-v-1.output_file_types.alignments
+					{'stage_name': 'Filter and QC *', 'output_name': 'mapped_reads', 'optional': False, 'dx_file': None, 'enc_file': None}
+				]
+			},
+			'output_file_types' : {
+				'fold change over control' : [
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_fc_signal', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_fc_signal', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_fc_signal', 'optional': False, 'dx_file': None, 'enc_file': None}
+				],
+				'signal p-value' : [
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_pvalue_signal', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_pvalue_signal', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_pvalue_signal', 'optional': False, 'dx_file': None, 'enc_file': None}
+				],
+				'peaks' : [
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None}
+				]
+			}
+		},
+
+		'histone-overlap-peaks-step-v-1' : {
+			'input_file_types' : {
+				'peaks': [ #same as histone-spp-peak-calling-step-v-1.output_file_types.peaks
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None}
+				]
+			},
+			'output_file_types' : {
+				'replicated peaks' : [
+					{'stage_name': 'Overlap narrowpeaks', 'output_name': 'overlapping_peaks', 'optional': False, 'dx_file': None, 'enc_file': None}
+				]
+			}
+		},
+
+		'histone-spp-peaks-to-bigbed-step-v-1' : {
+			'input_file_types' : {
+				'peaks': [ #same as histone-spp-peak-calling-step-v-1.output_file_types.peaks
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None}
+				]
+			},
+			'output_file_types' : {
+				'bigBed' : [
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_narrowpeaks_bb', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_narrowpeaks_bb', 'optional': False, 'dx_file': None, 'enc_file': None},
+					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_narrowpeaks_bb', 'optional': False, 'dx_file': None, 'enc_file': None}
+				]
+			}
+		},
+
+		'histone-spp-replicated-peaks-to-bigbed-step-v-1' : {
+			'input_file_types' : {
+				'replicated peaks' : [ #same as histone-overlap-peaks-step-v-1.output_file_types.replicated peaks
+					{'stage_name': 'Overlap narrowpeaks', 'output_name': 'overlapping_peaks', 'optional': False, 'dx_file': None, 'enc_file': None}
+				]
+			},
+			'output_file_types' : {
+				'bigBed' : [
+					{'stage_name': 'Overlap narrowpeaks', 'output_name': 'overlapping_peaks_bb', 'optional': False, 'dx_file': None, 'enc_file': None}
+				]
+			}
+		}
+	}
+
+	for analysis_step in [common.encoded_get(urlparse.urljoin(server, uri), keypair) for uri in analysis_step_uris]:
+
+		current_version_uri = analysis_step.get('current_version')
+		if not current_version_uri:
+			logger.warning('analysis_step %s has no current_version, skipping that step' %(analysis_step.get('name')))
+			continue
+		analysis_step_version = common.encoded_get(urlparse.urljoin(server, current_version_uri), keypair)
+
+		output_file_types = analysis_step.get('output_file_types')
+		if not output_file_types:
+			logger.warning('analysis_step %s has no output_file_types, skipping that step' %(analysis_step.get('name')))
+			continue
+		for output_file_type in output_file_types:
+			print "%s %s" %(analysis_step.get('name'),output_file_type)
+			for output in analysis_step_map[analysis_step.get('name')]['output_file_types'][output_file_type]:
+				print output
+
+
+	'''
+	#(stage_name, output_name) : 
+	outputs_map = {
+		('')
+	}
+
+	MAPPING_STEP = 'versionof:histone-bwa-alignment-step-v-1'
+	MAPPING_STAGE_OUTPUTS = [
+		{'Filter and QC' : ['mapped_reads']}
+	]
+
+	PEAK_CALLING_STEP = 'vesionof:histone-spp-peak-calling-step-v-1'
+	PEAK_CALLING_STAGE_OUTPUTS = [
+		{'ENCODE Peaks' : [
+			'rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks',
+			'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal',
+			'rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal']}]
+
+	REPLICATE_CONCORDANCE_STEP = 'versionof:histone-overlap-peaks-step-v-1'
+	REPLICATE_CONCORDANCE_STAGE_OUTPUTS = [
+		{''}]
+
+	#analysis_step_version : [(stage_name, [output_name,...]),...]
+	pipeline_map = {
+		MAPPING_STEP : MAPPING_STAGE_OUTPUTS
+		PEAK_CALLING_STEP : PEAK_CALLING_STAGE_OUTPUTS
+		REPLICATE_CONCORDANCE_STEP :
+		BED2BIGBED_STEP: 
+	}
+
+
+
+
 	bams = get_rep_bams(experiment, assembly, keypair, server)
 	rep1_bam = bams[0]['accession']
 	rep2_bam = bams[1]['accession']
@@ -274,38 +777,25 @@ def accession_analysis(analysis_id, keypair, server, assembly, dryrun, force):
 
 	return files
 
-@dxpy.entry_point('main')
-def main(outfn, assembly, debug, key, keyfile, dryrun, force, analysis_ids=None, infile=None, project=None):
+def accession_analysis(analysis_id, pipeline, keypair, server, assembly, dryrun, force):
+	analysis_id = analysis_id.strip()
+	analysis = dxpy.describe(analysis_id)
+	project = analysis.get('project')
 
-	if debug:
-		logger.setLevel(logging.DEBUG)
+	m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
+	if m:
+		experiment_accession = m.group(1)
+		logger.info(experiment_accession)
 	else:
-		logger.setLevel(logging.INFO)
-
-	if infile is not None:
-		infile = dxpy.DXFile(infile)
-		dxpy.download_dxfile(infile.get_id(), "infile")
-		ids = open("infile",'r')
-	elif analysis_ids is not None:
-		ids = analysis_ids
-	else:
-		logger.error("Must supply one of --infile or a list of one or more analysis-ids")
+		logger.error("No accession in %s, skipping." %(analysis['executableName']))
 		return
 
-	authid, authpw, server = common.processkey(key, keyfile)
-	keypair = (authid,authpw)
+	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
 
-	for (i, analysis_id) in enumerate(ids):
-		logger.info('%s' %(analysis_id))
-		accessioned_files = accession_analysis(analysis_id, keypair, server, assembly, dryrun, force)
+	pipeline_id = pipeline
+	pipeline = common.encoded_get(urlparse.urljoin(server,'/pipelines/%s' %(pipeline_id)), keypair)
 
-	print accessioned_files
-	common.touch(outfn)
-	outfile = dxpy.upload_local_file(outfn)
+	#just list them in the order they should be accessioned.
+'''
+	
 
-	output = {}
-	output["outfile"] = dxpy.dxlink(outfile)
-
-	return output
-
-dxpy.run()
