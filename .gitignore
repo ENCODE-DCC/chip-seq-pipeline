@@ -54,3 +54,7 @@ dnanexus/test.py
 dnanexus/test.txt
 
 dnanexus/tmp.csv
+
+*.json
+
+*.gz

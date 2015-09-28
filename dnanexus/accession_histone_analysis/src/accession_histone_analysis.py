@@ -17,13 +17,18 @@ import dateutil.parser
 
 #logging.getLogger("requests").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
 # logger = logging.getLogger(__name__)
 # logger.addHandler()
 
 # class Accessionable_File(object):
 # 	def __init__(self, ):
+
+common_metadata = {
+	'lab': 'encode-processing-pipeline',
+	'award': 'U41HG006992',
+}
 
 def get_rep_bams(experiment, assembly, keypair, server):
 
@@ -48,7 +53,7 @@ def get_rep_bams(experiment, assembly, keypair, server):
 	#remove any bams that are older than another bam (resulting in only the most recent surviving)
 	for bam in [f for f in original_files if f.get('file_format') == 'bam' and f.get('biorep_n') == biorep_n and common.after(bam.get('date_created'), f.get('date_created'))]:
 		original_files.remove(bam)
-	print original_files
+
 	try:
 		rep1_bam = next(f for f in original_files if f.get('file_format') == 'bam' and f.get('biorep_n') == 1)
 	except StopIteration:
@@ -62,24 +67,170 @@ def get_rep_bams(experiment, assembly, keypair, server):
 	logger.debug('get_rep_bams returning %s, %s' %(rep1_bam.get('accession'),rep2_bam.get('accession')))
 	return rep1_bam, rep2_bam
 
-def get_rep_fastqs(experiment, keypair, server):
+def get_rep_fastqs(experiment, keypair, server, reps=[1,2]):
 
 	original_files = [common.encoded_get(urlparse.urljoin(server,'%s' %(uri)), keypair) for uri in experiment.get('original_files')]
+	fastqs = [f for f in original_files if f.get('file_format') == 'fastq']
 
 	#resolve the biorep_n for each fastq
-	rep1_fastqs = []
-	rep2_fastqs = []
-	for fastq in [f for f in original_files if f.get('file_format') == 'fastq']:
-		replicate = common.encoded_get(urlparse.urljoin(server,'%s' %(fastq.get('replicate'))), keypair)
-		rep_n = replicate.get('biological_replicate_number')
-		if rep_n == 1:
-			rep1_fastqs.append(fastq)
-		elif rep_n == 2:
-			rep2_fastqs.append(fastq)
-		else:
-			logger.error('%s: Found fastq with biorep_n %d not in (1,2)' %(experiment['accession'], rep_n)) 
-	logger.debug('get_rep_fastqs returning %s, %s' %([f.get('accession') for f in rep1_fastqs], [f.get('accession') for f in rep2_fastqs]))
-	return rep1_fastqs, rep2_fastqs
+	rep_fastqs = [
+		[f for f in fastqs if common.encoded_get(urlparse.urljoin(server,'%s' %(f.get('replicate'))), keypair).get('biological_replicate_number') == n]
+		for n in reps]
+
+
+	# for fastq in [f for f in original_files if f.get('file_format') == 'fastq']:
+	# 	replicate = common.encoded_get(urlparse.urljoin(server,'%s' %(fastq.get('replicate'))), keypair)
+	# 	rep_n = replicate.get('biological_replicate_number')
+	# 	if rep_n in reps:
+
+	# 	if rep_n == 1:
+	# 		rep1_fastqs.append(fastq)
+	# 	elif rep_n == 2:
+	# 		rep2_fastqs.append(fastq)
+	# 	else:
+	# 		logger.error('%s: Found fastq with biorep_n %d not in (1,2)' %(experiment['accession'], rep_n)) 
+	#logger.debug('get_rep_fastqs found rep_fastqs: %s' %(rep_fastqs))
+	logger.debug('get_rep_fastqs returning %s' %([[f.get('accession') for f in rep_fastqs[n]] for n,r in enumerate(reps)]))
+	return rep_fastqs
+
+def get_stage_metadata(analysis, stage_name):
+	logger.debug('in get_stage_metadata with')
+	logger.debug('analysis %s and stage_name %s' %(analysis['id'], stage_name))
+	return next(s['execution'] for s in analysis.get('stages') if re.match(stage_name,s['execution']['name']))
+
+def get_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
+	# Find the tagaligns actually used as inputs into the analysis
+	# Find the mapping analyses that produced those tagaligns
+	# Find the filtered bams from those analyses
+	# Build the stage dict and return it
+	logger.debug('in get_mapping_stages with peaks_analysis %s; experiment %s; reps %s' %(peaks_analysis['id'], experiment['accession'], reps))
+	peaks_stages = peaks_analysis.get('stages')
+	peaks_stage = next(stage for stage in peaks_stages if stage['execution']['name'] == "ENCODE Peaks")
+	tas = [dxpy.describe(peaks_stage['execution']['input']['rep%s_ta' %(n)]) for n in reps]
+	mapping_jobs = [dxpy.describe(ta['createdBy']['job']) for ta in tas]
+	mapping_analyses = [dxpy.describe(mapping_job['analysis']) for mapping_job in mapping_jobs]
+	mapping_stages = [analysis.get('stages') for analysis in mapping_analyses]
+	#mapping_stages is a list of lists (one list per rep) of stages, each of which contains somewhere the Filter and QC stage for that rep
+	#So we need to flatten that list of lists back to a single list with one stage per rep
+	filter_qc_stages = [next(stage for stage in rep_mapping_stages if stage['execution']['name'].startswith("Filter and QC")) for rep_mapping_stages in mapping_stages]
+	bams = [dxpy.describe(stage['execution']['output']['filtered_bam']) for stage in filter_qc_stages]
+	fastqs = get_rep_fastqs(experiment, keypair, server, reps)
+
+	bam_metadata = common.merge_dicts({
+		'file_format': 'bam',
+		'output_type': 'alignments'
+		}, common_metadata)
+
+	rep_mapping_stages = [
+		{
+			"_inputs": {
+				'files': [
+					{'name': 'rep%s_fastqs' %(n),	'derived_from': None,			'metadata': {}, 'encode_object': fastqs[n]}
+				],
+				'qc': []
+			},
+			"Filter and QC*" : {
+				'files': [
+					{'name': 'rep%s_bam' %(n),	'derived_from': 'rep%s_fastqs' %(n),	'metadata': bam_metadata}
+				],
+				'qc': [],
+				'stage_metadata': {} #initialized below
+			}
+		} for n,r in enumerate(reps)]
+
+	for n, stages in enumerate(rep_mapping_stages):
+		for stage_name in stages:
+			if not stage_name.startswith('_'):
+				rep_mapping_stages[n][stage_name].update({'stage_metadata': get_stage_metadata(mapping_analyses[n], stage_name)})
+
+	return rep_mapping_stages
+
+def get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server):
+
+	logger.debug('in get_peak_stages with peaks_analysis %s; experiment %s' %(peaks_analysis['id'], experiment['accession']))
+
+	#TODO this shoul actually get the bam accessioned (or found) by the accessioning step in this script
+	rep1_bam, rep2_bam = get_rep_bams(experiment, common_metadata['assembly'], keypair, server)
+
+	narrowpeak_metadata = common.merge_dicts({
+		'file_format': 'bed',
+		'file_format_type': 'narrowPeak',
+		'file_format_specifications': ['ENCODE:narrowPeak.as'],
+		'output_type': 'peaks'},
+		common_metadata)
+
+	replicated_narrowpeak_metadata = common.merge_dicts({
+		'file_format': 'bed',
+		'file_format_type': 'narrowPeak',
+		'file_format_specifications': ['ENCODE:narrowPeak.as'],
+		'output_type': 'replicated peaks'},
+		common_metadata)
+
+	narrowpeak_bb_metadata = common.merge_dicts({
+		'file_format': 'bigBed',
+		'file_format_type': 'narrowPeak',
+		'file_format_specifications': ['ENCODE:narrowPeak.as'],
+		'output_type': 'peaks'},
+		common_metadata)
+
+	replicated_narrowpeak_bb_metadata = common.merge_dicts({
+		'file_format': 'bigBed',
+		'file_format_type': 'narrowPeak',
+		'file_format_specifications': ['ENCODE:narrowPeak.as'],
+		'output_type': 'replicated peaks'},
+		common_metadata)
+
+	fc_signal_metadata = common.merge_dicts({
+		'file_format': 'bigWig',
+		'output_type': 'fold change over control'},
+		common_metadata)
+
+	pvalue_signal_metadata = common.merge_dicts({
+		'file_format': 'bigWig',
+		'output_type': 'signal p-value'},
+		common_metadata)
+
+	peak_stages = { #derived_from is by name here, will be patched into the file metadata after all files are accessioned
+		"_inputs": {
+			'files': [
+				{'name': 'rep1_bam',				'derived_from': 'rep1_fastqs',			'metadata': {}, 'encode_object': rep1_bam},
+				{'name': 'rep2_bam',				'derived_from': 'rep2_fastqs',			'metadata': {}, 'encode_object': rep2_bam}
+			],
+			'qc': []
+		},
+		"ENCODE Peaks" : {
+			'files': [
+				{'name': 'rep1_narrowpeaks',		'derived_from': ['rep1_bam'],				'metadata': narrowpeak_metadata},
+				{'name': 'rep2_narrowpeaks',		'derived_from': ['rep2_bam'],				'metadata': narrowpeak_metadata},
+				{'name': 'pooled_narrowpeaks',		'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': narrowpeak_metadata},
+				{'name': 'rep1_narrowpeaks_bb',		'derived_from': ['rep1_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
+				{'name': 'rep2_narrowpeaks_bb',		'derived_from': ['rep2_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
+				{'name': 'pooled_narrowpeaks_bb',	'derived_from': ['pooled_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
+				{'name': 'rep1_pvalue_signal',		'derived_from': ['rep1_bam'],				'metadata': pvalue_signal_metadata},
+				{'name': 'rep2_pvalue_signal',		'derived_from': ['rep2_bam'],				'metadata': pvalue_signal_metadata},
+				{'name': 'pooled_pvalue_signal',	'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': pvalue_signal_metadata},
+				{'name': 'rep1_fc_signal',			'derived_from': ['rep1_bam'],				'metadata': fc_signal_metadata},
+				{'name': 'rep2_fc_signal',			'derived_from': ['rep2_bam'],				'metadata': fc_signal_metadata},
+				{'name': 'pooled_fc_signal',		'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': fc_signal_metadata}
+			],
+			'qc': [],
+			'stage_metadata': {} # initialized below
+		},
+		"Overlap narrowpeaks": {
+			'files': [
+				{'name': 'overlapping_peaks',		'derived_from': ['rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks'], 'metadata': replicated_narrowpeak_metadata},
+				{'name': 'overlapping_peaks_bb',	'derived_from': ['overlapping_peaks'], 'metadata': replicated_narrowpeak_bb_metadata}
+			],
+			'qc': ['npeaks_in', 'npeaks_out', 'npeaks_rejected'],
+			'stage_metadata': {} # initialized below
+		}
+	}
+
+	for stage_name in peak_stages:
+		if not stage_name.startswith('_'):
+			peak_stages[stage_name].update({'stage_metadata': get_stage_metadata(peaks_analysis, stage_name)})
+
+	return peak_stages
 
 def resolve_name_to_accession(stages, output_name):
 	#given a dict of named stages, and the name of one of the stages' outputs, return that output's
@@ -88,7 +239,11 @@ def resolve_name_to_accession(stages, output_name):
 	for stage_name in stages:
 		for output in stages[stage_name]['files']:
 			if output['name'] == output_name:
-				return output['encode_object'].get('accession')
+				encode_object = output.get('encode_object')
+				if encode_object:
+					return encode_object.get('accession')
+				else:
+					return None
 
 def patch_file(payload, keypair, server, dryrun, force):
 	logger.debug('in patch_file with %s' %(payload))
@@ -96,6 +251,8 @@ def patch_file(payload, keypair, server, dryrun, force):
 	url = urlparse.urljoin(server,'files/%s' %(accession))
 	if dryrun:
 		logger.info("Dry run.  Would PATCH: %s with %s" %(accession, payload))
+		logger.info("Dry run.  Returning unchanged file object")
+		new_file_object = common.encoded_get(urlparse.urljoin(server,'/files/%s' %(accession)), keypair)
 	else:
 		r = requests.patch(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
 		try:
@@ -118,6 +275,7 @@ def accession_file(f, keypair, server, dryrun, force):
 	#upload to S3
 	#remove the local file (to save space)
 	#return the ENCODEd file object
+	logger.debug('in accession_file with f %s' %(f))
 	dx = f.pop('dx')
 	for tag in dx.tags:
 		m = re.search(r'(ENCFF\d{3}\D{3})|(TSTFF\D{6})', tag)
@@ -157,7 +315,7 @@ def accession_file(f, keypair, server, dryrun, force):
 			logger.info("Duplicate detected, but force=true, so continuing")
 		else:
 			logger.info("Duplicate detected, skipping")
-			return
+			return duplicate_item
 
 	local_fname = dx.name
 	logger.info("Downloading %s" %(local_fname))
@@ -252,110 +410,30 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dry
 			logger.info("New analysis_step_run uuid: %s" %(new_object.get('uuid')))
 	return new_object
 
-def accession_analysis_files(analysis_id, keypair, server, assembly, dryrun, force):
-	analysis_id = analysis_id.strip()
-	analysis = dxpy.describe(analysis_id)
-	project = analysis.get('project')
+def accession_analysis_files(peaks_analysis_id, keypair, server, dryrun, force):
+	peaks_analysis_id = peaks_analysis_id.strip()
+	peaks_analysis = dxpy.describe(peaks_analysis_id)
+	project = peaks_analysis.get('project')
 
-	m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
+	m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
 	if m:
 		experiment_accession = m.group(1)
 		logger.info(experiment_accession)
 	else:
-		logger.info("No accession in %s, skipping." %(analysis['executableName']))
+		logger.info("No accession in %s, skipping." %(peaks_analysis['executableName']))
 		return
 
 	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-	rep1_bam, rep2_bam = get_rep_bams(experiment, assembly, keypair, server)
-	rep1_fastqs, rep2_fastqs = get_rep_fastqs(experiment, keypair, server)
 
-	common_metadata = {
-		'assembly': assembly,
-		'lab': 'encode-processing-pipeline',
-		'award': 'U41HG006992',
-		}
+	mapping_stages = get_mapping_stages(peaks_analysis, experiment, keypair, server)
 
-	narrowpeak_metadata = common.merge_dicts(
-		{
-			'file_format': 'bed',
-			'file_format_type': 'narrowPeak',
-			'file_format_specifications': ['ENCODE:narrowPeak.as'],
-			'output_type': 'peaks'
-		}, common_metadata)
-	replicated_narrowpeak_metadata = common.merge_dicts(
-		{
-			'file_format': 'bed',
-			'file_format_type': 'narrowPeak',
-			'file_format_specifications': ['ENCODE:narrowPeak.as'],
-			'output_type': 'replicated peaks'
-		}, common_metadata)
+	peak_stages = get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server)
 
-	narrowpeak_bb_metadata = common.merge_dicts(
-		{'file_format': 'bigBed', 'file_format_type': 'narrowPeak', 'file_format_specifications': ['ENCODE:narrowPeak.as'], 'output_type': 'peaks'}, common_metadata)
-	replicated_narrowpeak_bb_metadata = common.merge_dicts(
-		{'file_format': 'bigBed', 'file_format_type': 'narrowPeak', 'file_format_specifications': ['ENCODE:narrowPeak.as'], 'output_type': 'replicated peaks'}, common_metadata)
-
-	fc_signal_metadata = 	common.merge_dicts(
-		{'file_format': 'bigWig', 'output_type': 'fold change over control'}, common_metadata)
-	pvalue_signal_metadata = common.merge_dicts(
-		{'file_format': 'bigWig', 'output_type': 'signal p-value'}, common_metadata)
-
-	# mapping_stages = {
-	# 	"_inputs": {
-	# 		'files': [
-	# 			{'name': 'rep1_fastqs',				'derived_from': None,					'metadata': rep1_fastqs},
-	# 			{'name': 'rep2_fastqs',				'derived_from': None,					'metadata': rep2_fastqs}
-	# 		],
-	# 		'qc': []
-	# 	},
-	# 	"Map ENCSR*" : {
-	# 		'files': [
-	# 			{'name': 'rep1_bam',				'derived_from': 'rep1_fastqs',			'metadata': rep1_bam},
-	# 			{'name': 'rep2_bam',				'derived_from': 'rep2_fastqs',			'metadata': rep2_bam}
-	# 		],
-	# 		'qc': []
-	# 	}
-	# }
-
-	peak_stages = { #derived_from is by name now, will be patched into the file metadata after all files are accessioned
-		"_inputs": {
-			'files': [
-				{'name': 'rep1_bam',				'derived_from': 'rep1_fastqs',			'metadata': {}, 'encode_object': rep1_bam},
-				{'name': 'rep2_bam',				'derived_from': 'rep2_fastqs',			'metadata': {}, 'encode_object': rep2_bam}
-			],
-			'qc': []
-		},
-		"ENCODE Peaks" : {
-			'files': [
-				{'name': 'rep1_narrowpeaks',		'derived_from': ['rep1_bam'],				'metadata': narrowpeak_metadata},
-				{'name': 'rep2_narrowpeaks',		'derived_from': ['rep2_bam'],				'metadata': narrowpeak_metadata},
-				{'name': 'pooled_narrowpeaks',		'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': narrowpeak_metadata},
-				{'name': 'rep1_narrowpeaks_bb',		'derived_from': ['rep1_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
-				{'name': 'rep2_narrowpeaks_bb',		'derived_from': ['rep2_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
-				{'name': 'pooled_narrowpeaks_bb',	'derived_from': ['rep1_narrowpeaks', 'rep2_narrowpeaks'],	'metadata': narrowpeak_bb_metadata},
-				{'name': 'rep1_pvalue_signal',		'derived_from': ['rep1_bam'],				'metadata': pvalue_signal_metadata},
-				{'name': 'rep2_pvalue_signal',		'derived_from': ['rep2_bam'],				'metadata': pvalue_signal_metadata},
-				{'name': 'pooled_pvalue_signal',	'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': pvalue_signal_metadata},
-				{'name': 'rep1_fc_signal',			'derived_from': ['rep1_bam'],				'metadata': fc_signal_metadata},
-				{'name': 'rep2_fc_signal',			'derived_from': ['rep2_bam'],				'metadata': fc_signal_metadata},
-				{'name': 'pooled_fc_signal',		'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': fc_signal_metadata}
-			],
-			'qc': []
-		},
-		"Overlap narrowpeaks": {
-			'files': [
-				{'name': 'overlapping_peaks',		'derived_from': ['rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks'], 'metadata': replicated_narrowpeak_metadata},
-				{'name': 'overlapping_peaks_bb',	'derived_from': ['overlapping_peaks'], 'metadata': replicated_narrowpeak_bb_metadata}
-			],
-			'qc': ['npeaks_in', 'npeaks_out', 'npeaks_rejected']
-		}
-	}
-
+	#accession all the output files, except don't accession what's in _input (_*)
 	for (stage_name, outputs) in peak_stages.iteritems():
 		if not stage_name.startswith('_'):
-			stage_metadata = next(s['execution'] for s in analysis.get('stages') if s['execution']['name'] == stage_name)
-			outputs.update({'stage_metadata': stage_metadata})
-			for file_metadata in outputs['files']:
+			stage_metadata = outputs['stage_metadata']
+			for i,file_metadata in enumerate(outputs['files']):
 				dx = dxpy.DXFile(stage_metadata['output'][file_metadata['name']], project=project)
 				dx_desc = dx.describe()
 				post_metadata = {
@@ -368,9 +446,13 @@ def accession_analysis_files(analysis_id, keypair, server, assembly, dryrun, for
 					'file_size': dx_desc.get('size'),
 					'submitted_file_name': dx.get_proj_id() + ':' + '/'.join([dx.folder,dx.name])}
 				post_metadata.update(file_metadata['metadata'])
-				file_metadata.update({'encode_object': accession_file(post_metadata, keypair, server, dryrun, force)})
+				peak_stages[stage_name]['files'][i].update({'encode_object': accession_file(post_metadata, keypair, server, dryrun, force)})
 
-	#now that we have accessions, loop again and patch derived_from
+				logger.debug('peak_stages:')
+				logger.debug('%s' %(json.dumps(peak_stages[stage_name]['files'][i], sort_keys=True, indent=4, separators=(',', ': '))))
+
+
+	#now that we have file accessions, loop again and patch derived_from, except don't patch what's in _input
 	files = []
 	for (stage_name, outputs) in peak_stages.iteritems():
 		if not stage_name.startswith('_'):
@@ -448,7 +530,7 @@ def accession_analysis_files(analysis_id, keypair, server, assembly, dryrun, for
 			file_accession = resolve_name_to_accession(peak_stages, file_name)
 			patch_metadata = {
 				'accession': file_accession,
-				'step_run': analysis_step_run['@id']
+				'step_run': analysis_step_run.get('@id')
 			}
 			patched_file = patch_file(patch_metadata, keypair, server, dryrun, force)
 
@@ -459,8 +541,10 @@ def accession_analysis_files(analysis_id, keypair, server, assembly, dryrun, for
 def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline, analysis_ids=None, infile=None, project=None):
 
 	if debug:
+		logger.info('setting logger level to logging.DEBUG')
 		logger.setLevel(logging.DEBUG)
 	else:
+		logger.info('setting logger level to logging.INFO')
 		logger.setLevel(logging.INFO)
 
 	if infile is not None:
@@ -476,9 +560,11 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline, analysis
 	authid, authpw, server = common.processkey(key, keyfile)
 	keypair = (authid,authpw)
 
+	common_metadata.update({'assembly': assembly})
+
 	for (i, analysis_id) in enumerate(ids):
 		logger.debug('debug %s' %(analysis_id))
-		accessioned_files = accession_analysis_files(analysis_id, keypair, server, assembly, dryrun, force)
+		accessioned_files = accession_analysis_files(analysis_id, keypair, server, dryrun, force)
 
 	logger.info("Accessioned: %s" %([f.get('accession') for f in accessioned_files]))
 
@@ -491,311 +577,3 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline, analysis
 	return output
 
 dxpy.run()
-
-def new_accession_analysis(analysis_id, pipeline, keypair, server, assembly, dryrun, force):
-	analysis_id = analysis_id.strip()
-	analysis = dxpy.describe(analysis_id)
-	project = analysis.get('project')
-
-	m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
-	if m:
-		experiment_accession = m.group(1)
-		logger.info(experiment_accession)
-	else:
-		logger.error("No accession in %s, skipping." %(analysis['executableName']))
-		return
-
-	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-
-	pipeline_id = pipeline
-	pipeline = common.encoded_get(urlparse.urljoin(server,'/pipelines/%s' %(pipeline_id)), keypair)
-
-	#loop through pipeline analysis_steps
-	#	pull current_version analysis_step_version (or overridden by command-line arg?)
-	#	build derived_from list from input_file_types
-	#	loop through list of output_file_types
-	#		look in ouput_map with output_file_type key for list of stage_name.outputs
-	#	if there are output_files
-	#		create analysis_step_run
-	#		accession each file, including derived_from
-
-	analysis_step_uris = pipeline.get('analysis_steps')
-	if not analysis_step_uris:
-		logger.error('Pipeline %s has no analysis_steps, skipping.' %(pipeline['accession']))
-		return
-
-	analysis_step_map = {
-
-		'bwa-indexing-step-v-1' : {
-			'input_file_types' : {
-				'genome reference': [
-					{'stage_name': None, 'output_name': None, 'optional': False, 'dx_file': None, 'end_file': None}
-				]
-			},
-			'output_file_types' : {
-				'genome index': [
-					{'stage_name': None, 'output_name': None, 'optional': False, 'dx_file': None, 'end_file': None}
-				]
-			}
-		},
-
-		'histone-bwa-alignment-step-v-1' : {
-			'input_file_types' : {
-				'genome index' : [ #same as bwa-indexing-step-v-1.output_file_types.genome index
-					None
-				],
-				'reads' : [
-					{'stage_name': 'Map *', 'output_name': 'reads1', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'Map *', 'output_name': 'reads2', 'optional': True, 'dx_file': None, 'enc_file': None}
-				]
-			},
-			'output_file_types' : {
-				'alignments' : [
-					{'stage_name': 'Filter and QC *', 'output_name': 'mapped_reads', 'optional': False, 'dx_file': None, 'enc_file': None}
-				]
-			}
-		},
-
-		'histone-spp-peak-calling-step-v-1' : {
-			'input_file_types' : {
-				'alignments' : [ #same as histone-bwa-alignment-step-v-1.output_file_types.alignments
-					{'stage_name': 'Filter and QC *', 'output_name': 'mapped_reads', 'optional': False, 'dx_file': None, 'enc_file': None}
-				]
-			},
-			'output_file_types' : {
-				'fold change over control' : [
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_fc_signal', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_fc_signal', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_fc_signal', 'optional': False, 'dx_file': None, 'enc_file': None}
-				],
-				'signal p-value' : [
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_pvalue_signal', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_pvalue_signal', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_pvalue_signal', 'optional': False, 'dx_file': None, 'enc_file': None}
-				],
-				'peaks' : [
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None}
-				]
-			}
-		},
-
-		'histone-overlap-peaks-step-v-1' : {
-			'input_file_types' : {
-				'peaks': [ #same as histone-spp-peak-calling-step-v-1.output_file_types.peaks
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None}
-				]
-			},
-			'output_file_types' : {
-				'replicated peaks' : [
-					{'stage_name': 'Overlap narrowpeaks', 'output_name': 'overlapping_peaks', 'optional': False, 'dx_file': None, 'enc_file': None}
-				]
-			}
-		},
-
-		'histone-spp-peaks-to-bigbed-step-v-1' : {
-			'input_file_types' : {
-				'peaks': [ #same as histone-spp-peak-calling-step-v-1.output_file_types.peaks
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_narrowpeaks', 'optional': False, 'dx_file': None, 'enc_file': None}
-				]
-			},
-			'output_file_types' : {
-				'bigBed' : [
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep1_narrowpeaks_bb', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'rep2_narrowpeaks_bb', 'optional': False, 'dx_file': None, 'enc_file': None},
-					{'stage_name': 'ENCODE Peaks', 'output_name': 'pooled_narrowpeaks_bb', 'optional': False, 'dx_file': None, 'enc_file': None}
-				]
-			}
-		},
-
-		'histone-spp-replicated-peaks-to-bigbed-step-v-1' : {
-			'input_file_types' : {
-				'replicated peaks' : [ #same as histone-overlap-peaks-step-v-1.output_file_types.replicated peaks
-					{'stage_name': 'Overlap narrowpeaks', 'output_name': 'overlapping_peaks', 'optional': False, 'dx_file': None, 'enc_file': None}
-				]
-			},
-			'output_file_types' : {
-				'bigBed' : [
-					{'stage_name': 'Overlap narrowpeaks', 'output_name': 'overlapping_peaks_bb', 'optional': False, 'dx_file': None, 'enc_file': None}
-				]
-			}
-		}
-	}
-
-	for analysis_step in [common.encoded_get(urlparse.urljoin(server, uri), keypair) for uri in analysis_step_uris]:
-
-		current_version_uri = analysis_step.get('current_version')
-		if not current_version_uri:
-			logger.warning('analysis_step %s has no current_version, skipping that step' %(analysis_step.get('name')))
-			continue
-		analysis_step_version = common.encoded_get(urlparse.urljoin(server, current_version_uri), keypair)
-
-		output_file_types = analysis_step.get('output_file_types')
-		if not output_file_types:
-			logger.warning('analysis_step %s has no output_file_types, skipping that step' %(analysis_step.get('name')))
-			continue
-		for output_file_type in output_file_types:
-			print "%s %s" %(analysis_step.get('name'),output_file_type)
-			for output in analysis_step_map[analysis_step.get('name')]['output_file_types'][output_file_type]:
-				print output
-
-
-	'''
-	#(stage_name, output_name) : 
-	outputs_map = {
-		('')
-	}
-
-	MAPPING_STEP = 'versionof:histone-bwa-alignment-step-v-1'
-	MAPPING_STAGE_OUTPUTS = [
-		{'Filter and QC' : ['mapped_reads']}
-	]
-
-	PEAK_CALLING_STEP = 'vesionof:histone-spp-peak-calling-step-v-1'
-	PEAK_CALLING_STAGE_OUTPUTS = [
-		{'ENCODE Peaks' : [
-			'rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks',
-			'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal',
-			'rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal']}]
-
-	REPLICATE_CONCORDANCE_STEP = 'versionof:histone-overlap-peaks-step-v-1'
-	REPLICATE_CONCORDANCE_STAGE_OUTPUTS = [
-		{''}]
-
-	#analysis_step_version : [(stage_name, [output_name,...]),...]
-	pipeline_map = {
-		MAPPING_STEP : MAPPING_STAGE_OUTPUTS
-		PEAK_CALLING_STEP : PEAK_CALLING_STAGE_OUTPUTS
-		REPLICATE_CONCORDANCE_STEP :
-		BED2BIGBED_STEP: 
-	}
-
-
-
-
-	bams = get_rep_bams(experiment, assembly, keypair, server)
-	rep1_bam = bams[0]['accession']
-	rep2_bam = bams[1]['accession']
-
-	common_metadata = {
-		'assembly': assembly,
-		'lab': 'encode-processing-pipeline',
-		'award': 'U41HG006992',
-		}
-
-	narrowpeak_metadata = common.merge_dicts(
-		{'file_format': 'bed', 'file_format_type': 'narrowPeak', 'file_format_specifications': ['ENCODE:narrowPeak.as'], 'output_type': 'peaks'}, common_metadata)
-	replicated_narrowpeak_metadata = common.merge_dicts(
-		{'file_format': 'bed', 'file_format_type': 'narrowPeak', 'file_format_specifications': ['ENCODE:narrowPeak.as'], 'output_type': 'replicated peaks'}, common_metadata)
-
-	# gappedpeak_metadata = common.merge_dicts(
-	# 	{'file_format': 'bed_gappedPeak', 'file_format_specifications': ['ENCODE:gappedPeak.as'], 'output_type': 'peaks'}, common_metadata)
-	# replicated_gappedpeak_metadata = common.merge_dicts(
-	# 	{'file_format': 'bed_gappedPeak', 'file_format_specifications': ['ENCODE:gappedPeak.as'], 'output_type': 'replicated peaks'}, common_metadata)
-
-	narrowpeak_bb_metadata = common.merge_dicts(
-		{'file_format': 'bigBed', 'file_format_type': 'narrowPeak', 'file_format_specifications': ['ENCODE:narrowPeak.as'], 'output_type': 'peaks'}, common_metadata)
-	replicated_narrowpeak_bb_metadata = common.merge_dicts(
-		{'file_format': 'bigBed', 'file_format_type': 'narrowPeak', 'file_format_specifications': ['ENCODE:narrowPeak.as'], 'output_type': 'replicated peaks'}, common_metadata)
-
-	# gappedpeak_bb_metadata = common.merge_dicts(
-	# 	{'file_format': 'gappedPeak', 'file_format_specifications': ['ENCODE:gappedPeak.as'], 'output_type': 'peaks'}, common_metadata)
-	# replicated_gappedpeak_bb_metadata = common.merge_dicts(
-	# 	{'file_format': 'gappedPeak', 'file_format_specifications': ['ENCODE:gappedPeak.as'], 'output_type': 'replicated peaks'}, common_metadata)
-
-	fc_signal_metadata = 	common.merge_dicts(
-		{'file_format': 'bigWig', 'output_type': 'fold change over control'}, common_metadata)
-	pvalue_signal_metadata = common.merge_dicts(
-		{'file_format': 'bigWig', 'output_type': 'signal p-value'}, common_metadata)
-
-	stage_outputs = {
-		"ENCODE Peaks" : {
-			'files': [
-				common.merge_dicts({'name': 'rep1_narrowpeaks', 		'derived_from': [rep1_bam]},			narrowpeak_metadata),
-				common.merge_dicts({'name': 'rep2_narrowpeaks', 		'derived_from': [rep2_bam]},			narrowpeak_metadata),
-				common.merge_dicts({'name': 'pooled_narrowpeaks',		'derived_from': [rep1_bam, rep2_bam]},	narrowpeak_metadata),
-				common.merge_dicts({'name': 'rep1_narrowpeaks_bb', 		'derived_from': [rep1_bam]},			narrowpeak_bb_metadata), # TODO derived from bed
-				common.merge_dicts({'name': 'rep2_narrowpeaks_bb', 		'derived_from': [rep2_bam]},			narrowpeak_bb_metadata), # TODO derived from bed
-				common.merge_dicts({'name': 'pooled_narrowpeaks_bb',	'derived_from': [rep1_bam, rep2_bam]},	narrowpeak_bb_metadata), # TODO derived from bed
-				# common.merge_dicts({'name': 'rep1_gappedpeaks', 		'derived_from': [rep1_bam]},			gappedpeak_metadata),
-				# common.merge_dicts({'name': 'rep2_gappedpeaks', 		'derived_from': [rep2_bam]},			gappedpeak_metadata),
-				# common.merge_dicts({'name': 'pooled_gappedpeaks', 		'derived_from': [rep1_bam, rep2_bam]},	gappedpeak_metadata),
-				# common.merge_dicts({'name': 'rep1_gappedpeaks_bb', 		'derived_from': [rep1_bam]},			gappedpeak_bb_metadata),
-				# common.merge_dicts({'name': 'rep2_gappedpeaks_bb', 		'derived_from': [rep2_bam]},			gappedpeak_bb_metadata),
-				# common.merge_dicts({'name': 'pooled_gappedpeaks_bb', 	'derived_from': [rep1_bam, rep2_bam]},	gappedpeak_bb_metadata),
-				common.merge_dicts({'name': 'rep1_pvalue_signal',		'derived_from': [rep1_bam]},			pvalue_signal_metadata),
-				common.merge_dicts({'name': 'rep2_pvalue_signal',		'derived_from': [rep2_bam]},			pvalue_signal_metadata),
-				common.merge_dicts({'name': 'pooled_pvalue_signal',		'derived_from': [rep1_bam, rep2_bam]},	pvalue_signal_metadata),
-				common.merge_dicts({'name': 'rep1_fc_signal',			'derived_from': [rep1_bam]},			fc_signal_metadata),
-				common.merge_dicts({'name': 'rep2_fc_signal',			'derived_from': [rep2_bam]},			fc_signal_metadata),
-				common.merge_dicts({'name': 'pooled_fc_signal',			'derived_from': [rep1_bam, rep2_bam]},	fc_signal_metadata)],
-			'qc': []},
-		"Overlap narrowpeaks": {
-			'files': [
-				common.merge_dicts({'name': 'overlapping_peaks',		'derived_from': [rep1_bam, rep2_bam]},	replicated_narrowpeak_metadata), #TODO derived from beds
-				common.merge_dicts({'name': 'overlapping_peaks_bb',		'derived_from': [rep1_bam, rep2_bam]},	replicated_narrowpeak_bb_metadata)], #TOD derived from overlapping bed
-			'qc': ['npeaks_in', 'npeaks_out', 'npeaks_rejected']},
-		# "Overlap gappedpeaks": {
-		# 	'files': [
-		# 		common.merge_dicts({'name': 'overlapping_peaks',		'derived_from': [rep1_bam, rep2_bam]},	replicated_gappedpeak_metadata),
-		# 		common.merge_dicts({'name': 'overlapping_peaks_bb',		'derived_from': [rep1_bam, rep2_bam]},	replicated_gappedpeak_bb_metadata)],
-		# 	'qc': ['npeaks_in', 'npeaks_out', 'npeaks_rejected']}
-		}
-
-	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-	rep1_bam, rep2_bam = get_rep_bams(experiment, assembly, keypair, server)
-
-	files = []
-	for (stage_name, outputs) in stage_outputs.iteritems():
-		stage_metadata = next(s['execution'] for s in analysis.get('stages') if s['execution']['name'] == stage_name)
-		for static_metadata in outputs['files']:
-			output_name = static_metadata['name']
-			dx = dxpy.DXFile(stage_metadata['output'][output_name], project=project)
-			file_metadata = {
-				'dx': dx,
-				'notes': {
-					'dx-id': dx.get_id(),
-					'dx-createdBy': {
-						'job': stage_metadata['id'], #TODO this should be the most proximal job that created the file, not the stage (i.e. MACS2 for rep1 rather than ENCODE Peaks) 
-						'executable': stage_metadata['executable'], #todo get applet ID
-						'user': stage_metadata['launchedBy']},
-					'qc': dict(zip(outputs['qc'],[stage_metadata['output'][metric] for metric in outputs['qc']]))}, #'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
-				'dataset': experiment.get('accession'),
-				'file_size': dx.describe().get('size'),
-				'submitted_file_name': dx.get_proj_id() + ':' + '/'.join([dx.folder,dx.name])}
-			static_metadata.pop('name')
-			file_metadata.update(static_metadata)
-			files.append(file_metadata)
-
-	for f in files:
-		f.update({'new_file_object' : accession_file(f, keypair, server, dryrun, force)})
-
-	return files
-
-def accession_analysis(analysis_id, pipeline, keypair, server, assembly, dryrun, force):
-	analysis_id = analysis_id.strip()
-	analysis = dxpy.describe(analysis_id)
-	project = analysis.get('project')
-
-	m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
-	if m:
-		experiment_accession = m.group(1)
-		logger.info(experiment_accession)
-	else:
-		logger.error("No accession in %s, skipping." %(analysis['executableName']))
-		return
-
-	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-
-	pipeline_id = pipeline
-	pipeline = common.encoded_get(urlparse.urljoin(server,'/pipelines/%s' %(pipeline_id)), keypair)
-
-	#just list them in the order they should be accessioned.
-'''
-	
-
