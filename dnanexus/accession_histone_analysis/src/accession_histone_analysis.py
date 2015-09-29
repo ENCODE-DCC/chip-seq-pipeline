@@ -475,64 +475,82 @@ def accession_analysis_files(peaks_analysis_id, keypair, server, dryrun, force):
 					continue
 
 	analysis_step_versions = {
-		'bwa-indexing-step-v-1' : {
-			'stage_name' : "",
-			'file_names' : [],
-			'status' : 'finished'
-		},
-		'histone-bwa-alignment-step-v-1' : {
-			'stage_name' : "",
-			'file_names' : [],
-			'status' : 'finished'
-		},
-		'histone-spp-peak-calling-step-v-1' : {
-			'stage_name' : "ENCODE Peaks",
-			'file_names' : ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal', 'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal', 'rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks'],
-			'status' : 'finished'
-		},
-		'histone-overlap-peaks-step-v-1' : {
-			'stage_name' : "Overlap narrowpeaks",
-			'file_names' : ['overlapping_peaks'],
-			'status' : 'finished'
-		},
-		'histone-spp-peaks-to-bigbed-step-v-1' : {
-			'stage_name' : "ENCODE Peaks",
-			'file_names' : ['rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb', 'pooled_narrowpeaks_bb'],
-			'status' : 'virtual'
-		},
-		'histone-spp-replicated-peaks-to-bigbed-step-v-1' : {
-			'stage_name' : "Overlap narrowpeaks",
-			'file_names' : ['overlapping_peaks_bb'],
-			'status' : 'virtual'
-		}
+		'bwa-indexing-step-v-1' : [
+			{
+				'stage' : "",
+				'file_names' : [],
+				'status' : 'finished'
+			}
+		],
+		'histone-bwa-alignment-step-v-1' : [
+			{
+				'stage' : mapping_stages[0]['Filter and QC*'],
+				'file_names' : ['rep1_bam'],
+				'status' : 'finished'
+			},
+			{
+				'stage' : mapping_stages[1]['Filter and QC*'],
+				'file_names' : ['rep2_bam'],
+				'status' : 'finished'
+			}
+		],
+		'histone-spp-peak-calling-step-v-1' : [
+			{
+				'stage' : peak_stages['ENCODE Peaks'],
+				'file_names' : ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal', 'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal', 'rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks'],
+				'status' : 'finished'
+			}
+		],
+		'histone-overlap-peaks-step-v-1' : [
+			{
+				'stage' : peak_stages['Overlap narrowpeaks'],
+				'file_names' : ['overlapping_peaks'],
+				'status' : 'finished'
+			}
+		],
+		'histone-spp-peaks-to-bigbed-step-v-1' : [
+			{
+				'stage' : peak_stages['ENCODE Peaks'],
+				'file_names' : ['rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb', 'pooled_narrowpeaks_bb'],
+				'status' : 'virtual'
+			}
+		],
+		'histone-spp-replicated-peaks-to-bigbed-step-v-1' : [
+			{
+				'stage' : peak_stages['Overlap narrowpeaks'],
+				'file_names' : ['overlapping_peaks_bb'],
+				'status' : 'virtual'
+			}
+		]
 	}
 
-	for (analysis_step_version_name, step) in analysis_step_versions.iteritems():
-		if not (step['stage_name'] and step['file_names']):
-			logger.warning('%s missing stage metadata (files or stage_name) ... skipping' %(analysis_step_version_name))
-			continue
-		jobid = peak_stages[step['stage_name']]['stage_metadata']['id']
-		analysis_step_version = 'versionof:%s' %(analysis_step_version_name)
-		alias = 'dnanexus:%s' %(jobid)
-		if step.get('status') == 'virtual':
-			alias += '-virtual-file-conversion-step'
-		analysis_step_run_metadata = {
-			'aliases': [alias],
-			'analysis_step_version': analysis_step_version,
-			'status': step['status'],
-			'dx_applet_details': [{
-				'dx_status': 'finished',
-				'dx_job_id': 'dnanexus:%s' %(jobid),
-			}]
-		}
-		analysis_step_run = accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force)
-		for file_name in step['file_names']:
-			file_accession = resolve_name_to_accession(peak_stages, file_name)
-			patch_metadata = {
-				'accession': file_accession,
-				'step_run': analysis_step_run.get('@id')
+	for (analysis_step_version_name, steps) in analysis_step_versions.iteritems():
+		for step in steps:
+			if not (step['stage'] and step['file_names']):
+				logger.warning('%s missing stage metadata (files or stage_name) ... skipping' %(analysis_step_version_name))
+				continue
+			jobid = step['stage']['stage_metadata']['id']
+			analysis_step_version = 'versionof:%s' %(analysis_step_version_name)
+			alias = 'dnanexus:%s' %(jobid)
+			if step.get('status') == 'virtual':
+				alias += '-virtual-file-conversion-step'
+			analysis_step_run_metadata = {
+				'aliases': [alias],
+				'analysis_step_version': analysis_step_version,
+				'status': step['status'],
+				'dx_applet_details': [{
+					'dx_status': 'finished',
+					'dx_job_id': 'dnanexus:%s' %(jobid),
+				}]
 			}
-			patched_file = patch_file(patch_metadata, keypair, server, dryrun, force)
+			analysis_step_run = accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force)
+			for file_name in step['file_names']:
+				file_accession = resolve_name_to_accession(peak_stages, file_name)
+				patch_metadata = {
+					'accession': file_accession,
+					'step_run': analysis_step_run.get('@id')
+				}
+				patched_file = patch_file(patch_metadata, keypair, server, dryrun, force)
 
 	return files
 
