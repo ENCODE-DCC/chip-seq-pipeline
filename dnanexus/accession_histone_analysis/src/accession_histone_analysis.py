@@ -11,7 +11,7 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, sys, subprocess, logging, dxpy, json, re, socket, getpass, urlparse, datetime, requests, time
+import os, sys, subprocess, logging, dxpy, json, re, socket, getpass, urlparse, datetime, requests, time, pprint
 import common
 import dateutil.parser
 
@@ -27,7 +27,7 @@ logger.propagate = False
 
 common_metadata = {
 	'lab': 'encode-processing-pipeline',
-	'award': 'U41HG006992',
+	'award': 'U41HG006992'
 }
 
 def get_rep_bams(experiment, assembly, keypair, server):
@@ -112,9 +112,19 @@ def get_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
 	mapping_stages = [analysis.get('stages') for analysis in mapping_analyses]
 	#mapping_stages is a list of lists (one list per rep) of stages, each of which contains somewhere the Filter and QC stage for that rep
 	#So we need to flatten that list of lists back to a single list with one stage per rep
+	input_stages = [next(stage for stage in rep_mapping_stages if stage['execution']['name'].startswith("Gather inputs")) for rep_mapping_stages in mapping_stages]
 	filter_qc_stages = [next(stage for stage in rep_mapping_stages if stage['execution']['name'].startswith("Filter and QC")) for rep_mapping_stages in mapping_stages]
 	bams = [dxpy.describe(stage['execution']['output']['filtered_bam']) for stage in filter_qc_stages]
-	fastqs = get_rep_fastqs(experiment, keypair, server, reps)
+	experiment_fastqs = get_rep_fastqs(experiment, keypair, server, reps)
+	logger.info('Found experiment fastqs with accessions %s' %([[f.get('accession') for f in fq] for fq in experiment_fastqs]))
+	input_fastq_accessions = [stage['execution']['input']['reads1'] for stage in input_stages] #will be two arrays
+	for i,reads2_accession in enumerate([stage['execution']['input']['reads2'] for stage in input_stages]):
+		if reads2_accession:
+			input_fastq_accessions[i].append(reads2_accession)
+	logger.info('Found input fastq accessions %s' %(input_fastq_accessions))
+
+	fastqs = [[common.encoded_get(urlparse.urljoin(server,'files/%s' %(acc))) for acc in accessions] for accessions in input_fastq_accessions]
+	logger.info('Found input fastq objects with accessions %s' %([[f.get('accession') for f in fq] for fq in fastqs]))
 
 	bam_metadata = common.merge_dicts({
 		'file_format': 'bam',
@@ -123,15 +133,12 @@ def get_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
 
 	rep_mapping_stages = [
 		{
-			"_inputs": {
-				'files': [
-					{'name': 'rep%s_fastqs' %(n),	'derived_from': None,			'metadata': {}, 'encode_object': fastqs[n]}
-				],
-				'qc': []
-			},
 			"Filter and QC*" : {
-				'files': [
-					{'name': 'rep%s_bam' %(n),	'derived_from': 'rep%s_fastqs' %(n),	'metadata': bam_metadata}
+				'input_files': [
+					{'name': 'rep%s_fastqs' %(r),	'derived_from': None,					'metadata': None, 'encode_object': fastqs[n]}
+				],
+				'output_files': [
+					{'name': 'filtered_bam',		'derived_from': ['rep%s_fastqs' %(r)],	'metadata': bam_metadata}
 				],
 				'qc': [],
 				'stage_metadata': {} #initialized below
@@ -148,9 +155,6 @@ def get_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
 def get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server):
 
 	logger.debug('in get_peak_stages with peaks_analysis %s; experiment %s' %(peaks_analysis['id'], experiment['accession']))
-
-	#TODO this shoul actually get the bam accessioned (or found) by the accessioning step in this script
-	rep1_bam, rep2_bam = get_rep_bams(experiment, common_metadata['assembly'], keypair, server)
 
 	narrowpeak_metadata = common.merge_dicts({
 		'file_format': 'bed',
@@ -190,34 +194,30 @@ def get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server)
 		'output_type': 'signal p-value'},
 		common_metadata)
 
+	rep1_bam = (mapping_stages[0],'filtered_bam')
+	rep2_bam = (mapping_stages[1],'filtered_bam')
+
 	peak_stages = { #derived_from is by name here, will be patched into the file metadata after all files are accessioned
-		"_inputs": {
-			'files': [
-				{'name': 'rep1_bam',				'derived_from': 'rep1_fastqs',			'metadata': {}, 'encode_object': rep1_bam},
-				{'name': 'rep2_bam',				'derived_from': 'rep2_fastqs',			'metadata': {}, 'encode_object': rep2_bam}
-			],
-			'qc': []
-		},
 		"ENCODE Peaks" : {
-			'files': [
-				{'name': 'rep1_narrowpeaks',		'derived_from': ['rep1_bam'],				'metadata': narrowpeak_metadata},
-				{'name': 'rep2_narrowpeaks',		'derived_from': ['rep2_bam'],				'metadata': narrowpeak_metadata},
-				{'name': 'pooled_narrowpeaks',		'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': narrowpeak_metadata},
-				{'name': 'rep1_narrowpeaks_bb',		'derived_from': ['rep1_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
-				{'name': 'rep2_narrowpeaks_bb',		'derived_from': ['rep2_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
-				{'name': 'pooled_narrowpeaks_bb',	'derived_from': ['pooled_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
-				{'name': 'rep1_pvalue_signal',		'derived_from': ['rep1_bam'],				'metadata': pvalue_signal_metadata},
-				{'name': 'rep2_pvalue_signal',		'derived_from': ['rep2_bam'],				'metadata': pvalue_signal_metadata},
-				{'name': 'pooled_pvalue_signal',	'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': pvalue_signal_metadata},
-				{'name': 'rep1_fc_signal',			'derived_from': ['rep1_bam'],				'metadata': fc_signal_metadata},
-				{'name': 'rep2_fc_signal',			'derived_from': ['rep2_bam'],				'metadata': fc_signal_metadata},
-				{'name': 'pooled_fc_signal',		'derived_from': ['rep1_bam', 'rep2_bam'],	'metadata': fc_signal_metadata}
+			'output_files': [
+				{'name': 'rep1_narrowpeaks',		'derived_from': [rep1_bam],				'metadata': narrowpeak_metadata},
+				{'name': 'rep2_narrowpeaks',		'derived_from': [rep2_bam],				'metadata': narrowpeak_metadata},
+				{'name': 'pooled_narrowpeaks',		'derived_from': [rep1_bam, rep2_bam],	'metadata': narrowpeak_metadata},
+				{'name': 'rep1_narrowpeaks_bb',		'derived_from': ['rep1_narrowpeaks'],	'metadata': narrowpeak_bb_metadata},
+				{'name': 'rep2_narrowpeaks_bb',		'derived_from': ['rep2_narrowpeaks'],	'metadata': narrowpeak_bb_metadata},
+				{'name': 'pooled_narrowpeaks_bb',	'derived_from': ['pooled_narrowpeaks'],	'metadata': narrowpeak_bb_metadata},
+				{'name': 'rep1_pvalue_signal',		'derived_from': [rep1_bam],				'metadata': pvalue_signal_metadata},
+				{'name': 'rep2_pvalue_signal',		'derived_from': [rep2_bam],				'metadata': pvalue_signal_metadata},
+				{'name': 'pooled_pvalue_signal',	'derived_from': [rep1_bam, rep2_bam],	'metadata': pvalue_signal_metadata},
+				{'name': 'rep1_fc_signal',			'derived_from': [rep1_bam],				'metadata': fc_signal_metadata},
+				{'name': 'rep2_fc_signal',			'derived_from': [rep2_bam],				'metadata': fc_signal_metadata},
+				{'name': 'pooled_fc_signal',		'derived_from': [rep1_bam, rep2_bam],	'metadata': fc_signal_metadata}
 			],
 			'qc': [],
 			'stage_metadata': {} # initialized below
 		},
 		"Overlap narrowpeaks": {
-			'files': [
+			'output_files': [
 				{'name': 'overlapping_peaks',		'derived_from': ['rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks'], 'metadata': replicated_narrowpeak_metadata},
 				{'name': 'overlapping_peaks_bb',	'derived_from': ['overlapping_peaks'], 'metadata': replicated_narrowpeak_bb_metadata}
 			],
@@ -232,20 +232,36 @@ def get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server)
 
 	return peak_stages
 
-def resolve_name_to_accession(stages, output_name):
+def resolve_name_to_accessions(stages, stage_file_name):
 	#given a dict of named stages, and the name of one of the stages' outputs, return that output's
 	#ENCODE accession number
-	logger.debug('resolve_name_to_accession %s' %(output_name))
+	accessions = []
+	print "in resolve_name_to_accessions with stage_file_name"
+	print stage_file_name
+	logger.debug('in resolve_name_to_accessions with %s' %(stage_file_name))
 	for stage_name in stages:
-		for output in stages[stage_name]['files']:
-			if output['name'] == output_name:
-				encode_object = output.get('encode_object')
-				if encode_object:
-					return encode_object.get('accession')
+		if stages[stage_name].get('input_files'):
+			all_files = stages[stage_name].get('output_files') + stages[stage_name].get('input_files')
+		else:
+			all_files = stages[stage_name].get('output_files')
+		for stage_file in all_files:
+			logger.debug('stage_file name %s' %(stage_file['name']))
+			if stage_file['name'] == stage_file_name:
+				encode_object = stage_file.get('encode_object')
+				logger.info('encode_object %s' %(encode_object))
+				if isinstance(encode_object,list):
+					for obj in encode_object:
+						accessions.append(obj.get('accession'))
 				else:
-					return None
+					accessions.append(encode_object.get('accession'))
+	if accessions:
+		logger.debug('resolve_name_to_accessons returning %s' %(accessions))
+		return accessions
+	else:
+		logger.warning('Failed to resolve stage_file_name %s to accessions' %(stage_file_name))
+		return None
 
-def patch_file(payload, keypair, server, dryrun, force):
+def patch_file(payload, keypair, server, dryrun):
 	logger.debug('in patch_file with %s' %(payload))
 	accession = payload.pop('accession')
 	url = urlparse.urljoin(server,'files/%s' %(accession))
@@ -267,8 +283,35 @@ def patch_file(payload, keypair, server, dryrun, force):
 	
 	return new_file_object
 
+def post_file(payload, keypair, server, dryrun):
+	logger.debug('in post_file with %s' %(payload))
+	url = urlparse.urljoin(server,'files/')
+	if dryrun:
+		logger.info("Dry run.  Would post: %s" %(payload))
+		new_file_object = None
+	else:
+		r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
+		try:
+			r.raise_for_status()
+		except:
+			logger.warning('POST file object failed: %s %s' % (r.status_code, r.reason))
+			logger.warning(r.text)
+			new_file_object = None
+		else:
+			new_file_object = r.json()['@graph'][0]
+			logger.info("New accession: %s" %(new_file_object.get('accession')))
+	
+	return new_file_object
+
+
 def accession_file(f, keypair, server, dryrun, force):
 	#check for duplication
+	#- if it has ENCFF or TSTFF number in it's tag, or
+	#- if there exists an accessioned file with the same submitted_file_name that is not deleted, replaced, revoked and has the same size
+	#- then there should be a file with the same md5.  If not, warn of a mismatch between what's at DNAnexus and ENCODEd.
+	#- If same md5, return the existing object.  
+	#- Next, check if there's already a file with the same md5.  If it's deleted, replaced, revoked, then remodel it if --force=true,
+	#- Else warn and return None
 	#download
 	#calculate md5 and add to f.md5sum
 	#post file and get accession, upload credentials
@@ -277,45 +320,6 @@ def accession_file(f, keypair, server, dryrun, force):
 	#return the ENCODEd file object
 	logger.debug('in accession_file with f %s' %(f))
 	dx = f.pop('dx')
-	for tag in dx.tags:
-		m = re.search(r'(ENCFF\d{3}\D{3})|(TSTFF\D{6})', tag)
-		if m:
-			logger.info('%s appears to contain ENCODE accession number in tag %s ... skipping' %(dx.get_id(),m.group(0)))
-			if not force:
-				return
-	url = urlparse.urljoin(server, 'search/?type=file&submitted_file_name=%s&format=json&frame=object&limit=all' %(f.get('submitted_file_name')))
-	r = requests.get(url,auth=keypair)
-	try:
-		r.raise_for_status()
-	except:
-		logger.warning('Duplicate accession check failed: %s %s' % (r.status_code, r.reason))
-		logger.debug(r.text)
-		duplicate_found = False
-	else:
-		if r.json()['@graph']:
-			for duplicate_item in r.json()['@graph']:
-				if duplicate_item.get('status')  in ['deleted', 'replaced', 'revoked']:
-					logger.info("A potential duplicate file was found but its status=%s ... proceeding" %(duplicate_item.get('status')))
-					duplicate_found = False
-				else:
-					logger.info("Found potential duplicate: %s" %(duplicate_item.get('accession')))
-					local_file_size = dx.describe()['size']
-					if local_file_size ==  duplicate_item.get('file_size'):
-						logger.info("%s %s: File sizes match, assuming duplicate." %(str(local_file_size), duplicate_item.get('file_size')))
-						duplicate_found = True
-						break
-					else:
-						logger.info("%s %s: File sizes differ, assuming new file." %(str(local_file_size), duplicate_item.get('file_size')))
-						duplicate_found = False
-		else:
-			duplicate_found = False
-
-	if duplicate_found:
-		if force:
-			logger.info("Duplicate detected, but force=true, so continuing")
-		else:
-			logger.info("Duplicate detected, skipping")
-			return duplicate_item
 
 	local_fname = dx.name
 	logger.info("Downloading %s" %(local_fname))
@@ -323,69 +327,133 @@ def accession_file(f, keypair, server, dryrun, force):
 	f.update({'md5sum': common.md5(local_fname)})
 	f['notes'] = json.dumps(f.get('notes'))
 
-	url = urlparse.urljoin(server,'files/')
-	if dryrun:
-		logger.info("Dry run.  Would POST %s" %(f))
-		new_file_object = {}
-	else:
-		r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(f))
-		try:
-			r.raise_for_status()
-			new_file_object = r.json()['@graph'][0]
-			logger.info("New accession: %s" %(new_file_object.get('accession')))
-		except:
-			logger.warning('POST file object failed: %s %s' % (r.status_code, r.reason))
-			logger.warning(r.text)
-			new_file_object = {}
-			if r.status_code == 409:
-				try: #cautiously add a tag with the existing accession number
-					if calculated_md5 in r.json().get('detail'):
-						url = urlparse.urljoin(server,'/search/?type=file&md5sum=%s' %(calculated_md5))
-						r = requests.get(url,auth=keypair)
-						r.raise_for_status()
-						accessioned_file = r.json()['@graph'][0]
-						existing_accession = accessioned_file['accession']
-						dx.add_tags([existing_accession])
-						logger.info('Already accessioned.  Added %s to dxfile tags' %(existing_accession))
-				except:
-					logger.info('Conflict does not appear to be md5 ... continuing')
-		if new_file_object:
-			creds = new_file_object['upload_credentials']
-			env = os.environ.copy()
-			env.update({
-				'AWS_ACCESS_KEY_ID': creds['access_key'],
-				'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
-				'AWS_SECURITY_TOKEN': creds['session_token'],
-			})
-
-			logger.info("Uploading file.")
-			start = time.time()
-			try:
-				subprocess.check_call(['aws', 's3', 'cp', local_fname, creds['upload_url'], '--quiet'], env=env)
-			except subprocess.CalledProcessError as e:
-				# The aws command returns a non-zero exit code on error.
-				logger.error("Upload failed with exit code %d" % e.returncode)
-				upload_returncode = e.returncode
-			else:
-				upload_returncode = 0
-				end = time.time()
-				duration = end - start
-				logger.info("Uploaded in %.2f seconds" % duration)
-				dx.add_tags([new_file_object.get('accession')])
+	#check to see if md5 already in the database
+	url = server + '/md5:%s?format=json&frame=object' %(f.get('md5sum'))
+	r = requests.get(url, auth=keypair, headers={'accept': 'application/json'})
+	try:
+		r.raise_for_status()
+	except:
+		if r.status_code == 404:
+			logger.info('No md5 matches %s' %(f.get('md5sum')))
+			md5_exists = False
 		else:
-			upload_returncode = -1
+			logger.error('MD5 duplicate check. GET failed: %s %s' % (r.status_code, r.reason))
+			logger.error(r.text)
+			md5_exists = None
+	else:
+		md5_exists = r.json()
+
+	#check if an ENCODE accession number in in the list of tags, as it would be if accessioned by this script or similar scripts
+	for tag in dx.tags:
+		m = re.findall(r'ENCFF\d{3}\D{3}', tag)
+		if m:
+			logger.info('%s appears to contain ENCODE accession number in tag %s.' %(dx.get_id(),m))
+			accession_in_tag = True
+			# if not force:
+			# 	return
+		else:
+			accession_in_tag = False
+
+	# #check if an ENCODE file object exits with the same submitted_file_name
+	# url = urlparse.urljoin(server, 'search/?type=file&submitted_file_name=%s&format=json&frame=object&limit=all' %(f.get('submitted_file_name')))
+	# r = requests.get(url,auth=keypair)
+	# try:
+	# 	r.raise_for_status()
+	# except:
+	# 	logger.warning('Duplicate accession check failed: %s %s' % (r.status_code, r.reason))
+	# 	logger.debug(r.text)
+	# 	duplicate_submitted_file_name = False
+	# else:
+	# 	if r.json()['@graph']:
+	# 		duplicate_submitted_file_name = True
+	# 		for duplicate_item in r.json()['@graph']:
+	# 			if duplicate_item.get('status')  in ['deleted', 'replaced', 'revoked']:
+	# 				logger.info("A potential duplicate file was found but its status=%s ... proceeding" %(duplicate_item.get('status')))
+	# 				deprecated = True
+	# 			else:
+	# 				deprecated = False
+	# 				logger.info("Found potential duplicate: %s" %(duplicate_item.get('accession')))
+	# 				local_file_size = dx.describe()['size']
+	# 				if local_file_size ==  duplicate_item.get('file_size'):
+	# 					logger.info("%s %s: File sizes match, assuming duplicate." %(str(local_file_size), duplicate_item.get('file_size')))
+	# 					duplicate_file_size = True
+	# 					break
+	# 				else:
+	# 					logger.info("%s %s: File sizes differ, assuming new file." %(str(local_file_size), duplicate_item.get('file_size')))
+	# 					duplicate_file_size = False
+	# 	else:
+	# 		duplicate_submitted_file_name = False
+	# 		duplicate_file_size = False #tautologically
+
+	if md5_exists:
+		if force:
+			return patch_file(f, keypair, server, dryrun)
+		else:
+			logger.info("Returning duplicate file unchanged")
+			return md5_exists
+	else:
+		logger.info('posting new file %s' %(f))
+		new_file_object = post_file(f, keypair, server, dryrun)
+
+
+	# url = urlparse.urljoin(server,'files/')
+	# if dryrun:
+	# 	logger.info("Dry run.  Would POST %s" %(f))
+	# 	new_file_object = {}
+	# else:
+	# 	r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(f))
+	# 	try:
+	# 		r.raise_for_status()
+	# 	except:
+	# 		logger.warning('POST file object failed: %s %s' % (r.status_code, r.reason))
+	# 		logger.warning(r.text)
+	# 		new_file_object = {}
+	# 		if r.status_code == 409 and calculated_md5 in r.json().get('detail'):
+	# 			url = urlparse.urljoin(server,'/search/?type=file&md5sum=%s' %(calculated_md5))
+	# 			r = requests.get(url,auth=keypair)
+	# 			try:
+	# 				r.raise_for_status()
+	# 			except:
+	# 				logger.error('Search for matching md5 failed.')
+	# 			else:
+	# 				accessioned_file = r.json()['@graph'][0]
+	# 				existing_accession = accessioned_file['accession']
+	# 				dx.add_tags([existing_accession])
+	# 				logger.info('Already accessioned.  Added %s to dxfile tags' %(existing_accession))
+	# 		else:
+	# 			logger.info('Conflict does not appear to be md5 ... continuing')
+	# 	else:
+	# 		new_file_object = r.json()['@graph'][0]
+	# 		logger.info("New accession: %s" %(new_file_object.get('accession')))
+
+	if new_file_object:
+		creds = new_file_object['upload_credentials']
+		env = os.environ.copy()
+		env.update({
+			'AWS_ACCESS_KEY_ID': creds['access_key'],
+			'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
+			'AWS_SECURITY_TOKEN': creds['session_token'],
+		})
+
+		logger.info("Uploading file.")
+		start = time.time()
+		try:
+			subprocess.check_call(['aws', 's3', 'cp', local_fname, creds['upload_url'], '--quiet'], env=env)
+		except subprocess.CalledProcessError as e:
+			# The aws command returns a non-zero exit code on error.
+			logger.error("Upload failed with exit code %d" % e.returncode)
+		else:
+			end = time.time()
+			duration = end - start
+			logger.info("Uploaded in %.2f seconds" % duration)
+			dx.add_tags([new_file_object.get('accession')])
 
 	try:
 		os.remove(local_fname)
 	except:
 		pass
 
-	if dryrun:
-		return
-	else:
-		# logger.debug('Getting new file object for %s', %(new_file_object.get('accession')))
-		# return common.encoded_get(urlparse.urljoin(server,'/files/%s' %(new_file_object.get('accession')), keypair))
-		return new_file_object
+	return new_file_object
 
 def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force):
 	url = urlparse.urljoin(server,'/analysis-step-runs/')
@@ -410,6 +478,72 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dry
 			logger.info("New analysis_step_run uuid: %s" %(new_object.get('uuid')))
 	return new_object
 
+def accession_outputs(stages, experiment, keypair, server, dryrun, force):
+	files = []
+	for (stage_name, outputs) in stages.iteritems():
+		stage_metadata = outputs['stage_metadata']
+		for i,file_metadata in enumerate(outputs['output_files']):
+			project = stage_metadata['project']
+			dx = dxpy.DXFile(stage_metadata['output'][file_metadata['name']], project=project)
+			dx_desc = dx.describe()
+			post_metadata = {
+				'dx': dx,
+				'notes': {
+					'dx-id': dx.get_id(),
+					'dx-createdBy': dx_desc.get('createdBy'),
+					'qc': dict(zip(outputs['qc'],[stage_metadata['output'][metric] for metric in outputs['qc']]))}, #'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
+				'dataset': experiment.get('accession'),
+				'file_size': dx_desc.get('size'),
+				'submitted_file_name': dx.get_proj_id() + ':' + '/'.join([dx.folder,dx.name])}
+			post_metadata.update(file_metadata['metadata'])
+			new_file = accession_file(post_metadata, keypair, server, dryrun, force)
+			stages[stage_name]['output_files'][i].update({'encode_object': new_file})
+			files.append(new_file)
+			#logger.debug('stages:')
+			#logger.debug('%s' %(json.dumps(stages[stage_name]['output_files'][i], sort_keys=True, indent=4, separators=(',', ': '))))
+	return files
+
+def patch_outputs(stages, keypair, server, dryrun):
+	files = []
+	for stage_name in stages:
+		logger.info("patching")
+		logger.info("output_files %s" %(pprint.pformat(stages[stage_name]['output_files'])))
+		logger.info("input_files %s" %(pprint.pformat(stages[stage_name].get('input_files'))))
+		for n,file_metadata in enumerate(stages[stage_name]['output_files']):
+			logger.info("1len(output_files) %s" %(len(stages[stage_name]['output_files'])))
+			logger.info("file_metadata %s" %(json.dumps(file_metadata, sort_keys=True, indent=4, separators=(',', ': '))))
+			if file_metadata.get('encode_object'):
+				logger.info('stage_name %s n %s file_metadata[name] %s len(encode_object) %s' %(stage_name, n, file_metadata['name'], len(file_metadata['encode_object'])))
+				accession = file_metadata['encode_object'].get('accession')
+				logger.info("2.1len(output_files) %s" %(len(stages[stage_name]['output_files'])))
+				logger.info("file_metadata['derived_from'] %s" %(file_metadata['derived_from']))
+				derived_from_accessions = []
+				for derived_from in file_metadata['derived_from']:
+					#derived from can be a tuple specifying a name from different set of stages
+					if isinstance(derived_from,tuple):
+						derived_from_accessions.append(resolve_name_to_accessions(derived_from[0],derived_from[1]))
+					else:
+						derived_from_accessions.append(resolve_name_to_accessions(stages,derived_from))
+				patch_metadata = {
+					'accession': accession,
+					'derived_from': [item for sublist in derived_from_accessions for item in sublist]
+				}
+				logger.info('derived_from %s' %(patch_metadata['derived_from']))
+				logger.info("2.2len(output_files) %s" %(len(stages[stage_name]['output_files'])))
+				patched_file = patch_file(patch_metadata, keypair, server, dryrun)
+				logger.info("3len(output_files) %s" %(len(stages[stage_name]['output_files'])))
+				if patched_file:
+					stages[stage_name]['output_files'][n]['encode_object'] = patched_file
+					files.append(patched_file)
+				else:
+					logger.error("%s PATCH failed ... skipping" %(accession))
+				logger.info("4len(output_files) %s" %(len(stages[stage_name]['output_files'])))
+
+			else:
+				logger.warning('%s,%s: No encode object found ... skipping' %(stage_name, file_metadata['name']))
+				continue
+	return files
+
 def accession_analysis_files(peaks_analysis_id, keypair, server, dryrun, force):
 	peaks_analysis_id = peaks_analysis_id.strip()
 	peaks_analysis = dxpy.describe(peaks_analysis_id)
@@ -423,113 +557,95 @@ def accession_analysis_files(peaks_analysis_id, keypair, server, dryrun, force):
 		logger.info("No accession in %s, skipping." %(peaks_analysis['executableName']))
 		return
 
+	#returns the experiment object
 	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
 
+	#returns a list with two elements:  the mapping stages for [rep1,rep2]
+	#in this context rep1,rep2 are the first and second replicates in the pipeline.  They may have been accessioned
+	#on the portal with any arbitrary biological_replicate_numbers.
 	mapping_stages = get_mapping_stages(peaks_analysis, experiment, keypair, server)
 
+	#returns the stages for peak calling
 	peak_stages = get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server)
 
-	#accession all the output files, except don't accession what's in _input (_*)
-	for (stage_name, outputs) in peak_stages.iteritems():
-		if not stage_name.startswith('_'):
-			stage_metadata = outputs['stage_metadata']
-			for i,file_metadata in enumerate(outputs['files']):
-				dx = dxpy.DXFile(stage_metadata['output'][file_metadata['name']], project=project)
-				dx_desc = dx.describe()
-				post_metadata = {
-					'dx': dx,
-					'notes': {
-						'dx-id': dx.get_id(),
-						'dx-createdBy': dx_desc.get('createdBy'),
-						'qc': dict(zip(outputs['qc'],[stage_metadata['output'][metric] for metric in outputs['qc']]))}, #'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
-					'dataset': experiment.get('accession'),
-					'file_size': dx_desc.get('size'),
-					'submitted_file_name': dx.get_proj_id() + ':' + '/'.join([dx.folder,dx.name])}
-				post_metadata.update(file_metadata['metadata'])
-				peak_stages[stage_name]['files'][i].update({'encode_object': accession_file(post_metadata, keypair, server, dryrun, force)})
+	#accession all the output files
+	output_files = []
+	for stages in [mapping_stages[0], mapping_stages[1], peak_stages]:
+		logger.info('accessioning output')
+		logger.info('len stages %s' %(len(stages)))
+		output_files.extend(accession_outputs(stages, experiment, keypair, server, dryrun, force))
 
-				logger.debug('peak_stages:')
-				logger.debug('%s' %(json.dumps(peak_stages[stage_name]['files'][i], sort_keys=True, indent=4, separators=(',', ': '))))
-
-
-	#now that we have file accessions, loop again and patch derived_from, except don't patch what's in _input
-	files = []
-	for (stage_name, outputs) in peak_stages.iteritems():
-		if not stage_name.startswith('_'):
-			for file_metadata in outputs['files']:
-				if file_metadata.get('encode_object'):
-					accession = file_metadata['encode_object'].get('accession')
-					patch_metadata = {
-						'accession': accession,
-						'derived_from':
-							[resolve_name_to_accession(peak_stages, derived_from_name) for derived_from_name in file_metadata['derived_from']]
-					}
-					patched_file = patch_file(patch_metadata, keypair, server, dryrun, force)
-					if patched_file:
-						file_metadata['encode_object'] = patched_file
-						files.append(patched_file)
-					else:
-						logger.error("%s PATCH failed ... skipping" %(accession))
-				else:
-					logger.warning('%s,%s: No encode object found ... skipping' %(stage_name, file_metadata['name']))
-					continue
+	#now that we have file accessions, loop again and patch derived_from
+	files_with_derived = []
+	for stages in [mapping_stages[0], mapping_stages[1], peak_stages]:
+		logger.info('patch outputs')
+		logger.info('len stages %s' %(len(stages)))
+		files_with_derived.extend(patch_outputs(stages, keypair, server, dryrun))
 
 	analysis_step_versions = {
 		'bwa-indexing-step-v-1' : [
 			{
-				'stage' : "",
+				'stages' : "",
+				'stage_name': "",
 				'file_names' : [],
 				'status' : 'finished'
 			}
 		],
 		'histone-bwa-alignment-step-v-1' : [
 			{
-				'stage' : mapping_stages[0]['Filter and QC*'],
-				'file_names' : ['rep1_bam'],
+				'stages' : mapping_stages[0],
+				'stage_name': 'Filter and QC*',
+				'file_names' : ['filtered_bam'],
 				'status' : 'finished'
 			},
 			{
-				'stage' : mapping_stages[1]['Filter and QC*'],
-				'file_names' : ['rep2_bam'],
+				'stages' : mapping_stages[1],
+				'stage_name': 'Filter and QC*',
+				'file_names' : ['filtered_bam'],
 				'status' : 'finished'
 			}
 		],
 		'histone-spp-peak-calling-step-v-1' : [
 			{
-				'stage' : peak_stages['ENCODE Peaks'],
+				'stages' : peak_stages,
+				'stage_name': 'ENCODE Peaks',
 				'file_names' : ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal', 'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal', 'rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks'],
 				'status' : 'finished'
 			}
 		],
 		'histone-overlap-peaks-step-v-1' : [
 			{
-				'stage' : peak_stages['Overlap narrowpeaks'],
+				'stages' : peak_stages,
+				'stage_name': 'Overlap narrowpeaks',
 				'file_names' : ['overlapping_peaks'],
 				'status' : 'finished'
 			}
 		],
 		'histone-spp-peaks-to-bigbed-step-v-1' : [
 			{
-				'stage' : peak_stages['ENCODE Peaks'],
+				'stages' : peak_stages,
+				'stage_name': 'ENCODE Peaks',
 				'file_names' : ['rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb', 'pooled_narrowpeaks_bb'],
 				'status' : 'virtual'
 			}
 		],
 		'histone-spp-replicated-peaks-to-bigbed-step-v-1' : [
 			{
-				'stage' : peak_stages['Overlap narrowpeaks'],
+				'stages' : peak_stages,
+				'stage_name': 'Overlap narrowpeaks',
 				'file_names' : ['overlapping_peaks_bb'],
 				'status' : 'virtual'
 			}
 		]
 	}
-
+	patched_files = []
 	for (analysis_step_version_name, steps) in analysis_step_versions.iteritems():
 		for step in steps:
-			if not (step['stage'] and step['file_names']):
+			if not (step['stages'] and step['stage_name'] and step['file_names']):
 				logger.warning('%s missing stage metadata (files or stage_name) ... skipping' %(analysis_step_version_name))
 				continue
-			jobid = step['stage']['stage_metadata']['id']
+			stage_name = step['stage_name']
+			jobid = step['stages'][stage_name]['stage_metadata']['id']
 			analysis_step_version = 'versionof:%s' %(analysis_step_version_name)
 			alias = 'dnanexus:%s' %(jobid)
 			if step.get('status') == 'virtual':
@@ -545,14 +661,15 @@ def accession_analysis_files(peaks_analysis_id, keypair, server, dryrun, force):
 			}
 			analysis_step_run = accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force)
 			for file_name in step['file_names']:
-				file_accession = resolve_name_to_accession(peak_stages, file_name)
-				patch_metadata = {
-					'accession': file_accession,
-					'step_run': analysis_step_run.get('@id')
-				}
-				patched_file = patch_file(patch_metadata, keypair, server, dryrun, force)
+				for file_accession in resolve_name_to_accessions(step['stages'], file_name):
+					patch_metadata = {
+						'accession': file_accession,
+						'step_run': analysis_step_run.get('@id')
+					}
+					patched_file = patch_file(patch_metadata, keypair, server, dryrun)
+					patched_files.append(patched_file)
 
-	return files
+	return patched_files
 
 
 @dxpy.entry_point('main')
