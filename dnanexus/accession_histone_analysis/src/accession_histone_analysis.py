@@ -78,12 +78,45 @@ def get_stage_metadata(analysis, stage_name):
 	logger.debug('in get_stage_metadata with analysis %s and stage_name %s' %(analysis['id'], stage_name))
 	return next(s['execution'] for s in analysis.get('stages') if re.match(stage_name,s['execution']['name']))
 
-def get_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
+def get_mapping_stages(mapping_analysis, keypair, server, repn):
+
+	mapping_stages = mapping_analysis.get('stages')
+	input_stage = next(stage for stage in mapping_stages if stage['execution']['name'].startswith("Gather inputs"))
+	input_fastq_accessions = input_stage['execution']['input']['reads1']
+	if input_stage['execution']['input']['reads2']:
+		input_fastq_accessions.append(input_stage['execution']['input']['reads2'])
+	fastqs = [common.encoded_get(urlparse.urljoin(server,'files/%s' %(acc), keypair)) for acc in input_fastq_accessions]
+
+	bam_metadata = common.merge_dicts({
+		'file_format': 'bam',
+		'output_type': 'alignments'
+		}, common_metadata)
+
+	rep_mapping_stages = {
+		"Filter and QC*" : {
+			'input_files': [
+				{'name': 'rep%s_fastqs' %(repn),	'derived_from': None,					'metadata': None, 'encode_object': fastqs}
+			],
+			'output_files': [
+				{'name': 'filtered_bam',		'derived_from': ['rep%s_fastqs' %(repn)],	'metadata': bam_metadata}
+			],
+			'qc': [],
+			'stage_metadata': {} #initialized below
+		}
+	}
+
+	for stage_name in rep_mapping_stages:
+		if not stage_name.startswith('_'):
+			rep_mapping_stages[stage_name].update({'stage_metadata': get_stage_metadata(mapping_analysis, stage_name)})
+
+	return rep_mapping_stages
+
+def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
 	# Find the tagaligns actually used as inputs into the analysis
 	# Find the mapping analyses that produced those tagaligns
 	# Find the filtered bams from those analyses
 	# Build the stage dict and return it
-	logger.debug('in get_mapping_stages with peaks_analysis %s; experiment %s; reps %s' %(peaks_analysis['id'], experiment['accession'], reps))
+	logger.debug('in get_peak_mapping_stages with peaks_analysis %s; experiment %s; reps %s' %(peaks_analysis['id'], experiment['accession'], reps))
 	peaks_stages = peaks_analysis.get('stages')
 	peaks_stage = next(stage for stage in peaks_stages if stage['execution']['name'] == "ENCODE Peaks")
 	tas = [dxpy.describe(peaks_stage['execution']['input']['rep%s_ta' %(n)]) for n in reps]
@@ -105,29 +138,8 @@ def get_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
 	fastqs = [[common.encoded_get(urlparse.urljoin(server,'files/%s' %(acc))) for acc in accessions] for accessions in input_fastq_accessions]
 	logger.info('Found input fastq objects with accessions %s' %([[f.get('accession') for f in fq] for fq in fastqs]))
 	#TODO add code to warn if it appears we're trying to accession an out-dated analysis (i.e. one not derived from all fastqs)
-	bam_metadata = common.merge_dicts({
-		'file_format': 'bam',
-		'output_type': 'alignments'
-		}, common_metadata)
 
-	rep_mapping_stages = [
-		{
-			"Filter and QC*" : {
-				'input_files': [
-					{'name': 'rep%s_fastqs' %(r),	'derived_from': None,					'metadata': None, 'encode_object': fastqs[n]}
-				],
-				'output_files': [
-					{'name': 'filtered_bam',		'derived_from': ['rep%s_fastqs' %(r)],	'metadata': bam_metadata}
-				],
-				'qc': [],
-				'stage_metadata': {} #initialized below
-			}
-		} for n,r in enumerate(reps)]
-
-	for n, stages in enumerate(rep_mapping_stages):
-		for stage_name in stages:
-			if not stage_name.startswith('_'):
-				rep_mapping_stages[n][stage_name].update({'stage_metadata': get_stage_metadata(mapping_analyses[n], stage_name)})
+	rep_mapping_stages = [get_mapping_stages(mapping_analyses[i], keypair, server, repn) for (i,repn) in enumerate(reps)]
 
 	return rep_mapping_stages
 
@@ -447,17 +459,88 @@ def patch_outputs(stages, keypair, server, dryrun):
 				continue
 	return files
 
-def accession_analysis_files(peaks_analysis_id, keypair, server, dryrun, force):
-	peaks_analysis_id = peaks_analysis_id.strip()
-	peaks_analysis = dxpy.describe(peaks_analysis_id)
-	project = peaks_analysis.get('project')
+def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force):
+	patched_files = []
+	for (analysis_step_version_name, steps) in analysis_step_versions.iteritems():
+		for step in steps:
+			if not (step['stages'] and step['stage_name'] and step['file_names']):
+				logger.warning('%s missing stage metadata (files or stage_name) ... skipping' %(analysis_step_version_name))
+				continue
+			stage_name = step['stage_name']
+			jobid = step['stages'][stage_name]['stage_metadata']['id']
+			analysis_step_version = 'versionof:%s' %(analysis_step_version_name)
+			alias = 'dnanexus:%s' %(jobid)
+			if step.get('status') == 'virtual':
+				alias += '-virtual-file-conversion-step'
+			analysis_step_run_metadata = {
+				'aliases': [alias],
+				'analysis_step_version': analysis_step_version,
+				'status': step['status'],
+				'dx_applet_details': [{
+					'dx_status': 'finished',
+					'dx_job_id': 'dnanexus:%s' %(jobid),
+				}]
+			}
+			analysis_step_run = accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force)
+			for file_name in step['file_names']:
+				for file_accession in resolve_name_to_accessions(step['stages'], file_name):
+					patch_metadata = {
+						'accession': file_accession,
+						'step_run': analysis_step_run.get('@id')
+					}
+					patched_file = patch_file(patch_metadata, keypair, server, dryrun)
+					patched_files.append(patched_file)
+
+	return patched_files
+
+def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, force):
+
+	m = re.match('^Map (ENCSR[0-9]{3}[A-Z]{3}) rep(\d+)',mapping_analysis['name'])
+	if m:
+		experiment_accession = m.group(1)
+		repn = int(m.group(2))
+		logger.info(experiment_accession)
+	else:
+		logger.info("Missing experiment accession or rep in %s, skipping." %(mapping_analysis['name']))
+		return []
+
+	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
+	mapping_stages = get_mapping_stages(mapping_analysis, keypair, server, repn)
+
+	output_files = accession_outputs(mapping_stages, experiment, keypair, server, dryrun, force)
+
+	files_with_derived = patch_outputs(mapping_stages, keypair, server, dryrun)
+
+	mapping_analysis_step_versions = {
+		'bwa-indexing-step-v-1' : [
+			{
+				'stages' : "",
+				'stage_name': "",
+				'file_names' : [],
+				'status' : 'finished'
+			}
+		],
+		'histone-bwa-alignment-step-v-1' : [
+			{
+				'stages' : mapping_stages,
+				'stage_name': 'Filter and QC*',
+				'file_names' : ['filtered_bam'],
+				'status' : 'finished'
+			}
+		]
+	}
+
+	patched_files = accession_pipeline(mapping_analysis_step_versions, keypair, server, dryrun, force)
+	return patched_files
+
+def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, force):
 
 	m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
 	if m:
 		experiment_accession = m.group(1)
 		logger.info(experiment_accession)
 	else:
-		logger.info("No accession in %s, skipping." %(peaks_analysis['executableName']))
+		logger.info("No experiment accession in %s, skipping." %(peaks_analysis['executableName']))
 		return
 
 	#returns the experiment object
@@ -466,7 +549,7 @@ def accession_analysis_files(peaks_analysis_id, keypair, server, dryrun, force):
 	#returns a list with two elements:  the mapping stages for [rep1,rep2]
 	#in this context rep1,rep2 are the first and second replicates in the pipeline.  They may have been accessioned
 	#on the portal with any arbitrary biological_replicate_numbers.
-	mapping_stages = get_mapping_stages(peaks_analysis, experiment, keypair, server)
+	mapping_stages = get_peak_mapping_stages(peaks_analysis, experiment, keypair, server)
 
 	#returns the stages for peak calling
 	peak_stages = get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server)
@@ -482,7 +565,7 @@ def accession_analysis_files(peaks_analysis_id, keypair, server, dryrun, force):
 	for stages in [mapping_stages[0], mapping_stages[1], peak_stages]:
 		files_with_derived.extend(patch_outputs(stages, keypair, server, dryrun))
 
-	analysis_step_versions = {
+	full_analysis_step_versions = {
 		'bwa-indexing-step-v-1' : [
 			{
 				'stages' : "",
@@ -538,39 +621,9 @@ def accession_analysis_files(peaks_analysis_id, keypair, server, dryrun, force):
 			}
 		]
 	}
-	patched_files = []
-	for (analysis_step_version_name, steps) in analysis_step_versions.iteritems():
-		for step in steps:
-			if not (step['stages'] and step['stage_name'] and step['file_names']):
-				logger.warning('%s missing stage metadata (files or stage_name) ... skipping' %(analysis_step_version_name))
-				continue
-			stage_name = step['stage_name']
-			jobid = step['stages'][stage_name]['stage_metadata']['id']
-			analysis_step_version = 'versionof:%s' %(analysis_step_version_name)
-			alias = 'dnanexus:%s' %(jobid)
-			if step.get('status') == 'virtual':
-				alias += '-virtual-file-conversion-step'
-			analysis_step_run_metadata = {
-				'aliases': [alias],
-				'analysis_step_version': analysis_step_version,
-				'status': step['status'],
-				'dx_applet_details': [{
-					'dx_status': 'finished',
-					'dx_job_id': 'dnanexus:%s' %(jobid),
-				}]
-			}
-			analysis_step_run = accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force)
-			for file_name in step['file_names']:
-				for file_accession in resolve_name_to_accessions(step['stages'], file_name):
-					patch_metadata = {
-						'accession': file_accession,
-						'step_run': analysis_step_run.get('@id')
-					}
-					patched_file = patch_file(patch_metadata, keypair, server, dryrun)
-					patched_files.append(patched_file)
 
+	patched_files = accession_pipeline(full_analysis_step_versions, keypair, server, dryrun, force)
 	return patched_files
-
 
 @dxpy.entry_point('main')
 def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline, analysis_ids=None, infile=None, project=None):
@@ -599,9 +652,16 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline, analysis
 
 	for (i, analysis_id) in enumerate(ids):
 		logger.debug('debug %s' %(analysis_id))
-		accessioned_files = accession_analysis_files(analysis_id, keypair, server, dryrun, force)
-
-	logger.info("Accessioned: %s" %([f.get('accession') for f in accessioned_files]))
+		analysis = dxpy.describe(analysis_id.strip())
+		logger.info('Accessioning analysis name %s executableName %s' %(analysis.get('name'), analysis.get('executableName')))
+		if analysis.get('name') == 'histone_chip_seq':
+			accessioned_files = accession_peaks_analysis_files(analysis, keypair, server, dryrun, force)
+		elif analysis.get('executableName') == 'ENCODE mapping pipeline':
+			accessioned_files = accession_mapping_analysis_files(analysis, keypair, server, dryrun, force)
+		else:
+			logger.error('unrecognized analysis pattern ... skipping.')
+			accessioned_files = []
+		logger.info("Accessioned: %s" %([f.get('accession') for f in accessioned_files]))
 
 	common.touch(outfn)
 	outfile = dxpy.upload_local_file(outfn)
