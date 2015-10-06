@@ -19,11 +19,6 @@ import dateutil.parser
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
-# logger = logging.getLogger(__name__)
-# logger.addHandler()
-
-# class Accessionable_File(object):
-# 	def __init__(self, ):
 
 common_metadata = {
 	'lab': 'encode-processing-pipeline',
@@ -31,7 +26,7 @@ common_metadata = {
 }
 
 def get_rep_bams(experiment, assembly, keypair, server):
-
+	logger.debug('in get_rep_bams with experiment[accession] %s' %(experiment.get('accession')))
 	original_files = [common.encoded_get(urlparse.urljoin(server,'%s' %(uri)), keypair) for uri in experiment.get('original_files')]
 
 	#resolve the biorep_n for each fastq
@@ -68,7 +63,7 @@ def get_rep_bams(experiment, assembly, keypair, server):
 	return rep1_bam, rep2_bam
 
 def get_rep_fastqs(experiment, keypair, server, reps=[1,2]):
-
+	logger.debug('in get_rep_fastqs with experiment[accession] %s' %(experiment.get('accession')))
 	original_files = [common.encoded_get(urlparse.urljoin(server,'%s' %(uri)), keypair) for uri in experiment.get('original_files')]
 	fastqs = [f for f in original_files if f.get('file_format') == 'fastq']
 
@@ -76,26 +71,11 @@ def get_rep_fastqs(experiment, keypair, server, reps=[1,2]):
 	rep_fastqs = [
 		[f for f in fastqs if common.encoded_get(urlparse.urljoin(server,'%s' %(f.get('replicate'))), keypair).get('biological_replicate_number') == n]
 		for n in reps]
-
-
-	# for fastq in [f for f in original_files if f.get('file_format') == 'fastq']:
-	# 	replicate = common.encoded_get(urlparse.urljoin(server,'%s' %(fastq.get('replicate'))), keypair)
-	# 	rep_n = replicate.get('biological_replicate_number')
-	# 	if rep_n in reps:
-
-	# 	if rep_n == 1:
-	# 		rep1_fastqs.append(fastq)
-	# 	elif rep_n == 2:
-	# 		rep2_fastqs.append(fastq)
-	# 	else:
-	# 		logger.error('%s: Found fastq with biorep_n %d not in (1,2)' %(experiment['accession'], rep_n)) 
-	#logger.debug('get_rep_fastqs found rep_fastqs: %s' %(rep_fastqs))
 	logger.debug('get_rep_fastqs returning %s' %([[f.get('accession') for f in rep_fastqs[n]] for n,r in enumerate(reps)]))
 	return rep_fastqs
 
 def get_stage_metadata(analysis, stage_name):
-	logger.debug('in get_stage_metadata with')
-	logger.debug('analysis %s and stage_name %s' %(analysis['id'], stage_name))
+	logger.debug('in get_stage_metadata with analysis %s and stage_name %s' %(analysis['id'], stage_name))
 	return next(s['execution'] for s in analysis.get('stages') if re.match(stage_name,s['execution']['name']))
 
 def get_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
@@ -116,16 +96,15 @@ def get_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
 	filter_qc_stages = [next(stage for stage in rep_mapping_stages if stage['execution']['name'].startswith("Filter and QC")) for rep_mapping_stages in mapping_stages]
 	bams = [dxpy.describe(stage['execution']['output']['filtered_bam']) for stage in filter_qc_stages]
 	experiment_fastqs = get_rep_fastqs(experiment, keypair, server, reps)
-	logger.info('Found experiment fastqs with accessions %s' %([[f.get('accession') for f in fq] for fq in experiment_fastqs]))
+	logger.info('Found accessioned experiment fastqs with accessions %s' %([[f.get('accession') for f in fq] for fq in experiment_fastqs]))
 	input_fastq_accessions = [stage['execution']['input']['reads1'] for stage in input_stages] #will be two arrays
 	for i,reads2_accession in enumerate([stage['execution']['input']['reads2'] for stage in input_stages]):
 		if reads2_accession:
 			input_fastq_accessions[i].append(reads2_accession)
-	logger.info('Found input fastq accessions %s' %(input_fastq_accessions))
-
+	logger.info('Found analysis input fastq accessions %s' %(input_fastq_accessions))
 	fastqs = [[common.encoded_get(urlparse.urljoin(server,'files/%s' %(acc))) for acc in accessions] for accessions in input_fastq_accessions]
 	logger.info('Found input fastq objects with accessions %s' %([[f.get('accession') for f in fq] for fq in fastqs]))
-
+	#TODO add code to warn if it appears we're trying to accession an out-dated analysis (i.e. one not derived from all fastqs)
 	bam_metadata = common.merge_dicts({
 		'file_format': 'bam',
 		'output_type': 'alignments'
@@ -235,20 +214,16 @@ def get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server)
 def resolve_name_to_accessions(stages, stage_file_name):
 	#given a dict of named stages, and the name of one of the stages' outputs, return that output's
 	#ENCODE accession number
+	logger.debug("in resolve_name_to_accessions with stage_file_name %s" %(stage_file_name))
 	accessions = []
-	print "in resolve_name_to_accessions with stage_file_name"
-	print stage_file_name
-	logger.debug('in resolve_name_to_accessions with %s' %(stage_file_name))
 	for stage_name in stages:
 		if stages[stage_name].get('input_files'):
 			all_files = stages[stage_name].get('output_files') + stages[stage_name].get('input_files')
 		else:
 			all_files = stages[stage_name].get('output_files')
 		for stage_file in all_files:
-			logger.debug('stage_file name %s' %(stage_file['name']))
 			if stage_file['name'] == stage_file_name:
 				encode_object = stage_file.get('encode_object')
-				logger.info('encode_object %s' %(encode_object))
 				if isinstance(encode_object,list):
 					for obj in encode_object:
 						accessions.append(obj.get('accession'))
@@ -262,11 +237,11 @@ def resolve_name_to_accessions(stages, stage_file_name):
 		return None
 
 def patch_file(payload, keypair, server, dryrun):
-	logger.debug('in patch_file with %s' %(payload))
+	logger.debug('in patch_file with %s' %(pprint.pformat(payload)))
 	accession = payload.pop('accession')
 	url = urlparse.urljoin(server,'files/%s' %(accession))
 	if dryrun:
-		logger.info("Dry run.  Would PATCH: %s with %s" %(accession, payload))
+		logger.info("Dry run.  Would PATCH: %s with %s" %(accession, pprint.pformat(payload)))
 		logger.info("Dry run.  Returning unchanged file object")
 		new_file_object = common.encoded_get(urlparse.urljoin(server,'/files/%s' %(accession)), keypair)
 	else:
@@ -274,8 +249,8 @@ def patch_file(payload, keypair, server, dryrun):
 		try:
 			r.raise_for_status()
 		except:
-			logger.warning('PATCH file object failed: %s %s' % (r.status_code, r.reason))
-			logger.warning(r.text)
+			logger.error('PATCH file object failed: %s %s' % (r.status_code, r.reason))
+			logger.error(r.text)
 			new_file_object = None
 		else:
 			new_file_object = r.json()['@graph'][0]
@@ -284,25 +259,24 @@ def patch_file(payload, keypair, server, dryrun):
 	return new_file_object
 
 def post_file(payload, keypair, server, dryrun):
-	logger.debug('in post_file with %s' %(payload))
+	logger.debug('in post_file with %s' %(pprint.pformat(payload)))
 	url = urlparse.urljoin(server,'files/')
 	if dryrun:
-		logger.info("Dry run.  Would post: %s" %(payload))
+		logger.info("Dry run.  Would post: %s" %(pprint.pformat(payload)))
 		new_file_object = None
 	else:
 		r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
 		try:
 			r.raise_for_status()
 		except:
-			logger.warning('POST file object failed: %s %s' % (r.status_code, r.reason))
-			logger.warning(r.text)
+			logger.error('POST file object failed: %s %s' % (r.status_code, r.reason))
+			logger.error(r.text)
 			new_file_object = None
 		else:
 			new_file_object = r.json()['@graph'][0]
 			logger.info("New accession: %s" %(new_file_object.get('accession')))
 	
 	return new_file_object
-
 
 def accession_file(f, keypair, server, dryrun, force):
 	#check for duplication
@@ -318,7 +292,7 @@ def accession_file(f, keypair, server, dryrun, force):
 	#upload to S3
 	#remove the local file (to save space)
 	#return the ENCODEd file object
-	logger.debug('in accession_file with f %s' %(f))
+	logger.debug('in accession_file with f %s' %(pprint.pformat(f)))
 	dx = f.pop('dx')
 
 	local_fname = dx.name
@@ -354,37 +328,7 @@ def accession_file(f, keypair, server, dryrun, force):
 		else:
 			accession_in_tag = False
 
-	# #check if an ENCODE file object exits with the same submitted_file_name
-	# url = urlparse.urljoin(server, 'search/?type=file&submitted_file_name=%s&format=json&frame=object&limit=all' %(f.get('submitted_file_name')))
-	# r = requests.get(url,auth=keypair)
-	# try:
-	# 	r.raise_for_status()
-	# except:
-	# 	logger.warning('Duplicate accession check failed: %s %s' % (r.status_code, r.reason))
-	# 	logger.debug(r.text)
-	# 	duplicate_submitted_file_name = False
-	# else:
-	# 	if r.json()['@graph']:
-	# 		duplicate_submitted_file_name = True
-	# 		for duplicate_item in r.json()['@graph']:
-	# 			if duplicate_item.get('status')  in ['deleted', 'replaced', 'revoked']:
-	# 				logger.info("A potential duplicate file was found but its status=%s ... proceeding" %(duplicate_item.get('status')))
-	# 				deprecated = True
-	# 			else:
-	# 				deprecated = False
-	# 				logger.info("Found potential duplicate: %s" %(duplicate_item.get('accession')))
-	# 				local_file_size = dx.describe()['size']
-	# 				if local_file_size ==  duplicate_item.get('file_size'):
-	# 					logger.info("%s %s: File sizes match, assuming duplicate." %(str(local_file_size), duplicate_item.get('file_size')))
-	# 					duplicate_file_size = True
-	# 					break
-	# 				else:
-	# 					logger.info("%s %s: File sizes differ, assuming new file." %(str(local_file_size), duplicate_item.get('file_size')))
-	# 					duplicate_file_size = False
-	# 	else:
-	# 		duplicate_submitted_file_name = False
-	# 		duplicate_file_size = False #tautologically
-
+	#TODO check here if file is deprecated and, if so, warn
 	if md5_exists:
 		if force:
 			return patch_file(f, keypair, server, dryrun)
@@ -392,39 +336,10 @@ def accession_file(f, keypair, server, dryrun, force):
 			logger.info("Returning duplicate file unchanged")
 			return md5_exists
 	else:
-		logger.info('posting new file %s' %(f))
+		logger.info('posting new file %s' %(f.get('submitted_file_name')))
+		logger.debug('%s' %(f))
 		new_file_object = post_file(f, keypair, server, dryrun)
 
-
-	# url = urlparse.urljoin(server,'files/')
-	# if dryrun:
-	# 	logger.info("Dry run.  Would POST %s" %(f))
-	# 	new_file_object = {}
-	# else:
-	# 	r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(f))
-	# 	try:
-	# 		r.raise_for_status()
-	# 	except:
-	# 		logger.warning('POST file object failed: %s %s' % (r.status_code, r.reason))
-	# 		logger.warning(r.text)
-	# 		new_file_object = {}
-	# 		if r.status_code == 409 and calculated_md5 in r.json().get('detail'):
-	# 			url = urlparse.urljoin(server,'/search/?type=file&md5sum=%s' %(calculated_md5))
-	# 			r = requests.get(url,auth=keypair)
-	# 			try:
-	# 				r.raise_for_status()
-	# 			except:
-	# 				logger.error('Search for matching md5 failed.')
-	# 			else:
-	# 				accessioned_file = r.json()['@graph'][0]
-	# 				existing_accession = accessioned_file['accession']
-	# 				dx.add_tags([existing_accession])
-	# 				logger.info('Already accessioned.  Added %s to dxfile tags' %(existing_accession))
-	# 		else:
-	# 			logger.info('Conflict does not appear to be md5 ... continuing')
-	# 	else:
-	# 		new_file_object = r.json()['@graph'][0]
-	# 		logger.info("New accession: %s" %(new_file_object.get('accession')))
 
 	if new_file_object:
 		creds = new_file_object['upload_credentials']
@@ -465,13 +380,13 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dry
 		try:
 			r.raise_for_status()
 		except:
-			logger.warning('POST analysis_step_run object failed: %s %s' % (r.status_code, r.reason))
-			logger.warning(r.text)
 			if r.status_code == 409:
 				url = urlparse.urljoin(server,"/%s" %(analysis_step_run_metadata['aliases'][0])) #assumes there's only one alias
 				new_object = common.encoded_get(url, keypair)
 				logger.info('Using existing analysis_step_run object %s' %(new_object.get('@id')))
 			else:
+				logger.warning('POST analysis_step_run object failed: %s %s' % (r.status_code, r.reason))
+				logger.warning(r.text)
 				new_object = {}
 		else:
 			new_object = r.json()['@graph'][0]
@@ -499,24 +414,17 @@ def accession_outputs(stages, experiment, keypair, server, dryrun, force):
 			new_file = accession_file(post_metadata, keypair, server, dryrun, force)
 			stages[stage_name]['output_files'][i].update({'encode_object': new_file})
 			files.append(new_file)
-			#logger.debug('stages:')
-			#logger.debug('%s' %(json.dumps(stages[stage_name]['output_files'][i], sort_keys=True, indent=4, separators=(',', ': '))))
 	return files
 
 def patch_outputs(stages, keypair, server, dryrun):
+	logger.debug('in patch_outputs')
 	files = []
 	for stage_name in stages:
-		logger.info("patching")
-		logger.info("output_files %s" %(pprint.pformat(stages[stage_name]['output_files'])))
-		logger.info("input_files %s" %(pprint.pformat(stages[stage_name].get('input_files'))))
 		for n,file_metadata in enumerate(stages[stage_name]['output_files']):
-			logger.info("1len(output_files) %s" %(len(stages[stage_name]['output_files'])))
-			logger.info("file_metadata %s" %(json.dumps(file_metadata, sort_keys=True, indent=4, separators=(',', ': '))))
 			if file_metadata.get('encode_object'):
-				logger.info('stage_name %s n %s file_metadata[name] %s len(encode_object) %s' %(stage_name, n, file_metadata['name'], len(file_metadata['encode_object'])))
+				logger.info('patch outputs stage_name %s n %s file_metadata[name] %s encode_object[accession] %s' %(stage_name, n, file_metadata['name'], file_metadata['encode_object'].get('accession')))
+				logger.debug("patch_otputs file_metadata %s" %(pprint.pformat(file_metadata)))
 				accession = file_metadata['encode_object'].get('accession')
-				logger.info("2.1len(output_files) %s" %(len(stages[stage_name]['output_files'])))
-				logger.info("file_metadata['derived_from'] %s" %(file_metadata['derived_from']))
 				derived_from_accessions = []
 				for derived_from in file_metadata['derived_from']:
 					#derived from can be a tuple specifying a name from different set of stages
@@ -528,17 +436,12 @@ def patch_outputs(stages, keypair, server, dryrun):
 					'accession': accession,
 					'derived_from': [item for sublist in derived_from_accessions for item in sublist]
 				}
-				logger.info('derived_from %s' %(patch_metadata['derived_from']))
-				logger.info("2.2len(output_files) %s" %(len(stages[stage_name]['output_files'])))
 				patched_file = patch_file(patch_metadata, keypair, server, dryrun)
-				logger.info("3len(output_files) %s" %(len(stages[stage_name]['output_files'])))
 				if patched_file:
 					stages[stage_name]['output_files'][n]['encode_object'] = patched_file
 					files.append(patched_file)
 				else:
 					logger.error("%s PATCH failed ... skipping" %(accession))
-				logger.info("4len(output_files) %s" %(len(stages[stage_name]['output_files'])))
-
 			else:
 				logger.warning('%s,%s: No encode object found ... skipping' %(stage_name, file_metadata['name']))
 				continue
@@ -572,14 +475,11 @@ def accession_analysis_files(peaks_analysis_id, keypair, server, dryrun, force):
 	output_files = []
 	for stages in [mapping_stages[0], mapping_stages[1], peak_stages]:
 		logger.info('accessioning output')
-		logger.info('len stages %s' %(len(stages)))
 		output_files.extend(accession_outputs(stages, experiment, keypair, server, dryrun, force))
 
 	#now that we have file accessions, loop again and patch derived_from
 	files_with_derived = []
 	for stages in [mapping_stages[0], mapping_stages[1], peak_stages]:
-		logger.info('patch outputs')
-		logger.info('len stages %s' %(len(stages)))
 		files_with_derived.extend(patch_outputs(stages, keypair, server, dryrun))
 
 	analysis_step_versions = {
