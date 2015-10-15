@@ -25,6 +25,16 @@ common_metadata = {
 	'award': 'U41HG006992'
 }
 
+def flat(l):
+	result = []
+	for el in l:
+		if hasattr(el, "__iter__") and not isinstance(el, basestring):
+			result.extend(flatten(el))
+		else:
+			result.append(el)
+	return result
+
+
 def get_rep_bams(experiment, assembly, keypair, server):
 	logger.debug('in get_rep_bams with experiment[accession] %s' %(experiment.get('accession')))
 	original_files = [common.encoded_get(urlparse.urljoin(server,'%s' %(uri)), keypair) for uri in experiment.get('original_files')]
@@ -111,6 +121,19 @@ def get_mapping_stages(mapping_analysis, keypair, server, repn):
 
 	return rep_mapping_stages
 
+def get_control_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
+	#Find the control inputs
+	logger.debug('in get_control_mapping_stages with peaks_analysis %s; experiment %s; reps %s' %(peaks_analysis['id'], experiment['accession'], reps))
+	peaks_stages = peaks_analysis.get('stages')
+	peaks_stage = next(stage for stage in peaks_stages if stage['execution']['name'] == "ENCODE Peaks")
+	tas = [dxpy.describe(peaks_stage['execution']['input']['ctl%s_ta' %(n)]) for n in reps]
+	mapping_jobs = [dxpy.describe(ta['createdBy']['job']) for ta in tas]
+	mapping_analyses = [dxpy.describe(mapping_job['analysis']) for mapping_job in mapping_jobs]
+
+	ctl_mapping_stages = [get_mapping_stages(mapping_analyses[i], keypair, server, repn) for (i,repn) in enumerate(reps)]
+
+	return ctl_mapping_stages
+
 def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
 	# Find the tagaligns actually used as inputs into the analysis
 	# Find the mapping analyses that produced those tagaligns
@@ -122,6 +145,7 @@ def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1
 	tas = [dxpy.describe(peaks_stage['execution']['input']['rep%s_ta' %(n)]) for n in reps]
 	mapping_jobs = [dxpy.describe(ta['createdBy']['job']) for ta in tas]
 	mapping_analyses = [dxpy.describe(mapping_job['analysis']) for mapping_job in mapping_jobs]
+
 	mapping_stages = [analysis.get('stages') for analysis in mapping_analyses]
 	#mapping_stages is a list of lists (one list per rep) of stages, each of which contains somewhere the Filter and QC stage for that rep
 	#So we need to flatten that list of lists back to a single list with one stage per rep
@@ -143,9 +167,48 @@ def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1
 
 	return rep_mapping_stages
 
-def get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server):
+def pooled_controls(peaks_analysis, rep):
+	#this is not surfaced explicitly so must be inferred
+	#General:  get the id's of the files actually used for the specified rep and pooled controls.  If the id is the same as the
+	#pooled control id then return true.
+	#Specifically:
+	#starting with the peaks_analysis, get its stages
+	#get "ENCODE Peaks" stage
+	#get the job id for "ENCODE Peaks"
+	#get the control and experiment file ID's for the specified rep
+	#find the child jobs of the "ENCODE Peaks" job
+	#find the child job where macs2 was run with the experiment file corresponding to the experiment file for this rep
+	#get from that child job the file ID of the control
+	#if the contol file ID for this rep from ENCODE Peaks is the same as in macs2 then return False else return True
+	#Could double-check the log output of ENCODE Peaks to search for the strings "Using pooled controls for replicate 1."
+	#"Using pooled controls for replicate 2." and "Using pooled controls."  But there is no corresponding "Not pooling controls"
+	#message, so it's underdertermined.
+	logger.debug('in pooled_controls with peaks_analysis %s; rep %s' %(peaks_analysis['id'], rep))
+	peaks_stages = peaks_analysis.get('stages')
+	ENCODE_Peaks_stage = next(stage for stage in peaks_stages if stage['execution']['name'] == "ENCODE Peaks")
+	ENCODE_Peaks_exp_file = ENCODE_Peaks_stage['execution']['input']['rep%s_ta' %(rep)]
+	ENCODE_Peaks_ctl_file = ENCODE_Peaks_stage['execution']['input']['ctl%s_ta' %(rep)]
+	# print ENCODE_Peaks_stage['execution']['id']
+	# print ENCODE_Peaks_stage['execution']['project']
+	child_jobs = dxpy.find_jobs(parent_job=ENCODE_Peaks_stage['execution']['id'], name="MACS2", project=ENCODE_Peaks_stage['execution']['project'], describe=True)
+	rep_job = next(job for job in child_jobs if job['describe']['input']['experiment'] == ENCODE_Peaks_exp_file)
+	# for job in child_jobs:
+	# 	#pprint.pprint(job)
+	# 	if job['describe']['input']['experiment'] == ENCODE_Peaks_exp_file:
+	# 		rep_job = job
+	rep_job_ctl_file = rep_job['describe']['input']['control']
+	logger.info("Rep%s input control file %s; actually used %s" %(rep, ENCODE_Peaks_ctl_file, rep_job_ctl_file))
+	if ENCODE_Peaks_ctl_file == rep_job_ctl_file:
+		logger.info('Inferred controls not pooled for rep%s' %(rep))
+		return False
+	else:
+		logger.info('Inferred pooled controls for rep%s' %(rep))
+		return True
+
+def get_peak_stages(peaks_analysis, mapping_stages, control_stages, experiment, keypair, server):
 
 	logger.debug('in get_peak_stages with peaks_analysis %s; experiment %s' %(peaks_analysis['id'], experiment['accession']))
+	logger.debug('and len(mapping_stages) %d len(control_stages) %d mapping_stages' %(len(mapping_stages), len(control_stages)))
 
 	narrowpeak_metadata = common.merge_dicts({
 		'file_format': 'bed',
@@ -185,24 +248,31 @@ def get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server)
 		'output_type': 'signal p-value'},
 		common_metadata)
 
-	rep1_bam = (mapping_stages[0],'filtered_bam')
-	rep2_bam = (mapping_stages[1],'filtered_bam')
+	rep1_bam, rep2_bam = [(mapping_stages[n],'filtered_bam') for n in range(2)]
+	rep1_ctl_bam, rep2_ctl_bam = [(control_stages[n],'filtered_bam') for n in range(2)]
+	pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
+	if pooled_controls(peaks_analysis, rep=1):
+		rep1_ctl = pooled_ctl_bams
+	if pooled_controls(peaks_analysis, rep=2):
+		rep2_ctl = pooled_ctl_bams
+
 
 	peak_stages = { #derived_from is by name here, will be patched into the file metadata after all files are accessioned
+					#derived_from can also be a tuple of (stages,name) to connect to files outside of this set of stages
 		"ENCODE Peaks" : {
 			'output_files': [
-				{'name': 'rep1_narrowpeaks',		'derived_from': [rep1_bam],				'metadata': narrowpeak_metadata},
-				{'name': 'rep2_narrowpeaks',		'derived_from': [rep2_bam],				'metadata': narrowpeak_metadata},
-				{'name': 'pooled_narrowpeaks',		'derived_from': [rep1_bam, rep2_bam],	'metadata': narrowpeak_metadata},
-				{'name': 'rep1_narrowpeaks_bb',		'derived_from': ['rep1_narrowpeaks'],	'metadata': narrowpeak_bb_metadata},
-				{'name': 'rep2_narrowpeaks_bb',		'derived_from': ['rep2_narrowpeaks'],	'metadata': narrowpeak_bb_metadata},
-				{'name': 'pooled_narrowpeaks_bb',	'derived_from': ['pooled_narrowpeaks'],	'metadata': narrowpeak_bb_metadata},
-				{'name': 'rep1_pvalue_signal',		'derived_from': [rep1_bam],				'metadata': pvalue_signal_metadata},
-				{'name': 'rep2_pvalue_signal',		'derived_from': [rep2_bam],				'metadata': pvalue_signal_metadata},
-				{'name': 'pooled_pvalue_signal',	'derived_from': [rep1_bam, rep2_bam],	'metadata': pvalue_signal_metadata},
-				{'name': 'rep1_fc_signal',			'derived_from': [rep1_bam],				'metadata': fc_signal_metadata},
-				{'name': 'rep2_fc_signal',			'derived_from': [rep2_bam],				'metadata': fc_signal_metadata},
-				{'name': 'pooled_fc_signal',		'derived_from': [rep1_bam, rep2_bam],	'metadata': fc_signal_metadata}
+				{'name': 'rep1_narrowpeaks',		'derived_from': [rep1_bam] + rep1_ctl,	'metadata': narrowpeak_metadata},
+				{'name': 'rep2_narrowpeaks',		'derived_from': [rep2_bam] + rep2_ctl,	'metadata': narrowpeak_metadata},
+				{'name': 'pooled_narrowpeaks',		'derived_from': [rep1_bam, rep2_bam] + pooled_ctl_bams,			'metadata': narrowpeak_metadata},
+				{'name': 'rep1_narrowpeaks_bb',		'derived_from': ['rep1_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
+				{'name': 'rep2_narrowpeaks_bb',		'derived_from': ['rep2_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
+				{'name': 'pooled_narrowpeaks_bb',	'derived_from': ['pooled_narrowpeaks'],		'metadata': narrowpeak_bb_metadata},
+				{'name': 'rep1_pvalue_signal',		'derived_from': [rep1_bam] + rep1_ctl,	'metadata': pvalue_signal_metadata},
+				{'name': 'rep2_pvalue_signal',		'derived_from': [rep2_bam] + rep2_ctl,	'metadata': pvalue_signal_metadata},
+				{'name': 'pooled_pvalue_signal',	'derived_from': [rep1_bam, rep2_bam] + pooled_ctl_bams,			'metadata': pvalue_signal_metadata},
+				{'name': 'rep1_fc_signal',			'derived_from': [rep1_bam] + rep1_ctl,	'metadata': fc_signal_metadata},
+				{'name': 'rep2_fc_signal',			'derived_from': [rep2_bam] + rep2_ctl,	'metadata': fc_signal_metadata},
+				{'name': 'pooled_fc_signal',		'derived_from': [rep1_bam, rep2_bam] + pooled_ctl_bams,		'metadata': fc_signal_metadata}
 			],
 			'qc': [],
 			'stage_metadata': {} # initialized below
@@ -226,7 +296,8 @@ def get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server)
 def resolve_name_to_accessions(stages, stage_file_name):
 	#given a dict of named stages, and the name of one of the stages' outputs, return that output's
 	#ENCODE accession number
-	logger.debug("in resolve_name_to_accessions with stage_file_name %s" %(stage_file_name))
+	logger.debug("in resolve_name_to_accessions with stage_file_name")
+	logger.debug("%s" %(pprint.pformat(stage_file_name)))
 	accessions = []
 	for stage_name in stages:
 		if stages[stage_name].get('input_files'):
@@ -242,10 +313,12 @@ def resolve_name_to_accessions(stages, stage_file_name):
 				else:
 					accessions.append(encode_object.get('accession'))
 	if accessions:
-		logger.debug('resolve_name_to_accessons returning %s' %(accessions))
+		logger.debug('resolve_name_to_accessons returning:')
+		logger.debug('%s' %(pprint.pformat(accessions)))
 		return accessions
 	else:
-		logger.warning('Failed to resolve stage_file_name %s to accessions' %(stage_file_name))
+		logger.warning('Failed to resolve to accessions, stage_file_name:')
+		logger.warning('%s' %(pprint.pformat(stage_file_name)))
 		return None
 
 def patch_file(payload, keypair, server, dryrun):
@@ -304,7 +377,7 @@ def accession_file(f, keypair, server, dryrun, force):
 	#upload to S3
 	#remove the local file (to save space)
 	#return the ENCODEd file object
-	logger.debug('in accession_file with f %s' %(pprint.pformat(f)))
+	logger.debug('in accession_file with f %s' %(pprint.pformat(f['submitted_file_name'])))
 	dx = f.pop('dx')
 
 	local_fname = dx.name
@@ -435,19 +508,30 @@ def patch_outputs(stages, keypair, server, dryrun):
 		for n,file_metadata in enumerate(stages[stage_name]['output_files']):
 			if file_metadata.get('encode_object'):
 				logger.info('patch outputs stage_name %s n %s file_metadata[name] %s encode_object[accession] %s' %(stage_name, n, file_metadata['name'], file_metadata['encode_object'].get('accession')))
-				logger.debug("patch_otputs file_metadata %s" %(pprint.pformat(file_metadata)))
+				logger.debug("encode_object %s" %(pprint.pformat(file_metadata['encode_object']['@id'])))
+				logger.debug("patch_outputs file_metadata")
+				# logger.debug("%s" %(pprint.pformat(file_metadata)))
 				accession = file_metadata['encode_object'].get('accession')
 				derived_from_accessions = []
 				for derived_from in file_metadata['derived_from']:
 					#derived from can be a tuple specifying a name from different set of stages
 					if isinstance(derived_from,tuple):
-						derived_from_accessions.append(resolve_name_to_accessions(derived_from[0],derived_from[1]))
+						logger.debug('different stage file_metadata[derived_from] =')
+						logger.debug('%s' %(pprint.pformat(derived_from[1])))
+						stages_to_use = derived_from[0]
+						name_to_use = derived_from[1]
 					else:
-						derived_from_accessions.append(resolve_name_to_accessions(stages,derived_from))
+						logger.debug('same stage file_metadata[derived_from]')
+						logger.debug('%s' %(pprint.pformat(derived_from)))
+						stages_to_use = stages
+						name_to_use = derived_from
+					derived_from_accessions.append(resolve_name_to_accessions(stages_to_use, name_to_use))
+				logger.debug('derived_from_accessions = %s' %(pprint.pformat(derived_from_accessions)))
 				patch_metadata = {
 					'accession': accession,
 					'derived_from': [item for sublist in derived_from_accessions for item in sublist]
 				}
+				logger.debug('patch_metadata = %s' %(pprint.pformat(patch_metadata)))
 				patched_file = patch_file(patch_metadata, keypair, server, dryrun)
 				if patched_file:
 					stages[stage_name]['output_files'][n]['encode_object'] = patched_file
@@ -551,18 +635,22 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 	#on the portal with any arbitrary biological_replicate_numbers.
 	mapping_stages = get_peak_mapping_stages(peaks_analysis, experiment, keypair, server)
 
+	#returns a list with three elements: the mapping stages for the controls for [rep1, rep2, pooled]
+	#the control stages for rep1 and rep2 might be the same as the pool if the experiment used pooled controls
+	control_stages = get_control_mapping_stages(peaks_analysis, experiment, keypair, server)
+
 	#returns the stages for peak calling
-	peak_stages = get_peak_stages(peaks_analysis, mapping_stages, experiment, keypair, server)
+	peak_stages = get_peak_stages(peaks_analysis, mapping_stages, control_stages, experiment, keypair, server)
 
 	#accession all the output files
 	output_files = []
-	for stages in [mapping_stages[0], mapping_stages[1], peak_stages]:
+	for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
 		logger.info('accessioning output')
 		output_files.extend(accession_outputs(stages, experiment, keypair, server, dryrun, force))
 
 	#now that we have file accessions, loop again and patch derived_from
 	files_with_derived = []
-	for stages in [mapping_stages[0], mapping_stages[1], peak_stages]:
+	for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
 		files_with_derived.extend(patch_outputs(stages, keypair, server, dryrun))
 
 	full_analysis_step_versions = {
@@ -576,6 +664,18 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 		],
 		'histone-bwa-alignment-step-v-1' : [
 			{
+				'stages' : control_stages[0],
+				'stage_name': 'Filter and QC*',
+				'file_names' : ['filtered_bam'],
+				'status' : 'finished'
+			},
+			{
+				'stages' : control_stages[1],
+				'stage_name': 'Filter and QC*',
+				'file_names' : ['filtered_bam'],
+				'status' : 'finished'
+			},
+			{
 				'stages' : mapping_stages[0],
 				'stage_name': 'Filter and QC*',
 				'file_names' : ['filtered_bam'],
@@ -586,7 +686,7 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'stage_name': 'Filter and QC*',
 				'file_names' : ['filtered_bam'],
 				'status' : 'finished'
-			}
+			}			
 		],
 		'histone-spp-peak-calling-step-v-1' : [
 			{
