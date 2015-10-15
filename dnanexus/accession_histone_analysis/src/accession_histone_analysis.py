@@ -96,6 +96,11 @@ def get_mapping_stages(mapping_analysis, keypair, server, repn):
 	if input_stage['execution']['input']['reads2']:
 		input_fastq_accessions.append(input_stage['execution']['input']['reads2'])
 	fastqs = [common.encoded_get(urlparse.urljoin(server,'files/%s' %(acc), keypair)) for acc in input_fastq_accessions]
+	#here we get the actual DNAnexus file that was used as the reference
+	reference_file = dxpy.describe(input_stage['execution']['output']['output_JSON']['reference_tar'])
+	#and construct the alias to find the corresponding file at ENCODEd
+	reference_alias = "dnanexus:" + reference_file.get('id')
+	reference = common.encoded_get(urlparse.urljoin(server,'files/%s' %(reference_alias), keypair))
 
 	bam_metadata = common.merge_dicts({
 		'file_format': 'bam',
@@ -105,10 +110,11 @@ def get_mapping_stages(mapping_analysis, keypair, server, repn):
 	rep_mapping_stages = {
 		"Filter and QC*" : {
 			'input_files': [
-				{'name': 'rep%s_fastqs' %(repn),	'derived_from': None,					'metadata': None, 'encode_object': fastqs}
+				{'name': 'rep%s_fastqs' %(repn),	'derived_from': None,					'metadata': None, 'encode_object': fastqs},
+				{'name': 'reference', 'derived_from': None, 'metadata': None, 'encode_object': reference}
 			],
 			'output_files': [
-				{'name': 'filtered_bam',		'derived_from': ['rep%s_fastqs' %(repn)],	'metadata': bam_metadata}
+				{'name': 'filtered_bam',		'derived_from': ['rep%s_fastqs' %(repn),'reference'],	'metadata': bam_metadata}
 			],
 			'qc': [],
 			'stage_metadata': {} #initialized below
@@ -662,7 +668,7 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'status' : 'finished'
 			}
 		],
-		'histone-bwa-alignment-step-v-1' : [
+		'bwa-alignment-step-v-1' : [
 			{
 				'stages' : control_stages[0],
 				'stage_name': 'Filter and QC*',
@@ -688,7 +694,7 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'status' : 'finished'
 			}			
 		],
-		'histone-spp-peak-calling-step-v-1' : [
+		'histone-peak-calling-step-v-1' : [
 			{
 				'stages' : peak_stages,
 				'stage_name': 'ENCODE Peaks',
@@ -704,7 +710,7 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'status' : 'finished'
 			}
 		],
-		'histone-spp-peaks-to-bigbed-step-v-1' : [
+		'histone-peaks-to-bigbed-step-v-1' : [
 			{
 				'stages' : peak_stages,
 				'stage_name': 'ENCODE Peaks',
@@ -712,7 +718,7 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'status' : 'virtual'
 			}
 		],
-		'histone-spp-replicated-peaks-to-bigbed-step-v-1' : [
+		'histone-replicated-peaks-to-bigbed-step-v-1' : [
 			{
 				'stages' : peak_stages,
 				'stage_name': 'Overlap narrowpeaks',
