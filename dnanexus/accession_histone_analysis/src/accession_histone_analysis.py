@@ -89,7 +89,7 @@ def get_stage_metadata(analysis, stage_name):
 	return next(s['execution'] for s in analysis.get('stages') if re.match(stage_name,s['execution']['name']))
 
 def get_mapping_stages(mapping_analysis, keypair, server, repn):
-
+	logger.debug('in get_mapping_stages with mapping analysis %s and rep %s' %(mapping_analysis['id'], repn))
 	mapping_stages = mapping_analysis.get('stages')
 	input_stage = next(stage for stage in mapping_stages if stage['execution']['name'].startswith("Gather inputs"))
 	input_fastq_accessions = input_stage['execution']['input']['reads1']
@@ -100,7 +100,12 @@ def get_mapping_stages(mapping_analysis, keypair, server, repn):
 	reference_file = dxpy.describe(input_stage['execution']['output']['output_JSON']['reference_tar'])
 	#and construct the alias to find the corresponding file at ENCODEd
 	reference_alias = "dnanexus:" + reference_file.get('id')
+	logger.debug('looking for reference file with alias %s' %(reference_alias))
 	reference = common.encoded_get(urlparse.urljoin(server,'files/%s' %(reference_alias), keypair))
+	if reference:
+		logger.debug('found reference file %s' %(reference.get('accession')))
+	else:
+		logger.error('failed to find reference file %s' %(reference_alias))
 
 	bam_metadata = common.merge_dicts({
 		'file_format': 'bam',
