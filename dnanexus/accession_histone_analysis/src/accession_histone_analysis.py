@@ -29,11 +29,7 @@ def flat(l):
 	result = []
 	for el in l:
 		if hasattr(el, "__iter__") and not isinstance(el, basestring):
-<<<<<<< HEAD
 			result.extend(flat(el))
-=======
-			result.extend(flatten(el))
->>>>>>> origin/master
 		else:
 			result.append(el)
 	return result
@@ -76,7 +72,6 @@ def get_rep_bams(experiment, assembly, keypair, server):
 	logger.debug('get_rep_bams returning %s, %s' %(rep1_bam.get('accession'),rep2_bam.get('accession')))
 	return rep1_bam, rep2_bam
 
-<<<<<<< HEAD
 def get_rep_fastqs(experiment, keypair, server, repn):
 	fastq_valid_status = ['released','in progress','uploaded']
 	logger.debug('in get_rep_fastqs with experiment[accession] %s rep %d' %(experiment.get('accession'), repn))
@@ -86,25 +81,12 @@ def get_rep_fastqs(experiment, keypair, server, repn):
 	#resolve the biorep_n for each fastq
 	rep_fastqs = [f for f in fastqs if common.encoded_get(urlparse.urljoin(server,'%s' %(f.get('replicate'))), keypair).get('biological_replicate_number') == repn]
 	logger.debug('get_rep_fastqs returning %s' %([f.get('accession') for f in rep_fastqs]))
-=======
-def get_rep_fastqs(experiment, keypair, server, reps=[1,2]):
-	logger.debug('in get_rep_fastqs with experiment[accession] %s' %(experiment.get('accession')))
-	original_files = [common.encoded_get(urlparse.urljoin(server,'%s' %(uri)), keypair) for uri in experiment.get('original_files')]
-	fastqs = [f for f in original_files if f.get('file_format') == 'fastq']
-
-	#resolve the biorep_n for each fastq
-	rep_fastqs = [
-		[f for f in fastqs if common.encoded_get(urlparse.urljoin(server,'%s' %(f.get('replicate'))), keypair).get('biological_replicate_number') == n]
-		for n in reps]
-	logger.debug('get_rep_fastqs returning %s' %([[f.get('accession') for f in rep_fastqs[n]] for n,r in enumerate(reps)]))
->>>>>>> origin/master
 	return rep_fastqs
 
 def get_stage_metadata(analysis, stage_name):
 	logger.debug('in get_stage_metadata with analysis %s and stage_name %s' %(analysis['id'], stage_name))
 	return next(s['execution'] for s in analysis.get('stages') if re.match(stage_name,s['execution']['name']))
 
-<<<<<<< HEAD
 def get_experiment_accession(analysis):
 	m_executableName = re.search('(ENCSR[0-9]{3}[A-Z]{3})',analysis['executableName'])
 	m_name = re.search('(ENCSR[0-9]{3}[A-Z]{3})',analysis['name'])
@@ -156,27 +138,12 @@ def get_mapping_stages(mapping_analysis, keypair, server, repn):
 
 	filter_qc_stage = next(stage for stage in mapping_stages if stage['execution']['name'].startswith("Filter and QC"))
 	bam = dxpy.describe(filter_qc_stage['execution']['output']['filtered_bam'])
-
-=======
-def get_mapping_stages(mapping_analysis, keypair, server, repn):
-	logger.debug('in get_mapping_stages with mapping analysis %s and rep %s' %(mapping_analysis['id'], repn))
-	mapping_stages = mapping_analysis.get('stages')
-	input_stage = next(stage for stage in mapping_stages if stage['execution']['name'].startswith("Gather inputs"))
-	input_fastq_accessions = input_stage['execution']['input']['reads1']
-	if input_stage['execution']['input']['reads2']:
-		input_fastq_accessions.append(input_stage['execution']['input']['reads2'])
-	fastqs = [common.encoded_get(urlparse.urljoin(server,'files/%s' %(acc), keypair)) for acc in input_fastq_accessions]
->>>>>>> origin/master
 	#here we get the actual DNAnexus file that was used as the reference
 	reference_file = dxpy.describe(input_stage['execution']['output']['output_JSON']['reference_tar'])
 	#and construct the alias to find the corresponding file at ENCODEd
 	reference_alias = "dnanexus:" + reference_file.get('id')
 	logger.debug('looking for reference file with alias %s' %(reference_alias))
-<<<<<<< HEAD
 	reference = common.encoded_get(urlparse.urljoin(server,'files/%s' %(reference_alias)), keypair)
-=======
-	reference = common.encoded_get(urlparse.urljoin(server,'files/%s' %(reference_alias), keypair))
->>>>>>> origin/master
 	if reference:
 		logger.debug('found reference file %s' %(reference.get('accession')))
 	else:
@@ -216,7 +183,6 @@ def get_control_mapping_stages(peaks_analysis, experiment, keypair, server, reps
 	mapping_jobs = [dxpy.describe(ta['createdBy']['job']) for ta in tas]
 	mapping_analyses = [dxpy.describe(mapping_job['analysis']) for mapping_job in mapping_jobs]
 
-<<<<<<< HEAD
 	mapping_stages = []
 	for (i,repn) in enumerate(reps):
 		mapping_stage = get_mapping_stages(mapping_analyses[i], keypair, server, repn)
@@ -227,11 +193,6 @@ def get_control_mapping_stages(peaks_analysis, experiment, keypair, server, reps
 			mapping_stages.append(mapping_stage)
 
 	return mapping_stages
-=======
-	ctl_mapping_stages = [get_mapping_stages(mapping_analyses[i], keypair, server, repn) for (i,repn) in enumerate(reps)]
-
-	return ctl_mapping_stages
->>>>>>> origin/master
 
 def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1,2]):
 	# Find the tagaligns actually used as inputs into the analysis
@@ -245,7 +206,6 @@ def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1
 	mapping_jobs = [dxpy.describe(ta['createdBy']['job']) for ta in tas]
 	mapping_analyses = [dxpy.describe(mapping_job['analysis']) for mapping_job in mapping_jobs]
 
-<<<<<<< HEAD
 	mapping_stages = []
 	for (i,repn) in enumerate(reps):
 		mapping_stage = get_mapping_stages(mapping_analyses[i], keypair, server, repn)
@@ -256,28 +216,6 @@ def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1
 			mapping_stages.append(mapping_stage)
 
 	return mapping_stages
-=======
-	mapping_stages = [analysis.get('stages') for analysis in mapping_analyses]
-	#mapping_stages is a list of lists (one list per rep) of stages, each of which contains somewhere the Filter and QC stage for that rep
-	#So we need to flatten that list of lists back to a single list with one stage per rep
-	input_stages = [next(stage for stage in rep_mapping_stages if stage['execution']['name'].startswith("Gather inputs")) for rep_mapping_stages in mapping_stages]
-	filter_qc_stages = [next(stage for stage in rep_mapping_stages if stage['execution']['name'].startswith("Filter and QC")) for rep_mapping_stages in mapping_stages]
-	bams = [dxpy.describe(stage['execution']['output']['filtered_bam']) for stage in filter_qc_stages]
-	experiment_fastqs = get_rep_fastqs(experiment, keypair, server, reps)
-	logger.info('Found accessioned experiment fastqs with accessions %s' %([[f.get('accession') for f in fq] for fq in experiment_fastqs]))
-	input_fastq_accessions = [stage['execution']['input']['reads1'] for stage in input_stages] #will be two arrays
-	for i,reads2_accession in enumerate([stage['execution']['input']['reads2'] for stage in input_stages]):
-		if reads2_accession:
-			input_fastq_accessions[i].append(reads2_accession)
-	logger.info('Found analysis input fastq accessions %s' %(input_fastq_accessions))
-	fastqs = [[common.encoded_get(urlparse.urljoin(server,'files/%s' %(acc))) for acc in accessions] for accessions in input_fastq_accessions]
-	logger.info('Found input fastq objects with accessions %s' %([[f.get('accession') for f in fq] for fq in fastqs]))
-	#TODO add code to warn if it appears we're trying to accession an out-dated analysis (i.e. one not derived from all fastqs)
-
-	rep_mapping_stages = [get_mapping_stages(mapping_analyses[i], keypair, server, repn) for (i,repn) in enumerate(reps)]
-
-	return rep_mapping_stages
->>>>>>> origin/master
 
 def pooled_controls(peaks_analysis, rep):
 	#this is not surfaced explicitly so must be inferred
@@ -511,7 +449,6 @@ def accession_file(f, keypair, server, dryrun, force):
 			logger.error('MD5 duplicate check. GET failed: %s %s' % (r.status_code, r.reason))
 			logger.error(r.text)
 			md5_exists = None
-<<<<<<< HEAD
 	else:
 		md5_exists = r.json()
 
@@ -534,30 +471,6 @@ def accession_file(f, keypair, server, dryrun, force):
 			logger.info("Returning duplicate file unchanged")
 			return md5_exists
 	else:
-=======
-	else:
-		md5_exists = r.json()
-
-	#check if an ENCODE accession number in in the list of tags, as it would be if accessioned by this script or similar scripts
-	for tag in dx.tags:
-		m = re.findall(r'ENCFF\d{3}\D{3}', tag)
-		if m:
-			logger.info('%s appears to contain ENCODE accession number in tag %s.' %(dx.get_id(),m))
-			accession_in_tag = True
-			# if not force:
-			# 	return
-		else:
-			accession_in_tag = False
-
-	#TODO check here if file is deprecated and, if so, warn
-	if md5_exists:
-		if force:
-			return patch_file(f, keypair, server, dryrun)
-		else:
-			logger.info("Returning duplicate file unchanged")
-			return md5_exists
-	else:
->>>>>>> origin/master
 		logger.info('posting new file %s' %(f.get('submitted_file_name')))
 		logger.debug('%s' %(f))
 		new_file_object = post_file(f, keypair, server, dryrun)
@@ -716,7 +629,6 @@ def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force):
 
 def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, force):
 
-<<<<<<< HEAD
 	experiment_accession = get_experiment_accession(mapping_analysis)
 	if not experiment_accession:
 		logger.info("Missing experiment accession or rep in %s, skipping." %(mapping_analysis['name']))
@@ -731,17 +643,6 @@ def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, 
 
 	logger.info("%s rep %d: accessioning mapping." %(experiment_accession, repn))
 
-=======
-	m = re.match('^Map (ENCSR[0-9]{3}[A-Z]{3}) rep(\d+)',mapping_analysis['name'])
-	if m:
-		experiment_accession = m.group(1)
-		repn = int(m.group(2))
-		logger.info(experiment_accession)
-	else:
-		logger.info("Missing experiment accession or rep in %s, skipping." %(mapping_analysis['name']))
-		return []
-
->>>>>>> origin/master
 	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
 	mapping_stages = get_mapping_stages(mapping_analysis, keypair, server, repn)
 
@@ -773,7 +674,6 @@ def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, 
 
 def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, force):
 
-<<<<<<< HEAD
 	# m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
 	# if m:
 	# 	experiment_accession = m.group(1)
@@ -785,15 +685,6 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 	else:
 		logger.error("No experiment accession in %s, skipping." %(peaks_analysis['executableName']))
 		return None
-=======
-	m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
-	if m:
-		experiment_accession = m.group(1)
-		logger.info(experiment_accession)
-	else:
-		logger.info("No experiment accession in %s, skipping." %(peaks_analysis['executableName']))
-		return
->>>>>>> origin/master
 
 	#returns the experiment object
 	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
@@ -802,17 +693,13 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 	#in this context rep1,rep2 are the first and second replicates in the pipeline.  They may have been accessioned
 	#on the portal with any arbitrary biological_replicate_numbers.
 	mapping_stages = get_peak_mapping_stages(peaks_analysis, experiment, keypair, server)
-<<<<<<< HEAD
 	if not mapping_stages:
 		logger.error("Failed to find peak mapping stages")
 		return None
-=======
->>>>>>> origin/master
 
 	#returns a list with three elements: the mapping stages for the controls for [rep1, rep2, pooled]
 	#the control stages for rep1 and rep2 might be the same as the pool if the experiment used pooled controls
 	control_stages = get_control_mapping_stages(peaks_analysis, experiment, keypair, server)
-<<<<<<< HEAD
 	if not control_stages:
 		logger.error("Failed to find control mapping stages")
 		return None
@@ -822,11 +709,6 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 	if not peak_stages:
 		logger.error("Failed to find peak stages")
 		return None
-=======
-
-	#returns the stages for peak calling
-	peak_stages = get_peak_stages(peaks_analysis, mapping_stages, control_stages, experiment, keypair, server)
->>>>>>> origin/master
 
 	#accession all the output files
 	output_files = []
@@ -946,13 +828,8 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline, analysis
 			accessioned_files = accession_mapping_analysis_files(analysis, keypair, server, dryrun, force)
 		else:
 			logger.error('unrecognized analysis pattern ... skipping.')
-<<<<<<< HEAD
 			accessioned_files = None
 		logger.info("Accessioned: %s" %([f.get('accession') for f in (accessioned_files or [])]))
-=======
-			accessioned_files = []
-		logger.info("Accessioned: %s" %([f.get('accession') for f in accessioned_files]))
->>>>>>> origin/master
 
 	common.touch(outfn)
 	outfile = dxpy.upload_local_file(outfn)
