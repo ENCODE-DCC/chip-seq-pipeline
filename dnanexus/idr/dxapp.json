@@ -100,10 +100,23 @@
     }
   ],
   "runSpec": {
-    "interpreter": "python2.7",
-    "file": "src/idr.py",
+    "interpreter": "bash",
+    "file": "src/test.sh",
     "bundledDepends": [
-      {"name": "idr_venv.tgz", "id": {"$dnanexus_link": "file-BZzJy8Q0qb5yfjXyQv6P6VgX"}}
+      {
+        "name": "Anaconda3-2.3.0-Linux-x86_64.sh",
+        "id": {"$dnanexus_link": "file-BjXXzJj0g47X3Pz88v1z2Pgy"}
+      }
+    ],
+    "execDepends": [
+      {
+        "name": "idr",
+        "package_manager": "git",
+        "url": "https://github.com/nboley/idr.git",
+        "tag": "2.0.2",
+        "destdir": "/home/dnanexus",
+        "build_commands": "bash ../Anaconda3-2.3.0-Linux-x86_64.sh & bash python setup.py install"
+      }
     ],
     "systemRequirements": {
       "main": {"instanceType": "mem2_hdd2_x1"}

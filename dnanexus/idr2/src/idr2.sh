@@ -32,16 +32,8 @@ main() {
     dx download "$rep2_peaks" -o rep2_peaks
     dx download "$pooled_peaks" -o pooled_peaks
 
-    sudo mv /etc/apt/apt.conf.d/99dnanexus /tmp
-    sudo add-apt-repository -y ppa:fkrull/deadsnakes
-    sudo apt-get update
-    sudo apt-get -y install python3.4-dev libfreetype6-dev
-
-    source env3/bin/activate
-    mkdir idr_test
-    cd idr_test
     idr --version
-    idr --samples ~/env3/idr/tests/data/peak1 ~/env3/idr/tests/data/peak2 --plot --output-file IDR_test.narrowPeak --log-output-file IDR_test-out.txt
+    idr --samples rep1_peaks rep2_peaks --plot --output-file IDR_test.narrowPeak --log-output-file IDR_test-out.txt
 
     log_file=$(dx upload log_file --brief)
     output_file=$(dx upload output_file --brief)
