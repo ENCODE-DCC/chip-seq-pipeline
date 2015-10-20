@@ -37,6 +37,7 @@ POOL_APPLET_NAME = 'pool'
 PSEUDOREPLICATOR_APPLET_NAME = 'pseudoreplicator'
 ENCODE_SPP_APPLET_NAME = 'encode_spp'
 IDR_APPLET_NAME='idr'
+IDR2_APPLET_NAME='idr2'
 ENCODE_IDR_APPLET_NAME='encode_idr'
 
 APPLETS = {}
@@ -66,7 +67,7 @@ def get_args():
 	parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks",	default='ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz')
 	parser.add_argument('--idr', 	 help='Report peaks with and without IDR analysis',					default=False, action='store_true')
 	#parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
-	parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default=1)
+	parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default=2)
 	parser.add_argument('--yes', 	 help='Run the workflow',					default=False, action='store_true')
 
 	args = parser.parse_args()
