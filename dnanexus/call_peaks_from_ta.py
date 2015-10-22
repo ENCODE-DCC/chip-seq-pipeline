@@ -29,7 +29,7 @@ def get_args():
 	parser.add_argument('--gsize', help="Genome size string for MACS2, e.g. mm or hs", required=True)
 	parser.add_argument('--csizes', help="chrom.sizes file for bedtobigbed, e.g. ENCODE Reference Files:/mm10/male.mm10.chrom.sizes", required=True)
 	parser.add_argument('--idr', help="Run IDR", default=False, action='store_true')
-	parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default=None)
+	parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default="2")
 
 	args = parser.parse_args()
 
@@ -194,9 +194,7 @@ def main():
 			'--ctl1 %s --ctl2 %s ' %(ctl1_ta, ctl2_ta) + \
 			'--genomesize %s --chrom_sizes "%s"' %(args.gsize, args.csizes)
 		if args.idr:
-			run_command += ' --idr'
-			if args.idrversion:
-				run_command += ' --idrversion %s' %(args.idrversion)
+			run_command += ' --idr --idrversion %s' %(args.idrversion)
 
 		print run_command
 		try:

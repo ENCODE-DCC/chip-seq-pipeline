@@ -242,7 +242,7 @@ def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep
 
 
 @dxpy.entry_point('main')
-def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold, idr_version, rank):
+def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold, rank):
 
     # Initialize the data object inputs on the platform into
     # dxpy.DXDataObject instances.

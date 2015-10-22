@@ -1,7 +1,7 @@
 {
   "name": "idr2",
-  "title": "idr2",
-  "summary": "IDR v2",
+  "title": "IDR2",
+  "summary": "IDR2 Batch Consistency Analysis",
   "dxapi": "1.0.0",
   "version": "0.0.1",
   "categories": [
@@ -10,49 +10,109 @@
   "inputSpec": [
     {
       "name": "rep1_peaks",
+      "label": "First replicate peak file",
       "class": "file",
       "optional": false
     },
     {
       "name": "rep2_peaks",
+      "label": "Second replicate peak file",
       "class": "file",
       "optional": false
     },
     {
       "name": "pooled_peaks",
+      "label": "Pooled replicates peak file",
       "class": "file",
       "optional": false
     },
     {
-      "name": "outfile_prefix",
-      "class": "string",
-      "optional": true
+      "name": "idr_threshold",
+      "label": "IDR threshold",
+      "class": "float",
+      "optional": true,
+      "default": 0.02
     },
     {
-      "name": "ranking_measure",
+      "name": "rank",
+      "label": "Ranking measure",
       "class": "string",
-      "optional": true
+      "optional": true,
+      "default": "signal.value"
     }
   ],
   "outputSpec": [
     {
-      "name": "log_file",
+      "name": "EM_fit_output",
+      "label": "The output from EM fitting",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "empirical_curves_output",
+      "label": "The output for plotting empirical curves",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "EM_parameters_log",
+      "label": "The parameters estimated from EM and the log of consistency analysis",
       "class": "file"
     },
     {
-      "name": "output_file",
+      "name": "npeaks_pass",
+      "label": "File with the number of peaks that pass the IDR threshold for pairwise analysis",
       "class": "file"
     },
     {
-      "name": "plot_file",
+      "name": "overlapped_peaks",
+      "label": "The full set of peaks that overlap between the replicates with local and global IDR",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "IDR_output",
+      "label": "IDR output file",
       "class": "file"
+    },
+    {
+      "name": "IDR_peaks",
+      "label": "Final IDR thresholded file",
+      "class": "file"
+    },
+    {
+      "name": "N",
+      "label": "The number of peaks that pass the IDR threshold for pairwise analysis",
+      "class": "int"
+    },
+    {
+      "name": "IDR2_plot",
+      "label": "The plot from IDRv2",
+      "class": "file",
+      "optional": true
     }
   ],
   "runSpec": {
-    "interpreter": "bash",
-    "file": "src/idr2.sh",
-    "bundledDepends": [
-      {"name": "idr_venv.tgz", "id": {"$dnanexus_link": "file-BZpp2zj0XFpx45KJ1527JXvJ"}}
+    "interpreter": "python2.7",
+    "file": "src/idr2.py",
+    "distribution": "Ubuntu", "release": "14.04",
+    "systemRequirements": {
+      "*": {"instanceType": "mem1_ssd1_x2"}
+    },
+    "execDepends": [
+      {"name": "python3-dev"},
+      {"name": "python3-numpy"},
+      {"name": "python3-scipy"},
+      {"name": "python3-matplotlib"},
+      {"name": "python3-setuptools"},
+      {
+        "name": "idr",
+        "package_manager": "git",
+        "url": "https://github.com/nboley/idr.git",
+        "tag": "2.0.2",
+        "destdir": "/home/dnanexus/",
+        "build_commands": "python3 setup.py install"
+      }
     ]
   },
   "access": {
