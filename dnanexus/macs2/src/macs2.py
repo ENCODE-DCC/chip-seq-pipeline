@@ -41,7 +41,7 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
 
 	#Define the output filenames
 
-	peaks_dirname = 'peaks'
+	peaks_dirname = 'peaks_macs'
 	if not os.path.exists(peaks_dirname):
 		os.makedirs(peaks_dirname)
 	prefix = experiment.name
