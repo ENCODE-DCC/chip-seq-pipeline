@@ -43,6 +43,7 @@ def get_args():
 	parser.add_argument('experiments',	help='List of ENCSR accessions. Can be ENCSR,biorep_i,biorep_j,.. to restrict mapping to specific replicate(s).', nargs='*', default=None)
 	parser.add_argument('--infile',		help='File containing ENCSR accessions', type=argparse.FileType('rU'), default=sys.stdin)
 	parser.add_argument('--assembly', help="Reference genome assembly, e.g. GRCh38, hg19, or mm10")
+	parser.add_argument('--sex_specific', help="Mapping should be to male or female reference.  Default male.", default=False, action='store_true')
 	parser.add_argument('--debug', help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--outp', help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf', help="Output folder name or ID", 			default="/")
@@ -150,31 +151,34 @@ def replicates_to_map(files, server, keypair, biorep_ns=[]):
 
 		return replicate_objects
 
-def choose_reference(experiment, biorep_n, server, keypair):
+def choose_reference(experiment, biorep_n, server, keypair, sex_specific):
 
-	replicates = [common.encoded_get(urlparse.urljoin(server,rep_uri), keypair, frame='embedded') for rep_uri in experiment['replicates']]
-	replicate = next(rep for rep in replicates if rep.get('biological_replicate_number') == biorep_n)
-	logging.debug('Replicate uuid %s' %(replicate.get('uuid')))
-	organism_uri = replicate.get('library').get('biosample').get('organism')
-	organism_obj = common.encoded_get(urlparse.urljoin(server,organism_uri), keypair)
+	if sex_specific:
+		replicates = [common.encoded_get(urlparse.urljoin(server,rep_uri), keypair, frame='embedded') for rep_uri in experiment['replicates']]
+		replicate = next(rep for rep in replicates if rep.get('biological_replicate_number') == biorep_n)
+		logging.debug('Replicate uuid %s' %(replicate.get('uuid')))
+		organism_uri = replicate.get('library').get('biosample').get('organism')
+		organism_obj = common.encoded_get(urlparse.urljoin(server,organism_uri), keypair)
 
-	try:
-		organism_name = organism_obj['name']
-		logging.debug("Organism name %s" %(organism_name))
-	except:
-		logging.error('%s:rep%d Cannot determine organism.' %(experiment.get('accession'), biorep_n))
-		raise
-		return None
-
-	try:
-		sex = replicate.get('library').get('biosample').get('sex')
-		if sex not in ['male', 'female']:
+		try:
+			organism_name = organism_obj['name']
+			logging.debug("Organism name %s" %(organism_name))
+		except:
+			logging.error('%s:rep%d Cannot determine organism.' %(experiment.get('accession'), biorep_n))
 			raise
-	except:
-		logging.warning('%s:rep%d Sex is %s.  Mapping to male reference.' %(experiment.get('accession'), biorep_n, sex))
-		sex = 'male'
+			return None
 
-	logging.debug('Organism %s sex %s' %(organism_name, sex))
+		try:
+			sex = replicate.get('library').get('biosample').get('sex')
+			assert sex in ['male', 'female']
+		except:
+			logging.warning('%s:rep%d Sex is %s.  Mapping to male reference.' %(experiment.get('accession'), biorep_n, sex))
+			sex = 'male'
+
+		logging.debug('Organism %s sex %s' %(organism_name, sex))
+	else:
+		sex = 'male'
+	
 	genome_assembly = args.assembly
 
 	reference = next((ref.get('file') for ref in REFERENCES if ref.get('organism') == organism_name and ref.get('sex') == sex and ref.get('assembly') == genome_assembly), None)
@@ -287,7 +291,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 	'''
 	return workflow
 
-def map_only(experiment, biorep_n, files, key, server, keypair):
+def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific):
 
 	if not files:
 		logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
@@ -297,7 +301,7 @@ def map_only(experiment, biorep_n, files, key, server, keypair):
 	workflows = []
 	input_shield_stage_input = {}
 
-	reference_tar = choose_reference(experiment, biorep_n, server, keypair)
+	reference_tar = choose_reference(experiment, biorep_n, server, keypair, sex_specific)
 	if not reference_tar:
 		logging.warning('%s:%s Cannot determine reference' %(experiment.get('accession'), biorep_n))
 		return
@@ -384,9 +388,9 @@ def main():
 				if biorep_files:
 					logging.warning('%s: leftover file(s) %s' %(experiment.get('accession'), biorep_files))
 				if paired_files:
-					pe_jobs = map_only(experiment, biorep_n, paired_files, args.key, server, keypair)
+					pe_jobs = map_only(experiment, biorep_n, paired_files, args.key, server, keypair, args.sex_specific)
 				if unpaired_files:
-					se_jobs = map_only(experiment, biorep_n, unpaired_files, args.key, server, keypair)
+					se_jobs = map_only(experiment, biorep_n, unpaired_files, args.key, server, keypair, args.sex_specific)
 				if paired_files and pe_jobs:
 					outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))
 					outstrings.append('paired jobs:%s' %([j.get_id() for j in pe_jobs]))
