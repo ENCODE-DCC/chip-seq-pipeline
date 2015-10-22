@@ -22,30 +22,42 @@ tf_workflow.py --debug --name ENCSR000EEB-fullIDR --outf /ENCSR000EEB-fullIDR-$(
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz
 
 # ENCSR000EEB IDRv2 from TA
-tf_workflow.py --debug --name ENCSR000EEB-fullIDRnomap --outf /ENCSR000EEB-fullIDRnomap-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
+tf_workflow.py --debug --nomap --yes \
+--name ENCSR000EEB-fullIDRnomap --outf /ENCSR000EEB-fullIDRnomap-$(date +"%Y%m%d%H%M")  \
 --rep1pe false --rep2pe false \
---idrversion 2 \
+--idr --idrversion 2 \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
---ctl2 /ENCSR000EEB/ctl/ENCFF000XTF.raw.srt.filt.nodup.srt.SE.tagAlign.gz
+--ctl2 /ENCSR000EEB/ctl/ENCFF000XTF.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--genomesize hs --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--reference "ENCODE Reference Files:/hg19/hg19_XY.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR000BUA SE IDRv2
-tf_workflow.py --debug --name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --yes \
---idrversion 2 \
+tf_workflow.py --debug --yes \
+--name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-$(date +"%Y%m%d%H%M") \
+--idr --idrversion 2 \
 --rep1 /ENCSR000BUA/rep1/ENCFF000RBI.fastq.gz \
 --rep2 /ENCSR000BUA/rep2/ENCFF000RBC.fastq.gz \
 --ctl1 /ENCSR000BUA/ctl1/ENCFF000RCK.fastq.gz \
---ctl2 /ENCSR000BUA/ctl2/ENCFF000RCP.fastq.gz
+--ctl2 /ENCSR000BUA/ctl2/ENCFF000RCP.fastq.gz \
+--genomesize hs --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--reference "ENCODE Reference Files:/hg19/hg19_XY.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR000BUA SE IDRv2 from TA
-tf_workflow.py --debug --name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
+tf_workflow.py --debug --nomap --yes \
+--name ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-$(date +"%Y%m%d%H%M") \
 --rep1pe false --rep2pe false \
---idrversion 2 \
+--idr --idrversion 2 \
 --rep1 /ENCSR000BUA/rep1/ENCFF000RBI.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --rep2 /ENCSR000BUA/rep2/ENCFF000RBC.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --ctl1 /ENCSR000BUA/ctl1/ENCFF000RCK.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
---ctl2 /ENCSR000BUA/ctl2/ENCFF000RCP.raw.srt.filt.nodup.srt.SE.tagAlign.gz
+--ctl2 /ENCSR000BUA/ctl2/ENCFF000RCP.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--genomesize hs --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--reference "ENCODE Reference Files:/hg19/hg19_XY.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR000DMT SE IDRv2
 tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --yes \
@@ -56,13 +68,17 @@ tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-
 --ctl2 /ENCSR000DMT/ctl/ENCFF000SAZ.fastq.gz
 
 # ENCSR000DMT SE IDRv2 from TA
-tf_workflow.py --debug --name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
---idrversion 2 \
+tf_workflow.py --debug --nomap --yes \
+--name ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-$(date +"%Y%m%d%H%M") \
+--idr  --idrversion 2 \
 --rep1pe false --rep2pe false \
 --rep1 /ENCSR000DMT/rep1/ENCFF000SBI.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --rep2 /ENCSR000DMT/rep2/ENCFF000SBK.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --ctl1 /ENCSR000DMT/ctl/ENCFF000SAZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
---ctl2 /ENCSR000DMT/ctl/ENCFF000SAZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz
+--ctl2 /ENCSR000DMT/ctl/ENCFF000SAZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
+--genomesize hs --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--reference "ENCODE Reference Files:/hg19/hg19_XY.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR769ZTN PE IDRv2
 tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --yes \
@@ -73,30 +89,42 @@ tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-
 --ctl2 /ENCSR769ZTN/ctl2/ENCFF002EFU.fastq.gz /ENCSR769ZTN/ctl2/ENCFF002EFS.fastq.gz
 
 # ENCSR769ZTN PE IDRv2 from TA
-tf_workflow.py --debug --name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
+tf_workflow.py --debug --nomap --yes \
+--name ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-$(date +"%Y%m%d%H%M") \
+--idr --idrversion 2 \
 --rep1pe true --rep2pe true \
---idrversion 2 \
 --rep1 /ENCSR769ZTN/rep1/ENCFF002ELMENCFF002ELL.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz \
 --rep2 /ENCSR769ZTN/rep2/ENCFF002ELKENCFF002ELJ.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz \
 --ctl1 /ENCSR769ZTN/ctl1/ENCFF002EFTENCFF002EFQ.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz \
---ctl2 /ENCSR769ZTN/ctl2/ENCFF002EFUENCFF002EFS.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz
+--ctl2 /ENCSR769ZTN/ctl2/ENCFF002EFUENCFF002EFS.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz \
+--genomesize hs --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--reference "ENCODE Reference Files:/hg19/hg19_XY.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
-# ENCSR795HTY PE IDRv2
-tf_workflow.py --debug --name ENCSR795HTY-fullIDR --outf /ENCSR795HTY-fullIDR --idr --yes \
---idrversion 2 \
+# ENCSR795HTY PE IDRv2 map and call peaks
+tf_workflow.py --debug --yes \
+--name ENCSR795HTY-map-idr2-$(date +"%Y%m%d%H%M") --outf /ENCSR795HTY-map-idr2-$(date +"%Y%m%d%H%M") \
+--idr --idrversion 2 \
 --rep1 /ENCSR795HTY/rep1/ENCFF240UHP.fastq.gz /ENCSR795HTY/rep1/ENCFF555NNB.fastq.gz \
 --rep2 /ENCSR795HTY/rep2/ENCFF859GVE.fastq.gz /ENCSR795HTY/rep2/ENCFF974VFA.fastq.gz \
 --ctl1 /ENCSR795HTY/ctl1/ENCFF445UEI.fastq.gz /ENCSR795HTY/ctl1/ENCFF141YIN.fastq.gz \
---ctl2 /ENCSR795HTY/ctl2/ENCFF210VLR.fastq.gz /ENCSR795HTY/ctl2/ENCFF057GZE.fastq.gz
+--ctl2 /ENCSR795HTY/ctl2/ENCFF210VLR.fastq.gz /ENCSR795HTY/ctl2/ENCFF057GZE.fastq.gz \
+--genomesize hs --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--reference "ENCODE Reference Files:/hg19/hg19_XY.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR795HTY PE IDRv2 from TA
-tf_workflow.py --debug --name ENCSR795HTY-fullIDR --outf /ENCSR795HTY-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
---idrversion 2 \
+tf_workflow.py --debug --nomap --yes \
+--name ENCSR795HTY-nomap-idr2 --outf /ENCSR795HTY-nomap-idr2-$(date +"%Y%m%d%H%M") \
+--idr --idrversion 2 \
 --rep1pe true --rep2pe true \
 --rep1 file-BZ05pb80zp5PFPKxXxXV5ZV8 \
 --rep2 file-BZ0KG380YBv2BV14PxXqYfBJ \
 --ctl1 file-BZ0pPy00ByzPFPKxXxXV8BJ4 \
---ctl2 file-BZ1Bp0j0xByP4350J52qPb7Z
+--ctl2 file-BZ1Bp0j0xByP4350J52qPb7Z \
+--genomesize hs --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--reference "ENCODE Reference Files:/hg19/hg19_XY.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 
 ## chr1 extracts
@@ -129,12 +157,17 @@ tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-ful
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz
 
 # ENCSR000EEB chr21 IDRv2 from TA
-tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --idr --idrversion 2 --nomap --yes \
+tf_workflow.py --debug --yes --nomap \
+--name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") \
+--idr --idrversion 2 \
 --rep1pe false --rep2pe false \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr21.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr21.tagAlign.gz \
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz \
---ctl2 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz
+--ctl2 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz \
+--genomesize hs --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--reference "ENCODE Reference Files:/hg19/hg19_XY.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR000EEB chr21 no idr from TA
 tf_workflow.py --debug --name ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --nomap --yes \
@@ -192,7 +225,6 @@ dx run \
 --input "rep1_peaks=/test_data/ENCFF000XUL-chr21.regionPeak.gz" \
 --input "rep2_peaks=/test_data/ENCFF000XUK-chr21.regionPeak.gz" \
 --input "pooled_peaks=/test_data/ENCFF000XUL-chr21-ENCFF000XUK-chr21_pooled.regionPeak.gz" \
---input "idr_version=1" \
 --verbose \
 --destination /IDRv1_test \
 --name IDRv1_test \
@@ -206,28 +238,26 @@ dx run \
 --input "rep1_peaks=/test_data/ENCFF000XUL-chr21.regionPeak.gz" \
 --input "rep2_peaks=/test_data/ENCFF000XUK-chr21.regionPeak.gz" \
 --input "pooled_peaks=/test_data/ENCFF000XUL-chr21-ENCFF000XUK-chr21_pooled.regionPeak.gz" \
---input "idr_version=2" \
 --verbose \
 --destination /IDRv2_test \
 --name IDRv2_test \
 --delay-workspace-destruction \
 --priority high \
 --yes \
-idr
+idr2
 
 # Run IDRv2 applet with ENCSR000EEB rep1 vs rep2
 dx run \
 --input "rep1_peaks=/test_data/ENCFF000XUL.raw.srt.filt.nodup.srt.SE.fixcoord.regionPeak.gz" \
 --input "rep2_peaks=/test_data/ENCFF000XUK.raw.srt.filt.nodup.srt.SE.regionPeak.gz" \
 --input "pooled_peaks=/test_data/ENCFF000XUL.raw.srt.filt.nodup.srt.SE-ENCFF000XUK.raw.srt.filt.nodup.srt.SE_pooled.regionPeak.gz" \
---input "idr_version=2" \
 --verbose \
 --destination /IDRv2_test \
 --name IDRv2_test \
 --delay-workspace-destruction \
 --priority high \
 --yes \
-idr
+idr2
 
 # Run SPP with ENCSR000EEB chr21 rep1 vs input
 dx run \
