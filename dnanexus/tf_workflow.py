@@ -36,6 +36,7 @@ SPP_APPLET_NAME = 'spp'
 POOL_APPLET_NAME = 'pool'
 PSEUDOREPLICATOR_APPLET_NAME = 'pseudoreplicator'
 ENCODE_SPP_APPLET_NAME = 'encode_spp'
+ENCODE_MACS2_APPLET_NAME = 'encode_macs2'
 IDR_APPLET_NAME='idr'
 IDR2_APPLET_NAME='idr2'
 ENCODE_IDR_APPLET_NAME='encode_idr'
@@ -48,11 +49,13 @@ def get_args():
 		description=__doc__, epilog=EPILOG,
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
-	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
-	parser.add_argument('--reference', help="Reference tar to map to", 			default='ENCODE Reference Files:/hg19/hg19_XY.tar.gz')
-	parser.add_argument('--chrom_sizes', help="chrom.sizes file for bed to bigbed", default='ENCODE Reference Files:/hg19/male.hg19.chrom.sizes')
-	parser.add_argument('--genomesize', help="Genome size string for MACS2, e.g. mm or hs", default='hs')
-	parser.add_argument('--as_file', help=".as file for bed to bigbed", default='ENCODE Reference Files:narrowPeak.as')
+	parser.add_argument('--debug',   help="Print debug messages and hold jobs for ssh", 				default=False, action='store_true')
+	parser.add_argument('--reference', help="Reference tar to map to")
+	parser.add_argument('--chrom_sizes', help="chrom.sizes file for bed to bigbed")
+	parser.add_argument('--genomesize', help="Genome size string for MACS2, e.g. mm or hs")
+	parser.add_argument('--narrowpeak_as', help=".as file for bed to bigbed", default='ENCODE Reference Files:narrowPeak.as')
+	parser.add_argument('--gappedpeak_as', help=".as file for bed to bigbed", default='ENCODE Reference Files:gappedPeak.as')
+	parser.add_argument('--broadpeak_as', help=".as file for bed to bigbed", default='ENCODE Reference Files:broadPeak.as')
 	parser.add_argument('--rep1',    help="Replicate 1 fastq or tagAlign", 				default=None, nargs='*')
 	parser.add_argument('--rep2',    help="Replicate 2 fastq or tagAlign", 				default=None, nargs='*')
 	parser.add_argument('--ctl1',    help="Control for replicate 1 fastq or tagAlign", 	default=None, nargs='*')
@@ -64,7 +67,7 @@ def get_args():
 	parser.add_argument('--nomap',   help='Given tagAligns, skip to peak calling', default=False, action='store_true')
 	parser.add_argument('--rep1pe', help='Specify if rep1 is PE (required only if --nomap)', type=bool, default=None)
 	parser.add_argument('--rep2pe', help='Specify if rep2 is PE (required only if --nomap)', type=bool, default=None)
-	parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks",	default='ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz')
+	parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks")
 	parser.add_argument('--idr', 	 help='Report peaks with and without IDR analysis',					default=False, action='store_true')
 	#parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
 	parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default=2)
@@ -161,16 +164,21 @@ def resolve_file(identifier):
 			folder_name = '/' + folder_name
 		file_name = m.group(2)
 	else:
-		folder_name = '/'
+		# folder_name = '/'
+		folder_name = None
 		file_name = file_identifier
 
 	logging.debug("Looking for file %s in folder %s" %(file_name, folder_name))
 
 	try:
-		file_handler = dxpy.find_one_data_object(name=file_name, folder=folder_name, project=project.get_id(),
-			more_ok=False, zero_ok=False, return_handler=True)
-	except:
-		logging.debug('%s not found in project %s folder %s' %(file_name, project.get_id(), folder_name))
+		if folder_name:
+			file_handler = dxpy.find_one_data_object(name=file_name, folder=folder_name, project=project.get_id(),
+				recurse=False, more_ok=False, zero_ok=False, return_handler=True)
+		else:
+			file_handler = dxpy.find_one_data_object(name=file_name, project=project.get_id(), folder='/',
+				recurse=True, more_ok=False, zero_ok=False, return_handler=True)
+	except dxpy.DXSearchError:
+		logging.debug('%s not found in project %s folder %s.  Trying as file ID' %(file_name, project.get_id(), folder_name))
 		try:
 			file_handler = dxpy.DXFile(dxid=identifier, mode='r')
 		except:
@@ -181,7 +189,8 @@ def resolve_file(identifier):
 				logging.debug('%s not found as an accession' %(identifier))
 				logging.warning('Could not find file %s.' %(identifier))
 				return None
-
+	except:
+		raise
 	logging.info("Resolved file identifier %s to %s" %(identifier, file_handler.get_id()))
 	return file_handler
 
@@ -437,15 +446,47 @@ def main():
 				'rep1_paired_end': rep1_paired_end,
 				'rep2_paired_end': rep2_paired_end,
 				'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-				'as_file': dxpy.dxlink(resolve_file(args.as_file)),
+				'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
 				'idr_peaks': args.idr
 				}
 			)
 
 	encode_spp_stages.append({'name': PEAKS_STAGE_NAME, 'stage_id': encode_spp_stage_id})
 
+	encode_macs2_applet = find_applet_by_name(ENCODE_MACS2_APPLET_NAME, applet_project.get_id())
+	encode_macs2_stages = []
+	peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_macs2_applet.name)
+	if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
+		encode_macs2_stage_id = workflow.add_stage(
+			encode_macs2_applet,
+			name='ENCODE Peaks',
+			folder=peaks_output_folder,
+			stage_input={
+				'rep1_ta' : exp_rep1_ta,
+				'rep2_ta' : exp_rep2_ta,
+				'ctl1_ta': ctl_rep1_ta,
+				'ctl2_ta' : ctl_rep2_ta,
+				'rep1_xcor' : exp_rep1_cc,
+				'rep2_xcor' : exp_rep2_cc,
+				'rep1_paired_end': rep1_paired_end,
+				'rep2_paired_end': rep2_paired_end,
+				'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
+				'narrowpeak_as': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
+				'gappedpeak_as': dxpy.dxlink(resolve_file(args.gappedpeak_as)),
+				'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as)),
+				'genomesize': args.genomesize
+			}
+		)
+		encode_macs2_stages.append({'name': 'ENCODE Peaks', 'stage_id': encode_macs2_stage_id})
+
 	if args.idr:
-		idr_applet = find_applet_by_name(IDR_APPLET_NAME, applet_project.get_id())
+		if args.idrversion == "1":
+			idr_applet = find_applet_by_name(IDR_APPLET_NAME, applet_project.get_id())
+		elif args.idrversion == "2":
+			idr_applet = find_applet_by_name(IDR2_APPLET_NAME, applet_project.get_id())
+		else:
+			logging.error("Invalid IDR version: %s" %(args.idrversion))
+			idr_applet = None
 		encode_idr_applet = find_applet_by_name(ENCODE_IDR_APPLET_NAME, applet_project.get_id())
 		idr_stages = []
 		idr_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
@@ -463,8 +504,7 @@ def main():
 						 'outputField': 'rep2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
 						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-						 'outputField': 'pooled_peaks'}),
-					'idr_version': int(args.idrversion)
+						 'outputField': 'pooled_peaks'})
 				}
 			)
 			idr_stages.append({'name': 'IDR True Replicates', 'stage_id': idr_stage_id})
@@ -482,8 +522,7 @@ def main():
 						 'outputField': 'rep1pr2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
 						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-						 'outputField': 'rep1_peaks'}),
-					'idr_version': int(args.idrversion)
+						 'outputField': 'rep1_peaks'})
 				}
 			)
 			idr_stages.append({'name': 'IDR Rep 1 Self-pseudoreplicates', 'stage_id': idr_stage_id})
@@ -501,8 +540,7 @@ def main():
 						 'outputField': 'rep2pr2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
 						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-						 'outputField': 'rep2_peaks'}),
-					'idr_version': int(args.idrversion)
+						 'outputField': 'rep2_peaks'})
 				}
 			)
 			idr_stages.append({'name': 'IDR Rep 2 Self-pseudoreplicates', 'stage_id': idr_stage_id})
@@ -520,8 +558,7 @@ def main():
 						 'outputField': 'pooledpr2_peaks'}),
 					'pooled_peaks': dxpy.dxlink(
 						{'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-						 'outputField': 'pooled_peaks'}),
-					'idr_version': int(args.idrversion)
+						 'outputField': 'pooled_peaks'})
 				}
 			)
 			idr_stages.append({'name': 'IDR Pooled Pseudoreplicates', 'stage_id': idr_stage_id})
@@ -546,7 +583,7 @@ def main():
 						 'outputField': 'IDR_peaks'}),
 					'blacklist': dxpy.dxlink(blacklist.get_id()),
 					'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-					'as_file': dxpy.dxlink(resolve_file(args.as_file))
+					'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as))
 				}
 			)
 			idr_stages.append({'name': 'Final IDR peak calls', 'stage_id': idr_stage_id})
@@ -562,7 +599,10 @@ def main():
 		logging.debug("IDR stages: %s" %(idr_stages))
 
 	if args.yes:
-		job_id = workflow.run({}, delay_workspace_destruction=True)
+		if args.debug:
+			job_id = workflow.run({}, debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
+		else:
+			job_id = workflow.run({})
 		logging.info("Running as job %s" %(job_id))
 
 if __name__ == '__main__':
