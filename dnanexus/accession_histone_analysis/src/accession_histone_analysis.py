@@ -160,6 +160,8 @@ def get_attachment(dxlink):
 	return obj
 
 def chipseq_filter_quality_metric(step_run, stages, files):
+	#this is currently a mix of deduplication stats and cross-correlation stats
+	#probably break out all the xcor stuff to its own object
 	logger.debug("in chip_seq_filter_quality_metric with step_run %s stages.keys() %s output files %s"
 		%(step_run, stages.keys(), files))
 
@@ -180,7 +182,7 @@ def chipseq_filter_quality_metric(step_run, stages, files):
 		'step_run': step_run,
 		'quality_metric_of': file_accessions,
 		# 'attachment': xcor_plot,
-		# 'attachment': xcor_scores,
+		'attachment': xcor_scores,
 		'NSC': float(xcor_qc['phantomPeakCoef']),
 		'RSC': float(xcor_qc['relPhantomPeakCoef']),
 		'fragment length': int(xcor_qc['estFragLen']),
@@ -205,6 +207,7 @@ def samtools_flagstats_quality_metric(step_run, stages, files):
 		'assay_term_name': 'ChIP-seq',
 		'step_run': step_run,
 		'quality_metric_of': file_accessions,
+		'attachment': get_attachment(qc_stage['output']['filtered_mapstats']),
 		'total': 				int(flagstat_qc['in_total'][0]),
 		'total_qc_failed':		int(flagstat_qc['in_total'][1]),
 		'duplicates':			int(flagstat_qc['duplicates'][0]),
@@ -810,16 +813,18 @@ def accession_qc_object(obj_type, obj, keypair, server, dryrun, force):
 	r = common.encoded_get(url,keypair)
 	objects = [o for o in r['@graph'] if o['status'] not in DEPRECATED]
 	logger.debug('found %d qc objects of type %s' %(len(objects), obj_type))
-	try:
-		existing_object = next(o for o in objects if o.get('step_run') == obj['step_run'])
-	except StopIteration:
+	existing_objects = [o for o in objects if o.get('step_run') == obj['step_run']]
+	if existing_objects:
+		existing_object = existing_objects.pop()
+	else:
 		existing_object = None
-	except:
-		raise
+	for object_to_delete in existing_objects:
+		url = urlparse.urljoin(server,object_to_delete['@id'])
+		common.encoded_patch(url, keypair, {'status':'deleted'})
 
 	payload = json.dumps(obj)
 	if existing_object:
-		url = urlparse.urljoin(server, '/%s/%s' %(obj_type,existing_object['uuid']))
+		url = urlparse.urljoin(server, existing_object['@id'])
 		logger.debug('patching %s with %s' %(url,payload))
 		# r = requests.patch(url, auth=keypair, headers={'content-type': 'application/json'}, data=payload)
 		r = common.encoded_patch(url, keypair, obj, return_response=True)
