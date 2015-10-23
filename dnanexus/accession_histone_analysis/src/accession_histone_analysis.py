@@ -14,6 +14,8 @@
 import os, sys, subprocess, logging, dxpy, json, re, socket, getpass, urlparse, datetime, requests, time, pprint
 import common
 import dateutil.parser
+from base64 import b64encode
+
 
 #logging.getLogger("requests").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -25,6 +27,8 @@ common_metadata = {
 	'award': 'U41HG006992'
 }
 
+DEPRECATED = ['deleted', 'replaced', 'revoked']
+
 def flat(l):
 	result = []
 	for el in l:
@@ -34,6 +38,202 @@ def flat(l):
 			result.append(el)
 	return result
 
+def flagstat_parse(flagstat_file):
+	if not flagstat_file:
+		return None
+
+	qc_dict = { #values are regular expressions, will be replaced with scores [hiq, lowq]
+		'in_total': 'in total',
+		'mapped': 'mapped',
+		'paired_in_sequencing': 'paired in sequencing',
+		'read1': 'read1',
+		'read2': 'read2',
+		'properly_paired': 'properly paired',
+		'with_self_mate_mapped': 'with itself and mate mapped',
+		'singletons': 'singletons',
+		'mate_mapped_different_chr': 'with mate mapped to a different chr$', #i.e. at the end of the line
+		'mate_mapped_different_chr_hiQ': 'with mate mapped to a different chr \(mapQ>=5\)' #RE so must escape
+	}
+	flagstat_lines = flagstat_file.read().splitlines()
+	for (qc_key, qc_pattern) in qc_dict.items():
+		qc_metrics = next(re.split(qc_pattern, line) for line in flagstat_lines if re.search(qc_pattern, line))
+		(hiq, lowq) = qc_metrics[0].split(' + ')
+		qc_dict[qc_key] = [int(hiq.rstrip()), int(lowq.rstrip())]
+
+	return qc_dict
+
+def dup_parse(dup_file):
+	if not dup_file:
+		return None
+
+	lines = iter(dup_file.read().splitlines())
+
+	for line in lines:
+		if line.startswith('## METRICS CLASS'):
+			headers = lines.next().rstrip('\n').lower()
+			metrics = lines.next().rstrip('\n')
+			break
+
+	headers = headers.split('\t')
+	metrics = metrics.split('\t')
+	headers.pop(0)
+	metrics.pop(0)
+
+	dup_qc = dict(zip(headers,metrics))
+	return dup_qc
+
+def xcor_parse(dxlink):
+	desc = dxpy.describe(dxlink)
+	with dxpy.DXFile(desc['id'], mode='r') as xcor_file:
+		if not xcor_file:
+			return None
+
+		lines = xcor_file.read().splitlines()
+		line = lines[0].rstrip('\n')
+		# CC_SCORE FILE format
+		# Filename <tab> numReads <tab> estFragLen <tab> corr_estFragLen <tab> PhantomPeak <tab> corr_phantomPeak <tab> argmin_corr <tab> min_corr <tab> phantomPeakCoef <tab> relPhantomPeakCoef <tab> QualityTag
+
+		headers = ['Filename','numReads','estFragLen','corr_estFragLen','PhantomPeak','corr_phantomPeak','argmin_corr','min_corr','phantomPeakCoef','relPhantomPeakCoef','QualityTag']
+		metrics = line.split('\t')
+		headers.pop(0)
+		metrics.pop(0)
+
+		xcor_qc = dict(zip(headers,metrics))
+	return xcor_qc
+
+def pbc_parse(dxlink):
+	desc = dxpy.describe(dxlink)
+	with dxpy.DXFile(desc['id'], mode='r') as pbc_file:
+		if not pbc_file:
+			return None
+
+		lines = pbc_file.read().splitlines()
+		line = lines[0].rstrip('\n')
+		# PBC File output
+		# TotalReadPairs [tab] DistinctReadPairs [tab] OneReadPair [tab] TwoReadPairs [tab] NRF=Distinct/Total [tab] PBC1=OnePair/Distinct [tab] PBC2=OnePair/TwoPair
+
+		headers = ['TotalReadPairs','DistinctReadPairs','OneReadPair','TwoReadPairs','NRF','PBC1','PBC2']
+		metrics = line.split('\t')
+
+		pbc_qc = dict(zip(headers,metrics))
+	return pbc_qc
+
+def flagstat_parse(dxlink):
+	desc = dxpy.describe(dxlink)
+	with dxpy.DXFile(desc['id'], mode='r') as flagstat_file:
+		if not flagstat_file:
+			return None
+
+	qc_dict = { #values are regular expressions, will be replaced with scores [hiq, lowq]
+		'in_total': 'in total',
+		'duplicates': 'duplicates',
+		'mapped': 'mapped',
+		'paired_in_sequencing': 'paired in sequencing',
+		'read1': 'read1',
+		'read2': 'read2',
+		'properly_paired': 'properly paired',
+		'with_self_mate_mapped': 'with itself and mate mapped',
+		'singletons': 'singletons',
+		'mate_mapped_different_chr': 'with mate mapped to a different chr$', #i.e. at the end of the line
+		'mate_mapped_different_chr_hiQ': 'with mate mapped to a different chr \(mapQ>=5\)' #RE so must escape
+	}
+	flagstat_lines = flagstat_file.read().splitlines()
+	for (qc_key, qc_pattern) in qc_dict.items():
+		qc_metrics = next(re.split(qc_pattern, line) for line in flagstat_lines if re.search(qc_pattern, line))
+		(hiq, lowq) = qc_metrics[0].split(' + ')
+		qc_dict[qc_key] = [int(hiq.rstrip()), int(lowq.rstrip())]
+
+	return qc_dict
+
+def get_attachment(dxlink):
+	desc = dxpy.describe(dxlink)
+	filename = desc['name']
+	mime_type = desc['media']
+	if mime_type == 'text/plain' and not filename.endswith(".txt"):
+		filename += ".txt"
+	with dxpy.DXFile(desc['id'], mode='r') as stream:
+		obj = {
+			'download': filename,
+			'type': mime_type,
+			'href': 'data:%s;base64,%s' %(mime_type, b64encode(stream.read()))
+		}
+	return obj
+
+def chipseq_filter_quality_metric(step_run, stages, files):
+	logger.debug("in chip_seq_filter_quality_metric with step_run %s stages.keys() %s output files %s"
+		%(step_run, stages.keys(), files))
+
+	file_accessions = list(set(flat([resolve_name_to_accessions(stages,output_name) for output_name in files])))
+
+	qc_stage = stages['Filter and QC*']['stage_metadata']
+	xcor_stage = stages['Calculate cross-correlation*']['stage_metadata']
+
+	xcor_plot = get_attachment(xcor_stage['output']['CC_plot_file'])
+	xcor_scores = get_attachment(xcor_stage['output']['CC_scores_file'])
+
+	pbc_qc = pbc_parse(qc_stage['output']['pbc_file_qc'])
+	xcor_qc = xcor_parse(xcor_stage['output']['CC_scores_file'])
+
+	obj = {
+		'assay_term_id': 'OBI:0000716',
+		'assay_term_name': 'ChIP-seq',
+		'step_run': step_run,
+		'quality_metric_of': file_accessions,
+		# 'attachment': xcor_plot,
+		# 'attachment': xcor_scores,
+		'NSC': float(xcor_qc['phantomPeakCoef']),
+		'RSC': float(xcor_qc['relPhantomPeakCoef']),
+		'fragment length': int(xcor_qc['estFragLen']),
+		'PBC1': float(pbc_qc['PBC1']),
+		'PBC2': float(pbc_qc['PBC2']),
+		'NRF': float(pbc_qc['NRF'])
+	}
+	return [obj]
+
+def samtools_flagstats_quality_metric(step_run, stages, files):
+	logger.debug("in chip_seq_filter_quality_metric with step_run %s stages.keys() %s output files %s"
+		%(step_run, stages.keys(), files))
+
+	file_accessions = list(set(flat([resolve_name_to_accessions(stages,output_name) for output_name in files])))
+
+	qc_stage = stages['Filter and QC*']['stage_metadata']
+
+	flagstat_qc = flagstat_parse(qc_stage['output']['filtered_mapstats'])
+
+	obj = {
+		'assay_term_id': 'OBI:0000716',
+		'assay_term_name': 'ChIP-seq',
+		'step_run': step_run,
+		'quality_metric_of': file_accessions,
+		'total': 				int(flagstat_qc['in_total'][0]),
+		'total_qc_failed':		int(flagstat_qc['in_total'][1]),
+		'duplicates':			int(flagstat_qc['duplicates'][0]),
+		'duplicates_qc_failed':	int(flagstat_qc['duplicates'][1]),
+		'mapped':				int(flagstat_qc['mapped'][0]),
+		'mapped_qc_failed':		int(flagstat_qc['mapped'][1]),
+		'mapped_pct':			'{:.2%}'.format(float(flagstat_qc['mapped'][0])/float(flagstat_qc['in_total'][0]))
+	}
+	if int(flagstat_qc['paired_in_sequencing'][0]) or int(flagstat_qc['paired_in_sequencing'][1]):
+		obj.update({
+			'paired':				int(flagstat_qc['paired_in_sequencing'][0]),
+			'paired_qc_failed':		int(flagstat_qc['paired_in_sequencing'][1]),
+			'read1':				int(flagstat_qc['read1'][0]),
+			'read1_qc_failed':		int(flagstat_qc['read1'][1]),
+			'read2':				int(flagstat_qc['read2'][0]),
+			'read2_qc_failed':		int(flagstat_qc['read2'][1]),
+			'paired_properly':				int(flagstat_qc['properly_paired'][0]),
+			'paired_properly_qc_failed':	int(flagstat_qc['properly_paired'][1]),
+			'paired_properly_pct':			'{:.2%}'.format(float(flagstat_qc['properly_paired'][0])/float(flagstat_qc['in_total'][0])),
+			'with_itself':				int(flagstat_qc['with_self_mate_mapped'][0]),
+			'with_itself_qc_failed':	int(flagstat_qc['with_self_mate_mapped'][1]),
+			'singletons':				int(flagstat_qc['singletons'][0]),
+			'singletons_qc_failed':	int(flagstat_qc['singletons'][1]),
+			'singletons_pct':			'{:.2%}'.format(float(flagstat_qc['singletons'][0])/float(flagstat_qc['in_total'][0])),
+			'diff_chroms':				int(flagstat_qc['mate_mapped_different_chr_hiQ'][0]),
+			'diff_chroms_qc_failed':	int(flagstat_qc['mate_mapped_different_chr_hiQ'][1])
+		})
+
+	return [obj]
 
 def get_rep_bams(experiment, assembly, keypair, server):
 	logger.debug('in get_rep_bams with experiment[accession] %s' %(experiment.get('accession')))
@@ -165,6 +365,12 @@ def get_mapping_stages(mapping_analysis, keypair, server, repn):
 			],
 			'qc': [],
 			'stage_metadata': {} #initialized below
+		},
+		"Calculate cross-correlation*": {
+			'input_files': [],
+			'output_files': [],
+			'qc': [],
+			'stage_metadata': {}
 		}
 	}
 
@@ -380,7 +586,8 @@ def patch_file(payload, keypair, server, dryrun):
 		logger.info("Dry run.  Returning unchanged file object")
 		new_file_object = common.encoded_get(urlparse.urljoin(server,'/files/%s' %(accession)), keypair)
 	else:
-		r = requests.patch(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
+		# r = requests.patch(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
+		r = common.encoded_patch(url, keypair, payload, return_response=True)
 		try:
 			r.raise_for_status()
 		except:
@@ -400,7 +607,8 @@ def post_file(payload, keypair, server, dryrun):
 		logger.info("Dry run.  Would post: %s" %(pprint.pformat(payload)))
 		new_file_object = None
 	else:
-		r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
+		# r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
+		r = common.encoded_post(url, keypair, payload, return_response=True)
 		try:
 			r.raise_for_status()
 		except:
@@ -438,7 +646,7 @@ def accession_file(f, keypair, server, dryrun, force):
 
 	#check to see if md5 already in the database
 	url = server + '/md5:%s?format=json&frame=object' %(f.get('md5sum'))
-	r = requests.get(url, auth=keypair, headers={'accept': 'application/json'})
+	r = common.encoded_get(url, keypair, return_response=True)
 	try:
 		r.raise_for_status()
 	except:
@@ -511,7 +719,8 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dry
 		logger.info("Dry run.  Would POST %s" %(analysis_step_run_metadata))
 		new_object = {}
 	else:
-		r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(analysis_step_run_metadata))
+		# r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(analysis_step_run_metadata))
+		r = common.encoded_post(url, keypair, analysis_step_run_metadata, return_response=True)
 		try:
 			r.raise_for_status()
 		except:
@@ -593,6 +802,44 @@ def patch_outputs(stages, keypair, server, dryrun):
 				continue
 	return files
 
+def accession_qc_object(obj_type, obj, keypair, server, dryrun, force):
+	logger.debug('in accession_qc_object with obj_type %s obj.keys() %s' %(obj_type, obj.keys()))
+	logger.debug('obj[step_run] %s' %(obj.get('step_run')))
+	url = urlparse.urljoin(server,'/search/?type=%s&step_run=%s' %(obj_type, obj.get('step_run')))
+	logger.debug('url %s' %(url))
+	r = common.encoded_get(url,keypair)
+	objects = [o for o in r['@graph'] if o['status'] not in DEPRECATED]
+	logger.debug('found %d qc objects of type %s' %(len(objects), obj_type))
+	try:
+		existing_object = next(o for o in objects if o.get('step_run') == obj['step_run'])
+	except StopIteration:
+		existing_object = None
+	except:
+		raise
+
+	payload = json.dumps(obj)
+	if existing_object:
+		url = urlparse.urljoin(server, '/%s/%s' %(obj_type,existing_object['uuid']))
+		logger.debug('patching %s with %s' %(url,payload))
+		# r = requests.patch(url, auth=keypair, headers={'content-type': 'application/json'}, data=payload)
+		r = common.encoded_patch(url, keypair, obj, return_response=True)
+	else:
+		url = urlparse.urljoin(server, '/%s/' %(obj_type))
+		logger.debug('posting to %s with %s' %(url,payload))
+		# r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=payload)
+		r = common.encoded_post(url, keypair, obj, return_response=True)
+	try:
+		r.raise_for_status()
+	except:
+		logger.error('PATCH or POST failed: %s %s' % (r.status_code, r.reason))
+		logger.error('url was %s' %(url))
+		logger.error(r.text)
+		new_qc_object = None
+	else:
+		new_qc_object = r.json()['@graph'][0]
+
+	return new_qc_object
+
 def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force):
 	patched_files = []
 	for (analysis_step_version_name, steps) in analysis_step_versions.iteritems():
@@ -616,6 +863,15 @@ def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force):
 				}]
 			}
 			analysis_step_run = accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force)
+			logger.debug('in accession_pipeline analysis_step_run %s' %(pprint.pformat(analysis_step_run)))
+			for qc in step['qc_objects']:
+				qc_object_name, files_to_associate = next(qc.iteritems())
+				qc_objects = globals()[qc_object_name](analysis_step_run.get('@id'), step['stages'], files_to_associate)
+				for qc_object in qc_objects:
+					new_object = accession_qc_object(qc_object_name, qc_object, keypair, server, dryrun, force)
+					logger.info('New %s qc object %s aliases %s' %(qc_object_name, new_object.get('uuid'), new_object.get('aliases')))
+					logger.debug('%s' %(pprint.pformat(new_object)))
+
 			for file_name in step['file_names']:
 				for file_accession in resolve_name_to_accessions(step['stages'], file_name):
 					patch_metadata = {
@@ -656,15 +912,20 @@ def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, 
 				'stages' : "",
 				'stage_name': "",
 				'file_names' : [],
-				'status' : 'finished'
+				'status' : 'finished',
+				'qc_objects': []
 			}
 		],
-		'histone-bwa-alignment-step-v-1' : [
+		'bwa-alignment-step-v-1' : [
 			{
 				'stages' : mapping_stages,
 				'stage_name': 'Filter and QC*',
 				'file_names' : ['filtered_bam'],
-				'status' : 'finished'
+				'status' : 'finished',
+				'qc_objects' : [
+					{'chipseq_filter_quality_metric': ['filtered_bam']},
+					{'samtools_flagstats_quality_metric': ['filtered_bam']}
+				]
 			}
 		]
 	}
@@ -727,7 +988,8 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'stages' : "",
 				'stage_name': "",
 				'file_names' : [],
-				'status' : 'finished'
+				'status' : 'finished',
+				'qc_objects': []
 			}
 		],
 		'bwa-alignment-step-v-1' : [
@@ -735,25 +997,42 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'stages' : control_stages[0],
 				'stage_name': 'Filter and QC*',
 				'file_names' : ['filtered_bam'],
-				'status' : 'finished'
+				'status' : 'finished',
+				'qc_objects' : [
+					{'chipseq_filter_quality_metric': ['filtered_bam']},
+					{'samtools_flagstats_quality_metric': ['filtered_bam']}
+
+				]
 			},
 			{
 				'stages' : control_stages[1],
 				'stage_name': 'Filter and QC*',
 				'file_names' : ['filtered_bam'],
-				'status' : 'finished'
+				'status' : 'finished',
+				'qc_objects' : [
+					{'chipseq_filter_quality_metric': ['filtered_bam']},
+					{'samtools_flagstats_quality_metric': ['filtered_bam']}
+				]
 			},
 			{
 				'stages' : mapping_stages[0],
 				'stage_name': 'Filter and QC*',
 				'file_names' : ['filtered_bam'],
-				'status' : 'finished'
+				'status' : 'finished',
+				'qc_objects' : [
+					{'chipseq_filter_quality_metric': ['filtered_bam']},
+					{'samtools_flagstats_quality_metric': ['filtered_bam']}
+				]
 			},
 			{
 				'stages' : mapping_stages[1],
 				'stage_name': 'Filter and QC*',
 				'file_names' : ['filtered_bam'],
-				'status' : 'finished'
+				'status' : 'finished',
+				'qc_objects' : [
+					{'chipseq_filter_quality_metric': ['filtered_bam']},
+					{'samtools_flagstats_quality_metric': ['filtered_bam']}
+				]
 			}			
 		],
 		'histone-peak-calling-step-v-1' : [
@@ -761,7 +1040,8 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'stages' : peak_stages,
 				'stage_name': 'ENCODE Peaks',
 				'file_names' : ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal', 'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal', 'rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks'],
-				'status' : 'finished'
+				'status' : 'finished',
+				'qc_objects': []
 			}
 		],
 		'histone-overlap-peaks-step-v-1' : [
@@ -769,7 +1049,8 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'stages' : peak_stages,
 				'stage_name': 'Overlap narrowpeaks',
 				'file_names' : ['overlapping_peaks'],
-				'status' : 'finished'
+				'status' : 'finished',
+				'qc_objects': []
 			}
 		],
 		'histone-peaks-to-bigbed-step-v-1' : [
@@ -777,7 +1058,8 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'stages' : peak_stages,
 				'stage_name': 'ENCODE Peaks',
 				'file_names' : ['rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb', 'pooled_narrowpeaks_bb'],
-				'status' : 'virtual'
+				'status' : 'virtual',
+				'qc_objects': []
 			}
 		],
 		'histone-replicated-peaks-to-bigbed-step-v-1' : [
@@ -785,7 +1067,8 @@ def accession_peaks_analysis_files(peaks_analysis, keypair, server, dryrun, forc
 				'stages' : peak_stages,
 				'stage_name': 'Overlap narrowpeaks',
 				'file_names' : ['overlapping_peaks_bb'],
-				'status' : 'virtual'
+				'status' : 'virtual',
+				'qc_objects': []
 			}
 		]
 	}
