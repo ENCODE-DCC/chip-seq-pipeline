@@ -2,6 +2,7 @@
 
 import sys, os, subprocess, shlex, logging, re, urlparse
 import dateutil.parser
+from time import sleep
 
 def test():
 	print "In common.test"
@@ -163,40 +164,84 @@ def processkey(key, keyfile=None):
 	import json
 
 	if not keyfile:
-		try:
+		if 'KEYFILE' in globals(): #this is to support scripts where KEYFILE is a global
 			keyfile = KEYFILE
-		except:
-			print >> sys.stderr, "No keyfile was specified."
-			raise
+		else:
+			logging.error("Keyfile must be specified or in global KEYFILE.")
+			return None
 	if key:
-		keysf = open(keyfile,'r')
+		try:
+			keysf = open(keyfile,'r')
+		except:
+			logging.error("Failed to open keyfile %s" %(keyfile))
+			return None
 		keys_json_string = keysf.read()
 		keysf.close()
-		keys = json.loads(keys_json_string)
-		key_dict = keys[key]
+		try:
+			keys = json.loads(keys_json_string)
+		except:
+			logging.error("Keyfile %s not in parseable JSON" %(keyfile))
+			return None
+		try:
+			key_dict = keys[key]
+		except:
+			logging.error("Keyfile %s has no key named %s" %(keyfile,key))
+			return None
 	else:
 		key_dict = {}
-	AUTHID = key_dict.get('key')
-	AUTHPW = key_dict.get('secret')
-	if key:
-		SERVER = key_dict.get('server')
+
+	if key_dict:
+		authid = key_dict.get('key')
+		authpw = key_dict.get('secret')
+		server = key_dict.get('server')
+	elif os.getenv('ENCODE_AUTHID',None) and os.getenv('ENCODE_AUTHPW',None) and os.getenv('ENCODE_SERVER',None):
+		authid = os.getenv('ENCODE_AUTHID',None)
+		authpw = os.getenv('ENCODE_AUTHPW',None)
+		server = os.getenv('ENCODE_SERVER',None)
 	else:
-		SERVER = DEFAULT_SERVER
+		return None
 
-	if not SERVER.endswith("/"):
-		SERVER += "/"
+	if not server.endswith("/"):
+		server += "/"
 
-	return (AUTHID,AUTHPW,SERVER)
+	return (authid,authpw,server)
 
-def encoded_get(url, keypair=None, frame='object'):
-	import urlparse, requests
-	HEADERS = {'content-type': 'application/json'}
-	url = urlparse.urljoin(url,'?format=json&frame=%s' %(frame))
-	if keypair:
-		response = requests.get(url, auth=keypair, headers=HEADERS)
-	else:
-		response = requests.get(url, headers=HEADERS)
-	return response.json()
+def encoded_get(url, keypair=None, frame='object', return_response=False):
+	import urlparse, urllib, requests
+	#it is not strictly necessary to include both the accept header, and format=json, but we do
+	#so as to get exactly the same URL as one would use in a web browser
+	HEADERS = {'accept': 'application/json'}
+	url_obj = urlparse.urlsplit(url)
+	new_url_list = list(url_obj)
+	query = urlparse.parse_qs(url_obj.query)
+	if 'format' not in query:
+		new_url_list[3] += "&format=json"
+	if 'frame' not in query:
+		new_url_list[3] += "&frame=%s" %(frame)
+	if 'limit' not in query:
+		new_url_list[3] += "&limit=all"
+	if new_url_list[3].startswith('&'):
+		new_url_list[3] = new_url_list[3].replace('&','?',1)
+	get_url = urlparse.urlunsplit(new_url_list)
+	print 'encoded_get url %s' %(get_url)
+	max_retries = 10
+	max_sleep = 10
+	while max_retries:
+		try:
+			if keypair:
+				response = requests.get(get_url, auth=keypair, headers=HEADERS)
+			else:
+				response = requests.get(get_url, headers=HEADERS)
+		except (requests.exceptions.ConnectionError, requests.exceptions.SSLError) as e:
+			print >> sys.stderr, e
+			sleep(max_sleep - max_retries)
+			max_retries -= 1
+			continue
+		else:
+			if return_response:
+				return response
+			else:
+				return response.json()
 
 def pprint_json(JSON_obj):
 	import json
@@ -215,12 +260,18 @@ def merge_dicts(*dict_args):
 def md5(fn):
 	if 'md5_command' not in globals():
 		global md5_command
-		if not subprocess.check_call('which md5', shell=True):
-			md5_command = 'md5 -q'
-		elif not subprocess.check_call('which md5sum', shell=True):
-			md5_command = 'md5sum'
+		try:
+			subprocess.check_call('which md5', shell=True)
+		except:
+			try:
+				subprocess.check_call('which md5sum', shell=True)
+			except:
+				md5_command = None
+			else:
+				md5_command = 'md5sum'
 		else:
-			md5_command = ''
+			md5_command = 'md5 -q'
+
 	md5_output = subprocess.check_output(' '.join([md5_command, fn]), shell=True)
 	return md5_output.partition(' ')[0].rstrip()
 
@@ -240,24 +291,29 @@ def after(date1, date2):
 	
 	return result
 
-def biorep_ns_generator(file_accession,server,keypair):
-	m = re.match('^/?(files)?/?(\w*)', file_accession)
-	if m:
-		acc = m.group(2)
+def biorep_ns_generator(f,server,keypair):
+	if isinstance(f, dict):
+		acc = f.get('accession')
 	else:
+		m = re.match('^/?(files)?/?(\w*)', f)
+		if m:
+			acc = m.group(2)
+		else:
+			acc = re.search('ENCFF[0-9]{3}[A-Z]{3}',f).group(0)
+	if not acc:
 		return
 	url = urlparse.urljoin(server, '/files/%s' %(acc))
 	file_object = encoded_get(url, keypair)
 	if file_object.get('derived_from'):
-		for f in file_object.get('derived_from'):
-			for repnum in biorep_ns_generator(f,server,keypair):
+		for derived_from in file_object.get('derived_from'):
+			for repnum in biorep_ns_generator(derived_from,server,keypair):
 				yield repnum
 	else:
 		url = urlparse.urljoin(server, '%s' %(file_object.get('replicate')))
 		replicate_object = encoded_get(url, keypair)
 		yield replicate_object.get('biological_replicate_number')
 
-def biorep_ns(file_accession,server,keypair):
-	return list(set(biorep_ns_generator(file_accession,server,keypair)))
+def biorep_ns(f,server,keypair):
+	return list(set(biorep_ns_generator(f,server,keypair)))
 
 
