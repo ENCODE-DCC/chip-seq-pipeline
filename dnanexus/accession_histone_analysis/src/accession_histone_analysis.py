@@ -11,7 +11,7 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, sys, subprocess, logging, dxpy, json, re, socket, getpass, urlparse, datetime, requests, time, pprint
+import os, sys, subprocess, logging, dxpy, json, re, socket, getpass, urlparse, datetime, requests, time, pprint, csv
 import common
 import dateutil.parser
 from base64 import b64encode
@@ -512,8 +512,12 @@ def get_peak_stages(peaks_analysis, mapping_stages, control_stages, experiment, 
 	pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
 	if pooled_controls(peaks_analysis, rep=1):
 		rep1_ctl = pooled_ctl_bams
+	else:
+		rep1_ctl = [rep1_ctl_bam]
 	if pooled_controls(peaks_analysis, rep=2):
 		rep2_ctl = pooled_ctl_bams
+	else:
+		rep2_ctl = [rep2_ctl_bam]
 
 
 	peak_stages = { #derived_from is by name here, will be patched into the file metadata after all files are accessioned
@@ -1106,18 +1110,52 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline, analysis
 
 	common_metadata.update({'assembly': assembly})
 
-	for (i, analysis_id) in enumerate(ids):
-		logger.debug('debug %s' %(analysis_id))
-		analysis = dxpy.describe(analysis_id.strip())
-		logger.info('Accessioning analysis name %s executableName %s' %(analysis.get('name'), analysis.get('executableName')))
-		if analysis.get('name') == 'histone_chip_seq':
-			accessioned_files = accession_peaks_analysis_files(analysis, keypair, server, dryrun, force)
-		elif analysis.get('executableName') == 'ENCODE mapping pipeline':
-			accessioned_files = accession_mapping_analysis_files(analysis, keypair, server, dryrun, force)
-		else:
-			logger.error('unrecognized analysis pattern ... skipping.')
-			accessioned_files = None
-		logger.info("Accessioned: %s" %([f.get('accession') for f in (accessioned_files or [])]))
+	with open(outfn, 'w') as fh:
+		if dryrun:
+			fh.write('---DRYRUN: No files have been modified---\n')
+		fieldnames = ['analysis','experiment','assembly','dx_pipeline','files','error']
+		output_writer = csv.DictWriter(fh, fieldnames, delimiter='\t')
+		output_writer.writeheader()
+
+		for (i, analysis_id) in enumerate(ids):
+			logger.debug('debug %s' %(analysis_id))
+			analysis = dxpy.describe(analysis_id.strip())
+			experiment = get_experiment_accession(analysis)
+			output = {
+				'analysis': analysis_id,
+				'experiment': experiment,
+				'assembly': assembly
+			}
+			logger.info('Accessioning analysis name %s executableName %s' %(analysis.get('name'), analysis.get('executableName')))
+
+			if analysis.get('name') == 'histone_chip_seq':
+				output.update({'dx_pipeline':'histone_chip_seq'})
+				try:
+					accessioned_files = accession_peaks_analysis_files(analysis, keypair, server, dryrun, force)
+				except:
+					accessioned_files = None
+					output.update({'error':sys.exc_info()[0]})
+				else:
+					output.update({'error':""})
+			elif analysis.get('executableName') == 'ENCODE mapping pipeline':
+				output.update({'dx_pipeline':'ENCODE mapping pipeline'})
+				try:
+					accessioned_files = accession_mapping_analysis_files(analysis, keypair, server, dryrun, force)
+				except:
+					accessioned_files = None
+					output.update({'error':sys.exc_info()[0]})
+				else:
+					output.update({'error':""})
+			else:
+				logger.error('unrecognized analysis pattern %s %s ... skipping.' %(analysis.get('name'), analysis.get('executableName')))
+				output.update({'dx_pipeline':'unrecognized'})
+				accessioned_files = None
+				output.update({'error':'unrecognized analysis pattern %s %s' %(analysis.get('name'), analysis.get('executableName'))})
+
+			file_accessions = [f.get('accession') for f in (accessioned_files or [])]
+			logger.info("Accessioned: %s" %(file_accessions))
+			output.update({'files':file_accessions})
+			output_writer.writerow(output)
 
 	common.touch(outfn)
 	outfile = dxpy.upload_local_file(outfn)

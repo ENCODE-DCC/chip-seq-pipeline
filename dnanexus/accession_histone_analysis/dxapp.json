@@ -27,7 +27,7 @@
       "name": "outfn",
       "class": "string",
       "optional": true,
-      "default": "accession_histone_analysis.tsv"
+      "default": "accession_analysis.csv"
     },
     {
       "name": "assembly",
