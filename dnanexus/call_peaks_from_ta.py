@@ -119,16 +119,24 @@ def get_tas(exp_id, default_project, ta_folders):
 	print "%s %i possible files" %(exp_id, len(possible_files))
 	rep1_files = [f for f in possible_files if 'rep1' in f.get('folder')]
 	rep2_files = [f for f in possible_files if 'rep2' in f.get('folder')]
+
 	if len(rep1_files) != 1:
 		print "Tried to find one rep1 ta, found %d" %(len(rep1_files))
-		rep1 = None
-	else:
+	if len(rep1_files) > 0:
+		if len(rep1_files) > 1:
+			print "Using first one found"
 		rep1 = rep1_files[0].get('project') + ':' + rep1_files[0].get('folder') + '/' + rep1_files[0].get('name')
+	else:
+		rep1 = None
+
 	if len(rep2_files) != 1:
 		print "Tried to find one rep2 ta, found %d" %(len(rep2_files))
-		rep2 = None
-	else:
+	if len(rep2_files) > 0:
+		if len(rep2_files) > 1:
+			print "Using first one found"
 		rep2 = rep2_files[0].get('project') + ':' + rep2_files[0].get('folder') + '/' + rep2_files[0].get('name')
+	else:
+		rep2 = None
 	
 	return rep1, rep2
 
