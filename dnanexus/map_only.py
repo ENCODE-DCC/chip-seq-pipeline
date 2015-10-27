@@ -153,21 +153,22 @@ def replicates_to_map(files, server, keypair, biorep_ns=[]):
 
 def choose_reference(experiment, biorep_n, server, keypair, sex_specific):
 
+	replicates = [common.encoded_get(urlparse.urljoin(server,rep_uri), keypair, frame='embedded') for rep_uri in experiment['replicates']]
+	replicate = next(rep for rep in replicates if rep.get('biological_replicate_number') == biorep_n)
+	logging.debug('Replicate uuid %s' %(replicate.get('uuid')))
+	organism_uri = replicate.get('library').get('biosample').get('organism')
+	organism_obj = common.encoded_get(urlparse.urljoin(server,organism_uri), keypair)
+
+	try:
+		organism_name = organism_obj['name']
+	except:
+		logging.error('%s:rep%d Cannot determine organism.' %(experiment.get('accession'), biorep_n))
+		raise
+		return None
+	else:
+		logging.debug("Organism name %s" %(organism_name))
+
 	if sex_specific:
-		replicates = [common.encoded_get(urlparse.urljoin(server,rep_uri), keypair, frame='embedded') for rep_uri in experiment['replicates']]
-		replicate = next(rep for rep in replicates if rep.get('biological_replicate_number') == biorep_n)
-		logging.debug('Replicate uuid %s' %(replicate.get('uuid')))
-		organism_uri = replicate.get('library').get('biosample').get('organism')
-		organism_obj = common.encoded_get(urlparse.urljoin(server,organism_uri), keypair)
-
-		try:
-			organism_name = organism_obj['name']
-			logging.debug("Organism name %s" %(organism_name))
-		except:
-			logging.error('%s:rep%d Cannot determine organism.' %(experiment.get('accession'), biorep_n))
-			raise
-			return None
-
 		try:
 			sex = replicate.get('library').get('biosample').get('sex')
 			assert sex in ['male', 'female']
