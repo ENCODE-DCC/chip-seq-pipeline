@@ -188,12 +188,204 @@ def signal_stanza(accession, url, name, n, tracktype='bigWig'):
 		"\t\tmaxHeightPixels 127:64:2\n" + \
 		"\t\tpriority %d\n\n" %(n))
 
+def tf(args, analysis, experiment_accession, first_analysis):
+	authid, authpw, server = processkey(args.key)
+	keypair = (authid,authpw)
+
+	stages = analysis.get('stages')
+	peaks_stage	= 	next(stage for stage in stages if stage['execution']['name'] == "SPP Peaks")['execution']
+	signals_stage = next(stage for stage in stages if stage['execution']['name'] == "ENCODE Peaks")['execution']
+	idr_stage = 	next(stage for stage in stages if stage['execution']['name'] == "Final IDR peak calls")['execution']
+
+	peaks_output_names = [
+		'rep1_peaks_bb',
+		'rep2_peaks_bb',
+		'pooled_peaks_bb'
+	]
+	signals_output_names = [
+		'rep1_pvalue_signal',
+		'rep2_pvalue_signal',
+		'pooled_pvalue_signal',
+		'rep1_fc_signal',
+		'rep2_fc_signal',
+		'pooled_fc_signal'
+	]
+	idr_output_names = [
+		'conservative_set_bb',
+		'optimal_set_bb'
+	]
+
+	output_names = peaks_output_names + signals_output_names + idr_output_names
+	outputs = {}
+	outputs.update(dict(zip(peaks_output_names,[{'dx': dxpy.DXFile(peaks_stage['output'][output_name])} for output_name in peaks_output_names])))
+	outputs.update(dict(zip(signals_output_names,[{'dx': dxpy.DXFile(signals_stage['output'][output_name])} for output_name in signals_output_names])))
+	outputs.update(dict(zip(idr_output_names,[{'dx': dxpy.DXFile(idr_stage['output'][output_name])} for output_name in idr_output_names])))
+
+	track_directory = os.path.join(args.ddir, experiment_accession)
+	url_base = urlparse.urljoin(args.turl, experiment_accession+'/')
+	#print "url_base %s" %(url_base)
+	if not args.nodownload and not os.path.exists(track_directory):
+		os.makedirs(track_directory)
+	if first_analysis:
+		if os.path.exists(args.tdbpath):
+			if args.truncate:
+				trackDb = open(args.tdbpath,'w')
+			else:
+				trackDb = open(args.tdbpath,'a')
+		else:
+			if not os.path.exists(os.path.dirname(args.tdbpath)):
+				os.makedirs(os.path.dirname(args.tdbpath))
+			trackDb = open(args.tdbpath, 'w')
+	else:
+		trackDb = open(args.tdbpath,'a')			
+
+	for (output_name, output) in outputs.iteritems():
+		local_path = os.path.join(track_directory, output['dx'].name)
+		print output_name, output['dx'].get_id(), local_path
+		if not args.nodownload:
+			dxpy.download_dxfile(output['dx'].get_id(), local_path)
+		outputs[output_name].update({'local_path' : local_path})
+		#print "Joining %s and %s" %(url_base, os.path.basename(local_path))
+		if args.dxf:
+			url, headers = output['dx'].get_download_url(duration=sys.maxint, preauthenticated=True)
+			outputs[output_name].update({'url': url})
+		else:
+			outputs[output_name].update({'url': urlparse.urljoin(url_base,os.path.basename(local_path))})
+		#print outputs[output_name]['url']
+
+	experiment = encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
+	description = '%s %s' %(
+		experiment['target']['label'],
+		experiment['replicates'][0]['library']['biosample']['biosample_term_name'])
+	longLabel = 'E3 TF ChIP - %s - %s' %(experiment_accession, description)
+	if args.tag:
+		longLabel += ' - %s' %(args.tag)
+	trackDb.write(composite_stanza(experiment_accession, longLabel))
+
+	first_peaks = True
+	first_signal = True
+	priority = 1
+	for (n, output_name) in enumerate(output_names,start=1):
+		if output_name.endswith('peaks_bb') or output_name.endswith('set_bb'):
+			if first_peaks:
+				trackDb.write(viewpeaks_stanza(experiment_accession))
+				first_peaks = False
+			stanzas, n_stanzas = peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigBed 6 +", lowpass=args.lowpass, dx=outputs[output_name]['dx'])
+			trackDb.write(stanzas)
+			priority += n_stanzas
+		elif output_name.endswith('_signal'):
+			if first_signal:
+				trackDb.write(viewsignal_stanza(experiment_accession))
+				first_signal = False
+			trackDb.write(signal_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigWig"))
+			priority += 1
+
+	trackDb.close()
+
+
+def histone(args, analysis, experiment_accession, first_analysis):
+	authid, authpw, server = processkey(args.key)
+	keypair = (authid,authpw)
+
+	stages = analysis.get('stages')
+	peaks_stage	= next(stage for stage in stages if stage['execution']['name'] == "ENCODE Peaks")['execution']
+	replicated_stages = [stage['execution'] for stage in stages if 'Overlap' in stage['execution']['name']]
+
+	output_names = [
+		'rep1_narrowpeaks_bb',
+		'rep2_narrowpeaks_bb',
+		'pooled_narrowpeaks_bb',
+		'rep1_gappedpeaks_bb',
+		'rep2_gappedpeaks_bb',
+		'pooled_gappedpeaks_bb',
+		'rep1_pvalue_signal',
+		'rep2_pvalue_signal',
+		'pooled_pvalue_signal',
+		'rep1_fc_signal',
+		'rep2_fc_signal',
+		'pooled_fc_signal']
+
+	outputs = dict(zip(output_names,[{'dx': dxpy.DXFile(peaks_stage['output'][output_name])} for output_name in output_names]))
+
+	output_names.insert(3,'replicated_narrowpeaks_bb')
+	outputs.update({'replicated_narrowpeaks_bb' : {'dx': dxpy.DXFile(next(stage['execution']['output']['overlapping_peaks_bb'] for stage in stages if stage['execution']['name'] == 'Overlap narrowpeaks'))}})
+	output_names.insert(7,'replicated_gappedpeaks_bb')
+	outputs.update({'replicated_gappedpeaks_bb' : {'dx': dxpy.DXFile(next(stage['execution']['output']['overlapping_peaks_bb'] for stage in stages if stage['execution']['name'] == 'Overlap gappedpeaks'))}})
+
+	track_directory = os.path.join(args.ddir, experiment_accession)
+	url_base = urlparse.urljoin(args.turl, experiment_accession+'/')
+	#print "url_base %s" %(url_base)
+	if not args.nodownload and not os.path.exists(track_directory):
+		os.makedirs(track_directory)
+	if first_analysis:
+		if os.path.exists(args.tdbpath):
+			if args.truncate:
+				trackDb = open(args.tdbpath,'w')
+			else:
+				trackDb = open(args.tdbpath,'a')
+		else:
+			if not os.path.exists(os.path.dirname(args.tdbpath)):
+				os.makedirs(os.path.dirname(args.tdbpath))
+			trackDb = open(args.tdbpath, 'w')
+	else:
+		trackDb = open(args.tdbpath,'a')			
+
+	for (output_name, output) in outputs.iteritems():
+		local_path = os.path.join(track_directory, output['dx'].name)
+		print output_name, output['dx'].get_id(), local_path
+		if not args.nodownload:
+			dxpy.download_dxfile(output['dx'].get_id(), local_path)
+		outputs[output_name].update({'local_path' : local_path})
+		#print "Joining %s and %s" %(url_base, os.path.basename(local_path))
+		if args.dxf:
+			url, headers = output['dx'].get_download_url(duration=sys.maxint, preauthenticated=True)
+			outputs[output_name].update({'url': url})
+		else:
+			outputs[output_name].update({'url': urlparse.urljoin(url_base,os.path.basename(local_path))})
+		#print outputs[output_name]['url']
+
+	experiment = encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
+	description = '%s %s %s %s' %(
+		experiment['target']['label'],
+		experiment['replicates'][0]['library']['biosample']['biosample_term_name'],
+		experiment['replicates'][0]['library']['biosample'].get('life_stage'),
+		experiment['replicates'][0]['library']['biosample']['age_display'])
+	longLabel = 'E3 Histone ChIP - %s - %s' %(experiment_accession, description)
+	if args.tag:
+		longLabel += ' - %s' %(args.tag)
+	trackDb.write(composite_stanza(experiment_accession, longLabel))
+
+	first_peaks = True
+	first_signal = True
+	priority = 1
+	for (n, output_name) in enumerate(output_names,start=1):
+		if output_name.endswith('narrowpeaks_bb'):
+			if first_peaks:
+				trackDb.write(viewpeaks_stanza(experiment_accession))
+				first_peaks = False
+			stanzas, n_stanzas = peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigBed 6 +", lowpass=args.lowpass, dx=outputs[output_name]['dx'])
+			trackDb.write(stanzas)
+			priority += n_stanzas
+		elif output_name.endswith('gappedpeaks_bb'):
+			if first_peaks:
+				trackDb.write(viewpeaks_stanza(experiment_accession))
+				first_peaks = False
+			stanzas, n_stanzas = peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigBed 12 +", lowpass=args.lowpass, dx=outputs[output_name]['dx'])
+			trackDb.write(stanzas)
+			priority += n_stanzas
+		elif output_name.endswith('_signal'):
+			if first_signal:
+				trackDb.write(viewsignal_stanza(experiment_accession))
+				first_signal = False
+			trackDb.write(signal_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigWig"))
+			priority += 1
+
+	trackDb.close()
 
 def main():
 	args = get_args()
-	authid, authpw, server = processkey(args.key)
-	keypair = (authid,authpw)
 	first_analysis = True
+
 	for (i, analysis_id) in enumerate(args.infile):
 		analysis_id = analysis_id.strip()
 		try:
@@ -202,107 +394,18 @@ def main():
 			print "Invalid analysis ID %s. Skipping." %(analysis_id)
 			continue
 
-		m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
-		if m:
-			experiment_accession = m.group(1)
+		histone_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
+		tf_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['name'])
+		if histone_m:
+			experiment_accession = histone_m.group(1)
+			histone(args, analysis, experiment_accession, first_analysis)
+		elif tf_m:
+			experiment_accession = tf_m.group(1)
+			tf(args, analysis, experiment_accession, first_analysis)
 		else:
 			print "No accession in %s, skipping." %(analysis['executableName'])
 			continue
 
-		stages = analysis.get('stages')
-		peaks_stage	= next(stage for stage in stages if stage['execution']['name'] == "ENCODE Peaks")['execution']
-		replicated_stages = [stage['execution'] for stage in stages if 'Overlap' in stage['execution']['name']]
-
-		output_names = [
-			'rep1_narrowpeaks_bb',
-			'rep2_narrowpeaks_bb',
-			'pooled_narrowpeaks_bb',
-			'rep1_gappedpeaks_bb',
-			'rep2_gappedpeaks_bb',
-			'pooled_gappedpeaks_bb',
-			'rep1_pvalue_signal',
-			'rep2_pvalue_signal',
-			'pooled_pvalue_signal',
-			'rep1_fc_signal',
-			'rep2_fc_signal',
-			'pooled_fc_signal']
-
-		outputs = dict(zip(output_names,[{'dx': dxpy.DXFile(peaks_stage['output'][output_name])} for output_name in output_names]))
-
-		output_names.insert(3,'replicated_narrowpeaks_bb')
-		outputs.update({'replicated_narrowpeaks_bb' : {'dx': dxpy.DXFile(next(stage['execution']['output']['overlapping_peaks_bb'] for stage in stages if stage['execution']['name'] == 'Overlap narrowpeaks'))}})
-		output_names.insert(7,'replicated_gappedpeaks_bb')
-		outputs.update({'replicated_gappedpeaks_bb' : {'dx': dxpy.DXFile(next(stage['execution']['output']['overlapping_peaks_bb'] for stage in stages if stage['execution']['name'] == 'Overlap gappedpeaks'))}})
-
-		track_directory = os.path.join(args.ddir, experiment_accession)
-		url_base = urlparse.urljoin(args.turl, experiment_accession+'/')
-		#print "url_base %s" %(url_base)
-		if not args.nodownload and not os.path.exists(track_directory):
-			os.makedirs(track_directory)
-		if first_analysis:
-			if os.path.exists(args.tdbpath):
-				if args.truncate:
-					trackDb = open(args.tdbpath,'w')
-				else:
-					trackDb = open(args.tdbpath,'a')
-			else:
-				if not os.path.exists(os.path.dirname(args.tdbpath)):
-					os.makedirs(os.path.dirname(args.tdbpath))
-				trackDb = open(args.tdbpath, 'w')
-		else:
-			trackDb = open(args.tdbpath,'a')			
-
-		for (output_name, output) in outputs.iteritems():
-			local_path = os.path.join(track_directory, output['dx'].name)
-			print output_name, output['dx'].get_id(), local_path
-			if not args.nodownload:
-				dxpy.download_dxfile(output['dx'].get_id(), local_path)
-			outputs[output_name].update({'local_path' : local_path})
-			#print "Joining %s and %s" %(url_base, os.path.basename(local_path))
-			if args.dxf:
-				url, headers = output['dx'].get_download_url(duration=sys.maxint, preauthenticated=True)
-				outputs[output_name].update({'url': url})
-			else:
-				outputs[output_name].update({'url': urlparse.urljoin(url_base,os.path.basename(local_path))})
-			#print outputs[output_name]['url']
-
-		experiment = encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-		description = '%s %s %s %s' %(
-			experiment['target']['label'],
-			experiment['replicates'][0]['library']['biosample']['biosample_term_name'],
-			experiment['replicates'][0]['library']['biosample'].get('life_stage'),
-			experiment['replicates'][0]['library']['biosample']['age_display'])
-		longLabel = 'E3 Histone ChIP - %s - %s' %(experiment_accession, description)
-		if args.tag:
-			longLabel += ' - %s' %(args.tag)
-		trackDb.write(composite_stanza(experiment_accession, longLabel))
-
-		first_peaks = True
-		first_signal = True
-		priority = 1
-		for (n, output_name) in enumerate(output_names,start=1):
-			if output_name.endswith('narrowpeaks_bb'):
-				if first_peaks:
-					trackDb.write(viewpeaks_stanza(experiment_accession))
-					first_peaks = False
-				stanzas, n_stanzas = peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigBed 6 +", lowpass=args.lowpass, dx=outputs[output_name]['dx'])
-				trackDb.write(stanzas)
-				priority += n_stanzas
-			elif output_name.endswith('gappedpeaks_bb'):
-				if first_peaks:
-					trackDb.write(viewpeaks_stanza(experiment_accession))
-					first_peaks = False
-				stanzas, n_stanzas = peaks_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigBed 12 +", lowpass=args.lowpass, dx=outputs[output_name]['dx'])
-				trackDb.write(stanzas)
-				priority += n_stanzas
-			elif output_name.endswith('_signal'):
-				if first_signal:
-					trackDb.write(viewsignal_stanza(experiment_accession))
-					first_signal = False
-				trackDb.write(signal_stanza(experiment_accession, outputs[output_name]['url'], output_name, priority, tracktype="bigWig"))
-				priority += 1
-
-		trackDb.close()
 		first_analysis = False
 
 if __name__ == '__main__':
