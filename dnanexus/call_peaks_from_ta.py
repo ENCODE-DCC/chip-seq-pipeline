@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, subprocess, logging, dxpy
+import os, sys, subprocess, logging, dxpy, common
 
 EPILOG = '''Notes:
 
@@ -64,19 +64,13 @@ def processkey(key):
 
 	return (AUTHID,AUTHPW,SERVER)
 
-def encoded_get(url, keypair=None):
-	import urlparse, requests
-	HEADERS = {'content-type': 'application/json'}
-	url = urlparse.urljoin(url,'?format=json&frame=embedded&datastore=database')
-	if keypair:
-		response = requests.get(url, auth=keypair, headers=HEADERS)
-	else:
-		response = requests.get(url, headers=HEADERS)
-	return response.json()
 
 def get_control_id(experiment):
 	# url = server + '/experiments/%s/' %(exp_id)
 	# experiment = encoded_get(url, keypair)
+	fastqs = common.encoded_get('')
+
+
 	possible_controls = experiment.get('possible_controls')
 	if not possible_controls or len(possible_controls) != 1:
 		logging.error("Tried to find one possible control, found %s" %(possible_controls))
@@ -163,8 +157,15 @@ def main():
 		exp_id = exp_id.rstrip()
 		print "Experiment %s" %(exp_id)
 		url = server + '/experiments/%s/' %(exp_id)
-		experiment = encoded_get(url, keypair)
-		print "%s %s %s" %(experiment['accession'], experiment.get('target')['investigated_as'], experiment.get('description'))
+		experiment = common.encoded_get(url, keypair)
+		if experiment.get('target'):
+			url = server + experiemnt.get('target')
+			target = encoded_get(url, keypair)
+		else:
+			logging.error('Experiment has no target ... skipping')
+			continue
+		target = common.encoded_get(experiment.)
+		print "%s %s %s" %(experiment['accession'], target.get('investigated_as'), experiment.get('description'))
 		ctl_id = get_control_id(experiment)
 		if ctl_id:
 			print "Control %s" %(ctl_id)
