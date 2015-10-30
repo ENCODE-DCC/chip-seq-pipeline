@@ -270,7 +270,7 @@ def main():
 		description = '%s %s %s %s' %(
 			experiment['target']['label'],
 			experiment['replicates'][0]['library']['biosample']['biosample_term_name'],
-			experiment['replicates'][0]['library']['biosample']['life_stage'],
+			experiment['replicates'][0]['library']['biosample'].get('life_stage'),
 			experiment['replicates'][0]['library']['biosample']['age_display'])
 		longLabel = 'E3 Histone ChIP - %s - %s' %(experiment_accession, description)
 		if args.tag:
