@@ -159,12 +159,11 @@ def main():
 		url = server + '/experiments/%s/' %(exp_id)
 		experiment = common.encoded_get(url, keypair)
 		if experiment.get('target'):
-			url = server + experiemnt.get('target')
-			target = encoded_get(url, keypair)
+			url = server + experiment.get('target')
+			target = common.encoded_get(url, keypair)
 		else:
 			logging.error('Experiment has no target ... skipping')
 			continue
-		target = common.encoded_get(experiment.)
 		print "%s %s %s" %(experiment['accession'], target.get('investigated_as'), experiment.get('description'))
 		ctl_id = get_control_id(experiment)
 		if ctl_id:
