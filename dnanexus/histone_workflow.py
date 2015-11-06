@@ -572,7 +572,10 @@ def main():
 		logging.debug("IDR stages: %s" %(idr_stages))
 
 	if args.yes:
-		job_id = workflow.run({}, delay_workspace_destruction=True)
+		if args.debug:
+			job_id = workflow.run({}, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
+		else:
+			job_id = workflow.run({}, priority='high')
 		logging.info("Running as job %s" %(job_id))
 
 if __name__ == '__main__':

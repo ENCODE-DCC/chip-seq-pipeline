@@ -600,9 +600,9 @@ def main():
 
 	if args.yes:
 		if args.debug:
-			job_id = workflow.run({}, debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
+			job_id = workflow.run({}, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
 		else:
-			job_id = workflow.run({})
+			job_id = workflow.run({}, priority='high')
 		logging.info("Running as job %s" %(job_id))
 
 if __name__ == '__main__':

@@ -332,7 +332,7 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific):
 	jobs = []
 	if args.yes:
 		for wf in workflows:
-			jobs.append(wf.run({}))
+			jobs.append(wf.run({},priority='high'))
 	return jobs
 
 def main():
