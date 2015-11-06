@@ -211,16 +211,16 @@ def get_ta_from_accessions(accessions, default_project, ta_folders):
 			desc = dxfile.get('describe')
 			if desc.get('name').endswith(('tagAlign', 'tagAlign.gz')):
 				possible_files.append(desc)
-		matched_files = [f for f in possible_files if all([acc in f['name'] for acc in accessions])]
-		if not matched_files:
-			logging.error('Could not find tagAlign with accessions %s' %(accessions))
-			return None
-		elif len(matched_files) > 1:
-			logging.error('Found multiple tagAligns that matched accessions %s' %(accessions))
-			logging.error('Matched files %s' %([(f['folder'],f['name']) for f in matched_files]))
-			return None
-		else:
-			return matched_files[0]
+	matched_files = [f for f in possible_files if all([acc in f['name'] for acc in accessions])]
+	if not matched_files:
+		logging.error('Could not find tagAlign with accessions %s' %(accessions))
+		return None
+	elif len(matched_files) > 1:
+		logging.error('Found multiple tagAligns that matched accessions %s' %(accessions))
+		logging.error('Matched files %s' %([(f['folder'],f['name']) for f in matched_files]))
+		return None
+	else:
+		return matched_files[0]
 
 def get_tas(experiment, server, keypair, default_project, ta_folders):
 	# tas = {
@@ -423,7 +423,19 @@ def main():
 		if not outf.endswith('/') and outf != '/':
 			outf += '/'
 		outf += '%s/peaks/' %(exp_id)
-		workflow_spinner = '~/chip-seq-pipeline/dnanexus/tf_workflow.py'
+		try:
+			investigated_as = target['investigated_as']
+		except:
+			print "Failed to determine target type ... skipping %s" %(exp_id)
+			continue
+		else:
+			print investigated_as
+		if any('histone' in target_type for target_type in investigated_as):
+			print "Found to be histone"
+			workflow_spinner = '~/chip-seq-pipeline/dnanexus/histone_workflow.py'
+		else:
+			print "Assumed to be tf"
+			workflow_spinner = '~/chip-seq-pipeline/dnanexus/tf_workflow.py'
 		run_command = \
 			'%s --name "%s" --outf "%s" --nomap --yes ' %(workflow_spinner, workflow_name, outf) + \
 			'--rep1pe false --rep2pe false ' + \
