@@ -67,7 +67,7 @@ def resolve_project(identifier, privs='r'):
 		raise ValueError(identifier)
 	return project
 
-def get_ta(experiment, repn, default_project, ta_folders):
+def get_all_tas(experiment, default_project, ta_folders):
 	exp_id = experiment['accession']
 	possible_files = []
 	for base_folder in ta_folders:
@@ -87,24 +87,30 @@ def get_ta(experiment, repn, default_project, ta_folders):
 			desc = dxfile.get('describe')
 			if exp_id in desc.get('folder') and '/bams' in desc.get('folder') and desc.get('name').endswith(('tagAlign', 'tagAlign.gz')):
 				possible_files.append(desc)
+	return possible_files
+
+def get_rep_ta(experiment, repn, default_project, ta_folders):
+	exp_id = experiment['accession']
+
+	possible_files = get_all_tas(experiment, default_project, ta_folders)
 	print "%s %i possible files" %(exp_id, len(possible_files))
+
 	folders = [f.get('folder') for f in possible_files]
 	rep_folder = [folder for folder in folders if folder.endswith('rep%d' %(repn))]
 	if len(rep_folder) != 1:
-		logging.error("Could not find folder rep%n" %(repn))
+		logging.error("Could not find folder rep%d" %(repn))
 		return None
+	rep_folder = rep_folder[0]
 	rep_files = [f for f in possible_files if f.get('folder') == rep_folder]
 
 	if len(rep_files) != 1:
-		logging.warning("Tried to find one rep%n ta, found %d" %(repn, len(rep_files)))
+		logging.warning("Tried to find one rep%d ta, found %d" %(repn, len(rep_files)))
 	if len(rep_files) > 0:
 		if len(rep_files) > 1:
 			logging.warning("Using first one found")
-		rep = rep_files[0].get('project') + ':' + rep_files[0].get('folder') + '/' + rep_files[0].get('name')
+		return rep_files[0]
 	else:
-		rep = None
-
-	return rep
+		return None
 
 
 	# if len(folders) > 2:
@@ -158,27 +164,33 @@ def get_repns(exp_id, ta_folders):
 	print "%s folders %s" %(exp_id, folders)
 
 
-def get_exp_tas(experiment, server, keypair, default_project, ta_folders):
-	exp_id = experiment['accession']
-	repns = get_repns(exp_id, ta_folders)
-
-	rep1_ta = get_tas(experiment, repns[0], default_project, ta_folders)
-	rep2_ta = get_tas(experiment, repns[1], default_project, ta_folders)
-	
-	return (rep1_ta,repns[0]), (rep2_ta,repns[1])
-
-def get_ctl_tas(experiment, server, keypair, default_project, ta_folders):
+def get_possible_ctl_ta(experiment, repn, server, keypair, default_project, ta_folders, used_control_ids):
 	exp_id = experiment['accession']
 
-	rep1, rep2 = get_tas(exp_id, default_project, ta_folders)
-	if rep1 and rep2:
-		return rep1,rep2
-	elif rep1:
-		return rep1,rep1
-	elif rep2:
-		return rep2,rep2
-	else: #both are None - just pass it on and let the calling code deal with it
-		return rep1,rep2
+	#Build a list of the possible_control experiments
+	possible_control_experiments = []
+	for uri in experiment.get('possible_controls'):
+		possible_control_experiment = common.encoded_get(server+uri, keypair)
+		target_uri = possible_control_experiment.get('target')
+		# For now only use controls with no target or target "Control" (i.e. not IgG)
+		if not target_uri or target_uri.split('/')[2].startswith('Control'):
+			possible_control_experiments.append(possible_control_experiment)
+	logging.debug(pprint.pformat(possible_control_experiments))
+	try:
+		matching_ta = next(ta for ta in [get_rep_ta(e, repn, default_project, ta_folders) for e in possible_control_experiments] if ta and ta['id'] not in used_control_ids)
+	except StopIteration:
+		logging.warning('Failed to find control rep with matching repn')
+		matching_ta = None
+	else:
+		return matching_ta
+
+	try:
+		any_ta = next(ta for ta in common.flat([get_all_tas(e, default_project, ta_folders) for e in possible_control_experiments]) if ta and ta['id'] not in used_control_ids)
+	except StopIteration:
+		logging.error('Failed to find any possible control')
+		return None
+	else:
+		return any_ta
 
 def get_encffs(s):
 	return re.findall('ENCFF[0-9]{3}[A-Z]{3}',s)
@@ -286,23 +298,36 @@ def get_tas(experiment, server, keypair, default_project, ta_folders):
 		return None
 
 	tas = {}
+	used_controls = []
 	for i,repn in enumerate(repns):
 		encode_files = [common.encoded_get(server+'/files/%s/' %(f), keypair) for f in get_encffs(possible_files[i].get('name'))]
-		controlled_by = [f.get('controlled_by') for f in encode_files]
-		if controlled_by:
-			controlled_by_accessions = list(set([uri.split('/')[2] for uris in controlled_by for uri in uris]))
+		controlled_by = common.flat([f.get('controlled_by') for f in encode_files])
+		if any(controlled_by):
+			controlled_by_accessions = list(set([uri.split('/')[2] for uri in controlled_by if uri]))
 			controlled_by_ta = get_ta_from_accessions(controlled_by_accessions, default_project, ta_folders)
 			if controlled_by_ta:
 				controlled_by_ta_name = controlled_by_ta.get('name')
 				controlled_by_ta_id = controlled_by_ta.get('id')
 			else:
-				logging.error("Could not find controlled_by_ta")
+				logging.error("%s: Could not find controlled_by_ta for accessions %s" %(experiment.get('accession'), controlled_by_accessions))
 				controlled_by_ta_name = None
 				controlled_by_ta_id = None
 		else:
+			#evaluate possible controls
 			controlled_by_accessions = None
-			controlled_by_ta_name = None
-			controlled_by_ta_id = None
+			possible_controls = experiment.get('possible_controls')
+			logging.warning('%s: No controlled_by for rep%d, attempting to infer from possible_controls %s' %(experiment.get('accession'), repn, possible_controls))
+			if not possible_controls or not any(possible_controls):
+				logging.error('%s: Could not find controlled_by or resolve possible_controls for rep%d' %(experiment.get('accession'), repn))
+				controlled_by_ta_name = None
+				controlled_by_ta_id = None
+			else:
+				control_ta = get_possible_ctl_ta(experiment, repn, server, keypair, default_project, ta_folders, used_controls)
+				controlled_by_ta_name = control_ta.get('name')
+				controlled_by_ta_id = control_ta.get('id')
+		if controlled_by_ta_id and controlled_by_ta_id in used_controls:
+			logging.warning('%s: Using same control %s %s for multiple reps' %(controlled_by_ta_id, controlled_by_ta_name))
+		used_controls.append(controlled_by_ta_id)
 		#if encode repns are 1,2 then let the pipline input rep numbers (1 or 2) be the same.
 		#Otherwise the mapping is arbitrary, but at least do it with smaller rep number first.
 		if repn == min(repns):
