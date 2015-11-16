@@ -519,7 +519,7 @@ def main():
 
 			idr_stage_id = workflow.add_stage(
 				idr_applet,
-				name='IDR Pooled Pseudoeplicates',
+				name='IDR Pooled Pseudoreplicates',
 				folder=idr_output_folder,
 				stage_input={
 					'rep1_peaks' : dxpy.dxlink(
