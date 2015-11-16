@@ -33,6 +33,7 @@ def get_args():
 	parser.add_argument('--turl',		help="The base URL to the tracks", default='http://'+socket.getfqdn()+'/'+getpass.getuser()+'/tracks/')
 	parser.add_argument('--tag',		help="A short string to add to the composite track longLabel")
 	parser.add_argument('--lowpass',	help="Add replicated peak tracks with peaks less than this(these) width(s)", nargs='*', type=int)
+	parser.add_argument('--pipeline',	help="tf or histone.  If omitted, try to determine automatically", default=None)
 
 	args = parser.parse_args()
 
@@ -394,8 +395,16 @@ def main():
 			print "Invalid analysis ID %s. Skipping." %(analysis_id)
 			continue
 
-		histone_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
-		tf_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['name'])
+		if args.pipeline:
+			if args.pipeline == 'histone':
+				histone_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
+				tf_m = None
+			elif args.pipeline == 'tf':
+				tf_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['name'])
+				histone_m = None
+		else:
+			histone_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
+			tf_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['name'])
 		if histone_m:
 			experiment_accession = histone_m.group(1)
 			histone(args, analysis, experiment_accession, first_analysis)
