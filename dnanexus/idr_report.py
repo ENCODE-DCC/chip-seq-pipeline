@@ -30,6 +30,8 @@ def get_args():
 	parser.add_argument('--key',		help="The keypair identifier from the keyfile.", default='www')
 	parser.add_argument('--keyfile',	help="The keyfile.", default=os.path.expanduser("~/keypairs.json"))
 	parser.add_argument('--created_after', help="String to search for analyses (instead of looking in --infile or arguments) in the DNAnexus form like -5d", default=None)
+	parser.add_argument('--state',		help="One or more analysis states to report on (only with --created_after)", nargs='*', default=["done"])
+	parser.add_argument('--lab',		help="One or more labs to limit the reporting to", nargs='*', default=[])
 
 	args = parser.parse_args()
 
@@ -75,8 +77,10 @@ def main():
 	if args.analysis_ids:
 		ids = args.analysis_ids
 	elif args.created_after:
-		analyses = dxpy.find_analyses(name="ENCSR*",name_mode='glob',state='done',include_subjobs=True,return_handler=True,created_after="%s" %(args.created_after))
-		ids = [analysis.get_id() for analysis in analyses if analysis.describe()['executableName'] == 'tf_chip_seq']
+		analyses = []
+		for state in args.state:
+			analyses.extend(dxpy.find_analyses(name="ENCSR*",name_mode='glob',state=state,include_subjobs=True,return_handler=True,created_after="%s" %(args.created_after)))
+		ids = [analysis.get_id() for analysis in analyses if analysis.describe()['executableName'] == 'tf_chip_seq' or analysis.describe()['executableName'].startswith('ENCSR783QUL Peaks')]
 	elif args.infile:
 		ids = args.infile
 	else:
@@ -107,25 +111,67 @@ def main():
 
 		experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
 		logger.debug('ENCODEd experiment %s' %(experiment['accession']))
+		if args.lab and experiment['lab'].split('/')[2] not in args.lab:
+			continue
 		try:
 			idr_stage = next(s['execution'] for s in desc['stages'] if s['execution']['name'] == "Final IDR peak calls")
 		except:
-			logging.error('Failed to find IDR stage in %s' %(analysis_id))
+			logging.error('Failed to find final IDR stage in %s' %(analysis_id))
 		else:
-			Np = idr_stage['output'].get('Np')
-			N1 = idr_stage['output'].get('N1')
-			N2 = idr_stage['output'].get('N2')
-			Nt = idr_stage['output'].get('Nt')
-			rescue_ratio = idr_stage['output'].get('rescue_ratio')
-			self_consistency_ratio = idr_stage['output'].get('self_consistency_ratio')
-			reproducibility_test = idr_stage['output'].get('reproducibility_test')
+			if idr_stage['state'] != 'done':
+				Np = N1 = N2 = Nt = rescue_ratio = self_consistency_ratio = reproducibility_test = None
+				notes = []
+				#note this list contains a mis-spelled form of IDR Pooled Pseudoreplicates because until 11/13/15 the pipeline stage name was misspelled - need to be able to report on those runs
+				idr_stage_names = ['IDR True Replicates', 'IDR Rep 1 Self-pseudoreplicates', 'IDR Rep 2 Self-pseudoreplicates', 'IDR Pooled Pseudoreplicates', 'IDR Pooled Pseudoeplicates']
+				for stage_name in idr_stage_names:
+					try:
+						idr_stage = next(s['execution'] for s in desc['stages'] if s['execution']['name'] == stage_name)
+					except StopIteration:
+						continue
+					except:
+						raise
+					if idr_stage['state'] == 'failed':
+						try:
+							job_log = subprocess.check_output('dx watch %s' %(idr_stage['id']), shell=True, stderr=subprocess.STDOUT)
+						except subprocess.CalledProcessError as e:
+							job_log = e.output
+						else:
+							job_log = None
+						if job_log:
+							patterns = [r'Peak files must contain at least 20 peaks post-merge']
+							for p in patterns:
+								m = re.search(p,job_log)
+								if m:
+									notes.append("%s: %s" %(stage_name,m.group(0)))
+						if not notes:
+							notes.append(idr_stage['failureMessage'])
+				try:
+					done_time = next(transition['setAt'] for transition in desc['stateTransitions'] if transition['newState'] == "failed")
+				except StopIteration:
+					done_time = "Not done or failed"
+				except:
+					raise
+			else:
+				Np = idr_stage['output'].get('Np')
+				N1 = idr_stage['output'].get('N1')
+				N2 = idr_stage['output'].get('N2')
+				Nt = idr_stage['output'].get('Nt')
+				rescue_ratio = idr_stage['output'].get('rescue_ratio')
+				self_consistency_ratio = idr_stage['output'].get('self_consistency_ratio')
+				reproducibility_test = idr_stage['output'].get('reproducibility_test')
+				notes = "IDR Complete"
+				done_time = next(transition['setAt'] for transition in desc['stateTransitions'] if transition['newState'] == "done")
 
-		done_time = next(transition['setAt'] for transition in desc['stateTransitions'] if transition['newState'] == "done")
-
+		if done_time:
+			date = time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(done_time/1000))
+		else:
+			date = "Running"
+		analysis_link = 'https://platform.dnanexus.com/projects/%s/monitor/analysis/%s' %(desc.get('project').split('-')[1], desc.get('id').split('-')[1])
+		experiment_link = 'https://www.encodeproject.org/experiments/%s' %(experiment.get('accession'))
 		row = {
-			'date': time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(done_time/1000)),
-			'analysis':		analysis.get_id(),
-			'experiment': 	experiment.get('accession'),
+			'date': date,
+			'analysis':		analysis_link,
+			'experiment': 	experiment_link,
 			'target':		experiment['target'].split('/')[2],
 			'biosample_term_name':	experiment.get('biosample_term_name'),
 			'biosample_type':	experiment.get('biosample_type'),
@@ -142,25 +188,6 @@ def main():
 			'state': 		desc.get('state'),
 			'total price': 	desc.get('totalPrice')
 		}
-		notes = []
-
-		# if int(np_stage.get('output').get('npeaks_in')) - int(np_stage.get('output').get('npeaks_out')) != int(np_stage.get('output').get('npeaks_rejected')):
-		# 	notes.append("in-out!=rej delta=%i" %(int(np_stage.get('output').get('npeaks_in')) - int(np_stage.get('output').get('npeaks_out'))))
-		# else:
-		# 	notes.append("in-out=rej OK")
-
-		# bb_check_notes = []
-		# for stage in [np_stage, gp_stage]:
-		# 	bb_dxf = dxpy.DXFile(stage['output']['overlapping_peaks_bb'])
-		# 	if int(bb_dxf.describe()['size']) < 200000:
-		# 		bb_check_notes.append("%s bb size=%i" %(stage['name'], int(bb_dxf.describe()['size'])))
-		# if not bb_check_notes:
-		# 	notes.append("bb check OK")
-		# else:
-		# 	notes.append(bb_check_notes)
-
-
-
 
 		if notes:
 			row.update({'notes': '%s' %(notes)})
