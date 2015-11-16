@@ -1372,7 +1372,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force):
 	return patched_files
 
 @dxpy.entry_point('main')
-def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline, analysis_ids=None, infile=None, project=None):
+def main(outfn, assembly, debug, key, keyfile, dryrun, force, analysis_ids=None, infile=None, project=None):
 
 	if debug:
 		logger.info('setting logger level to logging.DEBUG')
