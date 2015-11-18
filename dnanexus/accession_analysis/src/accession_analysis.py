@@ -62,24 +62,26 @@ def flagstat_parse(flagstat_file):
 
 	return qc_dict
 
-def dup_parse(dup_file):
-	if not dup_file:
-		return None
+def dup_parse(dxlink):
+	desc = dxpy.describe(dxlink)
+	with dxpy.DXFile(desc['id'], mode='r') as dup_file:
+		if not dup_file:
+			return None
 
-	lines = iter(dup_file.read().splitlines())
+		lines = iter(dup_file.read().splitlines())
 
-	for line in lines:
-		if line.startswith('## METRICS CLASS'):
-			headers = lines.next().rstrip('\n').lower()
-			metrics = lines.next().rstrip('\n')
-			break
+		for line in lines:
+			if line.startswith('## METRICS CLASS'):
+				headers = lines.next().rstrip('\n').lower()
+				metrics = lines.next().rstrip('\n')
+				break
 
-	headers = headers.split('\t')
-	metrics = metrics.split('\t')
-	headers.pop(0)
-	metrics.pop(0)
+		headers = headers.split('\t')
+		metrics = metrics.split('\t')
+		headers.pop(0)
+		metrics.pop(0)
 
-	dup_qc = dict(zip(headers,metrics))
+		dup_qc = dict(zip(headers,metrics))
 	return dup_qc
 
 def xcor_parse(dxlink):
@@ -158,6 +160,23 @@ def get_attachment(dxlink):
 			'href': 'data:%s;base64,%s' %(mime_type, b64encode(stream.read()))
 		}
 	return obj
+
+#these are stopgaps until proper QC metrics are available and mapping_report uses them.
+def qc(stages):
+	raw_mapping_stage = stages['Map ENCSR*']['stage_metadata']
+	return flagstat_parse(raw_mapping_stage['output']['mapping_statistics'])
+def dup_qc(stages):
+	qc_stage = stages['Filter and QC*']['stage_metadata']
+	return dup_parse(qc_stage['output']['dup_file_qc'])
+def pbc_qc(stages):
+	qc_stage = stages['Filter and QC*']['stage_metadata']
+	return pbc_parse(qc_stage['output']['pbc_file_qc'])
+def filtered_qc(stages):
+	qc_stage = stages['Filter and QC*']['stage_metadata']
+	return flagstat_parse(qc_stage['output']['filtered_mapstats']) 
+def xcor_qc(stages):
+	xcor_stage = stages['Calculate cross-correlation*']['stage_metadata']
+	return xcor_parse(xcor_stage['output']['CC_scores_file'])
 
 def chipseq_filter_quality_metric(step_run, stages, files):
 	#this is currently a mix of deduplication stats and cross-correlation stats
@@ -325,6 +344,76 @@ def get_encoded_repn(mapping_analysis):
 		encoded_repn = int(m_name.group(1))
 		return encoded_repn
 
+def get_raw_mapping_stages(mapping_analysis, keypair, server, repn):
+	logger.debug('in get_raw_mapping_stages with mapping analysis %s and rep %s' %(mapping_analysis['id'], repn))
+
+	experiment_accession = get_experiment_accession(mapping_analysis)
+	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair) 
+
+	#This encoded_repn is the biological_replicate_number at ENCODEd, which needs to be puzzled out from the mapping analysis name
+	#or, better, by inferring the rep number from the fastqs actually imported into the analysis
+	encoded_repn = get_encoded_repn(mapping_analysis)
+	experiment_fastqs = get_rep_fastqs(experiment, keypair, server, encoded_repn)
+	experiment_fastq_accessions = [f.get('accession') for f in experiment_fastqs]
+	logger.info('%s: Found accessioned experiment fastqs with accessions %s' %(experiment_accession, experiment_fastq_accessions))
+
+	mapping_stages = mapping_analysis.get('stages')
+	input_stage = next(stage for stage in mapping_stages if stage['execution']['name'].startswith("Gather inputs"))
+
+	input_fastq_accessions = input_stage['execution']['input']['reads1']
+	if input_stage['execution']['input']['reads2']:
+		input_fastq_accessions.append(input_stage['execution']['input']['reads2'])
+	fastqs = []
+	for acc in input_fastq_accessions:
+		fobj = common.encoded_get(urlparse.urljoin(server,'files/%s' %(acc)), keypair)
+		# logger.debug('fobj')
+		# logger.debug('%s' %(pprint.pprint(fobj)))
+		fastqs.append(fobj)
+	logger.info('Found input fastq objects with accessions %s' %([f.get('accession') for f in fastqs]))
+
+	#Error if it appears we're trying to accession an out-dated analysis (i.e. one not derived from proper fastqs ... maybe some added or revoked)
+	if cmp(sorted(flat(experiment_fastq_accessions)), sorted(flat(input_fastq_accessions))):
+		logger.error('%s rep%d: Accessioned experiment fastqs differ from analysis.  Experiment probably needs remapping' %(experiment_accession, repn))
+		return None
+
+	raw_mapping_stage = next(stage for stage in mapping_stages if stage['execution']['name'].startswith("Map ENCSR"))
+	bam = dxpy.describe(raw_mapping_stage['execution']['output']['mapped_reads'])
+	#here we get the actual DNAnexus file that was used as the reference
+	reference_file = dxpy.describe(input_stage['execution']['output']['output_JSON']['reference_tar'])
+	#and construct the alias to find the corresponding file at ENCODEd
+	reference_alias = "dnanexus:" + reference_file.get('id')
+	logger.debug('looking for reference file with alias %s' %(reference_alias))
+	reference = common.encoded_get(urlparse.urljoin(server,'files/%s' %(reference_alias)), keypair)
+	if reference:
+		logger.debug('found reference file %s' %(reference.get('accession')))
+	else:
+		logger.error('failed to find reference file %s' %(reference_alias))
+
+	bam_metadata = common.merge_dicts({
+		'file_format': 'bam',
+		'output_type': 'alignments'
+		}, common_metadata)
+
+	rep_mapping_stages = {
+		"Map ENCSR*" : {
+			'input_files': [
+				{'name': 'rep%s_fastqs' %(repn),	'derived_from': None,					'metadata': None, 'encode_object': fastqs},
+				{'name': 'reference', 'derived_from': None, 'metadata': None, 'encode_object': reference}
+			],
+			'output_files': [
+				{'name': 'mapped_reads',		'derived_from': ['rep%s_fastqs' %(repn),'reference'],	'metadata': bam_metadata}
+			],
+			'qc': [qc],
+			'stage_metadata': {} #initialized below
+		}
+	}
+
+	for stage_name in rep_mapping_stages:
+		if not stage_name.startswith('_'):
+			rep_mapping_stages[stage_name].update({'stage_metadata': get_stage_metadata(mapping_analysis, stage_name)})
+
+	return rep_mapping_stages
+
 def get_mapping_stages(mapping_analysis, keypair, server, repn):
 	logger.debug('in get_mapping_stages with mapping analysis %s and rep %s' %(mapping_analysis['id'], repn))
 
@@ -376,6 +465,12 @@ def get_mapping_stages(mapping_analysis, keypair, server, repn):
 		}, common_metadata)
 
 	rep_mapping_stages = {
+		"Map ENCSR*" : {
+			'input_files': [],
+			'output_files': [],
+			'qc': [],
+			'stage_metadata': {} #initialized below
+		},
 		"Filter and QC*" : {
 			'input_files': [
 				{'name': 'rep%s_fastqs' %(repn),	'derived_from': None,					'metadata': None, 'encode_object': fastqs},
@@ -384,7 +479,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, repn):
 			'output_files': [
 				{'name': 'filtered_bam',		'derived_from': ['rep%s_fastqs' %(repn),'reference'],	'metadata': bam_metadata}
 			],
-			'qc': [],
+			'qc': [qc, dup_qc, pbc_qc, filtered_qc, xcor_qc],
 			'stage_metadata': {} #initialized below
 		},
 		"Calculate cross-correlation*": {
@@ -886,12 +981,18 @@ def accession_outputs(stages, experiment, keypair, server, dryrun, force):
 			project = stage_metadata['project']
 			dx = dxpy.DXFile(stage_metadata['output'][file_metadata['name']], project=project)
 			dx_desc = dx.describe()
+			surfaced_outputs = [o for o in outputs['qc'] if isinstance(o,str)] #this will be a list of strings
+			calculated_outputs = [o for o in outputs['qc'] if not isinstance(o,str)] #this will be a list of functions/methods
+			notes_qc = dict(zip(surfaced_outputs,[stage_metadata['output'][metric] for metric in surfaced_outputs]))
+			notes_qc.update(dict(zip([f.__name__ for f in calculated_outputs],[f(stages) for f in calculated_outputs])))
 			post_metadata = {
 				'dx': dx,
 				'notes': {
 					'dx-id': dx.get_id(),
 					'dx-createdBy': dx_desc.get('createdBy'),
-					'qc': dict(zip(outputs['qc'],[stage_metadata['output'][metric] for metric in outputs['qc']]))}, #'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
+					'qc': notes_qc
+				},
+				#'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
 				'dataset': experiment.get('accession'),
 				'file_size': dx_desc.get('size'),
 				'submitted_file_name': dx.get_proj_id() + ':' + '/'.join([dx.folder,dx.name])}
@@ -1074,6 +1175,53 @@ def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, 
 	}
 
 	patched_files = accession_pipeline(mapping_analysis_step_versions, keypair, server, dryrun, force)
+	return patched_files
+
+def accession_raw_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, force):
+
+	experiment_accession = get_experiment_accession(mapping_analysis)
+	if not experiment_accession:
+		logger.info("Missing experiment accession or rep in %s, skipping." %(mapping_analysis['name']))
+		return []
+
+	m = re.match('^Map (ENCSR[0-9]{3}[A-Z]{3}) rep(\d+)',mapping_analysis['name'])
+	if m:
+		repn = int(m.group(2))
+	else:
+		logger.error("Missing rep in %s, skipping." %(mapping_analysis['name']))
+		return []
+
+	logger.info("%s rep %d: accessioning mapping." %(experiment_accession, repn))
+
+	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
+	raw_mapping_stages = get_raw_mapping_stages(mapping_analysis, keypair, server, repn)
+
+	output_files = accession_outputs(raw_mapping_stages, experiment, keypair, server, dryrun, force)
+
+	files_with_derived = patch_outputs(raw_mapping_stages, keypair, server, dryrun)
+
+	raw_mapping_analysis_step_versions = {
+		'bwa-indexing-step-v-1' : [
+			{
+				'stages' : "",
+				'stage_name': "",
+				'file_names' : [],
+				'status' : 'finished',
+				'qc_objects': []
+			}
+		],
+		'bwa-raw-alignment-step-v-1' : [
+			{
+				'stages' : raw_mapping_stages,
+				'stage_name': 'Map ENCSR*',
+				'file_names' : ['mapped_reads'],
+				'status' : 'finished',
+				'qc_objects' : []
+			}
+		]
+	}
+
+	patched_files = accession_pipeline(raw_mapping_analysis_step_versions, keypair, server, dryrun, force)
 	return patched_files
 
 def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun, force):
@@ -1372,7 +1520,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force):
 	return patched_files
 
 @dxpy.entry_point('main')
-def main(outfn, assembly, debug, key, keyfile, dryrun, force, analysis_ids=None, infile=None, project=None):
+def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline=None, analysis_ids=None, infile=None, project=None):
 
 	if debug:
 		logger.info('setting logger level to logging.DEBUG')
@@ -1414,18 +1562,22 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, analysis_ids=None,
 			}
 			logger.info('Accessioning analysis name %s executableName %s' %(analysis.get('name'), analysis.get('executableName')))
 
-			if analysis.get('name') == 'histone_chip_seq':
+			if pipeline == "histone" or analysis.get('name') == 'histone_chip_seq':
 				output.update({'dx_pipeline':'histone_chip_seq'})
 				accessioned_files = accession_histone_analysis_files(analysis, keypair, server, dryrun, force)
 				logger.info('accession histone analysis completed')
-			elif analysis.get('executableName') == 'ENCODE mapping pipeline':
+			elif pipeline == "mapping" or analysis.get('executableName') == 'ENCODE mapping pipeline':
 				output.update({'dx_pipeline':'ENCODE mapping pipeline'})
 				accessioned_files = accession_mapping_analysis_files(analysis, keypair, server, dryrun, force)
-				logger.info('accession histone analysis completed')
-			elif analysis.get('executableName') == 'tf_chip_seq':
+				logger.info('accession mapping analysis completed')
+			elif pipeline == "tf" or analysis.get('executableName') == 'tf_chip_seq':
 				output.update({'dx_pipeline':'tf_chip_seq'})
 				accessioned_files = accession_tf_analysis_files(analysis, keypair, server, dryrun, force)
 				logger.info('accession tf_chip_seq analysis completed')
+			elif pipeline == "raw":
+				output.update({'dx_pipeline':'ENCODE raw mapping pipeline'})
+				accessioned_files = accession_raw_mapping_analysis_files(analysis, keypair, server, dryrun, force)
+				logger.info('accession raw mapping analysis completed')
 			else:
 				logger.error('unrecognized analysis pattern %s %s ... skipping.' %(analysis.get('name'), analysis.get('executableName')))
 				output.update({'dx_pipeline':'unrecognized'})
