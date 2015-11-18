@@ -20,7 +20,8 @@
 		"bundledDepends": [
 		],
 		"execDepends": [
-			{"name": "awscli", "package_manager": "pip"}
+			{"name": "awscli", "package_manager": "pip"},
+			{"name": "emacs", "package_manager": "apt"}
 		]
 	},
 
