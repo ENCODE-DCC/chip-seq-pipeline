@@ -243,6 +243,7 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
 	if new_url_list[3].startswith('&'):
 		new_url_list[3] = new_url_list[3].replace('&','',1)
 	get_url = urlparse.urlunsplit(new_url_list)
+	logging.debug('encoded_get: %s' %(get_url))
 	max_retries = 10
 	max_sleep = 10
 	while max_retries:

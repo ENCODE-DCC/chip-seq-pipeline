@@ -70,7 +70,7 @@ def get_args():
 	parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks")
 	parser.add_argument('--idr', 	 help='Report peaks with and without IDR analysis',					default=False, action='store_true')
 	#parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
-	parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default=2)
+	parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default="2")
 	parser.add_argument('--yes', 	 help='Run the workflow',					default=False, action='store_true')
 
 	args = parser.parse_args()
@@ -287,7 +287,10 @@ def main():
 
 			if mapping_superstage.get('input_args') or blank_workflow:
 				if blank_workflow:
-					mapping_stage_input = None
+					if not args.reference:
+						mapping_stage_input = None
+					else:
+						mapping_stage_input = {'reference_tar' : dxpy.dxlink(reference_tar.get_id())}
 				else:
 					mapping_stage_input = {'reference_tar' : dxpy.dxlink(reference_tar.get_id())}
 					for arg_index,input_arg in enumerate(mapping_superstage['input_args']): #read pairs assumed be in order read1,read2
