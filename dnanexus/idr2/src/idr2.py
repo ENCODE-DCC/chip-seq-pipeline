@@ -106,7 +106,7 @@ def compress(filename):
         logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
         return new_filename
 
-def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep1_vs_rep2_prefix, rank):
+def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep1_vs_rep2_prefix, idr_threshold, rank):
 
     pooled_common_peaks_IDR_filename = rep1_vs_rep2_prefix + ".pooled_common_IDRv2.narrowPeak"
     log_filename = rep1_vs_rep2_prefix + ".log.txt"
@@ -120,12 +120,14 @@ def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep
     print subprocess.check_output('head %s' %(pooled_peaks_filename), shell=True)
     idr_command = ( "idr "
                     "--plot "
+                    "--soft-idr-threshold %s "
                     "--rank %s "
                     "--output-file %s "
                     "--log-output-file %s "
                     "--peak-list %s "
                     "--samples %s %s"
-                    %(  rank,
+                    %(  idr_threshold,
+                        rank,
                         pooled_common_peaks_IDR_filename,
                         log_filename,
                         pooled_peaks_filename,
@@ -177,11 +179,14 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold, rank):
         rep2_peaks_filename,
         pooled_peaks_filename,
         rep1_vs_rep2_prefix,
+        idr_threshold=idr_threshold,
         rank=rank)
 
     # =============================
     # Get peaks passing the IDR threshold
     # =============================
+    # Due to rounding, filtering in this way will produce a different number of peaks than if IDR were passed a cutoff directly
+    # but the difference is relatively very small in comparison to the total number of peaks
     awk_string = r"""awk 'BEGIN{OFS="\t"} $12>=%2.2f {print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}'""" %(-math.log10(idr_threshold))
     final_IDR_thresholded_filename = rep1_vs_rep2_prefix + '.IDR%2.2f.narrowPeak' %(idr_threshold)
     run_pipe([
