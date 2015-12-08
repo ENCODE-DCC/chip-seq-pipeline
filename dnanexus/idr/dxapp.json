@@ -39,7 +39,14 @@
       "class": "string",
       "optional": true,
       "default": "signal.value"
-    }
+    },
+    {
+      "name": "interactive",
+      "label": "Set up then hold for ssh interactive mode",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    }    
   ],
   "outputSpec": [
     {
