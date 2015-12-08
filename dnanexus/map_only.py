@@ -54,7 +54,7 @@ def get_args():
 	parser.add_argument('--yes', help="Run the workflows created", 			default=False, action='store_true')
 	parser.add_argument('--raw', help="Produce only raw (unfiltered) bams", default=False, action='store_true')
 	parser.add_argument('--tag', help="String to add to the workflow name", default="")
-	parser.add_argument('--sfn_dupes', help="Warn for duplicate submitted_file_name, but use files anyway.", default=False, action='store_true')
+	parser.add_argument('--no_sfn_dupes', help="Disallow duplicte submitted filenames.  Otherwise warn but use files anyway.", default=False, action='store_true')
 
 	args = parser.parse_args()
 
@@ -113,7 +113,7 @@ def filenames_in(files=None):
 	else:
 		return [f.get('submitted_file_name') for f in files]
 
-def files_to_map(exp_obj, server, keypair, sfn_dupes=False):
+def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
 	if not exp_obj or not (exp_obj.get('files') or exp_obj.get('original_files')):
 		logging.warning('Experiment %s or experiment has no files' %(exp_obj.get('accession')))
 		return []
@@ -126,11 +126,11 @@ def files_to_map(exp_obj, server, keypair, sfn_dupes=False):
 					file_obj.get('file_format') == 'fastq' and \
 					file_obj.get('replicate'):
 				if file_obj.get('submitted_file_name') in filenames_in(files):
-					if sfn_dupes:
+					if no_sfn_dupes:
+						logging.error('%s:%s Duplicate submitted_file_name found, skipping that file.' %(exp_obj.get('accession'),file_obj.get('accession')))
+					else:
 						logging.warning('%s:%s Duplicate submitted_file_name found, but allowing duplicates.' %(exp_obj.get('accession'),file_obj.get('accession')))
 						files.extend([file_obj])
-					else:
-						logging.error('%s:%s Duplicate submitted_file_name found, skipping that file.' %(exp_obj.get('accession'),file_obj.get('accession')))
 				else:
 					files.extend([file_obj])
 			elif file_obj.get('output_type') == 'reads' and \
@@ -360,7 +360,7 @@ def main():
 		encode_url = urlparse.urljoin(server,exp_id)
 		experiment = common.encoded_get(encode_url, keypair)
 		outstrings.append(exp_id)
-		files = files_to_map(experiment, server, keypair, args.sfn_dupes)
+		files = files_to_map(experiment, server, keypair, args.no_sfn_dupes)
 		outstrings.append(str(len(files)))
 		outstrings.append(str([f.get('accession') for f in files]))
 		replicates = replicates_to_map(files, server, keypair, biorep_ns)
