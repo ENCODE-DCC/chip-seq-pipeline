@@ -79,7 +79,7 @@ def common_peaks_recalibrated(pooled_common_peaks_filename, rep_peaks_filename, 
         r"""awk 'BEGIN{OFS="\t"}{d=$2+$10-$12-$20;$21=sqrt(d^2);print $0}'""",
         'groupBy -i - -g 1,2,3,10 -c 21 -o min -full',
         'sort -k7n,7n -k1,1 -k2n,2n -k3n,3n -k10n,10n',
-        r"""awk 'BEGIN{OFS="\t"}{print $1,$2+$10-2,$2+$10+2,$3,$4,$5,$6,$17,$18,$19,2}'"""
+        r"""awk 'BEGIN{OFS="\t"}{print $1,$2+$10-2,$2+$10+2,$4,$5,$6,$17,$18,$19,2}'"""
         #'qzip -c'
     ], common_match_filename)
 
@@ -106,7 +106,7 @@ def compress(filename):
         logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
         return new_filename
 
-def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep1_vs_rep2_prefix, rank=None, idr_version=1):
+def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep1_vs_rep2_prefix, rank, idr_version, interactive):
 
     if idr_version == 1:
         # =============================
@@ -145,6 +145,11 @@ def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep
         idr_command = ( "Rscript batch-consistency-analysis.r "
                         "%s %s -1 %s 0 F %s" %(common_rep1_match_filename, common_rep2_match_filename, rep1_vs_rep2_prefix, rank))
         print idr_command
+        if interactive:
+            print "Interactive mode.  Execution paused"
+            hours_to_live = 12
+            from time import sleep
+            sleep(hours_to_live*60*60)
         process = subprocess.Popen(shlex.split(idr_command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
         for line in iter(process.stdout.readline, ''):
             sys.stdout.write(line)
@@ -242,10 +247,12 @@ def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep
 
 
 @dxpy.entry_point('main')
-def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold, rank):
+def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold, rank, interactive):
 
     # Initialize the data object inputs on the platform into
     # dxpy.DXDataObject instances.
+
+    idr_version = 1
 
     rep1_peaks_file = dxpy.DXFile(rep1_peaks)
     rep2_peaks_file = dxpy.DXFile(rep2_peaks)
@@ -277,7 +284,8 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, idr_threshold, rank):
         pooled_peaks_filename,
         rep1_vs_rep2_prefix,
         rank=rank,
-        idr_version=idr_version)
+        idr_version=idr_version,
+        interactive=interactive)
 
     # =============================
     # Get peaks passing the IDR threshold
