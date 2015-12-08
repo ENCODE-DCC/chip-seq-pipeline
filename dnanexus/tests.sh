@@ -233,6 +233,19 @@ dx run \
 --yes \
 idr
 
+# Run IDRv1 applet with ENCSR000EEB rep1 vs rep2
+dx run \
+--input "rep1_peaks=/test_data/ENCFF000XUL.raw.srt.filt.nodup.srt.SE.fixcoord.regionPeak.gz" \
+--input "rep2_peaks=/test_data/ENCFF000XUK.raw.srt.filt.nodup.srt.SE.regionPeak.gz" \
+--input "pooled_peaks=/test_data/ENCFF000XUL.raw.srt.filt.nodup.srt.SE-ENCFF000XUK.raw.srt.filt.nodup.srt.SE_pooled.regionPeak.gz" \
+--verbose \
+--destination /IDRv1_test \
+--name IDRv1_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+idr
+
 # Run IDRv2 applet with ENCSR000EEB chr21 rep1 vs rep2
 dx run \
 --input "rep1_peaks=/test_data/ENCFF000XUL-chr21.regionPeak.gz" \
