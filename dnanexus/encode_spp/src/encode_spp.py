@@ -91,6 +91,7 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 
 		rep1_ta_file = dxpy.DXFile(rep1_ta)
 		rep2_ta_file = dxpy.DXFile(rep2_ta)
+		unary_control = ctl1_ta == ctl2_ta
 		ctl1_ta_file = dxpy.DXFile(ctl1_ta)
 		ctl2_ta_file = dxpy.DXFile(ctl2_ta)
 		rep1_xcor_file = dxpy.DXFile(rep1_xcor)
@@ -129,31 +130,40 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 		pool_applet = dxpy.find_one_data_object(
 				classname='applet', name='pool', project=dxpy.PROJECT_CONTEXT_ID,
 				zero_ok=False, more_ok=False, return_handler=True)
-		pool_controls_subjob = pool_applet.run({"inputs": [ctl1_ta, ctl2_ta]})
 		pool_replicates_subjob = pool_applet.run({"inputs": [rep1_ta, rep2_ta]})
-
-		pooled_controls = pool_controls_subjob.get_output_ref("pooled")
 		pooled_replicates = pool_replicates_subjob.get_output_ref("pooled")
-
-		rep1_control = ctl1_ta #default
-		rep2_control = ctl2_ta #default
-		ratio_ctl_reads = float(ntags_ctl1)/float(ntags_ctl2)
-		if ratio_ctl_reads < 1:
-				ratio_ctl_reads = 1/ratio_ctl_reads
-		ratio_cutoff = 1.2
-		if ratio_ctl_reads > ratio_cutoff:
-				print "Number of reads in controls differ by > factor of %f. Using pooled controls." %(ratio_cutoff)
-				rep1_control = pooled_controls
-				rep2_control = pooled_controls
-		else:
-				if ntags_ctl1 < ntags_rep1:
-						print "Fewer reads in control replicate 1 than experiment replicate 1.  Using pooled controls for replicate 1."
-						rep1_control = pooled_controls
-				if ntags_ctl2 < ntags_rep2:
-						print "Fewer reads in control replicate 2 than experiment replicate 2.  Using pooled controls for replicate 2."
-						rep2_control = pooled_controls
-
 		pooled_replicates_xcor_subjob = xcor_only(pooled_replicates, paired_end)
+
+		rep1_control = ctl1_ta #default.  May be changed later.
+		rep2_control = ctl2_ta #default.  May be changed later.
+
+		if unary_control:
+			print "Only one control supplied.  Using it for both replicate 1 and 2 and for the pool."
+			control_for_pool = rep1_control
+		else:
+			pool_controls_subjob = pool_applet.run({"inputs": [ctl1_ta, ctl2_ta]})
+			pooled_controls = pool_controls_subjob.get_output_ref("pooled")
+			#always use the pooled controls for the pool
+			control_for_pool = pooled_controls
+
+			#use the pooled controls for the reps depending on the ration of rep to control reads
+			ratio_ctl_reads = float(ntags_ctl1)/float(ntags_ctl2)
+			if ratio_ctl_reads < 1:
+					ratio_ctl_reads = 1/ratio_ctl_reads
+			ratio_cutoff = 1.2
+			if ratio_ctl_reads > ratio_cutoff:
+					print "Number of reads in controls differ by > factor of %f. Using pooled controls." %(ratio_cutoff)
+					rep1_control = pooled_controls
+					rep2_control = pooled_controls
+			else:
+					if ntags_ctl1 < ntags_rep1:
+							print "Fewer reads in control replicate 1 than experiment replicate 1.  Using pooled controls for replicate 1."
+							rep1_control = pooled_controls
+					elif ntags_ctl2 < ntags_rep2:
+							print "Fewer reads in control replicate 2 than experiment replicate 2.  Using pooled controls for replicate 2."
+							rep2_control = pooled_controls
+					else:
+						print "Using distinct controls for replicate 1 and 2."
 
 		rep1_peaks_subjob = spp(rep1_ta,
 								rep1_control,
@@ -170,7 +180,7 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 								as_file=as_file)
 
 		pooled_peaks_subjob = spp(pooled_replicates,
-								pooled_controls,
+								control_for_pool,
 								pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"),
 								chrom_sizes=chrom_sizes,
 								bigbed=True,
@@ -241,13 +251,13 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 									bigbed=False)
 
 			pooledpr1_peaks_subjob = spp(pool_pr1_subjob.get_output_ref("pooled"),
-									pooled_controls,
+									control_for_pool,
 									pool_pr1_xcor_subjob.get_output_ref("CC_scores_file"),
 									chrom_sizes=chrom_sizes,
 									bigbed=False)
 
 			pooledpr2_peaks_subjob = spp(pool_pr2_subjob.get_output_ref("pooled"),
-									pooled_controls,
+									control_for_pool,
 									pool_pr2_xcor_subjob.get_output_ref("CC_scores_file"),
 									chrom_sizes=chrom_sizes,
 									bigbed=False)
