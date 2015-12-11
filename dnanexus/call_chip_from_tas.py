@@ -326,7 +326,7 @@ def get_tas(experiment, server, keypair, default_project, ta_folders):
 				controlled_by_ta_name = control_ta.get('name')
 				controlled_by_ta_id = control_ta.get('id')
 		if controlled_by_ta_id and controlled_by_ta_id in used_controls:
-			logging.warning('%s: Using same control %s %s for multiple reps' %(controlled_by_ta_id, controlled_by_ta_name))
+			logging.warning('%s: Using same control %s for multiple reps' %(controlled_by_ta_id, controlled_by_ta_name))
 		used_controls.append(controlled_by_ta_id)
 		#if encode repns are 1,2 then let the pipline input rep numbers (1 or 2) be the same.
 		#Otherwise the mapping is arbitrary, but at least do it with smaller rep number first.
