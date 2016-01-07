@@ -344,10 +344,10 @@ def after(date1, date2):
 	try:
 		result = dateutil.parser.parse(date1) > dateutil.parser.parse(date2)
 	except Exception as e:
-		logger.error("%s Cannot compare bam date %s with fastq date %s" %(e, bam.get('date_created'), f.get('date_created')))
+		logger.error("%s Cannot compare %s with %s" %(e, date1, date2))
 		raise
-	
-	return result
+	else:
+		return result
 
 def biorep_ns_generator(f,server,keypair):
 	if isinstance(f, dict):
