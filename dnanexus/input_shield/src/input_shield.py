@@ -235,6 +235,7 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
 
 
 	reads1_files = [resolve_file(read, key) for read in reads1]
+	#pooling of multiple single-end fastqs
 	if len(reads1_files) > 1:
 		pool_applet = dxpy.find_one_data_object(
 			classname='applet', name='pool', project=dxpy.PROJECT_CONTEXT_ID,
@@ -246,6 +247,7 @@ def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, referenc
 		reads1_file = pool_subjob.get_output_ref("pooled")
 	else:
 		reads1_file = reads1_files[0]
+	#TODO implement pooling of mulitple PE fastq pairs
 	reads2_file = resolve_file(reads2, key)
 	reference_tar_file = resolve_file(reference_tar, key)
 

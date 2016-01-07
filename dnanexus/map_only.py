@@ -317,6 +317,8 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific):
 		input_shield_stage_input.update({'reads1': [f.get('accession') for f in files]})
 		workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key))
 	elif all(isinstance(f, tuple) for f in files): #paired-end
+		#launches separate mapping jobs for each readpair
+		#TODO: upadte input_shield to take an array of read1/read2 PE pairs then pass that array from here
 		for readpair in files:
 			try:
 				input_shield_stage_input.update(
