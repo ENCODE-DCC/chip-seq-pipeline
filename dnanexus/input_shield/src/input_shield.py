@@ -13,6 +13,7 @@
 
 import os, requests, logging, re, urlparse, subprocess, requests, json, shlex
 import dxpy
+import common
 
 KEYFILE = 'keypairs.json'
 DEFAULT_SERVER = 'https://www.encodeproject.org'
@@ -21,49 +22,55 @@ DATA_CACHE_PROJECT = None #if specified, look anywhere in this project for ENCFF
 
 logger = logging.getLogger(__name__)
 
-def processkey(key):
+# def processkey(key):
 
-	if key:
-		keysf = open(KEYFILE,'r')
-		keys_json_string = keysf.read()
-		keysf.close()
-		keys = json.loads(keys_json_string)
-		logger.debug("Keys: %s" %(keys))
-		key_dict = keys[key]
-	else:
-		key_dict = {}
-	AUTHID = key_dict.get('key')
-	AUTHPW = key_dict.get('secret')
-	if key:
-		SERVER = key_dict.get('server')
-	else:
-		SERVER = 'https://www.encodeproject.org/'
+# 	if key:
+# 		keysf = open(KEYFILE,'r')
+# 		keys_json_string = keysf.read()
+# 		keysf.close()
+# 		keys = json.loads(keys_json_string)
+# 		logger.debug("Keys: %s" %(keys))
+# 		key_dict = keys[key]
+# 	else:
+# 		key_dict = {}
+# 	AUTHID = key_dict.get('key')
+# 	AUTHPW = key_dict.get('secret')
+# 	if key:
+# 		SERVER = key_dict.get('server')
+# 	else:
+# 		SERVER = 'https://www.encodeproject.org/'
 
-	if not SERVER.endswith("/"):
-		SERVER += "/"
+# 	if not SERVER.endswith("/"):
+# 		SERVER += "/"
 
-	return (AUTHID,AUTHPW,SERVER)
+# 	return (AUTHID,AUTHPW,SERVER)
 
-def encoded_get(url, AUTHID=None, AUTHPW=None):
-	HEADERS = {'content-type': 'application/json'}
-	if AUTHID and AUTHPW:
-		response = requests.get(url, auth=(AUTHID,AUTHPW), headers=HEADERS)
-	else:
-		response = requests.get(url, headers=HEADERS)
-	return response
+# def encoded_get(url, AUTHID=None, AUTHPW=None):
+# 	HEADERS = {'content-type': 'application/json'}
+# 	if AUTHID and AUTHPW:
+# 		response = requests.get(url, auth=(AUTHID,AUTHPW), headers=HEADERS)
+# 	else:
+# 		response = requests.get(url, headers=HEADERS)
+# 	return response
 
 def s3cp(accession, key=None):
 
-	(AUTHID,AUTHPW,SERVER) = processkey(key)
+	(AUTHID,AUTHPW,SERVER) = common.processkey(key,KEYFILE)
+	keypair = (AUTHID,AUTHPW)
 
 	url = SERVER + '/search/?type=file&accession=%s&format=json&frame=embedded&limit=all' %(accession)
 	#get the file object
-	response = encoded_get(url, AUTHID, AUTHPW)
+	response = common.encoded_get(url, keypair)
 	logger.debug(response)
 
 	#select your file
-	f_obj = response.json()['@graph'][0]
-	logger.debug(f_obj)
+	result = response.get('@graph')
+	if not result:
+		logger.error('Failed to find %s at %s' %(accession, url))
+		return None
+	else:
+		f_obj = result[0]
+		logger.debug(f_obj)
 
 	#make the URL that will get redirected - get it from the file object's href property
 	encode_url = urlparse.urljoin(SERVER,f_obj.get('href'))
@@ -175,8 +182,7 @@ def resolve_accession(accession, key):
 def resolve_file(identifier, key):
 	logger.debug("resolve_file: %s" %(identifier))
 
-	if not identifier:
-		return None
+	assert identifier, "No file identifier passed to resolve_file"
 
 	m = re.match(r'''^([\w\-\ \.]+):([\w\-\ /\.]+)''', identifier)
 	if m: #fully specified with project:path
@@ -214,66 +220,90 @@ def resolve_file(identifier, key):
 			logger.debug('%s not found as a dxid' %(identifier))
 			file_handler = resolve_accession(identifier, key)
 
-	if not file_handler:
-		logger.warning("Failed to resolve file identifier %s" %(identifier))
-		return None
-	else:
-		logger.debug("Resolved file identifier %s to %s" %(identifier, file_handler.name))
-		return file_handler
+	assert file_handler, "Failed to resolve file identifier %s" %(identifier)
+	logger.debug("Resolved file identifier %s to %s" %(identifier, file_handler.name))
+	return file_handler
 
+def pooled(files):
+	pool_applet = dxpy.find_one_data_object(
+		classname='applet', name='pool', project=dxpy.PROJECT_CONTEXT_ID,
+		zero_ok=False, more_ok=False, return_handler=True)
+	logger.debug('input files:%s' %(files))
+	logger.debug('input file ids:%s' %([dxf.get_id() for dxf in files]))
+	logger.debug('input files dxlinks:%s' %([dxpy.dxlink(dxf) for dxf in files]))
+	pool_subjob = pool_applet.run({"inputs": [dxpy.dxlink(dxf) for dxf in files]})
+	pooled_file = pool_subjob.get_output_ref("pooled")
+	return pooled_file
 
 @dxpy.entry_point('main')
-def main(reads1, bwa_aln_params, bwa_version, samtools_version, reads2, reference_tar, key, debug):
-
+def main(reads1, reads2, bwa_aln_params, bwa_version, samtools_version, reference_tar, key, debug):
+	#reads1 and reads2 are expected to be an arrays of file identifiers (either DNAnexus files or ENCODE file accession numbers)
+	#For SE, reads2 is empty
+	#For PE, len(reads1) = len(reads2)
+	#Multiple PE pairs or SE files are just catted before mapping
+	#Error on mixed SE/PE - although this can be implemented as just a "" entry at that position in reads2 array
+	#TODO: Add option to down-sample mixed read lengths
+	#TODO: Add option to down-sample mixed PE/SE to SE
 	if debug:
 		logger.setLevel(logging.DEBUG)
 	else:
 		logger.setLevel(logging.INFO)
 
+	print "reads1:"
+	print reads1
+	print "reads2:"
+	print reads2
 
-	#for each input fastq decide if it's specified as an ENCODE file accession number (ENCFF*)
-
+	if reads2:
+		paired_end = True
+		assert len(reads1) == len(reads2), "Paired-end and unequal numbers of read1 and read2 identifiers: %s %s" %(reads1, reads2)
+	else:
+		paired_end = False
 
 	reads1_files = [resolve_file(read, key) for read in reads1]
-	#pooling of multiple single-end fastqs
+
+	if paired_end:
+		reads2_files = [resolve_file(read, key) for read in reads2]
+	else:
+		reads2_files = []
+
+	#pooling of multiple fastqs
 	if len(reads1_files) > 1:
-		pool_applet = dxpy.find_one_data_object(
-			classname='applet', name='pool', project=dxpy.PROJECT_CONTEXT_ID,
-			zero_ok=False, more_ok=False, return_handler=True)
-		logger.debug('reads1_files:%s' %(reads1_files))
-		logger.debug('reads1_files ids:%s' %([dxf.get_id() for dxf in reads1_files]))
-		logger.debug('reads1_files dxlinks:%s' %([dxpy.dxlink(dxf) for dxf in reads1_files]))
-		pool_subjob = pool_applet.run({"inputs": [dxpy.dxlink(dxf) for dxf in reads1_files]})
-		reads1_file = pool_subjob.get_output_ref("pooled")
+		reads1_file = pooled(reads1_files)
 	else:
 		reads1_file = reads1_files[0]
-	#TODO implement pooling of mulitple PE fastq pairs
-	reads2_file = resolve_file(reads2, key)
+
+	if len(reads2_files) > 1:
+		reads2_file = pooled(reads2_files)
+	elif len(reads2_files) == 1:
+		reads2_file = reads2_files[0]
+	else:
+		reads2_file = None
+
 	reference_tar_file = resolve_file(reference_tar, key)
 
 	logger.info('Resolved reads1 to %s', reads1_file)
-	if reads2:
+	if reads2_file:
 		logger.info('Resolved reads2 to %s', reads2_file)
 	logger.info('Resolved reference_tar to %s', reference_tar_file)
 
 	output = {}
 	output.update({'reads1': reads1_file})
-	if reads2:
+	if reads2_file:
 		output.update({"reads2": reads2_file})
 	output_json = {
-		"reads1": reads1_file,
 		"reference_tar": reference_tar_file,
 		"bwa_aln_params": bwa_aln_params,
 		"bwa_version": bwa_version,
 		"samtools_version": samtools_version
 	}
-	if reads2:
-		output_json.update({'reads2': reads2_file})
+
 	output.update({'output_JSON': output_json})
 	#logger.info('Exiting with output_JSON: %s' %(json.dumps(output)))
 	#return {'output_JSON': json.dumps(output)}
 
 	logger.info('Exiting with output: %s' %(output))
+
 	return output
 
 dxpy.run()

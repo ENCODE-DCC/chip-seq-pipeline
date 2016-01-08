@@ -12,7 +12,7 @@ Examples:
 '''
 FILE_STATUSES_TO_MAP = ['in progress', 'released']
 DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
-INPUT_SHIELD_APPLET_NAME = 'input_shield'
+INPUT_SHIELD_APPLET_NAME = 'input_shield_dev'
 MAPPING_APPLET_NAME = 'encode_bwa'
 FILTER_QC_APPLET_NAME = 'filter_qc'
 XCOR_APPLET_NAME = 'xcor'
@@ -319,15 +319,15 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific):
 	elif all(isinstance(f, tuple) for f in files): #paired-end
 		#launches separate mapping jobs for each readpair
 		#TODO: upadte input_shield to take an array of read1/read2 PE pairs then pass that array from here
+		input_shield_stage_input.update({'reads1': [], 'reads2': []})
 		for readpair in files:
 			try:
-				input_shield_stage_input.update(
-					{'reads1': [next(f.get('accession') for f in readpair if f.get('paired_end') == '1')],
-					 'reads2': next(f.get('accession') for f in readpair if f.get('paired_end') == '2')})
+				input_shield_stage_input['reads1'].append(next(f.get('accession') for f in readpair if f.get('paired_end') == '1'))
+				input_shield_stage_input['reads2'].append(next(f.get('accession') for f in readpair if f.get('paired_end') == '2'))
 			except StopIteration:
 				logging.error('%s rep %s: Unmatched read pairs' %(experiment.get('accession'),biorep_n))
 				return []
-			workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key))
+		workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key))
 	else:
 		logging.error('%s: List of files to map appears to be mixed single-end and paired-end: %s' %(experiment.get('accession'), files))
 

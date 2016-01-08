@@ -17,9 +17,9 @@
     {
       "name": "reads2",
       "label": "reads2",
-      "class": "string",
+      "class": "array:string",
       "optional": true,
-      "default": ""
+      "default": []
     },
     {
       "name": "reference_tar",
