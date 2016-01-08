@@ -287,16 +287,19 @@ def main(reads1, reads2, bwa_aln_params, bwa_version, samtools_version, referenc
 		logger.info('Resolved reads2 to %s', reads2_file)
 	logger.info('Resolved reference_tar to %s', reference_tar_file)
 
-	output = {}
-	output.update({'reads1': reads1_file})
-	if reads2_file:
-		output.update({"reads2": reads2_file})
 	output_json = {
+		"reads1": reads1_file,
 		"reference_tar": reference_tar_file,
 		"bwa_aln_params": bwa_aln_params,
 		"bwa_version": bwa_version,
 		"samtools_version": samtools_version
 	}
+
+	output = {}
+	output.update({'reads1': reads1_file})
+	if reads2_file:
+		output.update({"reads2": reads2_file})
+		output_json.update({"reads2": reads2_file})
 
 	output.update({'output_JSON': output_json})
 	#logger.info('Exiting with output_JSON: %s' %(json.dumps(output)))
