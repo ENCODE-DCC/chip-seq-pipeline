@@ -11,12 +11,18 @@ Examples:
 	%(prog)s
 '''
 FILE_STATUSES_TO_MAP = ['in progress', 'released']
-DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
+
+#DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
+DEFAULT_APPLET_PROJECT = dxpy.WORKSPACE_ID
+DEFAULT_OUTPUT_PROJECT = dxpy.WORKSPACE_ID
+DEFAULT_OUTPUT_FOLDER = '/'
+
 INPUT_SHIELD_APPLET_NAME = 'input_shield'
 MAPPING_APPLET_NAME = 'encode_bwa'
 FILTER_QC_APPLET_NAME = 'filter_qc'
 XCOR_APPLET_NAME = 'xcor'
 POOL_APPLET_NAME = 'pool'
+
 REFERENCES = [
 	{'assembly': 'GRCh38', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
 	{'assembly': 'GRCh38', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
@@ -45,8 +51,8 @@ def get_args():
 	parser.add_argument('--assembly', help="Reference genome assembly, e.g. GRCh38, hg19, or mm10")
 	parser.add_argument('--sex_specific', help="Mapping should be to male or female reference.  Default male.", default=False, action='store_true')
 	parser.add_argument('--debug', help="Print debug messages", 				default=False, action='store_true')
-	parser.add_argument('--outp', help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
-	parser.add_argument('--outf', help="Output folder name or ID", 			default="/")
+	parser.add_argument('--outp', help="Output project name or ID", 			default=DEFAULT_OUTPUT_PROJECT)
+	parser.add_argument('--outf', help="Output folder name or ID", 			default=DEFAULT_OUTPUT_FOLDER)
 	parser.add_argument('--applets', help="Name of project containing applets", default=DEFAULT_APPLET_PROJECT)
 	#parser.add_argument('--instance_type', help="Instance type for mapping",	default=None)
 	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default", default='default')
