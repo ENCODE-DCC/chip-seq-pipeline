@@ -209,6 +209,10 @@ def chipseq_filter_quality_metric(step_run, stages, files):
 		'PBC2': float(pbc_qc['PBC2']),
 		'NRF': float(pbc_qc['NRF'])
 	}
+	#for very small, very complex fastq's, there will be exactly no overlap, so PBC2 will be infinite
+	#but there is no infinity in JSON, so we change that to the string "unknown"
+	if obj['PBC2'] == float('inf'):
+		obj['PBC2'] = 'Infinity'
 	return [obj]
 
 def samtools_flagstats_quality_metric(step_run, stages, files):
@@ -1013,7 +1017,7 @@ def patch_outputs(stages, keypair, server, dryrun):
 				logger.debug("patch_outputs file_metadata")
 				# logger.debug("%s" %(pprint.pformat(file_metadata)))
 				accession = file_metadata['encode_object'].get('accession')
-				derived_from_accessions = []
+				derived_from_accessions = set() #no duplicates allowed
 				for derived_from in file_metadata['derived_from']:
 					#derived from can be a tuple specifying a name from different set of stages
 					if isinstance(derived_from,tuple):
@@ -1026,11 +1030,14 @@ def patch_outputs(stages, keypair, server, dryrun):
 						logger.debug('%s' %(pprint.pformat(derived_from)))
 						stages_to_use = stages
 						name_to_use = derived_from
-					derived_from_accessions.append(resolve_name_to_accessions(stages_to_use, name_to_use))
+					#May see the same accession twice.  If, for example, a single control is reused, there
+					#will be two paths back to it (one via rep1 one via rep2) and so it will come out of this loop twice.
+					for acc in resolve_name_to_accessions(stages_to_use, name_to_use):
+						derived_from_accessions.add(acc)
 				logger.debug('derived_from_accessions = %s' %(pprint.pformat(derived_from_accessions)))
 				patch_metadata = {
 					'accession': accession,
-					'derived_from': [item for sublist in derived_from_accessions for item in sublist]
+					'derived_from': list(derived_from_accessions)
 				}
 				logger.debug('patch_metadata = %s' %(pprint.pformat(patch_metadata)))
 				patched_file = patch_file(patch_metadata, keypair, server, dryrun)
