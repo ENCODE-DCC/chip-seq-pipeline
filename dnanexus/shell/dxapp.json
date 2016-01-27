@@ -26,10 +26,9 @@
 	},
 
 	"access": {
-		"project": "CONTRIBUTE",
-		"network": [
-			"*"
-		]
+	    "network": ["*"],
+	    "project": "CONTRIBUTE",
+	    "allProjects": "CONTRIBUTE"
 	},
 	"authorizedUsers": []
 }

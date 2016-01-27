@@ -9,8 +9,6 @@ Examples:
 	%(prog)s
 '''
 
-DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
-
 def get_args():
 	import argparse
 	parser = argparse.ArgumentParser(
@@ -23,7 +21,7 @@ def get_args():
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/")
 	parser.add_argument('--inf', nargs='*',    help="Folder(s) name or ID with tagAligns", 			default="/")
 	parser.add_argument('--yes',   help="Run the workflows created", 			default=False, action='store_true')
-	parser.add_argument('--tag',   help="String to add to the workflow name")
+	parser.add_argument('--tag',   help="String to add to the workflow title")
 	parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default", default='default')
 	parser.add_argument('--keyfile', default=os.path.expanduser("~/keypairs.json"), help="The keypair file.  Default is --keyfile=%s" %(os.path.expanduser("~/keypairs.json")))
 	parser.add_argument('--gsize', help="Genome size string for MACS2, e.g. mm or hs", required=True)
@@ -438,9 +436,9 @@ def main():
 		if skip_flag:
 			continue
 
-		workflow_name = '%s Peaks' %(exp_id)
+		workflow_title = '%s Peaks' %(exp_id)
 		if args.tag:
-			workflow_name += ' %s' %(args.tag)
+			workflow_title += ' %s' %(args.tag)
 		outf = args.outf
 
 		if not outf.startswith('/') and outf != '/':
@@ -462,7 +460,7 @@ def main():
 			print "Assumed to be tf"
 			workflow_spinner = '~/chip-seq-pipeline/dnanexus/tf_workflow.py'
 		run_command = \
-			'%s --name "%s" --outf "%s" --nomap --yes ' %(workflow_spinner, workflow_name, outf) + \
+			'%s --title "%s" --outf "%s" --nomap --yes ' %(workflow_spinner, workflow_title, outf) + \
 			'--rep1pe false --rep2pe false ' + \
 			'--rep1 %s --rep2 %s ' %(tas['rep1_ta'].get('file_id'), tas['rep2_ta'].get('file_id')) + \
 			'--ctl1 %s --ctl2 %s ' %(tas['rep1_ta'].get('control_id'), tas['rep2_ta'].get('control_id')) + \

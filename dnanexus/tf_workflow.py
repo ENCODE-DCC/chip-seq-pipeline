@@ -26,7 +26,12 @@ Examples:
 '''
 
 WF_NAME = 'tf_chip_seq'
+WF_TITLE = 'TF ChIP-seq'
 WF_DESCRIPTION = 'ENCODE TF ChIP-Seq Pipeline'
+
+DEFAULT_APPLET_PROJECT = dxpy.WORKSPACE_ID
+DEFAULT_OUTPUT_PROJECT = dxpy.WORKSPACE_ID
+DEFAULT_OUTPUT_FOLDER = '/analysis_run'
 
 MAPPING_APPLET_NAME = 'encode_bwa'
 FILTER_QC_APPLET_NAME = 'filter_qc'
@@ -60,10 +65,10 @@ def get_args():
 	parser.add_argument('--rep2',    help="Replicate 2 fastq or tagAlign", 				default=None, nargs='*')
 	parser.add_argument('--ctl1',    help="Control for replicate 1 fastq or tagAlign", 	default=None, nargs='*')
 	parser.add_argument('--ctl2',    help="Control for replicate 2 fastq or tagAlign", 	default=None, nargs='*')
-	parser.add_argument('--outp',    help="Output project name or ID", 			default=dxpy.WORKSPACE_ID)
-	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/analysis_run")
-	parser.add_argument('--name',    help="Title of new workflow", 				default="TF ChIP-Seq")
-	parser.add_argument('--applets', help="Name of project containing applets", default="E3 ChIP-seq")
+	parser.add_argument('--outp',    help="Output project name or ID", 			default=DEFAULT_OUTPUT_PROJECT)
+	parser.add_argument('--outf',    help="Output folder name or ID", 			default=DEFAULT_OUTPUT_FOLDER)
+	parser.add_argument('--title',    help="Title of new workflow", 				default=WF_TITLE)
+	parser.add_argument('--applets', help="Name of project containing applets", default=DEFAULT_APPLET_PROJECT)
 	parser.add_argument('--nomap',   help='Given tagAligns, skip to peak calling', default=False, action='store_true')
 	parser.add_argument('--rep1pe', help='Specify if rep1 is PE (required only if --nomap)', type=bool, default=None)
 	parser.add_argument('--rep2pe', help='Specify if rep2 is PE (required only if --nomap)', type=bool, default=None)
@@ -254,7 +259,7 @@ def main():
 
 	workflow = dxpy.new_dxworkflow(
 		name=WF_NAME,
-		title=args.name,
+		title=args.title,
 		description=WF_DESCRIPTION,
 		project=output_project.get_id(),
 		folder=output_folder)
