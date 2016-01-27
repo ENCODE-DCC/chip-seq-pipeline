@@ -105,8 +105,8 @@ def main():
 
 		reader = csv.DictReader(StringIO.StringIO(r.text), delimiter='\t')
 		fieldnames = copy.copy(reader.fieldnames)
-		fieldnames.remove('Biological replicate')
-		fieldnames.insert(4,'Biological replicate')
+		fieldnames.remove('Biological replicate(s)')
+		fieldnames.insert(4,'Biological replicate(s)')
 		fieldnames.remove('Biosample Age')
 		fieldnames.insert(10,'Biosample Age')
 		fieldnames.append('Derived from')
@@ -118,9 +118,9 @@ def main():
 			file_object = common.encoded_get(url, keypair)
 			
 			bio_reps = sorted(list(set(biorep_ns(file_accession, server, keypair))))
-			file_metadata['Biological replicate'] = ",".join([str(n) for n in bio_reps])
+			file_metadata['Biological replicate(s)'] = ",".join([str(n) for n in bio_reps])
 
-			bio_ages = sorted(list(set(biorep_ages(file_accession, server, keypair))))
+			bio_ages = sorted(list(set(biorep_ages(file_accession, server, keypair)))) or ""
 			file_metadata.update({'Biosample Age': ",".join(bio_ages)})
 			
 			if file_object.get('derived_from'):
