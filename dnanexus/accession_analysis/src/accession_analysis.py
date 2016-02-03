@@ -527,7 +527,14 @@ def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, reps=[1
 	# Find the mapping analyses that produced those tagaligns
 	# Find the filtered bams from those analyses
 	# Build the stage dict and return it
-	logger.debug('in get_peak_mapping_stages with peaks_analysis %s; experiment %s; reps %s' %(peaks_analysis['id'], experiment['accession'], reps))
+	if not peaks_analysis:
+		logger.debug('in get_peak_mapping_stages: peaks_analysis is %s' %(peaks_analysis))
+	elif not experiment:
+		logger.debug('in get_peak_mapping_stages: experiment is %s' %(experiment))
+	elif not reps:
+		logger.debug('in get_peak_maping_stages: reps is %s' %(reps))
+	else:
+		logger.debug('in get_peak_mapping_stages with peaks_analysis %s; experiment %s; reps %s' %(peaks_analysis['id'], experiment['accession'], reps))
 	peaks_stages = peaks_analysis.get('stages')
 	peaks_stage = next(stage for stage in peaks_stages if stage['execution']['name'] == "ENCODE Peaks")
 	tas = [dxpy.describe(peaks_stage['execution']['input']['rep%s_ta' %(n)]) for n in reps]
@@ -1240,7 +1247,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun, fo
 	experiment_accession = get_experiment_accession(peaks_analysis)
 
 	if experiment_accession:
-		logger.info('%s: accession peaks' %(experiment_accession))
+		logger.info('%s: accession histone peaks' %(experiment_accession))
 	else:
 		logger.error("No experiment accession in %s, skipping." %(peaks_analysis['executableName']))
 		return None
@@ -1383,14 +1390,14 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force):
 	experiment_accession = get_experiment_accession(peaks_analysis)
 
 	if experiment_accession:
-		logger.info('%s: accession peaks' %(experiment_accession))
+		logger.info('%s: accession TF peaks' %(experiment_accession))
 	else:
 		logger.error("No experiment accession in %s, skipping." %(peaks_analysis['executableName']))
 		return None
 
 	#returns the experiment object
 	experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-
+	logger.debug('got experiment %s' %(experiment.get('accession')))
 	#returns a list with two elements:  the mapping stages for [rep1,rep2]
 	#in this context rep1,rep2 are the first and second replicates in the pipeline.  They may have been accessioned
 	#on the portal with any arbitrary biological_replicate_numbers.

@@ -7,6 +7,16 @@ from time import sleep
 def test():
 	print "In common.test"
 
+
+def flat(l):
+	result = []
+	for el in l:
+		if hasattr(el, "__iter__") and not isinstance(el, basestring):
+			result.extend(flat(el))
+		else:
+			result.append(el)
+	return result
+
 def rstrips(string, substring):
 	if not string.endswith(substring):
 		return string
@@ -159,47 +169,57 @@ def rescale_scores(fn, scores_col, new_min=10, new_max=1000):
 		rescaled_fn)
 	return rescaled_fn
 
-def processkey(key, keyfile=None):
+def processkey(key=None, keyfile=None):
 
 	import json
 
-	if not keyfile:
-		if 'KEYFILE' in globals(): #this is to support scripts where KEYFILE is a global
-			keyfile = KEYFILE
-		else:
-			logging.error("Keyfile must be specified or in global KEYFILE.")
-			return None
-	if key:
-		try:
-			keysf = open(keyfile,'r')
-		except:
-			logging.error("Failed to open keyfile %s" %(keyfile))
-			return None
-		keys_json_string = keysf.read()
-		keysf.close()
-		try:
-			keys = json.loads(keys_json_string)
-		except:
-			logging.error("Keyfile %s not in parseable JSON" %(keyfile))
-			return None
-		try:
-			key_dict = keys[key]
-		except:
-			logging.error("Keyfile %s has no key named %s" %(keyfile,key))
-			return None
-	else:
-		key_dict = {}
-
-	if key_dict:
-		authid = key_dict.get('key')
-		authpw = key_dict.get('secret')
-		server = key_dict.get('server')
-	elif os.getenv('ENCODE_AUTHID',None) and os.getenv('ENCODE_AUTHPW',None) and os.getenv('ENCODE_SERVER',None):
+	if not (key or keyfile) and os.getenv('ENCODE_AUTHID',None) and os.getenv('ENCODE_AUTHPW',None) and os.getenv('ENCODE_SERVER',None):
 		authid = os.getenv('ENCODE_AUTHID',None)
 		authpw = os.getenv('ENCODE_AUTHPW',None)
 		server = os.getenv('ENCODE_SERVER',None)
 	else:
-		return None
+		if not keyfile:
+			if 'KEYFILE' in globals(): #this is to support scripts where KEYFILE is a global
+				keyfile = KEYFILE
+			else:
+				logging.error("Keyfile must be specified or in global KEYFILE.")
+				return None
+		if key:
+			try:
+				keysf = open(keyfile,'r')
+			except IOError as e:
+				logging.error("Failed to open keyfile %s" %(keyfile))
+				logging.error("e.")
+				return None
+			except:
+				raise
+			keys_json_string = keysf.read()
+			keysf.close()
+			try:
+				keys = json.loads(keys_json_string)
+			except ValueError as e:
+				logging.error(e.message)
+				logging.error("Keyfile %s not in parseable JSON" %(keyfile))
+				return None
+			except:
+				raise
+			try:
+				key_dict = keys[key]
+			except ValueError:
+				logging.error(e.message)
+				logging.error("Keyfile %s has no key named %s" %(keyfile,key))
+				return None
+			except:
+				raise
+		else:
+			key_dict = {}
+
+		if key_dict:
+			authid = key_dict.get('key')
+			authpw = key_dict.get('secret')
+			server = key_dict.get('server')
+		else:
+			return None
 
 	if not server.endswith("/"):
 		server += "/"
@@ -221,9 +241,9 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
 	if 'limit' not in query:
 		new_url_list[3] += "&limit=all"
 	if new_url_list[3].startswith('&'):
-		new_url_list[3] = new_url_list[3].replace('&','?',1)
+		new_url_list[3] = new_url_list[3].replace('&','',1)
 	get_url = urlparse.urlunsplit(new_url_list)
-	print 'encoded_get url %s' %(get_url)
+	logging.debug('encoded_get: %s' %(get_url))
 	max_retries = 10
 	max_sleep = 10
 	while max_retries:
@@ -242,6 +262,44 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
 				return response
 			else:
 				return response.json()
+
+def encoded_update(method, url, keypair, payload, return_response):
+	import urlparse, urllib, requests, json
+	if method == 'patch':
+		request_method = requests.patch
+	elif method == 'post':
+		request_method = requests.post
+	elif method == 'put':
+		request_method = requests.put
+	else:
+		logging.error('Invalid HTTP method: %s' %(method))
+		return
+
+	HEADERS = {'accept': 'application/json', 'content-type': 'application/json'}
+	max_retries = 10
+	max_sleep = 10
+	while max_retries:
+		try:
+			response = request_method(url, auth=keypair, headers=HEADERS, data=json.dumps(payload))
+		except (requests.exceptions.ConnectionError, requests.exceptions.SSLError) as e:
+			logging.warning("%s ... %d retries left." %(e, max_retries))
+			sleep(max_sleep - max_retries)
+			max_retries -= 1
+			continue
+		else:
+			if return_response:
+				return response
+			else:
+				return response.json()
+
+def encoded_patch(url, keypair, payload, return_response=False):
+	return encoded_update('patch', url, keypair, payload, return_response)
+
+def encoded_post(url, keypair, payload, return_response=False):
+	return encoded_update('post', url, keypair, payload, return_response)
+
+def encoded_put(url, keypair, payload, return_response=False):
+	return encoded_update('put', url, keypair, payload, return_response)
 
 def pprint_json(JSON_obj):
 	import json
@@ -286,10 +344,10 @@ def after(date1, date2):
 	try:
 		result = dateutil.parser.parse(date1) > dateutil.parser.parse(date2)
 	except Exception as e:
-		logger.error("%s Cannot compare bam date %s with fastq date %s" %(e, bam.get('date_created'), f.get('date_created')))
+		logger.error("%s Cannot compare %s with %s" %(e, date1, date2))
 		raise
-	
-	return result
+	else:
+		return result
 
 def biorep_ns_generator(f,server,keypair):
 	if isinstance(f, dict):

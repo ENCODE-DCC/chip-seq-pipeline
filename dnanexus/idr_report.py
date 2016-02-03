@@ -118,7 +118,7 @@ def main():
 		except:
 			logging.error('Failed to find final IDR stage in %s' %(analysis_id))
 		else:
-			if idr_stage['state'] != 'done':
+			if idr_stage['state'] != 'done': #Final IDR peak calls stage not done, so loop through intermediate IDR stages to find errors
 				Np = N1 = N2 = Nt = rescue_ratio = self_consistency_ratio = reproducibility_test = None
 				notes = []
 				#note this list contains a mis-spelled form of IDR Pooled Pseudoreplicates because until 11/13/15 the pipeline stage name was misspelled - need to be able to report on those runs
