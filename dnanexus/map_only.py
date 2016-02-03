@@ -11,18 +11,12 @@ Examples:
 	%(prog)s
 '''
 FILE_STATUSES_TO_MAP = ['in progress', 'released']
-<<<<<<< HEAD
-DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
-INPUT_SHIELD_APPLET_NAME = 'input_shield_dev'
-=======
-
 #DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
 DEFAULT_APPLET_PROJECT = dxpy.WORKSPACE_ID
 DEFAULT_OUTPUT_PROJECT = dxpy.WORKSPACE_ID
 DEFAULT_OUTPUT_FOLDER = '/'
 
 INPUT_SHIELD_APPLET_NAME = 'input_shield'
->>>>>>> master
 MAPPING_APPLET_NAME = 'encode_bwa'
 FILTER_QC_APPLET_NAME = 'filter_qc'
 XCOR_APPLET_NAME = 'xcor'
@@ -345,7 +339,10 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific):
 	jobs = []
 	if args.yes:
 		for wf in workflows:
-			jobs.append(wf.run({},priority='high'))
+			if args.debug:
+				jobs.append(wf.run({}, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['*']))
+			else:
+				jobs.append(wf.run({}, priority='high'))
 	return jobs
 
 def main():
