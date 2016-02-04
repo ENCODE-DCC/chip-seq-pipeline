@@ -23,8 +23,8 @@ XCOR_APPLET_NAME = 'xcor'
 POOL_APPLET_NAME = 'pool'
 
 REFERENCES = [
-	{'assembly': 'GRCh38', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
-	{'assembly': 'GRCh38', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
+	{'assembly': 'GRCh38-minimal', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
+	{'assembly': 'GRCh38-minimal', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
 	#warning these are not sex-specific yet
 	{'assembly': 'GRCh38-no-alt', 'organism': 'human', 'sex': 'male',   'file': 'E3 ChIP-seq:/reference_files_local/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz'},
 	{'assembly': 'GRCh38-no-alt', 'organism': 'human', 'sex': 'female', 'file': 'E3 ChIP-seq:/reference_files_local/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz'},
