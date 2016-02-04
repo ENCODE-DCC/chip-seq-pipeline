@@ -89,10 +89,11 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
 	dxpy.download_dxfile(reference_tar, reference_tar_filename)
 	# extract the reference files from the tar
 	if reference_tar_filename.endswith('.gz') or reference_tar_filename.endswith('.tgz'):
-		tar_command = 'tar -xzvf %s' %(reference_tar_filename)
+		tar_command = 'tar -xzv --no-same-owner --no-same-permissions -f %s' %(reference_tar_filename)
 	else:
-		tar_command = 'tar -xvf %s' %(reference_tar_filename)
+		tar_command = 'tar -xv --no-same-owner --no-same-permissions -f %s' %(reference_tar_filename)
 	print "Unpacking %s" %(reference_tar_filename)
+	print tar_command
 	print subprocess.check_output(shlex.split(tar_command))
 	reference_filename = resolve_reference()
 
@@ -182,10 +183,11 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
 	reference_tar_file = dxpy.download_dxfile(reference_tar,reference_tar_filename)
 	# extract the reference files from the tar
 	if reference_tar_filename.endswith('.gz') or reference_tar_filename.endswith('.tgz'):
-		tar_command = 'tar -xzvf %s' %(reference_tar_filename)
+		tar_command = 'tar -xzv --no-same-owner --no-same-permissions -f %s' %(reference_tar_filename)
 	else:
-		tar_command = 'tar -xvf %s' %(reference_tar_filename)
+		tar_command = 'tar -xv --no-same-owner --no-same-permissions -f %s' %(reference_tar_filename)
 	print "Unpacking %s" %(reference_tar_filename)
+	print tar_command
 	print subprocess.check_output(shlex.split(tar_command))
 	reference_filename = resolve_reference()
 	print "Using reference file: %s" %(reference_filename)

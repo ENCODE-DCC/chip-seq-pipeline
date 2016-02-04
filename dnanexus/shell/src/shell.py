@@ -11,7 +11,7 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, logging
+import os, logging, subprocess, shlex
 import dxpy
 
 @dxpy.entry_point('main')
@@ -23,7 +23,6 @@ def main(hours_to_live):
 	logger.info('myinfo')
 	logger.warning('mywarning')
 	logger.error('myerror')
-
 
 	from time import sleep
 
