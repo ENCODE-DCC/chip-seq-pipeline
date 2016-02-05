@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, subprocess, logging, dxpy, common, re, pprint
+import os, sys, subprocess, logging, dxpy, common, re, pprint, requests
 
 EPILOG = '''Notes:
 
@@ -15,7 +15,8 @@ def get_args():
 		description=__doc__, epilog=EPILOG,
 		formatter_class=argparse.RawDescriptionHelpFormatter)
 
-	parser.add_argument('infile', help="Experiment accessions", nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+	parser.add_argument('experiments', help="Experiment accessions", nargs="*")
+	parser.add_argument('--infile', help="File with experiment accessions")
 	parser.add_argument('--debug',   help="Print debug messages", 				default=False, action='store_true')
 	parser.add_argument('--project',    help="Project name or ID", 			default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default="/")
@@ -26,6 +27,7 @@ def get_args():
 	parser.add_argument('--keyfile', default=os.path.expanduser("~/keypairs.json"), help="The keypair file.  Default is --keyfile=%s" %(os.path.expanduser("~/keypairs.json")))
 	parser.add_argument('--gsize', help="Genome size string for MACS2, e.g. mm or hs", required=True)
 	parser.add_argument('--csizes', help="chrom.sizes file for bedtobigbed, e.g. ENCODE Reference Files:/mm10/male.mm10.chrom.sizes", required=True)
+	parser.add_argument('--assembly', help="Genome assembly, e.g. hg19, mm10, GRCh38", required=True)
 	parser.add_argument('--idr', help="Run IDR", default=False, action='store_true')
 	parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default="2")
 	parser.add_argument('--dryrun', help="Formulate the run command, but don't actually run", default=False, action='store_true')
@@ -281,18 +283,28 @@ def get_tas(experiment, server, keypair, default_project, ta_folders):
 			if desc.get('name').endswith(('tagAlign', 'tagAlign.gz')):
 				possible_files.append(desc)
 	logging.debug('Found %s possible files' %(len(possible_files)))
-	logging.debug('%s' %([f.get('name') for f in possible_files]))
+	logging.debug('%s' %([(f.get('folder'),f.get('name')) for f in possible_files]))
 	repns = []
+	files_to_ignore = []
 	for f in possible_files:
 		m = re.search('/rep(\d+)$',f['folder'])
 		if m:
-			repns.append(int(m.group(1)))
+			repn = int(m.group(1))
+			logging.debug("Matched rep%d" %(repn))
+			if repn in repns:
+				logging.warning("Ignoring additional rep%d bam, using first found" %(repn))
+				files_to_ignore.append(f)
+			else:
+				logging.debug("First time finding rep%d" %(repn))
+				repns.append(repn)
 		else:
 			logging.error("Cannot parse rep number from %s" %(f['folder']))
 			return None
+	for f in files_to_ignore:
+		possible_files.remove(f)
 	logging.debug('Discovered repns %s' %(repns))
 	if len(repns) != 2:
-		logging.error("Required to have exactly 2 reps for %s" %(exp_id))
+		logging.error("Required to have exactly 2 reps for %s.  Found %d: %s" %(exp_id, len(repns), repns))
 		return None
 
 	tas = {}
@@ -395,16 +407,23 @@ def main():
 	authid, authpw, server = common.processkey(args.key, args.keyfile)
 	keypair = (authid,authpw)
 
-	for exp_id in args.infile:
+	experiments = []
+	if args.experiments:
+		experiments.extend(args.experiments)
+	if args.infile:
+		with open(args.infile,'r') as fh:
+			experiments.extend([e for e in fh])
+
+	for exp_id in experiments:
 		if exp_id.startswith('#'):
 			continue
 		exp_id = exp_id.rstrip()
 		print "Experiment %s" %(exp_id)
-		url = server + '/experiments/%s/' %(exp_id)
-		experiment = common.encoded_get(url, keypair)
+		experiment_url = server + '/experiments/%s/' %(exp_id)
+		experiment = common.encoded_get(experiment_url, keypair)
 		if experiment.get('target'):
-			url = server + experiment.get('target')
-			target = common.encoded_get(url, keypair)
+			target_url = server + experiment.get('target')
+			target = common.encoded_get(target_url, keypair)
 		else:
 			logging.error('Experiment has no target ... skipping')
 			continue
@@ -454,18 +473,26 @@ def main():
 		else:
 			print investigated_as
 		if any('histone' in target_type for target_type in investigated_as):
-			print "Found to be histone"
+			print "Found to be histone.  No blacklist will be used."
 			workflow_spinner = '~/chip-seq-pipeline/dnanexus/histone_workflow.py'
+			blacklist = None
 		else:
 			print "Assumed to be tf"
 			workflow_spinner = '~/chip-seq-pipeline/dnanexus/tf_workflow.py'
+			if args.assembly == "hg19":
+				blacklist = "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
+			else:
+				print "WARNING: No blacklist known for assembly %s, proceeding with no blacklist" %(args.assembly)
+				blacklist = None
+
 		run_command = \
 			'%s --title "%s" --outf "%s" --nomap --yes ' %(workflow_spinner, workflow_title, outf) + \
 			'--rep1pe false --rep2pe false ' + \
 			'--rep1 %s --rep2 %s ' %(tas['rep1_ta'].get('file_id'), tas['rep2_ta'].get('file_id')) + \
 			'--ctl1 %s --ctl2 %s ' %(tas['rep1_ta'].get('control_id'), tas['rep2_ta'].get('control_id')) + \
-			'--genomesize %s --chrom_sizes "%s" ' %(args.gsize, args.csizes) + \
-			'--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"'
+			'--genomesize %s --chrom_sizes "%s" ' %(args.gsize, args.csizes)
+		if blacklist:
+			run_command += ' --blacklist %s' %(blacklist)
 		if args.debug:
 			run_command += ' --debug'
 		if args.idr:
@@ -481,6 +508,13 @@ def main():
 				logging.error("%s exited with non-zero code %d" %(workflow_spinner, e.returncode))
 			else:
 				print "%s workflow created" %(experiment['accession'])
+				logging.debug("patching internal_status to url %s" %(experiment_url))
+				r = common.encoded_patch(experiment_url, keypair, {'internal_status':'processing'}, return_response=True)
+				try:
+					r.raise_for_status()
+				except:
+					logging.error("Tried but failed to update experiment internal_status to processing")
+					logging.error(r.text)
 
 if __name__ == '__main__':
 	main()
