@@ -374,7 +374,7 @@ def main():
 		outstrings.append(str(len(files)))
 		outstrings.append(str([f.get('accession') for f in files]))
 		replicates = replicates_to_map(files, server, keypair, biorep_ns)
-
+		in_process = False
 		if files:
 			for biorep_n in set([rep.get('biological_replicate_number') for rep in replicates]):
 				outstrings.append('rep%s' %(biorep_n))
@@ -400,8 +400,10 @@ def main():
 					logging.warning('%s: leftover file(s) %s' %(experiment.get('accession'), biorep_files))
 				if paired_files:
 					pe_jobs = map_only(experiment, biorep_n, paired_files, args.key, server, keypair, args.sex_specific)
+					in_process = True
 				if unpaired_files:
 					se_jobs = map_only(experiment, biorep_n, unpaired_files, args.key, server, keypair, args.sex_specific)
+					in_process = True
 				if paired_files and pe_jobs:
 					outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))
 					outstrings.append('paired jobs:%s' %([j.get_id() for j in pe_jobs]))
@@ -412,7 +414,13 @@ def main():
 					outstrings.append('unpaired jobs:%s' %([j.get_id() for j in se_jobs]))
 				else:
 					outstrings.append('unpaired:%s' %(None))
-
+			if in_process:
+				r = common.encoded_patch(encode_url, keypair, {"internal_status": "processing"}, return_response=True)
+				try:
+					r.raise_for_status()
+				except:
+					logging.error("Tried and failed to set internal_status")
+					logging.error(r.text)
 			print '\t'.join(outstrings)
 		else: # no files
 			if not replicates:

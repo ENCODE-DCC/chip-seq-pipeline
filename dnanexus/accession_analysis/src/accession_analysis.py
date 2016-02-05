@@ -1061,6 +1061,9 @@ def patch_outputs(stages, keypair, server, dryrun):
 def accession_qc_object(obj_type, obj, keypair, server, dryrun, force):
 	logger.debug('in accession_qc_object with obj_type %s obj.keys() %s' %(obj_type, obj.keys()))
 	logger.debug('obj[step_run] %s' %(obj.get('step_run')))
+	#To avoid duplicating qc objects check for same analysis_step_run, and if there is a qc object of this type
+	#for that analysis_step run, then delete it first.
+	#Result is that the QC objects from the analysis being accessioned will supercede those that already exist.
 	url = urlparse.urljoin(server,'/search/?type=%s&step_run=%s' %(obj_type, obj.get('step_run')))
 	logger.debug('url %s' %(url))
 	r = common.encoded_get(url,keypair)
@@ -1601,6 +1604,15 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline=None, ana
 			logger.info("Accessioned: %s" %(file_accessions))
 			output.update({'files':file_accessions})
 			output_writer.writerow(output)
+
+			if file_accessions:
+				url = server+"/experiments/%s" %(experiment)
+				r = common.encoded_patch(url,keypair,{"internal_status":"pipeline completed"},return_response=True)
+				try:
+					r.raise_for_status()
+				except:
+					logger.error("Tried but failed to update experiment internal_status to pipeline completed")
+					logger.error(r.text)
 
 	common.touch(outfn)
 	outfile = dxpy.upload_local_file(outfn)
