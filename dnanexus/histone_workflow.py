@@ -64,7 +64,8 @@ def get_args():
 	parser.add_argument('--ctl2',    help="Control for replicate 2 fastq or tagAlign", default=None, nargs='*')
 	parser.add_argument('--outp',    help="Output project name or ID", default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--outf',    help="Output folder name or ID", default="/analysis_run")
-	parser.add_argument('--title',    help="Title of new workflow", default=WF_TITLE)
+	parser.add_argument('--title',   help="Title for new workflow", default=WF_TITLE)
+	parser.add_argument('--name',    help="Name for new workflow", default=WF_NAME)
 	parser.add_argument('--applets', help="Name of project containing applets", default=dxpy.WORKSPACE_ID)
 	parser.add_argument('--nomap',   help='Given tagAligns, skip to peak calling', default=False, action='store_true')
 	parser.add_argument('--rep1pe', help='Specify if rep1 is PE (required only if --nomap)', type=bool, default=None)
@@ -248,7 +249,7 @@ def main():
 	logging.info('Found applet project %s' %(applet_project.name))
 
 	workflow = dxpy.new_dxworkflow(
-		name=WF_NAME,
+		name=args.name,
 		title=args.title,
 		description=WF_DESCRIPTION,
 		project=output_project.get_id(),
@@ -462,11 +463,11 @@ def main():
 
 	#TODO - IDR on gapped and broad peaks
 	if args.idr:
-		idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
 		idr_applet = find_applet_by_name(IDR_APPLET_NAME, applet_project.get_id())
 		encode_idr_applet = find_applet_by_name(ENCODE_IDR_APPLET_NAME, applet_project.get_id())
-		idr_stages = []
+		idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
 		idr_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
+		idr_stages = []
 		if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
 			idr_stage_id = workflow.add_stage(
 				idr_applet,

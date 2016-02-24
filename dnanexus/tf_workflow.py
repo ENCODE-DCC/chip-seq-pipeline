@@ -67,7 +67,8 @@ def get_args():
 	parser.add_argument('--ctl2',    help="Control for replicate 2 fastq or tagAlign", 	default=None, nargs='*')
 	parser.add_argument('--outp',    help="Output project name or ID", 			default=DEFAULT_OUTPUT_PROJECT)
 	parser.add_argument('--outf',    help="Output folder name or ID", 			default=DEFAULT_OUTPUT_FOLDER)
-	parser.add_argument('--title',    help="Title of new workflow", 				default=WF_TITLE)
+	parser.add_argument('--name',    help="Name for new workflow", 				default=WF_NAME)
+	parser.add_argument('--title',   help="Title for new workflow", 				default=WF_TITLE)
 	parser.add_argument('--applets', help="Name of project containing applets", default=DEFAULT_APPLET_PROJECT)
 	parser.add_argument('--nomap',   help='Given tagAligns, skip to peak calling', default=False, action='store_true')
 	parser.add_argument('--rep1pe', help='Specify if rep1 is PE (required only if --nomap)', type=bool, default=None)
@@ -258,7 +259,7 @@ def main():
 	logging.info('Found applet project %s' %(applet_project.name))
 
 	workflow = dxpy.new_dxworkflow(
-		name=WF_NAME,
+		name=args.name,
 		title=args.title,
 		description=WF_DESCRIPTION,
 		project=output_project.get_id(),
