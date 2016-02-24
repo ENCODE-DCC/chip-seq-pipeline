@@ -1285,10 +1285,10 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
 
 
 def resolve_name_to_accessions(stages, stage_file_name):
-    #given a dict of named stages, and the name of one of the stages' outputs, return that output's
-    #ENCODE accession number
+    # given a dict of named stages, and the name of one of the stages' outputs,
+    # return that output's ENCODE accession number
     logger.debug("in resolve_name_to_accessions with stage_file_name")
-    logger.debug("%s" %(pprint.pformat(stage_file_name)))
+    logger.debug("%s" % (pprint.pformat(stage_file_name)))
     accessions = []
     for stage_name in stages:
         if stages[stage_name].get('input_files'):
