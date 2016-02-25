@@ -108,6 +108,7 @@ def main():
 		idr_files = common.encoded_get(server+idr_query,keypair)['@graph']
 		idr_step_runs = set([f.get('step_run') for f in idr_files])
 		if not len(idr_step_runs) == 1:
+			logger.error("%s %d" %(experiment_id, len(idr_step_runs)))
 			continue
 		idr_step_run_uri = next(iter(idr_step_runs))
 		idr_step_run = common.encoded_get(server+idr_step_run_uri,keypair)
