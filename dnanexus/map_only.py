@@ -39,27 +39,92 @@ REFERENCES = [
 
 APPLETS = {}
 
+
 def get_args():
     import argparse
     parser = argparse.ArgumentParser(
         description=__doc__, epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('experiments',  help='List of ENCSR accessions. Can be ENCSR,biorep_i,biorep_j,.. to restrict mapping to specific replicate(s).', nargs='*', default=None)
-    parser.add_argument('--infile',     help='File containing ENCSR accessions', type=argparse.FileType('rU'), default=sys.stdin)
-    parser.add_argument('--assembly', help="Reference genome assembly, e.g. GRCh38, hg19, or mm10")
-    parser.add_argument('--sex_specific', help="Mapping should be to male or female reference.  Default male.", default=False, action='store_true')
-    parser.add_argument('--debug', help="Print debug messages",                 default=False, action='store_true')
-    parser.add_argument('--outp', help="Output project name or ID",             default=DEFAULT_OUTPUT_PROJECT)
-    parser.add_argument('--outf', help="Output folder name or ID",          default=DEFAULT_OUTPUT_FOLDER)
-    parser.add_argument('--applets', help="Name of project containing applets", default=DEFAULT_APPLET_PROJECT)
-    #parser.add_argument('--instance_type', help="Instance type for mapping",   default=None)
-    parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default", default='default')
-    parser.add_argument('--keyfile', help="The keypair filename.", default=os.path.expanduser("~/keypairs.json"))
-    parser.add_argument('--yes', help="Run the workflows created",          default=False, action='store_true')
-    parser.add_argument('--raw', help="Produce only raw (unfiltered) bams", default=False, action='store_true')
-    parser.add_argument('--tag', help="String to add to the workflow name", default="")
-    parser.add_argument('--no_sfn_dupes', help="Disallow duplicte submitted filenames.  Otherwise warn but use files anyway.", default=False, action='store_true')
+    parser.add_argument(
+        'experiments',
+        help='List of ENCSR accessions. Can be ENCSR,biorep_i,biorep_j,.. to restrict mapping to specific replicate(s).',
+        nargs='*',
+        default=None)
+
+    parser.add_argument(
+        '--infile',
+        help='File containing ENCSR accessions',
+        type=argparse.FileType('rU'),
+        default=sys.stdin)
+
+    parser.add_argument(
+        '--assembly',
+        help="Reference genome assembly, e.g. GRCh38, hg19, or mm10")
+
+    parser.add_argument(
+        '--sex_specific',
+        help="Mapping should be to male or female reference.  Default male.",
+        default=False, action='store_true')
+
+    parser.add_argument(
+        '--debug',
+        help="Print debug messages",
+        default=False, action='store_true')
+
+    parser.add_argument(
+        '--outp',
+        help="Output project name or ID",
+        default=DEFAULT_OUTPUT_PROJECT)
+
+    parser.add_argument(
+        '--outf',
+        help="Output folder name or ID",
+        default=DEFAULT_OUTPUT_FOLDER)
+
+    parser.add_argument(
+        '--applets',
+        help="Name of project containing applets",
+        default=DEFAULT_APPLET_PROJECT)
+
+    parser.add_argument(
+        '--key',
+        help="The keypair identifier from the keyfile. Default is 'default'",
+        default='default')
+
+    parser.add_argument(
+        '--keyfile',
+        help="The keypair filename.",
+        default=os.path.expanduser("~/keypairs.json"))
+
+    parser.add_argument(
+        '--yes',
+        help="Run the workflows created",
+        default=False,
+        action='store_true')
+
+    parser.add_argument(
+        '--raw',
+        help="Produce only raw (unfiltered) bams",
+        default=False,
+        action='store_true')
+
+    parser.add_argument(
+        '--tag',
+        help="String to add to the workflow name",
+        default="")
+
+    parser.add_argument(
+        '--no_sfn_dupes',
+        help="Disallow duplicte submitted filenames.  Otherwise warn but use files anyway.",
+        default=False,
+        action='store_true')
+
+    parser.add_argument(
+        '--force_se',
+        help="Map only read1's of PE sequencing, and combine with SE data.",
+        default=False,
+        action='store_true')
 
     args = parser.parse_args()
 
@@ -395,7 +460,16 @@ def main():
                         else:
                             logging.warning('%s:%s could not find mate' %(experiment.get('accession'), file_object.get('accession')))
                             mate = {}
-                        paired_files.append((file_object,mate))
+
+                        # if mapping as SE, ignore the mate and just map the
+                        # rep1 as SE with all the other SE for this rep, if any
+                        if args.force_se:
+                            unpaired_files.append(next(
+                                f for f in [file_object, mate]
+                                if f.get('paired_end') == '1'))
+                        else:
+                            paired_files.append((file_object, mate))
+
                 if biorep_files:
                     logging.warning('%s: leftover file(s) %s' %(experiment.get('accession'), biorep_files))
                 if paired_files:
