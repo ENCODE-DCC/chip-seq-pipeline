@@ -243,7 +243,7 @@ def chipseq_filter_quality_metric(step_run, stages, files):
         'assay_term_name': 'ChIP-seq',
         'step_run': step_run,
         'quality_metric_of': file_accessions,
-        # 'attachment': xcor_plot,
+        'cross_correlation_plot': xcor_plot,
         'attachment': xcor_scores,
         'NSC': float(xcor_qc['phantomPeakCoef']),
         'RSC': float(xcor_qc['relPhantomPeakCoef']),
