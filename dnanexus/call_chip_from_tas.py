@@ -490,9 +490,9 @@ def main():
 			'--rep1pe false --rep2pe false ' + \
 			'--rep1 %s --rep2 %s ' %(tas['rep1_ta'].get('file_id'), tas['rep2_ta'].get('file_id')) + \
 			'--ctl1 %s --ctl2 %s ' %(tas['rep1_ta'].get('control_id'), tas['rep2_ta'].get('control_id')) + \
-			'--genomesize %s --chrom_sizes "%s" ' %(args.gsize, args.csizes)
+			'--genomesize %s --chrom_sizes "%s"' %(args.gsize, args.csizes)
 		if blacklist:
-			run_command += ' --blacklist %s' %(blacklist)
+			run_command += ' --blacklist "%s"' %(blacklist)
 		if args.debug:
 			run_command += ' --debug'
 		if args.idr:
