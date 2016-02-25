@@ -80,6 +80,16 @@
 			"class": "int"
 		},
 		{
+			"name": "Nc",
+			"label": "Number of peaks in the conservative set",
+			"class": "int"
+		},
+		{
+			"name": "No",
+			"label": "Number of peaks in the optimal set",
+			"class": "int"
+		},
+		{
 			"name": "conservative_set",
 			"label": "Final peak calls - conservative set",
 			"class": "file"

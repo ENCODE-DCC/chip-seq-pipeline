@@ -150,7 +150,9 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_s
 		"optimal_set": dxpy.dxlink(dxpy.upload_local_file(common.compress(optimal_set_filename))),
 		"rescue_ratio": rescue_ratio,
 		"self_consistency_ratio": self_consistency_ratio,
-		"reproducibility_test": reproducibility
+		"reproducibility_test": reproducibility,
+		"No": Nob,
+		"Nc": Ncb
 	})
 
 	logging.info("Exiting with output: %s", output)
