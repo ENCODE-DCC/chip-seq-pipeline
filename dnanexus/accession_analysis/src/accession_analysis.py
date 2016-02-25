@@ -347,6 +347,80 @@ def samtools_flagstats_quality_metric(step_run, stages, files):
     return [obj]
 
 
+def idr_quality_metric(step_run, stages, files):
+
+    logger.debug("in idr_seq_filter_quality_metric with \
+        step_run %s stages.keys() %s output files %s"
+                 % (step_run, stages.keys(), files))
+
+    file_accessions = list(set(flat([
+        resolve_name_to_accessions(stages, output_name)
+        for output_name in files])))
+
+    final_idr_stage_output = \
+        stages['Final IDR peak calls']['stage_metadata']['output']
+
+    def IDR_plot(stage_name):
+        return get_attachment(
+            stages[stage_name]['stage_metadata']['output']['IDR2_plot'])
+
+    def IDR_params(stage_name):
+        return get_attachment(
+            stages[stage_name]['stage_metadata']['output']['EM_parameters_log'])
+
+    def IDR_threshold(stage_name):
+        return float(stages[stage_name]['stage_metadata']['originalInput']['idr_threshold'])
+
+    obj = {
+        'assay_term_id':     'OBI:0000716',
+        'assay_term_name':   'ChIP-seq',
+        'step_run':          step_run,
+        'quality_metric_of': file_accessions,
+
+        'Nt': int(final_idr_stage_output['Nt']),
+        'Np': int(final_idr_stage_output['Np']),
+        'N1': int(final_idr_stage_output['N1']),
+        'N2': int(final_idr_stage_output['N2']),
+
+        'self_consistency_ratio':
+            float(final_idr_stage_output['self_consistency_ratio']),
+        'rescue_ratio':
+            float(final_idr_stage_output['rescue_ratio']),
+        'reproducibility_test':
+            str(final_idr_stage_output['reproducibility_test']),
+
+        'IDR_plot_true':    IDR_plot('IDR True Replicates'),
+        'IDR_plot_rep1_pr': IDR_plot('IDR Rep 1 Self-pseudoreplicates'),
+        'IDR_plot_rep2_pr': IDR_plot('IDR Rep 2 Self-pseudoreplicates'),
+        'IDR_plot_pool_pr': IDR_plot('IDR Pooled Pseudoreplicates'),
+
+        'IDR_parameters_true':    IDR_params('IDR True Replicates'),
+        'IDR_parameters_rep1_pr': IDR_params('IDR Rep 1 Self-pseudoreplicates'),
+        'IDR_parameters_rep2_pr': IDR_params('IDR Rep 2 Self-pseudoreplicates'),
+        'IDR_parameters_pool_pr': IDR_params('IDR Pooled Pseudoreplicates')
+    }
+
+    # these were not surfaced as outputs in earlier versions of the
+    # ENCODE IDR applet, so need to check first if they're there
+    if 'No' in final_idr_stage_output:
+        obj.update({'N_optimal': final_idr_stage_output['No']})
+    if 'Nc' in final_idr_stage_output:
+        obj.update({'N_conservative': final_idr_stage_output['Nc']})
+
+    # IDR cutoff should be the same for all IDR stages
+    idr_cutoffs = \
+        [IDR_threshold(stage_name) for stage_name in
+            ['IDR True Replicates', 'IDR Rep 1 Self-pseudoreplicates',
+             'IDR Rep 2 Self-pseudoreplicates', 'IDR Pooled Pseudoreplicates']]
+    if all(x == idr_cutoffs[0] for x in idr_cutoffs):
+        obj.update({'IDR_cutoff': idr_cutoffs[0]})
+    else:  # this is a serious enough error to block creation of the object
+        logger.error('Unequal IDR cutoffs: %s' % (idr_cutoffs))
+        return None
+
+    return [obj]
+
+
 def get_rep_bams(experiment, assembly, keypair, server):
     logger.debug('in get_rep_bams with experiment[accession] %s'
                  % (experiment.get('accession')))
@@ -1246,6 +1320,30 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
             'stage_metadata': {}  # initialized below
         },
 
+        "IDR True Replicates": {
+            'output_files': [],
+            'qc': [],
+            'stage_metadata': {}  # initialized below
+        },
+
+        "IDR Rep 1 Self-pseudoreplicates": {
+            'output_files': [],
+            'qc': [],
+            'stage_metadata': {}  # initialized below
+        },
+
+        "IDR Rep 2 Self-pseudoreplicates": {
+            'output_files': [],
+            'qc': [],
+            'stage_metadata': {}  # initialized below
+        },
+
+        "IDR Pooled Pseudoreplicates": {
+            'output_files': [],
+            'qc': [],
+            'stage_metadata': {}  # initialized below
+        },
+
         "Final IDR peak calls": {
 
             'output_files': [
@@ -1998,7 +2096,9 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force):
                 'stage_name': 'Final IDR peak calls',
                 'file_names' : ['conservative_set','optimal_set'],
                 'status' : 'finished',
-                'qc_objects': []
+                'qc_objects': [
+                    {'idr_quality_metric': ['conservative_set','optimal_set']}
+                ]
             }
         ],
         'tf-peaks-to-bigbed-step-v-1' : [
@@ -2016,7 +2116,9 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force):
                 'stage_name': 'Final IDR peak calls',
                 'file_names' : ['conservative_set_bb','optimal_set_bb'],
                 'status' : 'virtual',
-                'qc_objects': []
+                'qc_objects': [
+                    {'idr_quality_metric': ['conservative_set_bb','optimal_set_bb']}
+                ]
             }
         ]
     }
