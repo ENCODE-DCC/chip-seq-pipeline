@@ -579,7 +579,7 @@ def get_encoded_repn(mapping_analysis):
         return encoded_repn
 
 
-def get_raw_mapping_stages(mapping_analysis, keypair, server, repn):
+def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     logger.debug(
         'in get_raw_mapping_stages with mapping analysis %s and rep %s'
         % (mapping_analysis['id'], repn))
@@ -630,13 +630,18 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, repn):
 
     # Error if it appears we're trying to accession an out-dated analysis
     # (i.e. one not derived from proper fastqs ... maybe some added or revoked)
-    if cmp(sorted(flat(experiment_fastq_accessions)),
-           sorted(flat(input_fastq_accessions))):
-        logger.error(
-            '%s rep%d: Accessioned experiment fastqs differ from analysis.'
-            % (experiment_accession, repn) +
-            'Experiment probably needs remapping')
-        return None
+    if fqcheck:
+        if cmp(sorted(flat(experiment_fastq_accessions)),
+               sorted(flat(input_fastq_accessions))):
+            logger.error(
+                '%s rep%d: Accessioned experiment fastqs differ from analysis.'
+                % (experiment_accession, repn) +
+                'Experiment probably needs remapping')
+            return None
+    else:
+        logger.warning(
+            '--fqcheck is False, so not checking to see if experiment and \
+            mapped fastqs match')
 
     raw_mapping_stage = next(
         stage for stage in mapping_stages
@@ -707,7 +712,7 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, repn):
     return rep_mapping_stages
 
 
-def get_mapping_stages(mapping_analysis, keypair, server, repn):
+def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     logger.debug('in get_mapping_stages with mapping analysis %s and rep %s'
                  % (mapping_analysis['id'], repn))
 
@@ -758,13 +763,18 @@ def get_mapping_stages(mapping_analysis, keypair, server, repn):
 
     # Error if it appears we're trying to accession an out-dated analysis
     # (i.e. one not derived from proper fastqs ... maybe some added or revoked)
-    if cmp(sorted(flat(experiment_fastq_accessions)),
-           sorted(flat(input_fastq_accessions))):
-        logger.error(
-            '%s rep%d: Accessioned experiment fastqs differ from analysis.'
-            % (experiment_accession, repn) +
-            'Experiment probably needs remapping')
-        return None
+    if fqcheck:
+        if cmp(sorted(flat(experiment_fastq_accessions)),
+               sorted(flat(input_fastq_accessions))):
+            logger.error(
+                '%s rep%d: Accessioned experiment fastqs differ from analysis.'
+                % (experiment_accession, repn) +
+                'Experiment probably needs remapping')
+            return None
+    else:
+        logger.warning(
+            '--fqcheck is False, so not checking to see if experiment and \
+            mapped fastqs match')
 
     filter_qc_stage = next(
         stage for stage in mapping_stages
@@ -848,7 +858,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, repn):
 
 
 def get_control_mapping_stages(peaks_analysis, experiment, keypair, server,
-                               reps=[1, 2]):
+                               fqcheck, reps=[1, 2]):
     # Find the control inputs
     logger.debug(
         'in get_control_mapping_stages with peaks_analysis %s'
@@ -877,7 +887,7 @@ def get_control_mapping_stages(peaks_analysis, experiment, keypair, server,
 
     for (i, repn) in enumerate(reps):
         mapping_stage = get_mapping_stages(
-            mapping_analyses[i], keypair, server, repn)
+            mapping_analyses[i], keypair, server, fqcheck, repn)
 
         if not mapping_stage:
             logger.error('%s: failed to find mapping stages for rep%d'
@@ -890,7 +900,7 @@ def get_control_mapping_stages(peaks_analysis, experiment, keypair, server,
 
 
 def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server,
-                            reps=[1, 2]):
+                            fqcheck, reps=[1, 2]):
 
     # Find the tagaligns actually used as inputs into the analysis
     # Find the mapping analyses that produced those tagaligns
@@ -935,7 +945,8 @@ def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server,
     mapping_stages = []
     for (i, repn) in enumerate(reps):
         mapping_stage = \
-            get_mapping_stages(mapping_analyses[i], keypair, server, repn)
+            get_mapping_stages(
+                mapping_analyses[i], keypair, server, fqcheck, repn)
         if not mapping_stage:
             logger.error('%s: failed to find mapping stages for rep%d'
                          % (peaks_analysis['id'], repn))
@@ -1730,7 +1741,7 @@ def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force):
 
     return patched_files
 
-def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, force):
+def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, force, fqcheck):
 
     experiment_accession = get_experiment_accession(mapping_analysis)
     if not experiment_accession:
@@ -1747,7 +1758,8 @@ def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, 
     logger.info("%s rep %d: accessioning mapping." %(experiment_accession, repn))
 
     experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-    mapping_stages = get_mapping_stages(mapping_analysis, keypair, server, repn)
+    mapping_stages = get_mapping_stages(
+        mapping_analysis, keypair, server, fqcheck, repn)
 
     output_files = accession_outputs(mapping_stages, experiment, keypair, server, dryrun, force)
 
@@ -1780,7 +1792,7 @@ def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, 
     patched_files = accession_pipeline(mapping_analysis_step_versions, keypair, server, dryrun, force)
     return patched_files
 
-def accession_raw_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, force):
+def accession_raw_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, force, fqcheck):
 
     experiment_accession = get_experiment_accession(mapping_analysis)
     if not experiment_accession:
@@ -1797,7 +1809,8 @@ def accession_raw_mapping_analysis_files(mapping_analysis, keypair, server, dryr
     logger.info("%s rep %d: accessioning mapping." %(experiment_accession, repn))
 
     experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-    raw_mapping_stages = get_raw_mapping_stages(mapping_analysis, keypair, server, repn)
+    raw_mapping_stages = get_raw_mapping_stages(
+        mapping_analysis, keypair, server, fqcheck, repn)
 
     output_files = accession_outputs(raw_mapping_stages, experiment, keypair, server, dryrun, force)
 
@@ -1827,7 +1840,7 @@ def accession_raw_mapping_analysis_files(mapping_analysis, keypair, server, dryr
     patched_files = accession_pipeline(raw_mapping_analysis_step_versions, keypair, server, dryrun, force)
     return patched_files
 
-def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun, force):
+def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun, force, fqcheck):
 
     # m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
     # if m:
@@ -1847,14 +1860,14 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun, fo
     #returns a list with two elements:  the mapping stages for [rep1,rep2]
     #in this context rep1,rep2 are the first and second replicates in the pipeline.  They may have been accessioned
     #on the portal with any arbitrary biological_replicate_numbers.
-    mapping_stages = get_peak_mapping_stages(peaks_analysis, experiment, keypair, server)
+    mapping_stages = get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, fqcheck)
     if not mapping_stages:
         logger.error("Failed to find peak mapping stages")
         return None
 
     #returns a list with three elements: the mapping stages for the controls for [rep1, rep2, pooled]
     #the control stages for rep1 and rep2 might be the same as the pool if the experiment used pooled controls
-    control_stages = get_control_mapping_stages(peaks_analysis, experiment, keypair, server)
+    control_stages = get_control_mapping_stages(peaks_analysis, experiment, keypair, server, fqcheck)
     if not control_stages:
         logger.error("Failed to find control mapping stages")
         return None
@@ -1970,7 +1983,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun, fo
     patched_files = accession_pipeline(full_analysis_step_versions, keypair, server, dryrun, force)
     return patched_files
 
-def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force):
+def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force, fqcheck):
 
     # m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
     # if m:
@@ -1990,14 +2003,14 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force):
     #returns a list with two elements:  the mapping stages for [rep1,rep2]
     #in this context rep1,rep2 are the first and second replicates in the pipeline.  They may have been accessioned
     #on the portal with any arbitrary biological_replicate_numbers.
-    mapping_stages = get_peak_mapping_stages(peaks_analysis, experiment, keypair, server)
+    mapping_stages = get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, fqcheck)
     if not mapping_stages:
         logger.error("Failed to find peak mapping stages")
         return None
 
     #returns a list with three elements: the mapping stages for the controls for [rep1, rep2, pooled]
     #the control stages for rep1 and rep2 might be the same as the pool if the experiment used pooled controls
-    control_stages = get_control_mapping_stages(peaks_analysis, experiment, keypair, server)
+    control_stages = get_control_mapping_stages(peaks_analysis, experiment, keypair, server, fqcheck)
     if not control_stages:
         logger.error("Failed to find control mapping stages")
         return None
@@ -2127,7 +2140,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force):
     return patched_files
 
 @dxpy.entry_point('main')
-def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline=None, analysis_ids=None, infile=None, project=None):
+def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck, pipeline=None, analysis_ids=None, infile=None, project=None):
 
     if debug:
         logger.info('setting logger level to logging.DEBUG')
@@ -2171,19 +2184,19 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, pipeline=None, ana
 
             if pipeline == "histone" or analysis.get('name') == 'histone_chip_seq':
                 output.update({'dx_pipeline':'histone_chip_seq'})
-                accessioned_files = accession_histone_analysis_files(analysis, keypair, server, dryrun, force)
+                accessioned_files = accession_histone_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
                 logger.info('accession histone analysis completed')
             elif pipeline == "mapping" or analysis.get('executableName') == 'ENCODE mapping pipeline':
                 output.update({'dx_pipeline':'ENCODE mapping pipeline'})
-                accessioned_files = accession_mapping_analysis_files(analysis, keypair, server, dryrun, force)
+                accessioned_files = accession_mapping_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
                 logger.info('accession mapping analysis completed')
             elif pipeline == "tf" or analysis.get('executableName') == 'tf_chip_seq':
                 output.update({'dx_pipeline':'tf_chip_seq'})
-                accessioned_files = accession_tf_analysis_files(analysis, keypair, server, dryrun, force)
+                accessioned_files = accession_tf_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
                 logger.info('accession tf_chip_seq analysis completed')
             elif pipeline == "raw":
                 output.update({'dx_pipeline':'ENCODE raw mapping pipeline'})
-                accessioned_files = accession_raw_mapping_analysis_files(analysis, keypair, server, dryrun, force)
+                accessioned_files = accession_raw_mapping_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
                 logger.info('accession raw mapping analysis completed')
             else:
                 logger.error('unrecognized analysis pattern %s %s ... skipping.' %(analysis.get('name'), analysis.get('executableName')))
