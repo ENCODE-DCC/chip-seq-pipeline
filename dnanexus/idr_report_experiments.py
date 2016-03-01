@@ -104,11 +104,11 @@ def main():
 			"&output_type=optimal+idr+thresholded+peaks" + \
 			"&output_type=conservative+idr+thresholded+peaks" + \
 			"&lab.title=ENCODE+Processing+Pipeline&lab.title=J.+Michael+Cherry,+Stanford" + \
-			"&status=in+progress&status=released"
+			"&status=in+progress&status=released&status=uploading"
 		idr_files = common.encoded_get(server+idr_query,keypair)['@graph']
 		idr_step_runs = set([f.get('step_run') for f in idr_files])
 		if not len(idr_step_runs) == 1:
-			logger.error("%s %d" %(experiment_id, len(idr_step_runs)))
+			logger.error("%s: %d idr_step runs" %(experiment_id, len(idr_step_runs)))
 			continue
 		idr_step_run_uri = next(iter(idr_step_runs))
 		idr_step_run = common.encoded_get(server+idr_step_run_uri,keypair)
