@@ -1717,8 +1717,13 @@ def accession_qc_object(obj_type, obj, keypair, server, dryrun, force):
     r = common.encoded_get(url, keypair)
     # need the process_stage special case for the samtools_flagstat objects,
     # which are diffrentiated by processing_stage
+    # Also obsolete an older object without processing_stage with a new one
+    # with processing_stage
     existing_objects = \
-        [o for o in r['@graph'] if o['status'] not in DEPRECATED and o.get('processing_stage') == obj.get('processing_stage')]
+        [o for o in r['@graph']
+         if o['status'] not in DEPRECATED and
+         ((o.get('processing_stage') == obj.get('processing_stage')) or
+          (obj.get('processing_stage') and not o.get('processing_stage')))]
 
     logger.debug(
         'found %d qc objects of type %s'
