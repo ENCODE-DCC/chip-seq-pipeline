@@ -33,6 +33,7 @@ REFERENCES = [
     {'assembly': 'GRCh38-full', 'organism': 'human', 'sex': 'female', 'file': 'E3 ChIP-seq:/reference_files_local/GCA_000001405.15_GRCh38_full_analysis_set.bwa.tar.gz'},
     {'assembly': 'mm10',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
     {'assembly': 'mm10',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'},
+    {'assembly': 'mm10-no-alt',   'organism': 'mouse', 'sex': 'male', 'file': 'ENCODE Reference Files:/mm10/mm10_no_alt_analysis_set_ENCODE.tar.gz'},
     {'assembly': 'hg19',   'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/hg19_XY.tar.gz'},
     {'assembly': 'hg19',   'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/hg19_X.tar.gz'}
     ]
