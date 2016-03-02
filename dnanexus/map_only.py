@@ -11,6 +11,7 @@ Examples:
     %(prog)s
 '''
 FILE_STATUSES_TO_MAP = ['in progress', 'released']
+FILE_FORMATS_TO_MAP = ['fastq', 'fasta']
 #DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
 DEFAULT_APPLET_PROJECT = dxpy.WORKSPACE_ID
 DEFAULT_OUTPUT_PROJECT = dxpy.WORKSPACE_ID
@@ -194,7 +195,7 @@ def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
             file_obj = common.encoded_get(urlparse.urljoin(server, file_uri), keypair=keypair)
             if file_obj.get('status') in FILE_STATUSES_TO_MAP and \
                     file_obj.get('output_type') == 'reads' and \
-                    file_obj.get('file_format') == 'fastq' and \
+                    file_obj.get('file_format') in FILE_FORMATS_TO_MAP and \
                     file_obj.get('replicate'):
                 if file_obj.get('submitted_file_name') in filenames_in(files):
                     if no_sfn_dupes:
@@ -205,8 +206,8 @@ def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
                 else:
                     files.extend([file_obj])
             elif file_obj.get('output_type') == 'reads' and \
-                file_obj.get('file_format') == 'fastq' and not file_obj.get('replicate'):
-                logging.error('%s: Fastq has no replicate' %(file_obj.get('accession')))
+                file_obj.get('file_format') in FILE_FORMATS_TO_MAP and not file_obj.get('replicate'):
+                logging.error('%s: Reads file has no replicate' %(file_obj.get('accession')))
         return files
 
 def replicates_to_map(files, server, keypair, biorep_ns=[]):

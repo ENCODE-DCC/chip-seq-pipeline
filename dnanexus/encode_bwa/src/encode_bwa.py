@@ -176,7 +176,11 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
 
     # Generate filename strings and download the files to the local filesystem
     reads_filename = dxpy.describe(reads_file)['name']
-    reads_basename = reads_filename.rstrip('.gz').rstrip('.fq').rstrip('.fastq')
+    reads_basename = reads_filename
+    # the order of this list is important.  It strips from the right inward, so
+    # the expected right-most extensions should appear first (like .gz)
+    for extension in ['.gz', '.fq', '.fastq', '.fa', '.fasta']:
+        reads_basename = reads_basename.rstrip(extension)
     reads_file = dxpy.download_dxfile(reads_file,reads_filename)
 
     reference_tar_filename = dxpy.describe(reference_tar)['name']
