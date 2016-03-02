@@ -257,6 +257,9 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
 			sleep(max_sleep - max_retries)
 			max_retries -= 1
 			continue
+		except Exception as e:
+			print >> sys.stderr, e
+			return None
 		else:
 			if return_response:
 				return response
