@@ -520,9 +520,26 @@ def get_rep_fastqs(experiment, keypair, server, repn):
 def get_stage_metadata(analysis, stage_name):
     logger.debug('in get_stage_metadata with analysis %s and stage_name %s'
                  % (analysis['id'], stage_name))
-    return next(s['execution']
-                for s in analysis.get('stages')
-                if re.match(stage_name, s['execution']['name']))
+    # unfortunately, very early runs of the IDR pipeline mispelled
+    # a stage.  We still need to go back to those runs to harvest QC or for
+    # other reasons, so here we just special-case it then over-ride the
+    # error.
+    try:
+        stage_metadata = \
+            next(s['execution'] for s in analysis.get('stages')
+                 if re.match(stage_name, s['execution']['name']))
+    except StopIteration:
+        if stage_name == "IDR Pooled Pseudoreplicates":
+            tmp_metadata = \
+                get_stage_metadata(analysis, "IDR Pooled Pseudoeplicates")
+            tmp_metadata['name'] = "IDR Pooled Pseudoreplicates"
+            return tmp_metadata
+        else:
+            raise
+    except:
+        raise
+    else:
+        return stage_metadata
 
 
 def get_experiment_accession(analysis):
