@@ -72,7 +72,7 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
     unmapped_reads_filenames = []
     for i,reads in enumerate(indexed_reads):
         read_pair_number = i+1
-        
+
         fn = dxpy.describe(reads)['name']
         print "indexed_reads %d: %s" %(read_pair_number, fn)
         indexed_reads_filenames.append(fn)
