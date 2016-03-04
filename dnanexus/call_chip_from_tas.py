@@ -28,7 +28,7 @@ def get_args():
     parser.add_argument('--gsize', help="Genome size string for MACS2, e.g. mm or hs", required=True)
     parser.add_argument('--csizes', help="chrom.sizes file for bedtobigbed, e.g. ENCODE Reference Files:/mm10/male.mm10.chrom.sizes", required=True)
     parser.add_argument('--assembly', help="Genome assembly, e.g. hg19, mm10, GRCh38", required=True)
-    parser.add_argument('--idr', help="Run IDR", default=False, action='store_true')
+    parser.add_argument('--idr', help="Run IDR. If not specified, run IDR for non-histone targets.", default=False, action='store_true')
     parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default="2")
     parser.add_argument('--dryrun', help="Formulate the run command, but don't actually run", default=False, action='store_true')
 
@@ -474,10 +474,12 @@ def main():
             print investigated_as
         if any('histone' in target_type for target_type in investigated_as):
             print "Found to be histone.  No blacklist will be used."
+            IDR_default = False
             workflow_spinner = '~/chip-seq-pipeline/dnanexus/histone_workflow.py'
             blacklist = None
         else:
             print "Assumed to be tf"
+            IDR_default = True
             workflow_spinner = '~/chip-seq-pipeline/dnanexus/tf_workflow.py'
             if args.assembly == "hg19":
                 blacklist = "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
@@ -495,7 +497,7 @@ def main():
             run_command += ' --blacklist "%s"' %(blacklist)
         if args.debug:
             run_command += ' --debug'
-        if args.idr:
+        if args.idr or IDR_default:
             run_command += ' --idr --idrversion %s' %(args.idrversion)
 
         print run_command
