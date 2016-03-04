@@ -252,11 +252,11 @@ def main():
     args = get_args()
 
     output_project = resolve_project(args.outp, 'w')
-    logging.info('Found output project %s' %(output_project.name))
+    logging.debug('Found output project %s' %(output_project.name))
     output_folder = resolve_folder(output_project, args.outf)
-    logging.info('Using output folder %s' %(output_folder))
+    logging.debug('Using output folder %s' %(output_folder))
     applet_project = resolve_project(args.applets, 'r')
-    logging.info('Found applet project %s' %(applet_project.name))
+    logging.debug('Found applet project %s' %(applet_project.name))
 
     workflow = dxpy.new_dxworkflow(
         name=args.name,
