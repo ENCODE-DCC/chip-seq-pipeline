@@ -36,6 +36,7 @@ def get_args():
 
     if args.debug:
         logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+        logging.debug("Debug logging ON")
     else: #use the defaulf logging level
         logging.basicConfig(format='%(levelname)s:%(message)s')
 
@@ -234,6 +235,12 @@ def get_ta_from_accessions(accessions, default_project, ta_folders):
     else:
         return matched_files[0]
 
+
+def is_paired_end(tagAlign_file):
+    job = dxpy.describe(tagAlign_file['createdBy']['job'])
+    return job['output']['paired_end']
+
+
 def get_tas(experiment, server, keypair, default_project, ta_folders):
     # tas = {
     #   'rep1_ta': {
@@ -270,7 +277,8 @@ def get_tas(experiment, server, keypair, default_project, ta_folders):
             path = '/' + path
         if not path.endswith('/'):
             path += '/'
-        logging.debug("Looking for TA's in %s %s %s" %(project_id, project_name, path))
+        logging.debug(
+            "Looking for TA's in %s %s %s" % (project_id, project_name, path))
         for dxfile in dxpy.find_data_objects(
             classname='file',
             state='closed',
@@ -309,7 +317,7 @@ def get_tas(experiment, server, keypair, default_project, ta_folders):
 
     tas = {}
     used_controls = []
-    for i,repn in enumerate(repns):
+    for i, repn in enumerate(repns):
         encode_files = [common.encoded_get(server+'/files/%s/' %(f), keypair) for f in get_encffs(possible_files[i].get('name'))]
         controlled_by = common.flat([f.get('controlled_by') for f in encode_files])
         if any(controlled_by):
@@ -354,10 +362,8 @@ def get_tas(experiment, server, keypair, default_project, ta_folders):
                 'controlled_by': controlled_by_accessions,
                 'controlled_by_name': controlled_by_ta_name,
                 'control_id': controlled_by_ta_id,
-                'file_id': possible_files[i].get('id'),
-                'project_id': possible_files[i].get('project'),
-                'folder': possible_files[i].get('folder'),
-                'enc_repn': repn
+                'enc_repn': repn,
+                'paired_end': is_paired_end(possible_files[i])
                 }
             }
         )
@@ -465,13 +471,31 @@ def main():
         if not outf.endswith('/') and outf != '/':
             outf += '/'
         outf += '%s/peaks/' %(exp_id)
+
         try:
             investigated_as = target['investigated_as']
         except:
-            print "Failed to determine target type ... skipping %s" %(exp_id)
+            print "%s: Failed to determine target type ... skipping" %(exp_id)
             continue
         else:
             print investigated_as
+
+        rep1_pe = tas['rep1_ta']['paired_end']
+        rep2_pe = tas['rep2_ta']['paired_end']
+
+        if None in [rep1_pe, rep2_pe]:
+            print "%s: Cannot determine paired end: rep1 PE = %s, rep2 PE = %s ... skipping" % (
+                exp_id,
+                rep1_pe,
+                rep2_pe)
+            continue
+        if rep1_pe != rep2_pe:
+            print "%s: rep1 PE %s differs from rep2 PE %s ... skipping" % (
+                exp_id,
+                rep1_pe,
+                rep2_pe)
+            continue
+
         if any('histone' in target_type for target_type in investigated_as):
             print "Found to be histone.  No blacklist will be used."
             IDR_default = False
@@ -488,10 +512,10 @@ def main():
                 blacklist = None
 
         run_command = \
-            '%s --title "%s" --outf "%s" --nomap --yes ' %(workflow_spinner, workflow_title, outf) + \
-            '--rep1pe false --rep2pe false ' + \
-            '--rep1 %s --rep2 %s ' %(tas['rep1_ta'].get('file_id'), tas['rep2_ta'].get('file_id')) + \
-            '--ctl1 %s --ctl2 %s ' %(tas['rep1_ta'].get('control_id'), tas['rep2_ta'].get('control_id')) + \
+            '%s --title "%s" --outf "%s" --nomap --yes ' % (workflow_spinner, workflow_title, outf) + \
+            '--rep1pe %s --rep2pe %s ' % (str(rep1_pe).lower(), str(rep2_pe).lower()) + \
+            '--rep1 %s --rep2 %s ' % (tas['rep1_ta'].get('file_id'), tas['rep2_ta'].get('file_id')) + \
+            '--ctl1 %s --ctl2 %s ' % (tas['rep1_ta'].get('control_id'), tas['rep2_ta'].get('control_id')) + \
             '--genomesize %s --chrom_sizes "%s"' %(args.gsize, args.csizes)
         if blacklist:
             run_command += ' --blacklist "%s"' %(blacklist)
