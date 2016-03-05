@@ -85,6 +85,7 @@ def get_args():
     DEBUG = args.debug
     if DEBUG:
         logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+        logging.debug("Debug logging ON")
     else: #use the defaulf logging level
         logging.basicConfig(format='%(levelname)s:%(message)s')
 
@@ -168,72 +169,52 @@ def resolve_file(identifier):
         folder_name = m.group(1)
         if not folder_name.startswith('/'):
             folder_name = '/' + folder_name
+        recurse = False
         file_name = m.group(2)
     else:
-        # folder_name = '/'
-        folder_name = None
+        folder_name = '/'
+        recurse = True
         file_name = file_identifier
 
-    logging.debug("Looking for file %s in folder %s" %(file_name, folder_name))
+    logging.debug(
+        "Looking for file %s in folder %s" % (file_name, folder_name))
 
     try:
-        if folder_name:
-            file_handler = dxpy.find_one_data_object(name=file_name, folder=folder_name, project=project.get_id(),
-                recurse=False, more_ok=False, zero_ok=False, return_handler=True)
-        else:
-            file_handler = dxpy.find_one_data_object(name=file_name, project=project.get_id(), folder='/',
-                recurse=True, more_ok=False, zero_ok=False, return_handler=True)
+        file_handler = dxpy.find_one_data_object(
+            name=file_name,
+            folder=folder_name,
+            project=project.get_id(),
+            recurse=recurse,
+            more_ok=False,
+            zero_ok=False,
+            return_handler=True)
     except dxpy.DXSearchError:
-        logging.debug('%s not found in project %s folder %s.  Trying as file ID' %(file_name, project.get_id(), folder_name))
-        try:
-            file_handler = dxpy.DXFile(dxid=identifier, mode='r')
-        except:
-            logging.debug('%s not found as a dxid' %(identifier))
-            try:
-                file_handler = resolve_accession(identifier)
-            except:
-                logging.debug('%s not found as an accession' %(identifier))
-                logging.warning('Could not find file %s.' %(identifier))
-                return None
+        logging.debug(
+            '%s not found in project %s folder %s.  Trying as file ID'
+            % (file_name, project.get_id(), folder_name))
+        file_handler = None
     except:
         raise
-    logging.info("Resolved file identifier %s to %s" %(identifier, file_handler.get_id()))
-    return file_handler
 
-def resolve_accession(accession):
-    logging.debug("Looking for accession %s" %(accession))
-    
-    if not re.match(r'''^ENCFF\d{3}[A-Z]{3}''', accession):
-        logging.debug("%s is not a valid accession format" %(accession))
-        raise ValueError(accession)
-    
-    DNANEXUS_ENCODE_SNAPSHOT = 'ENCODE-SDSC-snapshot-20140505'
-    logging.debug('Testing')
-
-    try:
-        snapshot_project
-    except:
-        logging.debug('Looking for snapshot project %s' %(DNANEXUS_ENCODE_SNAPSHOT))
+    if not file_handler:
         try:
-            project_handler = resolve_project(DNANEXUS_ENCODE_SNAPSHOT)
-            global snapshot_project
-            snapshot_project = project_handler
+            file_handler = dxpy.DXFile(dxid=identifier, mode='r')
+        except dxpy.DXError:
+            logging.debug('%s not found as a dxid' % (identifier))
+            logging.warning('Could not find file %s.' % (identifier))
+            file_handler = None
         except:
-            logging.error("Cannot find snapshot project %s" %(DNANEXUS_ENCODE_SNAPSHOT))
-            raise ValueError(DNANEXUS_ENCODE_SNAPSHOT)
-        logging.debug('Found snapshot project %s' %(snapshot_project.name))
+            raise
 
-    try:
-        accession_search = accession + '*'
-        logging.debug('Looking recursively for %s in %s' %(accession_search, snapshot_project.name))
-        file_handler = dxpy.find_one_data_object(
-            name=accession_search, name_mode='glob', more_ok=False, classname='file', recurse=True, return_handler=True,
-            folder='/', project=snapshot_project.get_id())
-        logging.debug('Got file handler for %s' %(file_handler.name))
+    if file_handler:
+        logging.info(
+            "Resolved file identifier %s to %s"
+            % (identifier, file_handler.get_id()))
         return file_handler
-    except:
-        logging.error("Cannot find accession %s in project %s" %(accession, snapshot_project.name))
-        raise ValueError(accession)
+    else:
+        logging.warning("Failed to resolve file identifier %s" % (identifier))
+        return None
+
 
 def find_applet_by_name(applet_name, applets_project_id):
     '''Looks up an applet by name in the project that holds tools.  From Joe Dale's code.'''
