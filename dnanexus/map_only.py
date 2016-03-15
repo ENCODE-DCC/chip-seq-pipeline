@@ -11,6 +11,7 @@ Examples:
     %(prog)s
 '''
 FILE_STATUSES_TO_MAP = ['in progress', 'released']
+FILE_FORMATS_TO_MAP = ['fastq', 'fasta']
 #DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
 DEFAULT_APPLET_PROJECT = dxpy.WORKSPACE_ID
 DEFAULT_OUTPUT_PROJECT = dxpy.WORKSPACE_ID
@@ -33,6 +34,7 @@ REFERENCES = [
     {'assembly': 'GRCh38-full', 'organism': 'human', 'sex': 'female', 'file': 'E3 ChIP-seq:/reference_files_local/GCA_000001405.15_GRCh38_full_analysis_set.bwa.tar.gz'},
     {'assembly': 'mm10',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
     {'assembly': 'mm10',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'},
+    {'assembly': 'mm10-no-alt',   'organism': 'mouse', 'sex': 'male', 'file': 'ENCODE Reference Files:/mm10/mm10_no_alt_analysis_set_ENCODE.tar.gz'},
     {'assembly': 'hg19',   'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/hg19_XY.tar.gz'},
     {'assembly': 'hg19',   'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/hg19_X.tar.gz'}
     ]
@@ -193,7 +195,7 @@ def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
             file_obj = common.encoded_get(urlparse.urljoin(server, file_uri), keypair=keypair)
             if file_obj.get('status') in FILE_STATUSES_TO_MAP and \
                     file_obj.get('output_type') == 'reads' and \
-                    file_obj.get('file_format') == 'fastq' and \
+                    file_obj.get('file_format') in FILE_FORMATS_TO_MAP and \
                     file_obj.get('replicate'):
                 if file_obj.get('submitted_file_name') in filenames_in(files):
                     if no_sfn_dupes:
@@ -204,8 +206,8 @@ def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
                 else:
                     files.extend([file_obj])
             elif file_obj.get('output_type') == 'reads' and \
-                file_obj.get('file_format') == 'fastq' and not file_obj.get('replicate'):
-                logging.error('%s: Fastq has no replicate' %(file_obj.get('accession')))
+                file_obj.get('file_format') in FILE_FORMATS_TO_MAP and not file_obj.get('replicate'):
+                logging.error('%s: Reads file has no replicate' %(file_obj.get('accession')))
         return files
 
 def replicates_to_map(files, server, keypair, biorep_ns=[]):
