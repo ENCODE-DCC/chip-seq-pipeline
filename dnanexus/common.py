@@ -352,7 +352,8 @@ def after(date1, date2):
     else:
         return result
 
-def biorep_ns_generator(f,server,keypair):
+
+def biorep_ns_generator(f, server, keypair):
     if isinstance(f, dict):
         acc = f.get('accession')
     else:
@@ -360,21 +361,20 @@ def biorep_ns_generator(f,server,keypair):
         if m:
             acc = m.group(2)
         else:
-            acc = re.search('ENCFF[0-9]{3}[A-Z]{3}',f).group(0)
+            acc = re.search('ENCFF[0-9]{3}[A-Z]{3}', f).group(0)
     if not acc:
         return
-    url = urlparse.urljoin(server, '/files/%s' %(acc))
+    url = urlparse.urljoin(server, '/files/%s' % (acc))
     file_object = encoded_get(url, keypair)
     if file_object.get('derived_from'):
         for derived_from in file_object.get('derived_from'):
-            for repnum in biorep_ns_generator(derived_from,server,keypair):
+            for repnum in biorep_ns_generator(derived_from, server, keypair):
                 yield repnum
     else:
-        url = urlparse.urljoin(server, '%s' %(file_object.get('replicate')))
+        url = urlparse.urljoin(server, '%s' % (file_object.get('replicate')))
         replicate_object = encoded_get(url, keypair)
         yield replicate_object.get('biological_replicate_number')
 
-def biorep_ns(f,server,keypair):
-    return list(set(biorep_ns_generator(f,server,keypair)))
 
-
+def biorep_ns(f, server, keypair):
+    return [n for n in set(biorep_ns_generator(f, server, keypair)) if n is not None]
