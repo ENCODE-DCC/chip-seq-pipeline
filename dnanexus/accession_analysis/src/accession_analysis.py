@@ -14,6 +14,7 @@
 import os
 import subprocess
 import logging
+import traceback
 import re
 import urlparse
 import time
@@ -1736,6 +1737,8 @@ def accession_qc_object(obj_type, obj, keypair, server, dryrun, force):
     # which are diffrentiated by processing_stage
     # Also obsolete an older object without processing_stage with a new one
     # with processing_stage
+    # Problem:  if the object was just modified, the search above will not
+    # pick up the new object.
     existing_objects = \
         [o for o in r['@graph']
          if o['status'] not in DEPRECATED and
@@ -1746,11 +1749,12 @@ def accession_qc_object(obj_type, obj, keypair, server, dryrun, force):
         'found %d qc objects of type %s'
         % (len(existing_objects), obj_type))
 
+    # pick one to replace
     if existing_objects:
         object_to_replace = existing_objects.pop()
     else:
         object_to_replace = None
-
+    # and delete the rest
     for object_to_delete in existing_objects:
         logger.debug('object_to_delete %s' % (object_to_delete))
         logger.debug(
@@ -1921,7 +1925,9 @@ def accession_raw_mapping_analysis_files(mapping_analysis, keypair, server, dryr
                 'stage_name': 'Map ENCSR*',
                 'file_names' : ['mapped_reads'],
                 'status' : 'finished',
-                'qc_objects' : []
+                'qc_objects' : [
+                    {'samtools_flagstats_quality_metric': ['mapped_reads']}
+                ]
             }
         ]
     }
@@ -2228,8 +2234,30 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force, 
     patched_files = accession_pipeline(full_analysis_step_versions, keypair, server, dryrun, force)
     return patched_files
 
+
+def infer_pipeline(analysis):
+    if (analysis.get('name') == 'histone_chip_seq'):
+        return "histone"
+    elif analysis.get('executableName') == 'tf_chip_seq':
+        return "tf"
+    elif (analysis.get('executableName') == 'ENCODE mapping pipeline' or
+          (any([re.match("Map", stage['name'])
+                for stage in analysis['workflow']['stages']]) and
+           any([re.match("Filter", stage['name'])
+                for stage in analysis['workflow']['stages']]))):
+        return "mapping"
+    elif (any([re.match("Map", stage['name'])
+               for stage in analysis['workflow']['stages']]) and
+          not any([re.match("Filter", stage['name'])
+                   for stage in analysis['workflow']['stages']])):
+        return "raw"
+    else:
+        return None
+
+
 @dxpy.entry_point('main')
-def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck, pipeline=None, analysis_ids=None, infile=None, project=None):
+def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck,
+         pipeline=None, analysis_ids=None, infile=None, project=None):
 
     if debug:
         logger.info('setting logger level to logging.DEBUG')
@@ -2241,27 +2269,35 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck, pipeline=
     if infile is not None:
         infile = dxpy.DXFile(infile)
         dxpy.download_dxfile(infile.get_id(), "infile")
-        ids = open("infile",'r')
+        ids = open("infile", 'r')
     elif analysis_ids is not None:
         ids = analysis_ids
     else:
-        logger.error("Must supply one of --infile or a list of one or more analysis-ids")
+        logger.error(
+            "Must supply one of --infile or a list of analysis-ids")
         return
 
     authid, authpw, server = common.processkey(key, keyfile)
-    keypair = (authid,authpw)
+    keypair = (authid, authpw)
 
     common_metadata.update({'assembly': assembly})
 
     with open(outfn, 'w') as fh:
         if dryrun:
             fh.write('---DRYRUN: No files have been modified---\n')
-        fieldnames = ['analysis','experiment','assembly','dx_pipeline','files','error']
+        fieldnames = [
+            'analysis',
+            'experiment',
+            'assembly',
+            'dx_pipeline',
+            'files',
+            'error'
+        ]
         output_writer = csv.DictWriter(fh, fieldnames, delimiter='\t')
         output_writer.writeheader()
 
         for (i, analysis_id) in enumerate(ids):
-            logger.debug('debug %s' %(analysis_id))
+            logger.debug('debug %s' % (analysis_id))
             analysis = dxpy.describe(analysis_id.strip())
             experiment = get_experiment_accession(analysis)
             output = {
@@ -2269,42 +2305,84 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck, pipeline=
                 'experiment': experiment,
                 'assembly': assembly
             }
-            logger.info('Accessioning analysis name %s executableName %s' %(analysis.get('name'), analysis.get('executableName')))
+            logger.info(
+                'Accessioning %s name %s executableName %s'
+                % (analysis.get('id'),
+                   analysis.get('name'),
+                   analysis.get('executableName')))
 
-            if pipeline == "histone" or analysis.get('name') == 'histone_chip_seq':
-                output.update({'dx_pipeline':'histone_chip_seq'})
-                accessioned_files = accession_histone_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
-                logger.info('accession histone analysis completed')
-            elif pipeline == "mapping" or analysis.get('executableName') == 'ENCODE mapping pipeline':
-                output.update({'dx_pipeline':'ENCODE mapping pipeline'})
-                accessioned_files = accession_mapping_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
-                logger.info('accession mapping analysis completed')
-            elif pipeline == "tf" or analysis.get('executableName') == 'tf_chip_seq':
-                output.update({'dx_pipeline':'tf_chip_seq'})
-                accessioned_files = accession_tf_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
-                logger.info('accession tf_chip_seq analysis completed')
-            elif pipeline == "raw":
-                output.update({'dx_pipeline':'ENCODE raw mapping pipeline'})
-                accessioned_files = accession_raw_mapping_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
-                logger.info('accession raw mapping analysis completed')
+            if not pipeline:
+                inferred_pipeline = infer_pipeline(analysis)
             else:
-                logger.error('unrecognized analysis pattern %s %s ... skipping.' %(analysis.get('name'), analysis.get('executableName')))
-                output.update({'dx_pipeline':'unrecognized'})
-                accessioned_files = None
+                inferred_pipeline = pipeline
 
-            file_accessions = [f.get('accession') for f in (accessioned_files or [])]
-            logger.info("Accessioned: %s" %(file_accessions))
-            output.update({'files':file_accessions})
+            try:
+                if inferred_pipeline == "histone":
+                    logger.info('accession histone analysis started')
+                    output.update(
+                        {'dx_pipeline': 'histone_chip_seq'})
+                    accessioned_files = \
+                        accession_histone_analysis_files(
+                            analysis, keypair, server, dryrun, force, fqcheck)
+                    logger.info('accession histone analysis completed')
+                elif inferred_pipeline == "mapping":
+                    logger.info('accession mapping analysis started')
+                    output.update(
+                        {'dx_pipeline': 'ENCODE mapping pipeline'})
+                    accessioned_files = \
+                        accession_mapping_analysis_files(
+                            analysis, keypair, server, dryrun, force, fqcheck)
+                    logger.info('accession mapping analysis completed')
+                elif inferred_pipeline == "tf":
+                    logger.info('accession tf_chip_seq analysis started')
+                    output.update(
+                        {'dx_pipeline': 'tf_chip_seq'})
+                    accessioned_files = \
+                        accession_tf_analysis_files(
+                            analysis, keypair, server, dryrun, force, fqcheck)
+                    logger.info('accession tf_chip_seq analysis completed')
+                elif inferred_pipeline == "raw":
+                    logger.info('accession raw mapping analysis started')
+                    output.update(
+                        {'dx_pipeline': 'ENCODE raw mapping pipeline'})
+                    accessioned_files = \
+                        accession_raw_mapping_analysis_files(
+                            analysis, keypair, server, dryrun, force, fqcheck)
+                    logger.info('accession raw mapping analysis completed')
+                else:
+                    logger.error(
+                        'unrecognized analysis pattern %s %s ... skipping.'
+                        % (analysis.get('name'),
+                           analysis.get('executableName')))
+                    output.update(
+                        {'dx_pipeline': 'unrecognized'})
+                    accessioned_files = None
+            except:
+                traceback.print_exc()
+                accessioned_files = None
+                file_accessions = None
+            else:
+                file_accessions = \
+                    [f.get('accession') for f in (accessioned_files or [])]
+                if file_accessions:
+                    url = server+"/experiments/%s" % (experiment)
+                    r = common.encoded_patch(
+                        url,
+                        keypair,
+                        {"internal_status": "pipeline completed"},
+                        return_response=True)
+                    try:
+                        r.raise_for_status()
+                    except:
+                        logger.error(
+                            "Tried but failed to update experiment "
+                            "internal_status to pipeline completed")
+                        logger.error(r.text)
+
+            logger.info("Accessioned: %s" % (file_accessions))
+            output.update({'files': file_accessions})
             output_writer.writerow(output)
 
-            if file_accessions:
-                url = server+"/experiments/%s" %(experiment)
-                r = common.encoded_patch(url,keypair,{"internal_status":"pipeline completed"},return_response=True)
-                try:
-                    r.raise_for_status()
-                except:
-                    logger.error("Tried but failed to update experiment internal_status to pipeline completed")
-                    logger.error(r.text)
 
     common.touch(outfn)
     outfile = dxpy.upload_local_file(outfn)
