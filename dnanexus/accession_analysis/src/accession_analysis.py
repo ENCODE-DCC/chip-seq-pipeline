@@ -14,11 +14,13 @@
 import os
 import subprocess
 import logging
+import traceback
 import re
 import urlparse
 import time
 import pprint
 import csv
+import json
 from base64 import b64encode
 
 import dxpy
@@ -260,25 +262,30 @@ def chipseq_filter_quality_metric(step_run, stages, files):
     return [obj]
 
 
-def samtools_flagstats_quality_metric(step_run, stages, files):
-    logger.debug("in chip_seq_filter_quality_metric with \
-        step_run %s stages.keys() %s output files %s"
-                 % (step_run, stages.keys(), files))
+def get_flagstat_obj(step_run, stage, file_accessions):
 
-    file_accessions = list(set(flat([
-        resolve_name_to_accessions(stages, output_name)
-        for output_name in files])))
-
-    qc_stage = stages['Filter and QC*']['stage_metadata']
-
-    flagstat_qc = flagstat_parse(qc_stage['output']['filtered_mapstats'])
+    if 'filtered_mapstats' in stage['output']:
+        flagstat_qc = flagstat_parse(stage['output']['filtered_mapstats'])
+        processing_stage = 'filtered'
+        attachment = get_attachment(stage['output']['filtered_mapstats'])
+    elif 'mapping_statistics' in stage['output']:
+        flagstat_qc = flagstat_parse(stage['output']['mapping_statistics'])
+        processing_stage = 'unfiltered'
+        attachment = get_attachment(stage['output']['mapping_statistics'])
+    else:
+        logger.error(
+            'get_flagstat_obj: No filtered_mapstats or mapping_statistics')
+        logger.debug(
+            'get_flagstat_obj: Stage %s' % (stage.get('name')))
+        return None
 
     obj = {
         'assay_term_id': 'OBI:0000716',
         'assay_term_name': 'ChIP-seq',
         'step_run': step_run,
         'quality_metric_of': file_accessions,
-        'attachment': get_attachment(qc_stage['output']['filtered_mapstats']),
+        'processing_stage': processing_stage,
+        'attachment': attachment,
         'total':                int(flagstat_qc['in_total'][0]),
         'total_qc_failed':      int(flagstat_qc['in_total'][1]),
         'duplicates':           int(flagstat_qc['duplicates'][0]),
@@ -344,7 +351,33 @@ def samtools_flagstats_quality_metric(step_run, stages, files):
                 int(flagstat_qc['mate_mapped_different_chr_hiQ'][1])
         })
 
-    return [obj]
+    return obj
+
+
+def samtools_flagstats_quality_metric(step_run, stages, files):
+    logger.debug("in chip_seq_filter_quality_metric with \
+        step_run %s stages.keys() %s output files %s"
+                 % (step_run, stages.keys(), files))
+
+    file_accessions = list(set(flat([
+        resolve_name_to_accessions(stages, output_name)
+        for output_name in files])))
+
+    quality_metric_objects = []
+
+    if stages.get('Map ENCSR*'):
+        quality_metric_objects.append(get_flagstat_obj(
+            step_run,
+            stages['Map ENCSR*']['stage_metadata'],
+            file_accessions))
+
+    if stages.get('Filter and QC*'):
+        quality_metric_objects.append(get_flagstat_obj(
+            step_run,
+            stages['Filter and QC*']['stage_metadata'],
+            file_accessions))
+
+    return quality_metric_objects
 
 
 def idr_quality_metric(step_run, stages, files):
@@ -1672,48 +1705,91 @@ def patch_outputs(stages, keypair, server, dryrun):
                 continue
     return files
 
-def accession_qc_object(obj_type, obj, keypair, server, dryrun, force):
-    logger.debug('in accession_qc_object with obj_type %s obj.keys() %s' %(obj_type, obj.keys()))
-    logger.debug('obj[step_run] %s' %(obj.get('step_run')))
-    #To avoid duplicating qc objects check for same analysis_step_run, and if there is a qc object of this type
-    #for that analysis_step run, then delete it first.
-    #Result is that the QC objects from the analysis being accessioned will supercede those that already exist.
-    url = urlparse.urljoin(server,'/search/?type=%s&step_run=%s' %(obj_type, obj.get('step_run')))
-    logger.debug('url %s' %(url))
-    r = common.encoded_get(url,keypair)
-    objects = [o for o in r['@graph'] if o['status'] not in DEPRECATED]
-    logger.debug('found %d qc objects of type %s' %(len(objects), obj_type))
-    existing_objects = [o for o in objects if o.get('step_run') == obj['step_run']]
-    if existing_objects:
-        existing_object = existing_objects.pop()
-    else:
-        existing_object = None
-    for object_to_delete in existing_objects:
-        url = urlparse.urljoin(server,object_to_delete['@id'])
-        common.encoded_patch(url, keypair, {'status':'deleted'})
 
-    payload = json.dumps(obj)
-    if existing_object:
-        url = urlparse.urljoin(server, existing_object['@id'])
-        logger.debug('patching %s with %s' %(url,payload))
-        # r = requests.patch(url, auth=keypair, headers={'content-type': 'application/json'}, data=payload)
-        r = common.encoded_patch(url, keypair, obj, return_response=True)
+def accession_qc_object(obj_type, obj, keypair, server, dryrun, force):
+
+    logger.debug(
+        'in accession_qc_object with obj_type %s obj.keys() %s'
+        % (obj_type, obj.keys()))
+
+    logger.debug(
+        'obj[step_run] %s'
+        % (obj.get('step_run')))
+
+    # To avoid duplicating qc objects check for same analysis_step_run, and if
+    # there is a qc object of this type for that analysis_step run, then PUT,
+    # else POST.
+    # Result is that the QC objects from the analysis being accessioned will
+    # replace those that already exist.
+
+    # get the objects of this object type already in this step run
+    url = urlparse.urljoin(
+        server,
+        '/search/?type=%s&step_run=%s&datastore=database'
+        % (obj_type, obj.get('step_run')))
+
+    logger.debug(
+        'get qc objects url %s'
+        % (url))
+
+    r = common.encoded_get(url, keypair)
+    # need the process_stage special case for the samtools_flagstat objects,
+    # which are diffrentiated by processing_stage
+    # Also obsolete an older object without processing_stage with a new one
+    # with processing_stage
+    # Problem:  if the object was just modified, the search above will not
+    # pick up the new object.
+    existing_objects = \
+        [o for o in r['@graph']
+         if o['status'] not in DEPRECATED and
+         ((o.get('processing_stage') == obj.get('processing_stage')) or
+          (obj.get('processing_stage') and not o.get('processing_stage')))]
+
+    logger.debug(
+        'found %d qc objects of type %s'
+        % (len(existing_objects), obj_type))
+
+    # pick one to replace
+    if existing_objects:
+        object_to_replace = existing_objects.pop()
     else:
-        url = urlparse.urljoin(server, '/%s/' %(obj_type))
-        logger.debug('posting to %s with %s' %(url,payload))
-        # r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=payload)
+        object_to_replace = None
+    # and delete the rest
+    for object_to_delete in existing_objects:
+        logger.debug('object_to_delete %s' % (object_to_delete))
+        logger.debug(
+            'new processing_stage %s old processing stage %s'
+            % (obj.get('processing_stage'),
+                object_to_delete.get('processing_stage')))
+        logger.info(
+            'Deleting obsolete qc metric object %s'
+            % (object_to_delete['@id']))
+        url = urlparse.urljoin(server, object_to_delete['@id'])
+        common.encoded_patch(url, keypair, {'status': 'deleted'})
+        existing_objects.remove(object_to_delete)
+
+    if object_to_replace:
+        url = urlparse.urljoin(server, object_to_replace['@id'])
+        logger.info('PUT to %s' % (url))
+        logger.debug('PUT %s with %s' % (url, json.dumps(obj)))
+        r = common.encoded_put(url, keypair, obj, return_response=True)
+    else:
+        url = urlparse.urljoin(server, '/%s/' % (obj_type))
+        logger.info('POST to %s' % (url))
+        logger.debug('POST to %s with %s' % (url, json.dumps(obj)))
         r = common.encoded_post(url, keypair, obj, return_response=True)
     try:
         r.raise_for_status()
     except:
-        logger.error('PATCH or POST failed: %s %s' % (r.status_code, r.reason))
-        logger.error('url was %s' %(url))
+        logger.error('PUT or POST failed: %s %s' % (r.status_code, r.reason))
+        logger.error('url was %s' % (url))
         logger.error(r.text)
         new_qc_object = None
     else:
         new_qc_object = r.json()['@graph'][0]
 
     return new_qc_object
+
 
 def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force):
     patched_files = []
@@ -1849,7 +1925,9 @@ def accession_raw_mapping_analysis_files(mapping_analysis, keypair, server, dryr
                 'stage_name': 'Map ENCSR*',
                 'file_names' : ['mapped_reads'],
                 'status' : 'finished',
-                'qc_objects' : []
+                'qc_objects' : [
+                    {'samtools_flagstats_quality_metric': ['mapped_reads']}
+                ]
             }
         ]
     }
@@ -2156,8 +2234,30 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force, 
     patched_files = accession_pipeline(full_analysis_step_versions, keypair, server, dryrun, force)
     return patched_files
 
+
+def infer_pipeline(analysis):
+    if (analysis.get('name') == 'histone_chip_seq'):
+        return "histone"
+    elif analysis.get('executableName') == 'tf_chip_seq':
+        return "tf"
+    elif (analysis.get('executableName') == 'ENCODE mapping pipeline' or
+          (any([re.match("Map", stage['name'])
+                for stage in analysis['workflow']['stages']]) and
+           any([re.match("Filter", stage['name'])
+                for stage in analysis['workflow']['stages']]))):
+        return "mapping"
+    elif (any([re.match("Map", stage['name'])
+               for stage in analysis['workflow']['stages']]) and
+          not any([re.match("Filter", stage['name'])
+                   for stage in analysis['workflow']['stages']])):
+        return "raw"
+    else:
+        return None
+
+
 @dxpy.entry_point('main')
-def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck, pipeline=None, analysis_ids=None, infile=None, project=None):
+def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck,
+         pipeline=None, analysis_ids=None, infile=None, project=None):
 
     if debug:
         logger.info('setting logger level to logging.DEBUG')
@@ -2169,27 +2269,35 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck, pipeline=
     if infile is not None:
         infile = dxpy.DXFile(infile)
         dxpy.download_dxfile(infile.get_id(), "infile")
-        ids = open("infile",'r')
+        ids = open("infile", 'r')
     elif analysis_ids is not None:
         ids = analysis_ids
     else:
-        logger.error("Must supply one of --infile or a list of one or more analysis-ids")
+        logger.error(
+            "Must supply one of --infile or a list of analysis-ids")
         return
 
     authid, authpw, server = common.processkey(key, keyfile)
-    keypair = (authid,authpw)
+    keypair = (authid, authpw)
 
     common_metadata.update({'assembly': assembly})
 
     with open(outfn, 'w') as fh:
         if dryrun:
             fh.write('---DRYRUN: No files have been modified---\n')
-        fieldnames = ['analysis','experiment','assembly','dx_pipeline','files','error']
+        fieldnames = [
+            'analysis',
+            'experiment',
+            'assembly',
+            'dx_pipeline',
+            'files',
+            'error'
+        ]
         output_writer = csv.DictWriter(fh, fieldnames, delimiter='\t')
         output_writer.writeheader()
 
         for (i, analysis_id) in enumerate(ids):
-            logger.debug('debug %s' %(analysis_id))
+            logger.debug('debug %s' % (analysis_id))
             analysis = dxpy.describe(analysis_id.strip())
             experiment = get_experiment_accession(analysis)
             output = {
@@ -2197,42 +2305,84 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck, pipeline=
                 'experiment': experiment,
                 'assembly': assembly
             }
-            logger.info('Accessioning analysis name %s executableName %s' %(analysis.get('name'), analysis.get('executableName')))
+            logger.info(
+                'Accessioning %s name %s executableName %s'
+                % (analysis.get('id'),
+                   analysis.get('name'),
+                   analysis.get('executableName')))
 
-            if pipeline == "histone" or analysis.get('name') == 'histone_chip_seq':
-                output.update({'dx_pipeline':'histone_chip_seq'})
-                accessioned_files = accession_histone_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
-                logger.info('accession histone analysis completed')
-            elif pipeline == "mapping" or analysis.get('executableName') == 'ENCODE mapping pipeline':
-                output.update({'dx_pipeline':'ENCODE mapping pipeline'})
-                accessioned_files = accession_mapping_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
-                logger.info('accession mapping analysis completed')
-            elif pipeline == "tf" or analysis.get('executableName') == 'tf_chip_seq':
-                output.update({'dx_pipeline':'tf_chip_seq'})
-                accessioned_files = accession_tf_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
-                logger.info('accession tf_chip_seq analysis completed')
-            elif pipeline == "raw":
-                output.update({'dx_pipeline':'ENCODE raw mapping pipeline'})
-                accessioned_files = accession_raw_mapping_analysis_files(analysis, keypair, server, dryrun, force, fqcheck)
-                logger.info('accession raw mapping analysis completed')
+            if not pipeline:
+                inferred_pipeline = infer_pipeline(analysis)
             else:
-                logger.error('unrecognized analysis pattern %s %s ... skipping.' %(analysis.get('name'), analysis.get('executableName')))
-                output.update({'dx_pipeline':'unrecognized'})
-                accessioned_files = None
+                inferred_pipeline = pipeline
 
-            file_accessions = [f.get('accession') for f in (accessioned_files or [])]
-            logger.info("Accessioned: %s" %(file_accessions))
-            output.update({'files':file_accessions})
+            try:
+                if inferred_pipeline == "histone":
+                    logger.info('accession histone analysis started')
+                    output.update(
+                        {'dx_pipeline': 'histone_chip_seq'})
+                    accessioned_files = \
+                        accession_histone_analysis_files(
+                            analysis, keypair, server, dryrun, force, fqcheck)
+                    logger.info('accession histone analysis completed')
+                elif inferred_pipeline == "mapping":
+                    logger.info('accession mapping analysis started')
+                    output.update(
+                        {'dx_pipeline': 'ENCODE mapping pipeline'})
+                    accessioned_files = \
+                        accession_mapping_analysis_files(
+                            analysis, keypair, server, dryrun, force, fqcheck)
+                    logger.info('accession mapping analysis completed')
+                elif inferred_pipeline == "tf":
+                    logger.info('accession tf_chip_seq analysis started')
+                    output.update(
+                        {'dx_pipeline': 'tf_chip_seq'})
+                    accessioned_files = \
+                        accession_tf_analysis_files(
+                            analysis, keypair, server, dryrun, force, fqcheck)
+                    logger.info('accession tf_chip_seq analysis completed')
+                elif inferred_pipeline == "raw":
+                    logger.info('accession raw mapping analysis started')
+                    output.update(
+                        {'dx_pipeline': 'ENCODE raw mapping pipeline'})
+                    accessioned_files = \
+                        accession_raw_mapping_analysis_files(
+                            analysis, keypair, server, dryrun, force, fqcheck)
+                    logger.info('accession raw mapping analysis completed')
+                else:
+                    logger.error(
+                        'unrecognized analysis pattern %s %s ... skipping.'
+                        % (analysis.get('name'),
+                           analysis.get('executableName')))
+                    output.update(
+                        {'dx_pipeline': 'unrecognized'})
+                    accessioned_files = None
+            except:
+                traceback.print_exc()
+                accessioned_files = None
+                file_accessions = None
+            else:
+                file_accessions = \
+                    [f.get('accession') for f in (accessioned_files or [])]
+                if file_accessions:
+                    url = server+"/experiments/%s" % (experiment)
+                    r = common.encoded_patch(
+                        url,
+                        keypair,
+                        {"internal_status": "pipeline completed"},
+                        return_response=True)
+                    try:
+                        r.raise_for_status()
+                    except:
+                        logger.error(
+                            "Tried but failed to update experiment "
+                            "internal_status to pipeline completed")
+                        logger.error(r.text)
+
+            logger.info("Accessioned: %s" % (file_accessions))
+            output.update({'files': file_accessions})
             output_writer.writerow(output)
 
-            if file_accessions:
-                url = server+"/experiments/%s" %(experiment)
-                r = common.encoded_patch(url,keypair,{"internal_status":"pipeline completed"},return_response=True)
-                try:
-                    r.raise_for_status()
-                except:
-                    logger.error("Tried but failed to update experiment internal_status to pipeline completed")
-                    logger.error(r.text)
 
     common.touch(outfn)
     outfile = dxpy.upload_local_file(outfn)
