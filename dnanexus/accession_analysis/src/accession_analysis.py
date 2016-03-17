@@ -1854,6 +1854,12 @@ def accession_mapping_analysis_files(mapping_analysis, keypair, server, dryrun, 
     mapping_stages = get_mapping_stages(
         mapping_analysis, keypair, server, fqcheck, repn)
 
+    if not mapping_stages:
+        logger.error('%s: failed to find mapping stages for rep%d'
+                     % (mapping_analysis['id'], repn))
+        return []
+
+
     output_files = accession_outputs(mapping_stages, experiment, keypair, server, dryrun, force)
 
     files_with_derived = patch_outputs(mapping_stages, keypair, server, dryrun)
