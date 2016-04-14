@@ -664,7 +664,7 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     input_fastq_accessions = input_stage['execution']['input']['reads1']
 
     if input_stage['execution']['input']['reads2']:
-        input_fastq_accessions.append(
+        input_fastq_accessions.extend(
             input_stage['execution']['input']['reads2'])
 
     fastqs = []
