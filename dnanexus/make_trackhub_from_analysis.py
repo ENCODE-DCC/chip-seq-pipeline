@@ -392,27 +392,28 @@ def main():
         try:
             analysis = dxpy.describe(analysis_id)
         except:
-            print "Invalid analysis ID %s. Skipping." %(analysis_id)
+            print "Invalid analysis ID %s. Skipping." % (analysis_id)
+            continue
+
+        experiment_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks', analysis['name'])
+        experiment_accession = experiment_m.group(1)
+        if not experiment_m:
+            print "No accession in %s, skipping." % (analysis['name'])
             continue
 
         if args.pipeline:
-            if args.pipeline == 'histone':
-                histone_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
-                tf_m = None
-            elif args.pipeline == 'tf':
-                tf_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['name'])
-                histone_m = None
-        else:
-            histone_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['executableName'])
-            tf_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',analysis['name'])
-        if histone_m:
-            experiment_accession = histone_m.group(1)
+            pipeline = args.pipeline
+        elif analysis['executableName'] == 'histone_chip_seq':
+            pipeline = 'histone'
+        elif analysis['executableName'] == 'tf_chip_seq':
+            pipeline = 'tf'
+
+        if pipeline == 'histone':
             histone(args, analysis, experiment_accession, first_analysis)
-        elif tf_m:
-            experiment_accession = tf_m.group(1)
+        elif pipeline == 'tf':
             tf(args, analysis, experiment_accession, first_analysis)
         else:
-            print "No accession in %s, skipping." %(analysis['executableName'])
+            print "Unrecognized pipeline: %s, skipping." % (pipeline)
             continue
 
         first_analysis = False
