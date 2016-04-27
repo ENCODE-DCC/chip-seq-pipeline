@@ -10,7 +10,7 @@ Examples:
 
     %(prog)s
 '''
-FILE_STATUSES_TO_MAP = ['in progress', 'released']
+FILE_STATUSES_TO_MAP = ['in progress', 'released', 'uploading']
 FILE_FORMATS_TO_MAP = ['fastq', 'fasta']
 #DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
 DEFAULT_APPLET_PROJECT = dxpy.WORKSPACE_ID
