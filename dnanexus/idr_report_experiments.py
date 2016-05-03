@@ -24,8 +24,8 @@ def get_args():
 
     parser.add_argument('experiments',  help='List of experiment accessions to report on', nargs='*', default=None)
     parser.add_argument('--infile',     help='File containing experiment accessions', type=argparse.FileType('r'), default=sys.stdin)
+    parser.add_argument('--all',        help='Report on all possible IDR experiments', default=False, action='store_true')
     parser.add_argument('--outfile',    help='csv output', type=argparse.FileType('wb'), default=sys.stdout)
-    parser.add_argument('--assembly',   help='Genome assembly to report on (like hg19 or mm10)', required=True)
     parser.add_argument('--debug',      help="Print debug messages", default=False, action='store_true')
     parser.add_argument('--key',        help="The keypair identifier from the keyfile.", default='www')
     parser.add_argument('--keyfile',    help="The keyfile.", default=os.path.expanduser("~/keypairs.json"))
@@ -81,6 +81,14 @@ def main():
     #   for state in args.state:
     #       analyses.extend(dxpy.find_analyses(name="ENCSR*",name_mode='glob',state=state,include_subjobs=True,return_handler=True,created_after="%s" %(args.created_after)))
     #   ids = [analysis.get_id() for analysis in analyses if analysis.describe()['executableName'] == 'tf_chip_seq' or analysis.describe()['executableName'].startswith('ENCSR783QUL Peaks')]
+    elif args.all:
+        exp_query = \
+            "/search/?type=Experiment" + \
+            "&assay_title=ChIP-seq" + \
+            "&award.project=ENCODE" + \
+            "&status=released&status=submitted&status=in+progress&status=started"
+        all_experiments = common.encoded_get(server+exp_query, keypair)['@graph']
+        ids = [exp.get('accession') for exp in all_experiments]
     elif args.infile:
         ids = args.infile
     else:
@@ -108,13 +116,47 @@ def main():
             continue
         experiment_id = experiment_id.rstrip()
         experiment_uri = '/experiments/%s/' % (experiment_id)
-        idr_files = [f for f in all_idr_files if f['dataset'] == experiment_uri]
+        idr_files = \
+            [f for f in all_idr_files if f['dataset'] == experiment_uri]
         idr_step_runs = set([f.get('step_run') for f in idr_files])
         if not len(idr_step_runs) == 1:
-            logger.error("%s %d" %(experiment_id, len(idr_step_runs)))
+            if not args.all:
+                logger.warning(
+                    "%s: Expected one IDR step run. Found %d.  Skipping"
+                    % (experiment_id, len(idr_step_runs)))
             continue
+
+        idr_qc_uris = []
+        assemblies = []
+        for f in idr_files:
+            quality_metrics = f.get('quality_metrics')
+            if not len(quality_metrics) == 1:
+                logger.error(
+                    '%s: Expected one IDR quality metric for file %s. Found %d.'
+                    % (experiment_id, f.get('accession'), len(quality_metrics)))
+            idr_qc_uris.extend(quality_metrics)
+            assembly = f.get('assembly')
+            if not assembly:
+                logger.error(
+                    '%s: File %s has no assembly'
+                    % (experiment_id, f.get('accession')))
+            assemblies.append(assembly)
+        idr_qc_uris = set(idr_qc_uris)
+        if not len(idr_qc_uris) == 1:
+            logger.error(
+                '%s: Expected one unique IDR metric, found %d. Skipping.'
+                % (experiment_id, len(idr_qc_uris)))
+            continue
+        assemblies = set(assemblies)
+        if not len(assemblies) == 1:
+            logger.error(
+                '%s: Expected one unique assembly, found %d. Skipping.'
+                % (experiment_id, len(assemblies)))
+            continue
+        assembly = next(iter(assemblies))
+
         idr_step_run_uri = next(iter(idr_step_runs))
-        idr_step_run = common.encoded_get(server+idr_step_run_uri,keypair)
+        idr_step_run = common.encoded_get(server+idr_step_run_uri, keypair)
         try:
             dx_job_id_str = idr_step_run.get('dx_applet_details')[0].get('dx_job_id')
         except:
@@ -131,17 +173,28 @@ def main():
         desc = analysis.describe()
         project = desc.get('project')
 
-        m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',desc['name'])
+        m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks', desc['name'])
         if m:
             experiment_accession = m.group(1)
         else:
-            logger.error("No accession in %s, skipping." %(desc['name']))
+            logger.error("No accession in %s, skipping." % (desc['name']))
             continue
 
-        experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-        logger.debug('ENCODEd experiment %s' %(experiment['accession']))
+        if args.all:  # we've already gotten all the experiment objects
+            experiment = \
+                next(e for e in all_experiments
+                     if e['accession'] == experiment_accession)
+        else:
+            experiment = \
+                common.encoded_get(urlparse.urljoin(
+                    server,
+                    '/experiments/%s' % (experiment_accession)), keypair)
+        logger.debug('ENCODEd experiment %s' % (experiment['accession']))
         if args.lab and experiment['lab'].split('/')[2] not in args.lab:
             continue
+
+
+
         try:
             idr_stage = next(s['execution'] for s in desc['stages'] if s['execution']['name'] == "Final IDR peak calls")
         except:
@@ -207,7 +260,7 @@ def main():
             'biosample_type':   experiment.get('biosample_type'),
             'lab':          experiment['lab'].split('/')[2],
             'rfa':          common.encoded_get(server+experiment.get('award'),keypair).get('rfa'),
-            'assembly':     args.assembly, #TODO ... derive this from the analysis
+            'assembly':     assembly,
             'Np':           Np,
             'N1':           N1,
             'N2':           N2,
