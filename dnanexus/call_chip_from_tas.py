@@ -176,12 +176,20 @@ def get_possible_ctl_ta(experiment, repn, server, keypair, default_project, ta_f
         # For now only use controls with no target or target "Control" (i.e. not IgG)
         if not target_uri or target_uri.split('/')[2].startswith('Control'):
             possible_control_experiments.append(possible_control_experiment)
+        else:
+            logging.warning(
+                '%s: possible control %s has target %s, not "Control". Skipping.' % (
+                    experiment.get('accession'),
+                    possible_control_experiment.get('accession'),
+                    target_uri))
     logging.debug(pprint.pformat(possible_control_experiments))
     try:
         matching_ta = next(ta for ta in [get_rep_ta(e, repn, default_project, ta_folders) for e in possible_control_experiments] if ta and ta['id'] not in used_control_ids)
     except StopIteration:
         logging.warning('Failed to find control rep with matching repn')
         matching_ta = None
+    except:
+        raise
     else:
         return matching_ta
 
@@ -343,11 +351,14 @@ def get_tas(experiment, server, keypair, default_project, ta_folders):
                 control_ta = get_possible_ctl_ta(experiment, repn, server, keypair, default_project, ta_folders, used_controls)
                 controlled_by_ta_name = control_ta.get('name')
                 controlled_by_ta_id = control_ta.get('id')
+        if not (controlled_by_ta_name and controlled_by_ta_id):
+            logging.error('%s: Failed to find controls' % (experiment.get('accession')))
+            return None
         if controlled_by_ta_id and controlled_by_ta_id in used_controls:
             logging.warning('%s: Using same control %s for multiple reps' %(controlled_by_ta_id, controlled_by_ta_name))
         used_controls.append(controlled_by_ta_id)
-        #if encode repns are 1,2 then let the pipline input rep numbers (1 or 2) be the same.
-        #Otherwise the mapping is arbitrary, but at least do it with smaller rep number first.
+        # if encode repns are 1,2 then let the pipline input rep numbers (1 or 2) be the same.
+        # Otherwise the mapping is arbitrary, but at least do it with smaller rep number first.
         if repn == min(repns):
             ta_index = 1
         else:
