@@ -665,19 +665,24 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     input_stage = \
         next(stage for stage in mapping_stages
              if stage['execution']['name'].startswith("Gather inputs"))
+    logger.debug("input_stage['execution']['input'] JSON:")
+    logger.debug(pprint.pprint(input_stage['execution']['input']))
 
-    input_fastq_accessions = input_stage['execution']['input']['reads1']
+    input_fastq_accessions = []
+    input_fastq_accessions.extend(input_stage['execution']['input']['reads1'])
+    logger.debug('reads1 only input_fastq_accessions %s' % (input_fastq_accessions))
 
     if input_stage['execution']['input']['reads2']:
         # Coerce into a list here because in earlier versions of the pipeline
         # code, reads2 was just a string.
         reads2 = input_stage['execution']['input']['reads2']
+        logger.debug('found reads2 %s' % (reads2))
         if type(reads2) is list:
             input_fastq_accessions.extend(reads2)
         else:
             input_fastq_accessions.extend([reads2])
 
-    logger.debug('input_fastq_accessions %s' % (input_fastq_accessions))
+    logger.debug('reads1 and reads2 input_fastq_accessions %s' % (input_fastq_accessions))
 
     fastqs = []
     for acc in input_fastq_accessions:
@@ -802,18 +807,29 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     mapping_stages = mapping_analysis.get('stages')
 
-    input_stage = next(
-        stage for stage in mapping_stages
-        if stage['execution']['name'].startswith("Gather inputs"))
+    input_stage = \
+        next(stage for stage in mapping_stages
+             if stage['execution']['name'].startswith("Gather inputs"))
+    logger.debug("input_stage['execution']['input'] JSON:")
+    logger.debug(pprint.pprint(input_stage['execution']['input']))
 
-    input_fastq_accessions = input_stage['execution']['input']['reads1']
+    input_fastq_accessions = []
+    input_fastq_accessions.extend(input_stage['execution']['input']['reads1'])
+    logger.debug('reads1 only input_fastq_accessions %s' % (input_fastq_accessions))
 
     if input_stage['execution']['input']['reads2']:
-        input_fastq_accessions.extend(
-            input_stage['execution']['input']['reads2'])
+        # Coerce into a list here because in earlier versions of the pipeline
+        # code, reads2 was just a string.
+        reads2 = input_stage['execution']['input']['reads2']
+        logger.debug('found reads2 %s' % (reads2))
+        if type(reads2) is list:
+            input_fastq_accessions.extend(reads2)
+        else:
+            input_fastq_accessions.extend([reads2])
+
+    logger.debug('reads1 and reads2 input_fastq_accessions %s' % (input_fastq_accessions))
 
     fastqs = []
-
     for acc in input_fastq_accessions:
         fobj = common.encoded_get(
             urlparse.urljoin(server, 'files/%s' % (acc)), keypair)
