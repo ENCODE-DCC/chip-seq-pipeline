@@ -6,7 +6,6 @@ dnanexus/accessionator/resources/keypairs.json
 
 .DS_Store
 
-**/.aws/credentials
-**/.aws/config
+**/.aws/*
 **/keypairs.json
 
