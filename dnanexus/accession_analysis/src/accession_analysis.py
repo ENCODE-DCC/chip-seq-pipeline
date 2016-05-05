@@ -733,7 +733,7 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     bam_metadata = common.merge_dicts({
         'file_format': 'bam',
         # 'output_type': 'alignments'
-        'output_type': 'raw alignments'
+        'output_type': 'unfiltered alignments'
         }, common_file_metadata)
 
     rep_mapping_stages = {
