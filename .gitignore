@@ -1,41 +1,6 @@
 *~
-local_tests/**
-
-dnanexus/temp
-
-SCG3/jss_test
-
-SCG3/spp.py
-
-SCG3/spp.sh
-
-*.narrowPeak
-
-*.regionPeak
-
-*.bb
-
-dnanexus/encsr
-
-*.input
-
-*.output
 
 dnanexus/accessionator/resources/keypairs.json
-
-dnanexus/wgEncodeDacMapabilityConsensusExcludable.bed.gz
-
-output_comparisons/ENCSR000BUA/ENCFF001UPV.broadPeak
-
-output_comparisons/ENCSR000BUA/ENCFF001UPW.broadPeak
-
-*.bam
-
-dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..pooled_common_IDRv2.narrowPeak.gz
-
-dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..IDR0.02.narrowPeak.gz
-
-dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..log.txt
 
 *.pyc
 
@@ -45,40 +10,3 @@ dnanexus/ENCFF000XUL-chr21.regionPeak_vs_ENCFF000XUK-chr21.regionPeak.IDRv2..log
 **/.aws/config
 **/keypairs.json
 
-
-
-dnanexus/resequencing_seth.csv
-
-dnanexus/test.py
-
-dnanexus/test.txt
-
-dnanexus/tmp.csv
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-dnanexus/analysis-Bj087Pj0bpZXg5F6Xj7Fp4ZY.json
-
-dnanexus/analysis-BZ5g7Q00bpZxv09qfJ8YfpjB.json
-
-dnanexus/ENCFF527JAY.fastq.gz
-
-dnanexus/job-Bj08XgQ0bpZkvz6VbVfVg0ky.json
-
-dnanexus/job-BZ5g7Q80bpZxv09qfJ8YfpjQ.json
-
-dnanexus/file-BZ5j1Vj0P0ZFq866kV55X266.json
-=======
-*.json
-
-*.gz
->>>>>>> origin/master
-=======
-*.json
-
-*.gz
->>>>>>> origin/master
-
-dnanexus/qckiller.py
-
-dnanexus/tmp.sh
