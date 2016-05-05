@@ -669,8 +669,15 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     input_fastq_accessions = input_stage['execution']['input']['reads1']
 
     if input_stage['execution']['input']['reads2']:
-        input_fastq_accessions.extend(
-            input_stage['execution']['input']['reads2'])
+        # Coerce into a list here because in earlier versions of the pipeline
+        # code, reads2 was just a string.
+        reads2 = input_stage['execution']['input']['reads2']
+        if type(reads2) is list:
+            input_fastq_accessions.extend(reads2)
+        else:
+            input_fastq_accessions.extend([reads2])
+
+    logger.debug('input_fastq_accessions %s' % (input_fastq_accessions))
 
     fastqs = []
     for acc in input_fastq_accessions:
@@ -2418,9 +2425,16 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck,
                         {'dx_pipeline': 'unrecognized'})
                     accessioned_files = None
             except:
-                traceback.print_exc()
-                accessioned_files = None
-                file_accessions = None
+                # if only accessioning one job, throw an error
+                # otherwise print the traceback and try to accession the
+                # other jobs
+                if len(ids) == 1:
+                    raise
+                else:
+                    traceback.print_exc()
+                    accessioned_files = None
+                    file_accessions = None
+
             else:
                 file_accessions = \
                     [f.get('accession') for f in (accessioned_files or [])]
