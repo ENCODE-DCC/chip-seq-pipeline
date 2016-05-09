@@ -666,7 +666,7 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         next(stage for stage in mapping_stages
              if stage['execution']['name'].startswith("Gather inputs"))
     logger.debug("input_stage['execution']['input'] JSON:")
-    logger.debug(pprint.pprint(input_stage['execution']['input']))
+    logger.debug(pprint.pformat(input_stage['execution']['input']))
 
     input_fastq_accessions = []
     input_fastq_accessions.extend(input_stage['execution']['input']['reads1'])
@@ -811,7 +811,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         next(stage for stage in mapping_stages
              if stage['execution']['name'].startswith("Gather inputs"))
     logger.debug("input_stage['execution']['input'] JSON:")
-    logger.debug(pprint.pprint(input_stage['execution']['input']))
+    logger.debug(pprint.pformat(input_stage['execution']['input']))
 
     input_fastq_accessions = []
     input_fastq_accessions.extend(input_stage['execution']['input']['reads1'])
