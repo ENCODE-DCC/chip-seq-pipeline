@@ -86,7 +86,7 @@ def main():
             "/search/?type=Experiment" + \
             "&assay_title=ChIP-seq" + \
             "&award.project=ENCODE" + \
-            "&status=released&status=submitted&status=in+progress&status=started"
+            "&status=released&status=submitted&status=in+progress&status=started&status=release+ready"
         all_experiments = common.encoded_get(server+exp_query, keypair)['@graph']
         ids = [exp.get('accession') for exp in all_experiments]
     elif args.infile:
