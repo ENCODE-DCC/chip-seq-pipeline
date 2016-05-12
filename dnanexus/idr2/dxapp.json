@@ -31,7 +31,7 @@
       "label": "IDR threshold",
       "class": "float",
       "optional": true,
-      "default": 0.02
+      "default": 0.05
     },
     {
       "name": "rank",
