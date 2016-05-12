@@ -1586,6 +1586,7 @@ def accession_file(f, keypair, server, dryrun, force):
     else:
         md5_exists = r.json()
 
+
     #check if an ENCODE accession number in in the list of tags, as it would be if accessioned by this script or similar scripts
     for tag in dx.tags:
         m = re.findall(r'ENCFF\d{3}\D{3}', tag)
@@ -1600,6 +1601,7 @@ def accession_file(f, keypair, server, dryrun, force):
     #TODO check here if file is deprecated and, if so, warn
     if md5_exists:
         if force:
+            f['accession'] = md5_exists['accession']
             return patch_file(f, keypair, server, dryrun)
         else:
             logger.info("Returning duplicate file unchanged")
