@@ -97,7 +97,7 @@ def main():
 
     fieldnames = [  'date','analysis','analysis id','experiment','target','biosample_term_name','biosample_type','lab','rfa','assembly',
                     'Nt','Np','N1','N2','rescue_ratio','self_consistency_ratio','reproducibility_test',
-                    'state','total price','notes']
+                    'state','release','total price','notes']
     writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames, delimiter='\t', quotechar='"')
     writer.writeheader()
 
@@ -269,6 +269,7 @@ def main():
             'self_consistency_ratio': self_consistency_ratio,
             'reproducibility_test': reproducibility_test,
             'state':        desc.get('state'),
+            'release':      experiment['status'],
             'total price':  desc.get('totalPrice')
         }
 
