@@ -378,3 +378,35 @@ def biorep_ns_generator(f, server, keypair):
 
 def biorep_ns(f, server, keypair):
     return [n for n in set(biorep_ns_generator(f, server, keypair)) if n is not None]
+
+
+def derived_from_references_generator(f, server, keypair):
+    if isinstance(f, dict):
+        acc = f.get('accession')
+    else:
+        m = re.match('^/?(files)?/?(\w*)', f)
+        if m:
+            acc = m.group(2)
+        else:
+            acc = re.search('ENCFF[0-9]{3}[A-Z]{3}', f).group(0)
+    if not acc:
+        return
+    url = urlparse.urljoin(server, '/files/%s' % (acc))
+    file_object = encoded_get(url, keypair)
+
+    if not file_object.get('derived_from'):
+        return
+    else:
+        for derived_from_uri in file_object.get('derived_from', []):
+            derived_from_url = urlparse.urljoin(server, derived_from_uri)
+            derived_from_file = encoded_get(derived_from_url, keypair)
+            if derived_from_file.get('output_category') == "reference":
+                yield derived_from_file.get('@id')
+            else:
+                for derived_from_reference in derived_from_references_generator(derived_from_file, server, keypair):
+                    yield derived_from_reference
+
+
+def derived_from_references(f, server, keypair):
+    return [n for n in set(derived_from_references_generator(f, server, keypair)) if n is not None]
+

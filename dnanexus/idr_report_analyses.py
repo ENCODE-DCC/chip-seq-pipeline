@@ -186,6 +186,7 @@ def main():
 			'self_consistency_ratio': self_consistency_ratio,
 			'reproducibility_test': reproducibility_test,
 			'state': 		desc.get('state'),
+			'release':      experiment['status'],
 			'total price': 	desc.get('totalPrice')
 		}
 

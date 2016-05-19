@@ -120,6 +120,7 @@ def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep
     print subprocess.check_output('head %s' %(pooled_peaks_filename), shell=True)
     idr_command = ( "idr "
                     "--plot "
+                    "--use-best-multisummit-IDR "
                     "--soft-idr-threshold %s "
                     "--rank %s "
                     "--output-file %s "

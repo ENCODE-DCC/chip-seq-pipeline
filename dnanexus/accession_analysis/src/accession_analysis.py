@@ -1586,6 +1586,7 @@ def accession_file(f, keypair, server, dryrun, force):
     else:
         md5_exists = r.json()
 
+
     #check if an ENCODE accession number in in the list of tags, as it would be if accessioned by this script or similar scripts
     for tag in dx.tags:
         m = re.findall(r'ENCFF\d{3}\D{3}', tag)
@@ -1600,6 +1601,7 @@ def accession_file(f, keypair, server, dryrun, force):
     #TODO check here if file is deprecated and, if so, warn
     if md5_exists:
         if force:
+            f['accession'] = md5_exists['accession']
             return patch_file(f, keypair, server, dryrun)
         else:
             logger.info("Returning duplicate file unchanged")
@@ -1673,6 +1675,8 @@ def accession_outputs(stages, experiment, keypair, server, dryrun, force):
             dx_desc = dx.describe()
             surfaced_outputs = [o for o in outputs['qc'] if isinstance(o,str)] #this will be a list of strings
             calculated_outputs = [o for o in outputs['qc'] if not isinstance(o,str)] #this will be a list of functions/methods
+            logger.debug('in accession_outputs with stage metadata\n%s' % (pprint.pformat(stage_metadata)))
+            logger.debug('in accession_ouputs with surfaced_ouputs %s and calculated_outputs %s from project %s' % (surfaced_outputs, calculated_outputs, project))
             notes_qc = dict(zip(surfaced_outputs,[stage_metadata['output'][metric] for metric in surfaced_outputs]))
             notes_qc.update(dict(zip([f.__name__ for f in calculated_outputs],[f(stages) for f in calculated_outputs])))
             post_metadata = {

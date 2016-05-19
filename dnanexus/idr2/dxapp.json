@@ -31,7 +31,7 @@
       "label": "IDR threshold",
       "class": "float",
       "optional": true,
-      "default": 0.02
+      "default": 0.05
     },
     {
       "name": "rank",
@@ -109,7 +109,7 @@
         "name": "idr",
         "package_manager": "git",
         "url": "https://github.com/nboley/idr.git",
-        "tag": "2.0.2",
+        "tag": "2.0.3",
         "destdir": "/home/dnanexus/",
         "build_commands": "python3 setup.py install"
       }
