@@ -222,8 +222,8 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
     broadPeak_bb_fname =  common.bed2bb('%s' %(broadPeak_fn),  chrom_sizes.name, broadPeak_as.name,  bed_type='bed6+3')
 
     #Temporary during development to create empty files just to get the applet to exit 
-    for fn in [narrowPeak_fn, gappedPeak_fn, broadPeak_fn, narrowPeak_bb_fn, gappedPeak_bb_fn, broadPeak_bb_fn, fc_signal_fn, pvalue_signal_fn]:
-        common.block_on('touch %s' %(fn))
+    # for fn in [narrowPeak_fn, gappedPeak_fn, broadPeak_fn, narrowPeak_bb_fn, gappedPeak_bb_fn, broadPeak_bb_fn, fc_signal_fn, pvalue_signal_fn]:
+    #     common.block_on('touch %s' %(fn))
 
     # Upload the file outputs
 
