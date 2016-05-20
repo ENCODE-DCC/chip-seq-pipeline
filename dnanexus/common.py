@@ -169,6 +169,17 @@ def rescale_scores(fn, scores_col, new_min=10, new_max=1000):
         rescaled_fn)
     return rescaled_fn
 
+
+def slop_clip(filename, chrom_sizes):
+    clipped_fn = '%s-clipped' % (fn)
+    # Remove coordinates outside chromosome sizes
+    pipe = ['slopBed -i %s -g %s -b 0' % (filename, chrom_sizes),
+            'bedClip stdin %s %s' % (chrom_sizes, clipped_fn)]
+    print pipe
+    out, err = run_pipe(pipe)
+    return clipped_fn
+
+
 def processkey(key=None, keyfile=None):
 
     import json
