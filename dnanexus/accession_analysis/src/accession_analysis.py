@@ -225,8 +225,7 @@ def xcor_qc(stages):
 def chipseq_filter_quality_metric(step_run, stages, files):
     # this is currently a mix of deduplication and cross-correlation stats
     # maybe break out all the xcor stuff to its own object
-    logger.debug("in chip_seq_filter_quality_metric with \
-        step_run %s stages.keys() %s output files %s"
+    logger.debug("in chip_seq_filter_quality_metric with step_run %s stages.keys() %s output files %s"
                  % (step_run, stages.keys(), files))
 
     file_accessions = list(set(flat([
@@ -359,8 +358,7 @@ def get_flagstat_obj(step_run, stage, file_accessions):
 
 
 def samtools_flagstats_quality_metric(step_run, stages, files):
-    logger.debug("in chip_seq_filter_quality_metric with \
-        step_run %s stages.keys() %s output files %s"
+    logger.debug("in chip_seq_filter_quality_metric with step_run %s stages.keys() %s output files %s"
                  % (step_run, stages.keys(), files))
 
     file_accessions = list(set(flat([
@@ -386,8 +384,7 @@ def samtools_flagstats_quality_metric(step_run, stages, files):
 
 def idr_quality_metric(step_run, stages, files):
 
-    logger.debug("in idr_seq_filter_quality_metric with \
-        step_run %s stages.keys() %s output files %s"
+    logger.debug("in idr_seq_filter_quality_metric with step_run %s stages.keys() %s output files %s"
                  % (step_run, stages.keys(), files))
 
     file_accessions = list(set(flat([
@@ -468,7 +465,7 @@ def get_rep_bams(experiment, assembly, keypair, server):
 
     # resolve the biorep_n for each fastq
     for fastq in [f for f in original_files
-                  if f.get('file_format') == 'fastq']:
+                  if f.get('file_format') in ['fastq', 'fasta']]:
         replicate = common.encoded_get(
             urlparse.urljoin(server, '%s' % (fastq.get('replicate'))), keypair)
         fastq.update(
@@ -539,7 +536,7 @@ def get_rep_fastqs(experiment, keypair, server, repn):
 
     fastqs = \
         [f for f in original_files
-         if f.get('file_format') == 'fastq' and
+         if f.get('file_format') in ['fastq', 'fasta'] and
          f.get('status') in fastq_valid_status]
 
     # resolve the biorep_n for each fastq
@@ -707,8 +704,7 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             return None
     else:
         logger.warning(
-            '--fqcheck is False, so not checking to see if experiment and \
-            mapped fastqs match')
+            '--fqcheck is False, so not checking to see if experiment and mapped fastqs match')
 
     raw_mapping_stage = next(
         stage for stage in mapping_stages
@@ -852,8 +848,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             return None
     else:
         logger.warning(
-            '--fqcheck is False, so not checking to see if experiment and \
-            mapped fastqs match')
+            '--fqcheck is False, so not checking to see if experiment and mapped fastqs match')
 
     filter_qc_stage = next(
         stage for stage in mapping_stages
@@ -2460,10 +2455,18 @@ def main(outfn, assembly, debug, key, keyfile, dryrun, force, fqcheck,
                     [f.get('accession') for f in (accessioned_files or [])]
                 if file_accessions:
                     url = server+"/experiments/%s" % (experiment)
+                    experiment_obj = common.encoded_get(
+                        url, keypair=keypair, frame='page')
+                    target = experiment_obj.get('target')
+                    # mapping non-controls is not a complete pipeline run
+                    if target and ('control' not in target['investigated_as']) and (inferred_pipeline in ['mapping', 'raw']):
+                        internal_status = 'processing'
+                    else:  # everything else is assumed to be complete
+                        internal_status = 'pipeline completed'
                     r = common.encoded_patch(
                         url,
                         keypair,
-                        {"internal_status": "pipeline completed"},
+                        {"internal_status": internal_status},
                         return_response=True)
                     try:
                         r.raise_for_status()
