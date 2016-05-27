@@ -87,9 +87,9 @@ def main():
 		#never reached because inile defaults to stdin
 		raise InputError("Must supply analysis id's in arguments, --infile or supply search string in --created_after")
 
-	fieldnames = [	'date','analysis','experiment','target','biosample_term_name','biosample_type','lab','rfa','assembly',
-					'Nt','Np','N1','N2','rescue_ratio','self_consistency_ratio','reproducibility_test',
-					'state','total price','notes']
+	fieldnames = [	'name','date','analysis','experiment','target','biosample_term_name','biosample_type','lab','rfa','assembly',
+					'Nt','Np','N1','N2','rescue_ratio','self_consistency_ratio','reproducibility_test','state',
+					'release','total price','notes']
 	writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames, delimiter='\t', quotechar='"')
 	writer.writeheader()
 
@@ -169,6 +169,7 @@ def main():
 		analysis_link = 'https://platform.dnanexus.com/projects/%s/monitor/analysis/%s' %(desc.get('project').split('-')[1], desc.get('id').split('-')[1])
 		experiment_link = 'https://www.encodeproject.org/experiments/%s' %(experiment.get('accession'))
 		row = {
+			'name': desc.get('name'),
 			'date': date,
 			'analysis':		analysis_link,
 			'experiment': 	experiment_link,
