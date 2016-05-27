@@ -249,7 +249,7 @@ def main():
         else:
             date = "Running"
         analysis_link = 'https://platform.dnanexus.com/projects/%s/monitor/analysis/%s' %(desc.get('project').split('-')[1], desc.get('id').split('-')[1])
-        experiment_link = 'https://www.encodeproject.org/experiments/%s' %(experiment.get('accession'))
+        experiment_link = '%sexperiments/%s' %(server, experiment.get('accession'))
         row = {
             'date': date,
             'analysis':     analysis_link,
