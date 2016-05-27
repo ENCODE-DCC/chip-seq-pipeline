@@ -29,7 +29,7 @@ def get_args():
     parser.add_argument('--csizes', help="chrom.sizes file for bedtobigbed, e.g. ENCODE Reference Files:/mm10/male.mm10.chrom.sizes", required=True)
     parser.add_argument('--assembly', help="Genome assembly, e.g. hg19, mm10, GRCh38", required=True)
     parser.add_argument('--idr', help="Run IDR. If not specified, run IDR for non-histone targets.", default=False, action='store_true')
-    parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default="2")
+    # parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default="2")
     parser.add_argument('--dryrun', help="Formulate the run command, but don't actually run", default=False, action='store_true')
 
     args = parser.parse_args()
@@ -533,7 +533,7 @@ def main():
         if args.debug:
             run_command += ' --debug'
         if args.idr or IDR_default:
-            run_command += ' --idr --idrversion %s' %(args.idrversion)
+            run_command += ' --idr'
 
         print run_command
         if args.dryrun:

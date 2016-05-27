@@ -42,7 +42,7 @@ POOL_APPLET_NAME = 'pool'
 PSEUDOREPLICATOR_APPLET_NAME = 'pseudoreplicator'
 ENCODE_SPP_APPLET_NAME = 'encode_spp'
 ENCODE_MACS2_APPLET_NAME = 'encode_macs2'
-IDR_APPLET_NAME='idr'
+# IDR_APPLET_NAME='idr'
 IDR2_APPLET_NAME='idr2'
 ENCODE_IDR_APPLET_NAME='encode_idr'
 
@@ -75,8 +75,8 @@ def get_args():
     parser.add_argument('--rep2pe', help='Specify if rep2 is PE (required only if --nomap)', type=bool, default=None)
     parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks")
     parser.add_argument('--idr',     help='Report peaks with and without IDR analysis',                 default=False, action='store_true')
-    #parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
-    parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default="2")
+    parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
+    # parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default="2")
     parser.add_argument('--yes',     help='Run the workflow',                   default=False, action='store_true')
 
     args = parser.parse_args()
@@ -470,13 +470,14 @@ def main():
         encode_macs2_stages.append({'name': 'ENCODE Peaks', 'stage_id': encode_macs2_stage_id})
 
     if args.idr:
-        if args.idrversion == "1":
-            idr_applet = find_applet_by_name(IDR_APPLET_NAME, applet_project.get_id())
-        elif args.idrversion == "2":
-            idr_applet = find_applet_by_name(IDR2_APPLET_NAME, applet_project.get_id())
-        else:
-            logging.error("Invalid IDR version: %s" %(args.idrversion))
-            idr_applet = None
+        # if args.idrversion == "1":
+        #     idr_applet = find_applet_by_name(IDR_APPLET_NAME, applet_project.get_id())
+        # elif args.idrversion == "2":
+        #     idr_applet = find_applet_by_name(IDR2_APPLET_NAME, applet_project.get_id())
+        # else:
+        #     logging.error("Invalid IDR version: %s" %(args.idrversion))
+        #     idr_applet = None
+        idr_applet = find_applet_by_name(IDR2_APPLET_NAME, applet_project.get_id())
         encode_idr_applet = find_applet_by_name(ENCODE_IDR_APPLET_NAME, applet_project.get_id())
         idr_stages = []
         idr_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
