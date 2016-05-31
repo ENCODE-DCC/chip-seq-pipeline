@@ -555,11 +555,7 @@ def main():
             idr_stages.append({'name': 'IDR Pooled Pseudoreplicates', 'stage_id': idr_stage_id})
 
             blacklist = resolve_file(args.blacklist)
-            idr_stage_id = workflow.add_stage(
-                encode_idr_applet,
-                name='Final IDR peak calls',
-                folder=idr_output_folder,
-                stage_input={
+            stage_input = {
                     'reps_peaks' : dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR True Replicates'),
                          'outputField': 'IDR_peaks'}),
@@ -572,10 +568,17 @@ def main():
                     'pooledpr_peaks': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Pooled Pseudoreplicates'),
                          'outputField': 'IDR_peaks'}),
-                    'blacklist': dxpy.dxlink(blacklist.get_id()),
                     'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
                     'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as))
                 }
+            if blacklist:
+                stage_input.update({'blacklist': dxpy.dxlink(blacklist.get_id())})
+
+            idr_stage_id = workflow.add_stage(
+                encode_idr_applet,
+                name='Final IDR peak calls',
+                folder=idr_output_folder,
+                stage_input=stage_input
             )
             idr_stages.append({'name': 'Final IDR peak calls', 'stage_id': idr_stage_id})
 
