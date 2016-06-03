@@ -60,7 +60,7 @@ def count_lines(filename):
 		])
 		return int(out)
 
-def spp(experiment, control, xcor_scores, chrom_sizes, bigbed=False, as_file=None):
+def spp(experiment, control, xcor_scores, chrom_sizes, bigbed=False, as_file=None, name='spp'):
 		spp_applet = dxpy.find_one_data_object(
 				classname='applet', name='spp', project=dxpy.PROJECT_CONTEXT_ID,
 				zero_ok=False, more_ok=False, return_handler=True)
@@ -71,13 +71,13 @@ def spp(experiment, control, xcor_scores, chrom_sizes, bigbed=False, as_file=Non
 								 "chrom_sizes": chrom_sizes}
 		if bigbed and as_file:
 			spp_input.update({"as_file": as_file})
-		return spp_applet.run(spp_input)
+		return spp_applet.run(spp_input, name=name)
 
-def xcor_only(tags, paired_end):
+def xcor_only(tags, paired_end, name='xcor_only'):
 		xcor_only_applet = dxpy.find_one_data_object(
 				classname='applet', name='xcor_only', project=dxpy.PROJECT_CONTEXT_ID,
 				zero_ok=False, more_ok=False, return_handler=True)
-		return xcor_only_applet.run({"input_tagAlign": tags, "paired_end": paired_end})
+		return xcor_only_applet.run({"input_tagAlign": tags, "paired_end": paired_end}, name=name)
 
  
 @dxpy.entry_point('main')
@@ -130,9 +130,9 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 		pool_applet = dxpy.find_one_data_object(
 				classname='applet', name='pool', project=dxpy.PROJECT_CONTEXT_ID,
 				zero_ok=False, more_ok=False, return_handler=True)
-		pool_replicates_subjob = pool_applet.run({"inputs": [rep1_ta, rep2_ta]})
+		pool_replicates_subjob = pool_applet.run({"inputs": [rep1_ta, rep2_ta]}, name='Pool replicates')
 		pooled_replicates = pool_replicates_subjob.get_output_ref("pooled")
-		pooled_replicates_xcor_subjob = xcor_only(pooled_replicates, paired_end)
+		pooled_replicates_xcor_subjob = xcor_only(pooled_replicates, paired_end, name='Pool cross-correlation')
 
 		rep1_control = ctl1_ta #default.  May be changed later.
 		rep2_control = ctl2_ta #default.  May be changed later.
@@ -140,11 +140,13 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 		if unary_control:
 			print "Only one control supplied.  Using it for both replicate 1 and 2 and for the pool."
 			control_for_pool = rep1_control
+			pool_ctl_msg = "one control"
 		else:
-			pool_controls_subjob = pool_applet.run({"inputs": [ctl1_ta, ctl2_ta]})
+			pool_controls_subjob = pool_applet.run({"inputs": [ctl1_ta, ctl2_ta]}, name='Pool controls')
 			pooled_controls = pool_controls_subjob.get_output_ref("pooled")
 			#always use the pooled controls for the pool
 			control_for_pool = pooled_controls
+			pool_ctl_msg = "pooled controls"
 
 			#use the pooled controls for the reps depending on the ration of rep to control reads
 			ratio_ctl_reads = float(ntags_ctl1)/float(ntags_ctl2)
@@ -154,37 +156,49 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 			if ratio_ctl_reads > ratio_cutoff:
 					print "Number of reads in controls differ by > factor of %f. Using pooled controls." %(ratio_cutoff)
 					rep1_control = pooled_controls
+					rep1_ctl_msg = "pooled controls"
 					rep2_control = pooled_controls
+					rep2_ctl_msg = "pooled controls"
 			else:
 					if ntags_ctl1 < ntags_rep1:
 							print "Fewer reads in control replicate 1 than experiment replicate 1.  Using pooled controls for replicate 1."
 							rep1_control = pooled_controls
+							rep1_ctl_msg = "pooled controls"
 					elif ntags_ctl2 < ntags_rep2:
 							print "Fewer reads in control replicate 2 than experiment replicate 2.  Using pooled controls for replicate 2."
 							rep2_control = pooled_controls
+							rep2_ctl_msg = "pooled controls"
 					else:
 						print "Using distinct controls for replicate 1 and 2."
+						rep1_ctl_msg = "control rep1"
+						rep2_ctl_msg = "control rep2"
 
-		rep1_peaks_subjob = spp(rep1_ta,
-								rep1_control,
-								rep1_xcor,
-								chrom_sizes=chrom_sizes,
-								bigbed=True,
-								as_file=as_file)
+		rep1_peaks_subjob = spp(
+			rep1_ta,
+			rep1_control,
+			rep1_xcor,
+			chrom_sizes=chrom_sizes,
+			bigbed=True,
+			as_file=as_file,
+			name='Rep1 peaks vs %s' % (rep1_ctl_msg))
 
-		rep2_peaks_subjob = spp(rep2_ta,
-								rep2_control,
-								rep2_xcor,
-								chrom_sizes=chrom_sizes,
-								bigbed=True,
-								as_file=as_file)
+		rep2_peaks_subjob = spp(
+			rep2_ta,
+			rep2_control,
+			rep2_xcor,
+			chrom_sizes=chrom_sizes,
+			bigbed=True,
+			as_file=as_file,
+			name='Rep2 peaks vs %s' % (rep2_ctl_msg))
 
-		pooled_peaks_subjob = spp(pooled_replicates,
-								control_for_pool,
-								pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"),
-								chrom_sizes=chrom_sizes,
-								bigbed=True,
-								as_file=as_file)
+		pooled_peaks_subjob = spp(
+			pooled_replicates,
+			control_for_pool,
+			pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"),
+			chrom_sizes=chrom_sizes,
+			bigbed=True,
+			as_file=as_file,
+			name='Pooled peaks vs %s' % (pool_ctl_msg))
 
 		output = {
 			'rep1_peaks':       rep1_peaks_subjob.get_output_ref("peaks"),
@@ -208,59 +222,73 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
 				classname='applet', name='pseudoreplicator', project=dxpy.PROJECT_CONTEXT_ID,
 				zero_ok=False, more_ok=False, return_handler=True)
 
-			rep1_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep1_ta})
-			rep2_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep2_ta})
+			rep1_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep1_ta}, name='Pseudoreplicate rep1 -> R1PR1,2')
+			rep2_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep2_ta}, name='Pseudoreplicate rep2 -> R2PR1,2')
 
 			pool_pr1_subjob = pool_applet.run({"inputs": [
 				rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
-				rep2_pr_subjob.get_output_ref("pseudoreplicate1")]})
+				rep2_pr_subjob.get_output_ref("pseudoreplicate1")]},
+				name='Pool R1PR1+R2PR1 -> PPR1')
 
 			pool_pr2_subjob = pool_applet.run({"inputs": [
 				rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
-				rep2_pr_subjob.get_output_ref("pseudoreplicate2")]})
+				rep2_pr_subjob.get_output_ref("pseudoreplicate2")]},
+				name='Pool R1PR2+R2PR2 -> PPR2')
 
-			rep1_pr1_xcor_subjob = xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
-			rep1_pr2_xcor_subjob = xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
-			rep2_pr1_xcor_subjob = xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
-			rep2_pr2_xcor_subjob = xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
-			pool_pr1_xcor_subjob = xcor_only(pool_pr1_subjob.get_output_ref("pooled"), paired_end)
-			pool_pr2_xcor_subjob = xcor_only(pool_pr2_subjob.get_output_ref("pooled"), paired_end)
+			rep1_pr1_xcor_subjob = xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end, name='R1PR1 cross-correlation')
+			rep1_pr2_xcor_subjob = xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end, name='R1PR2 cross-correlation')
+			rep2_pr1_xcor_subjob = xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end, name='R2PR1 cross-correlation')
+			rep2_pr2_xcor_subjob = xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end, name='R2PR2 cross-correlation')
+			pool_pr1_xcor_subjob = xcor_only(pool_pr1_subjob.get_output_ref("pooled"), paired_end, name='PPR1 cross-correlation')
+			pool_pr2_xcor_subjob = xcor_only(pool_pr2_subjob.get_output_ref("pooled"), paired_end, name='PPR2 cross-correlation')
 
-			rep1pr1_peaks_subjob = spp(rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
-									rep1_control,
-									rep1_pr1_xcor_subjob.get_output_ref("CC_scores_file"),
-									chrom_sizes=chrom_sizes,
-									bigbed=False)
+			rep1pr1_peaks_subjob = spp(
+				rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
+				rep1_control,
+				rep1_pr1_xcor_subjob.get_output_ref("CC_scores_file"),
+				chrom_sizes=chrom_sizes,
+				bigbed=False,
+				name='R1PR1 peaks vs %s' % (rep1_ctl_msg))
 
-			rep1pr2_peaks_subjob = spp(rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
-									rep1_control,
-									rep1_pr2_xcor_subjob.get_output_ref("CC_scores_file"),
-									chrom_sizes=chrom_sizes,
-									bigbed=False)
+			rep1pr2_peaks_subjob = spp(
+				rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
+				rep1_control,
+				rep1_pr2_xcor_subjob.get_output_ref("CC_scores_file"),
+				chrom_sizes=chrom_sizes,
+				bigbed=False,
+				name='R1PR2 peaks vs %s' % (rep1_ctl_msg))
 
-			rep2pr1_peaks_subjob = spp(rep2_pr_subjob.get_output_ref("pseudoreplicate1"),
-									rep2_control,
-									rep2_pr1_xcor_subjob.get_output_ref("CC_scores_file"),
-									chrom_sizes=chrom_sizes,
-									bigbed=False)
+			rep2pr1_peaks_subjob = spp(
+				rep2_pr_subjob.get_output_ref("pseudoreplicate1"),
+				rep2_control,
+				rep2_pr1_xcor_subjob.get_output_ref("CC_scores_file"),
+				chrom_sizes=chrom_sizes,
+				bigbed=False,
+				name='R2PR1 peaks vs %s' % (rep2_ctl_msg))
 
-			rep2pr2_peaks_subjob = spp(rep2_pr_subjob.get_output_ref("pseudoreplicate2"),
-									rep2_control,
-									rep2_pr2_xcor_subjob.get_output_ref("CC_scores_file"),
-									chrom_sizes=chrom_sizes,
-									bigbed=False)
+			rep2pr2_peaks_subjob = spp(
+				rep2_pr_subjob.get_output_ref("pseudoreplicate2"),
+				rep2_control,
+				rep2_pr2_xcor_subjob.get_output_ref("CC_scores_file"),
+				chrom_sizes=chrom_sizes,
+				bigbed=False,
+				name='R2PR2 peaks vs %s' % (rep2_ctl_msg))
 
-			pooledpr1_peaks_subjob = spp(pool_pr1_subjob.get_output_ref("pooled"),
-									control_for_pool,
-									pool_pr1_xcor_subjob.get_output_ref("CC_scores_file"),
-									chrom_sizes=chrom_sizes,
-									bigbed=False)
+			pooledpr1_peaks_subjob = spp(
+				pool_pr1_subjob.get_output_ref("pooled"),
+				control_for_pool,
+				pool_pr1_xcor_subjob.get_output_ref("CC_scores_file"),
+				chrom_sizes=chrom_sizes,
+				bigbed=False,
+				name='PPR1 peaks vs %s' % (pool_ctl_msg))
 
-			pooledpr2_peaks_subjob = spp(pool_pr2_subjob.get_output_ref("pooled"),
-									control_for_pool,
-									pool_pr2_xcor_subjob.get_output_ref("CC_scores_file"),
-									chrom_sizes=chrom_sizes,
-									bigbed=False)
+			pooledpr2_peaks_subjob = spp(
+				pool_pr2_subjob.get_output_ref("pooled"),
+				control_for_pool,
+				pool_pr2_xcor_subjob.get_output_ref("CC_scores_file"),
+				chrom_sizes=chrom_sizes,
+				bigbed=False,
+				name='PPR2 peaks vs %s' % (pool_ctl_msg))
 
 			output.update({
 				'rep1pr1_peaks':       rep1pr1_peaks_subjob.get_output_ref("peaks"),
