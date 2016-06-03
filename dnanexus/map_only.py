@@ -35,8 +35,8 @@ REFERENCES = [
     {'assembly': 'mm10-minimal',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
     {'assembly': 'mm10-minimal',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'},
     {'assembly': 'mm10',   'organism': 'mouse', 'sex': 'male', 'file': 'ENCODE Reference Files:/mm10/mm10_no_alt_analysis_set_ENCODE.tar.gz'},
-    {'assembly': 'hg19',   'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/hg19_XY.tar.gz'},
-    {'assembly': 'hg19',   'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/hg19_X.tar.gz'}
+    {'assembly': 'hg19',   'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/male.hg19.tar.gz'},
+    {'assembly': 'hg19',   'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/female.hg19.tar.gz'}
     ]
 
 APPLETS = {}
@@ -425,6 +425,8 @@ def main():
         exp_ids = csv.reader(args.infile)
 
     for instring in exp_ids:
+        if instring[0].startswith('#'):
+            continue
         exp_id = instring[0].strip()
         if len(instring) > 1:
             repns = []
