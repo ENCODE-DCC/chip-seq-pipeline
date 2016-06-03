@@ -248,11 +248,26 @@ def main():
 
     blank_workflow = not (args.rep1 or args.rep2 or args.ctl1 or args.ctl2)
 
+    if not args.genomesize:
+        genomesize = None
+    else:
+        genomesize = args.genomesize
+    if not args.chrom_sizes:
+        chrom_sizes = None
+    else:
+        chrom_sizes = dxpy.dxlink(resolve_file(args.chrom_sizes))
+
+    if not args.blacklist:
+        blacklist = None
+    else:
+        blacklist = dxpy.dxlink(resolve_file(args.blacklist))
+
+
     if not args.nomap:
         #a "superstage" is just a dict with a name, name(s) of input files, and then names and id's of stages that process that input
         #each superstage here could be implemented as a stage in a more abstract workflow.  That stage would then call the various applets that are separate
         #stages here.
-        mapping_superstages = [
+        mapping_superstages = [ # the order of this list is important in that
             {'name': 'Rep1', 'input_args': args.rep1},
             {'name': 'Rep2', 'input_args': args.rep2},
             {'name': 'Ctl1', 'input_args': args.ctl1},
@@ -269,28 +284,43 @@ def main():
         xcor_applet = find_applet_by_name(XCOR_APPLET_NAME, applet_project.get_id())
         xcor_output_folder = mapping_output_folder
 
+        # in the first pass create the mapping stage id's so we can use JBOR's
+        # to link inputs
         for mapping_superstage in mapping_superstages:
             superstage_name = mapping_superstage.get('name')
+            mapped_stage_id = workflow.add_stage(
+                mapping_applet,
+                name='Map %s' %(superstage_name),
+                folder=mapping_output_folder
+            )
+            mapping_superstage.update({'map_stage_id': mapped_stage_id})
+
+        # in the second pass populate the stage inputs and build other stages
+        rep1_stage_id = next(ss.get('map_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep1')
+        for mapping_superstage in mapping_superstages:
+            superstage_name = mapping_superstage.get('name')
+            superstage_id = mapping_superstage.get('map_stage_id')
 
             if mapping_superstage.get('input_args') or blank_workflow:
-                if blank_workflow:
-                    if not args.reference:
-                        mapping_stage_input = None
-                    else:
-                        mapping_stage_input = {'reference_tar' : dxpy.dxlink(reference_tar.get_id())}
+                mapping_stage_input = {}
+                if superstage_name != "Rep1":
+                    mapping_stage_input.update({'reference_tar': dxpy.dxlink({'stage': rep1_stage_id, 'inputField': 'reference_tar'})})
                 else:
-                    mapping_stage_input = {'reference_tar' : dxpy.dxlink(reference_tar.get_id())}
-                    for arg_index,input_arg in enumerate(mapping_superstage['input_args']): #read pairs assumed be in order read1,read2
+                    if args.reference:
+                        mapping_stage_input.update({'reference_tar' : dxpy.dxlink(reference_tar.get_id())})
+                if not blank_workflow:
+                    for arg_index, input_arg in enumerate(mapping_superstage['input_args']): #read pairs assumed be in order read1,read2
                         reads = dxpy.dxlink(resolve_file(input_arg).get_id())
                         mapping_stage_input.update({'reads%d' %(arg_index+1): reads})
-
-                mapped_stage_id = workflow.add_stage(
-                    mapping_applet,
-                    name='Map %s' %(superstage_name),
-                    folder=mapping_output_folder,
-                    stage_input=mapping_stage_input
-                )
-                mapping_superstage.update({'map_stage_id': mapped_stage_id})
+                # this is now done in the first pass loop above
+                # mapped_stage_id = workflow.add_stage(
+                #     mapping_applet,
+                #     name='Map %s' %(superstage_name),
+                #     folder=mapping_output_folder,
+                #     stage_input=mapping_stage_input
+                # )
+                # mapping_superstage.update({'map_stage_id': mapped_stage_id})
+                workflow.update_stage(superstage_id, stage_input=mapping_stage_input)
 
                 filter_qc_stage_id = workflow.add_stage(
                     filter_qc_applet,
@@ -380,53 +410,11 @@ def main():
                     {'stage': exp_rep2_cc_stage_id,
                      'outputField': 'CC_scores_file'})
 
-    # if not args.idronly:
-    #   spp_applet = find_applet_by_name(SPP_APPLET_NAME, applet_project.get_id())
-    #   peaks_output_folder = resolve_folder(output_project, output_folder + '/' + spp_applet.name)
-    #   spp_stages = []
-    #   if (args.rep1 and args.ctl1) or blank_workflow:
-    #       rep1_spp_stage_id = workflow.add_stage(
-    #           spp_applet,
-    #           name='Peaks Rep1',
-    #           folder=peaks_output_folder,
-    #           stage_input={
-    #               'experiment': exp_rep1_ta,
-    #               'control': ctl_rep1_ta,
-    #               'xcor_scores_input': exp_rep1_cc,
-    #               'bigbed': True,
-    #               'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-    #               'as_file': dxpy.dxlink(resolve_file(args.as_file))
-    #           }
-
-    #       )
-    #       spp_stages.append({'name': 'Peaks Rep1', 'stage_id': rep1_spp_stage_id})
-    #   if (args.rep2 and args.ctl2) or blank_workflow:
-    #       rep2_spp_stage_id = workflow.add_stage(
-    #           spp_applet,
-    #           name='Peaks Rep2',
-    #           folder=peaks_output_folder,
-    #           stage_input={
-    #               'experiment': exp_rep2_ta,
-    #               'control': ctl_rep2_ta,
-    #               'xcor_scores_input': exp_rep2_cc,
-    #               'bigbed': True,
-    #               'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
-    #               'as_file': dxpy.dxlink(resolve_file(args.as_file))
-    #           }
-    #       )
-    #       spp_stages.append({'name': 'Peaks Rep2', 'stage_id': rep2_spp_stage_id})
-
-
     encode_spp_applet = find_applet_by_name(ENCODE_SPP_APPLET_NAME, applet_project.get_id())
     encode_spp_stages = []
     idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_spp_applet.name)
     PEAKS_STAGE_NAME = 'SPP Peaks'
-    if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
-        encode_spp_stage_id = workflow.add_stage(
-            encode_spp_applet,
-            name=PEAKS_STAGE_NAME,
-            folder=idr_peaks_output_folder,
-            stage_input={
+    peaks_stage_input = {
                 'rep1_ta' : exp_rep1_ta,
                 'rep2_ta' : exp_rep2_ta,
                 'ctl1_ta': ctl_rep1_ta,
@@ -435,23 +423,25 @@ def main():
                 'rep2_xcor' : exp_rep2_cc,
                 'rep1_paired_end': rep1_paired_end,
                 'rep2_paired_end': rep2_paired_end,
-                'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
                 'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
                 'idr_peaks': args.idr
                 }
-            )
-
+    if chrom_sizes:
+        peaks_stage_input.update({'chrom_sizes': chrom_sizes})
+    encode_spp_stage_id = workflow.add_stage(
+        encode_spp_applet,
+        name=PEAKS_STAGE_NAME,
+        folder=idr_peaks_output_folder,
+        stage_input=peaks_stage_input
+        )
     encode_spp_stages.append({'name': PEAKS_STAGE_NAME, 'stage_id': encode_spp_stage_id})
 
     encode_macs2_applet = find_applet_by_name(ENCODE_MACS2_APPLET_NAME, applet_project.get_id())
     encode_macs2_stages = []
     peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_macs2_applet.name)
+
     if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
-        encode_macs2_stage_id = workflow.add_stage(
-            encode_macs2_applet,
-            name='ENCODE Peaks',
-            folder=peaks_output_folder,
-            stage_input={
+        macs2_stage_input = {
                 'rep1_ta' : exp_rep1_ta,
                 'rep2_ta' : exp_rep2_ta,
                 'ctl1_ta': ctl_rep1_ta,
@@ -460,13 +450,22 @@ def main():
                 'rep2_xcor' : exp_rep2_cc,
                 'rep1_paired_end': rep1_paired_end,
                 'rep2_paired_end': rep2_paired_end,
-                'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
                 'narrowpeak_as': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
                 'gappedpeak_as': dxpy.dxlink(resolve_file(args.gappedpeak_as)),
-                'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as)),
-                'genomesize': args.genomesize
+                'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as))
             }
-        )
+        if genomesize:
+            macs2_stage_input.update({'genomesize': genomesize})
+        if chrom_sizes:
+            macs2_stage_input.update({'chrom_sizes': chrom_sizes})
+        else:
+            macs2_stage_input.update({'chrom_sizes': dxpy.dxlink({'stage': encode_spp_stage_id, 'inputField': 'chrom_sizes'})})
+        encode_macs2_stage_id = workflow.add_stage(
+            encode_macs2_applet,
+            name='ENCODE Peaks',
+            folder=peaks_output_folder,
+            stage_input=macs2_stage_input
+            )
         encode_macs2_stages.append({'name': 'ENCODE Peaks', 'stage_id': encode_macs2_stage_id})
 
     if args.idr:
@@ -554,7 +553,6 @@ def main():
             )
             idr_stages.append({'name': 'IDR Pooled Pseudoreplicates', 'stage_id': idr_stage_id})
 
-            blacklist = resolve_file(args.blacklist)
             stage_input = {
                     'reps_peaks' : dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR True Replicates'),
@@ -568,12 +566,14 @@ def main():
                     'pooledpr_peaks': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Pooled Pseudoreplicates'),
                          'outputField': 'IDR_peaks'}),
-                    'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
                     'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as))
                 }
             if blacklist:
-                stage_input.update({'blacklist': dxpy.dxlink(blacklist.get_id())})
-
+                stage_input.update({'blacklist': blacklist})
+            if chrom_sizes:
+                stage_input.update({'chrom_sizes': chrom_sizes})
+            else:
+                stage_input.update({'chrom_sizes': dxpy.dxlink({'stage': encode_spp_stage_id, 'inputField': 'chrom_sizes'})})
             idr_stage_id = workflow.add_stage(
                 encode_idr_applet,
                 name='Final IDR peak calls',
