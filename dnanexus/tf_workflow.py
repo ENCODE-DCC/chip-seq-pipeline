@@ -65,6 +65,7 @@ def get_args():
     parser.add_argument('--rep2',    help="Replicate 2 fastq or tagAlign",              default=None, nargs='*')
     parser.add_argument('--ctl1',    help="Control for replicate 1 fastq or tagAlign",  default=None, nargs='*')
     parser.add_argument('--ctl2',    help="Control for replicate 2 fastq or tagAlign",  default=None, nargs='*')
+    parser.add_argument('--unary_control', help="Use one control for both reps", default=False, action='store_true')
     parser.add_argument('--outp',    help="Output project name or ID",          default=DEFAULT_OUTPUT_PROJECT)
     parser.add_argument('--outf',    help="Output folder name or ID",           default=DEFAULT_OUTPUT_FOLDER)
     parser.add_argument('--name',    help="Name for new workflow",              default=WF_NAME)
@@ -270,11 +271,10 @@ def main():
         mapping_superstages = [ # the order of this list is important in that
             {'name': 'Rep1', 'input_args': args.rep1},
             {'name': 'Rep2', 'input_args': args.rep2},
-            {'name': 'Ctl1', 'input_args': args.ctl1},
-            {'name': 'Ctl2', 'input_args': args.ctl2}
-            # {'name': 'Pooled Reps', 'input_args': (args.rep1 and args.rep2)},
-            # {'name': 'Pooled Controls', 'input_args': (args.ctl1 and args.ctl2)} ##idea is to create a "stub" stage and then populate it's input with the output of the pool stage, defined below
+            {'name': 'Ctl1', 'input_args': args.ctl1}
         ]
+        if not args.unary_control:
+            mapping_superstages.append({'name': 'Ctl2', 'input_args': args.ctl2})
 
         mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
         mapping_output_folder = resolve_folder(output_project, output_folder + '/' + mapping_applet.name)
@@ -359,9 +359,12 @@ def main():
         ctl_rep1_ta = dxpy.dxlink(
                     {'stage' : next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl1'),
                      'outputField': 'tagAlign_file'})
-        ctl_rep2_ta = dxpy.dxlink(
-                    {'stage' : next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl2'),
-                     'outputField': 'tagAlign_file'})
+        if not args.unary_control:
+            ctl_rep2_ta = dxpy.dxlink(
+                        {'stage' : next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl2'),
+                         'outputField': 'tagAlign_file'})
+        else:
+            ctl_rep2_ta = ctl_rep1_ta
         rep1_paired_end = dxpy.dxlink(
                         {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep1'),
                          'outputField': 'paired_end'})
