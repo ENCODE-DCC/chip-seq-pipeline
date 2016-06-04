@@ -19,143 +19,143 @@ import common
 
 
 def blacklist_filter(input_fname, output_fname, input_blacklist_fname):
-	
-	with open(input_fname, 'rb') as fh:
-		gzipped = fh.read(2) == b'\x1f\x8b'
-	if gzipped:
-		peaks_fname = 'peaks.bed'
-		out,err = common.run_pipe(['gzip -dc %s' %(input_fname)], peaks_fname)
-	else:
-		peaks_fname = input_fname
+    
+    with open(input_fname, 'rb') as fh:
+        gzipped = fh.read(2) == b'\x1f\x8b'
+    if gzipped:
+        peaks_fname = 'peaks.bed'
+        out,err = common.run_pipe(['gzip -dc %s' %(input_fname)], peaks_fname)
+    else:
+        peaks_fname = input_fname
 
-	with open(input_blacklist_fname, 'rb') as fh:
-		gzipped = fh.read(2) == b'\x1f\x8b'
-	if gzipped:
-		blacklist_fname = 'blacklist.bed'
-		out, err = common.run_pipe(['gzip -dc %s' %(input_blacklist_fname)], blacklist_fname)
-	else:
-		blacklist_fname = input_blacklist_fname
+    with open(input_blacklist_fname, 'rb') as fh:
+        gzipped = fh.read(2) == b'\x1f\x8b'
+    if gzipped:
+        blacklist_fname = 'blacklist.bed'
+        out, err = common.run_pipe(['gzip -dc %s' %(input_blacklist_fname)], blacklist_fname)
+    else:
+        blacklist_fname = input_blacklist_fname
 
-	out, err = common.run_pipe([
-		'subtractBed -A -a %s -b %s' %(peaks_fname, blacklist_fname)
-		], output_fname)
-	#subprocess.check_call(shlex.split('cp %s %s' %(peaks_fname, output_fname)))
+    out, err = common.run_pipe([
+        'subtractBed -A -a %s -b %s' %(peaks_fname, blacklist_fname)
+        ], output_fname)
+    #subprocess.check_call(shlex.split('cp %s %s' %(peaks_fname, output_fname)))
 
 
 @dxpy.entry_point("main")
 def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_sizes, as_file, blacklist=None):
 
-	#TODO for now just taking the peak files.  This applet should actually call IDR instead of 
-	#putting that in the workflow populator script
+    #TODO for now just taking the peak files.  This applet should actually call IDR instead of 
+    #putting that in the workflow populator script
 
-	# Initialize the data object inputs on the platform into
-	# dxpy.DXDataObject instances.
+    # Initialize the data object inputs on the platform into
+    # dxpy.DXDataObject instances.
 
-	reps_peaks_file = dxpy.DXFile(reps_peaks)
-	r1pr_peaks_file = dxpy.DXFile(r1pr_peaks)
-	r2pr_peaks_file = dxpy.DXFile(r2pr_peaks)
-	pooledpr_peaks_file = dxpy.DXFile(pooledpr_peaks)
-	chrom_sizes_file = dxpy.DXFile(chrom_sizes)
-	as_file_file = dxpy.DXFile(as_file)
-	if blacklist is not None:
-		blacklist_file = dxpy.DXFile(blacklist)
-		blacklist_filename = 'blacklist_%s' %(blacklist_file.name)
-		dxpy.download_dxfile(blacklist_file.get_id(), blacklist_filename)
-		blacklist_filename = common.uncompress(blacklist_filename)
+    reps_peaks_file = dxpy.DXFile(reps_peaks)
+    r1pr_peaks_file = dxpy.DXFile(r1pr_peaks)
+    r2pr_peaks_file = dxpy.DXFile(r2pr_peaks)
+    pooledpr_peaks_file = dxpy.DXFile(pooledpr_peaks)
+    chrom_sizes_file = dxpy.DXFile(chrom_sizes)
+    as_file_file = dxpy.DXFile(as_file)
+    if blacklist is not None:
+        blacklist_file = dxpy.DXFile(blacklist)
+        blacklist_filename = 'blacklist_%s' %(blacklist_file.name)
+        dxpy.download_dxfile(blacklist_file.get_id(), blacklist_filename)
+        blacklist_filename = common.uncompress(blacklist_filename)
 
-	# Download the file inputs to the local file system.
+    # Download the file inputs to the local file system.
 
-	#Need to prepend something to ensure the local filenames will be unique
-	reps_peaks_filename = 'true_%s' %(reps_peaks_file.name)
-	r1pr_peaks_filename = 'r1pr_%s' %(r1pr_peaks_file.name)
-	r2pr_peaks_filename = 'r2pr_%s' %(r2pr_peaks_file.name)
-	pooledpr_peaks_filename = 'pooledpr_%s' %(pooledpr_peaks_file.name)
-	chrom_sizes_filename = chrom_sizes_file.name
-	as_file_filename = as_file_file.name
+    #Need to prepend something to ensure the local filenames will be unique
+    reps_peaks_filename = 'true_%s' %(reps_peaks_file.name)
+    r1pr_peaks_filename = 'r1pr_%s' %(r1pr_peaks_file.name)
+    r2pr_peaks_filename = 'r2pr_%s' %(r2pr_peaks_file.name)
+    pooledpr_peaks_filename = 'pooledpr_%s' %(pooledpr_peaks_file.name)
+    chrom_sizes_filename = chrom_sizes_file.name
+    as_file_filename = as_file_file.name
 
-	dxpy.download_dxfile(reps_peaks_file.get_id(), reps_peaks_filename)
-	dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_filename)
-	dxpy.download_dxfile(r2pr_peaks_file.get_id(), r2pr_peaks_filename)
-	dxpy.download_dxfile(pooledpr_peaks_file.get_id(), pooledpr_peaks_filename)
-	dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
-	dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
+    dxpy.download_dxfile(reps_peaks_file.get_id(), reps_peaks_filename)
+    dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_filename)
+    dxpy.download_dxfile(r2pr_peaks_file.get_id(), r2pr_peaks_filename)
+    dxpy.download_dxfile(pooledpr_peaks_file.get_id(), pooledpr_peaks_filename)
+    dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
+    dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
 
-	print subprocess.check_output('ls -l', shell=True)
+    print subprocess.check_output('ls -l', shell=True)
 
-	reps_peaks_filename = common.uncompress(reps_peaks_filename)
-	r1pr_peaks_filename = common.uncompress(r1pr_peaks_filename)
-	r2pr_peaks_filename = common.uncompress(r2pr_peaks_filename)
-	pooledpr_peaks_filename = common.uncompress(pooledpr_peaks_filename)
+    reps_peaks_filename = common.uncompress(reps_peaks_filename)
+    r1pr_peaks_filename = common.uncompress(r1pr_peaks_filename)
+    r2pr_peaks_filename = common.uncompress(r2pr_peaks_filename)
+    pooledpr_peaks_filename = common.uncompress(pooledpr_peaks_filename)
 
-	Nt = common.count_lines(reps_peaks_filename)
-	print "%d peaks from true replicates" %(Nt)
-	N1 = common.count_lines(r1pr_peaks_filename)
-	print "%d peaks from rep1 self-pseudoreplicates" %(N1)
-	N2 = common.count_lines(r2pr_peaks_filename)
-	print "%d peaks from rep2 self-pseudoreplicates" %(N2)
-	Np = common.count_lines(pooledpr_peaks_filename)
-	print "%d peaks from pooled pseudoreplicates" %(Np)
+    Nt = common.count_lines(reps_peaks_filename)
+    print "%d peaks from true replicates" %(Nt)
+    N1 = common.count_lines(r1pr_peaks_filename)
+    print "%d peaks from rep1 self-pseudoreplicates" %(N1)
+    N2 = common.count_lines(r2pr_peaks_filename)
+    print "%d peaks from rep2 self-pseudoreplicates" %(N2)
+    Np = common.count_lines(pooledpr_peaks_filename)
+    print "%d peaks from pooled pseudoreplicates" %(Np)
 
-	conservative_set_filename = '%s_final_conservative.narrowPeak' %(experiment)
-	if blacklist is not None:
-		blacklist_filter(reps_peaks_filename, conservative_set_filename, blacklist_filename)
-	else:
-		conservative_set_filename = reps_peaks_filename
-	Ncb = common.count_lines(conservative_set_filename)
-	print "%d peaks blacklisted from the conservative set" %(Nt-Ncb)
+    conservative_set_filename = '%s_final_conservative.narrowPeak' %(experiment)
+    if blacklist is not None:
+        blacklist_filter(reps_peaks_filename, conservative_set_filename, blacklist_filename)
+    else:
+        conservative_set_filename = reps_peaks_filename
+    Ncb = common.count_lines(conservative_set_filename)
+    print "%d peaks blacklisted from the conservative set" %(Nt-Ncb)
 
-	if Nt >= Np:
-		peaks_to_filter_filename = reps_peaks_filename
-		No = Nt
-	else:
-		peaks_to_filter_filename = pooledpr_peaks_filename
-		No = Np
+    if Nt >= Np:
+        peaks_to_filter_filename = reps_peaks_filename
+        No = Nt
+    else:
+        peaks_to_filter_filename = pooledpr_peaks_filename
+        No = Np
 
-	optimal_set_filename = '%s_final_optimal.narrowPeak' %(experiment)
-	if blacklist is not None:
-		blacklist_filter(peaks_to_filter_filename, optimal_set_filename, blacklist_filename)
-	else:
-		optimal_set_filename = peaks_to_filter_filename
-	Nob = common.count_lines(optimal_set_filename)
-	print "%d peaks blacklisted from the optimal set" %(No-Nob)
+    optimal_set_filename = '%s_final_optimal.narrowPeak' %(experiment)
+    if blacklist is not None:
+        blacklist_filter(peaks_to_filter_filename, optimal_set_filename, blacklist_filename)
+    else:
+        optimal_set_filename = peaks_to_filter_filename
+    Nob = common.count_lines(optimal_set_filename)
+    print "%d peaks blacklisted from the optimal set" %(No-Nob)
 
-	rescue_ratio            = float(max(Np,Nt)) / float(min(Np,Nt))
-	self_consistency_ratio  = float(max(N1,N2)) / float(min(N1,N2))
+    rescue_ratio            = float(max(Np,Nt)) / float(min(Np,Nt))
+    self_consistency_ratio  = float(max(N1,N2)) / float(min(N1,N2))
 
-	if rescue_ratio > 2 and self_consistency_ratio > 2:
-		reproducibility = 'fail'
-	elif rescue_ratio > 2 or self_consistency_ratio > 2:
-		reproducibility = 'borderline'
-	else:
-		reproducibility = 'pass'
+    if rescue_ratio > 2 and self_consistency_ratio > 2:
+        reproducibility = 'fail'
+    elif rescue_ratio > 2 or self_consistency_ratio > 2:
+        reproducibility = 'borderline'
+    else:
+        reproducibility = 'pass'
 
-	output = {}
+    output = {}
 
-	#bedtobigbed often fails, so skip creating the bb if it does
-	conservative_set_bb_filename = common.bed2bb(conservative_set_filename, chrom_sizes_filename, as_file_filename)
-	optimal_set_bb_filename = common.bed2bb(optimal_set_filename, chrom_sizes_filename, as_file_filename)
-	if conservative_set_bb_filename:
-		conservative_set_bb_output = dxpy.upload_local_file(conservative_set_bb_filename)
-		output.update({"conservative_set_bb": dxpy.dxlink(conservative_set_bb_output)})
-	if optimal_set_bb_filename:
-		optimal_set_bb_output = dxpy.upload_local_file(optimal_set_bb_filename)
-		output.update({"optimal_set_bb": dxpy.dxlink(optimal_set_bb_output)})
+    #bedtobigbed often fails, so skip creating the bb if it does
+    conservative_set_bb_filename = common.bed2bb(conservative_set_filename, chrom_sizes_filename, as_file_filename)
+    optimal_set_bb_filename = common.bed2bb(optimal_set_filename, chrom_sizes_filename, as_file_filename)
+    if conservative_set_bb_filename:
+        conservative_set_bb_output = dxpy.upload_local_file(conservative_set_bb_filename)
+        output.update({"conservative_set_bb": dxpy.dxlink(conservative_set_bb_output)})
+    if optimal_set_bb_filename:
+        optimal_set_bb_output = dxpy.upload_local_file(optimal_set_bb_filename)
+        output.update({"optimal_set_bb": dxpy.dxlink(optimal_set_bb_output)})
 
-	output.update({
-		"Nt": Nt,
-		"N1": N1,
-		"N2": N2,
-		"Np": Np,
-		"conservative_set": dxpy.dxlink(dxpy.upload_local_file(common.compress(conservative_set_filename))),
-		"optimal_set": dxpy.dxlink(dxpy.upload_local_file(common.compress(optimal_set_filename))),
-		"rescue_ratio": rescue_ratio,
-		"self_consistency_ratio": self_consistency_ratio,
-		"reproducibility_test": reproducibility,
-		"No": Nob,
-		"Nc": Ncb
-	})
+    output.update({
+        "Nt": Nt,
+        "N1": N1,
+        "N2": N2,
+        "Np": Np,
+        "conservative_set": dxpy.dxlink(dxpy.upload_local_file(common.compress(conservative_set_filename))),
+        "optimal_set": dxpy.dxlink(dxpy.upload_local_file(common.compress(optimal_set_filename))),
+        "rescue_ratio": rescue_ratio,
+        "self_consistency_ratio": self_consistency_ratio,
+        "reproducibility_test": reproducibility,
+        "No": Nob,
+        "Nc": Ncb
+    })
 
-	logging.info("Exiting with output: %s", output)
-	return output
+    logging.info("Exiting with output: %s", output)
+    return output
 
 dxpy.run()
