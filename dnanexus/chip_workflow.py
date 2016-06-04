@@ -86,11 +86,12 @@ def get_args():
     parser.add_argument('--rep2',    help="Replicate 2 fastq or tagAlign",              default=None, nargs='*')
     parser.add_argument('--ctl1',    help="Control for replicate 1 fastq or tagAlign",  default=None, nargs='*')
     parser.add_argument('--ctl2',    help="Control for replicate 2 fastq or tagAlign",  default=None, nargs='*')
-    parser.add_argument('--unary_control', help="Use one control for both reps", default=False, action='store_true')
+    parser.add_argument('--unary_control', help="Force one control for both reps", default=False, action='store_true')
     parser.add_argument('--outp',    help="Output project name or ID",          default=DEFAULT_OUTPUT_PROJECT)
     parser.add_argument('--outf',    help="Output folder name or ID",           default=DEFAULT_OUTPUT_FOLDER)
     parser.add_argument('--name',    help="Name for new workflow")
     parser.add_argument('--title',   help="Title for new workflow")
+    parser.add_argument('--description',   help="Description for new workflow")    
     parser.add_argument('--applets', help="Name of project containing applets", default=DEFAULT_APPLET_PROJECT)
     parser.add_argument('--nomap',   help='Given tagAligns, skip to peak calling', default=False, action='store_true')
     parser.add_argument('--rep1pe', help='Specify if rep1 is PE (required only if --nomap)', type=bool, default=None)
@@ -106,7 +107,9 @@ def get_args():
     global DEBUG
     DEBUG = args.debug
     if DEBUG:
-        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+        logging.basicConfig(
+            format='%(levelname)s:%(message)s',
+            level=logging.DEBUG)
         logging.debug("Debug logging ON")
     else:  # use the defaulf logging level
         logging.basicConfig(format='%(levelname)s:%(message)s')
@@ -139,14 +142,23 @@ def call_peaks(expvsctl, args):
 
 
 def resolve_project(identifier, privs='r'):
-    project = dxpy.find_one_project(name=identifier, level='VIEW', name_mode='exact', return_handler=True, zero_ok=True)
+    project = dxpy.find_one_project(
+        name=identifier,
+        level='VIEW',
+        name_mode='exact',
+        return_handler=True,
+        zero_ok=True)
     if project is None:
         try:
             project = dxpy.get_handler(identifier)
         except:
-            logging.error('Could not find a unique project with name or id %s' %(identifier))
+            logging.error(
+                'Could not find a unique project with name or id %s'
+                % (identifier))
             raise ValueError(identifier)
-    logging.debug('Project %s access level is %s' % (project.name, project.describe()['level']))
+    logging.debug(
+        'Project %s access level is %s'
+        % (project.name, project.describe()['level']))
     if privs == 'w' and project.describe()['level'] == 'VIEW':
         logging.error('Output project %s is read-only' % (identifier))
         raise ValueError(identifier)
@@ -162,15 +174,19 @@ def resolve_folder(project, identifier):
         try:
             project_id = project.new_folder(identifier, parents=True)
         except:
-            logging.error("Cannot create folder %s in project %s" %(identifier, project.name))
-            raise ValueError('%s:%s' %(project.name, identifier))
+            logging.error(
+                "Cannot create folder %s in project %s"
+                % (identifier, project.name))
+            raise ValueError('%s:%s' % (project.name, identifier))
         else:
-            logging.info("New folder %s created in project %s" %(identifier, project.name))
+            logging.info(
+                "New folder %s created in project %s"
+                % (identifier, project.name))
     return identifier
 
 
 def resolve_file(identifier):
-    logging.debug("resolve_file: %s" %(identifier))
+    logging.debug("resolve_file: %s" % (identifier))
 
     if not identifier:
         return None
@@ -182,11 +198,11 @@ def resolve_file(identifier):
     else:
         logging.debug("Defaulting to the current project")
         project_identifier = dxpy.WORKSPACE_ID
-        file_identifier = identifier    
+        file_identifier = identifier
 
     project = resolve_project(project_identifier)
-    logging.debug("Got project %s" %(project.name))
-    logging.debug("Now looking for file %s" %(file_identifier))
+    logging.debug("Got project %s" % (project.name))
+    logging.debug("Now looking for file %s" % (file_identifier))
 
     m = re.match(r'''(^[\w\-\ /\.]+)/([\w\-\ \.]+)''', file_identifier)
     if m:
@@ -241,16 +257,23 @@ def resolve_file(identifier):
 
 
 def find_applet_by_name(applet_name, applets_project_id):
-    '''Looks up an applet by name in the project that holds tools.  From Joe Dale's code.'''
+    '''Looks up an applet by name in the project that holds tools.
+      From Joe Dale's code.'''
     cached = '*'
     if (applet_name, applets_project_id) not in APPLETS:
-        found = dxpy.find_one_data_object(classname="applet", name=applet_name,
-                                          project=applets_project_id,
-                                          zero_ok=False, more_ok=False, return_handler=True)
+        found = dxpy.find_one_data_object(
+            classname="applet",
+            name=applet_name,
+            project=applets_project_id,
+            zero_ok=False,
+            more_ok=False,
+            return_handler=True)
         APPLETS[(applet_name, applets_project_id)] = found
         cached = ''
 
-    logging.info(cached + "Resolved applet %s to %s" %(applet_name, APPLETS[(applet_name, applets_project_id)].get_id()))
+    logging.info(
+        cached + "Resolved applet %s to %s"
+        % (applet_name, APPLETS[(applet_name, applets_project_id)].get_id()))
     return APPLETS[(applet_name, applets_project_id)]
 
 
@@ -273,9 +296,9 @@ def main():
     logging.debug('Found applet project %s' % (applet_project.name))
 
     workflow = dxpy.new_dxworkflow(
-        name=WF[target_type]['name'],
-        title=WF[target_type]['title'],
-        description=WF[target_type]['description'],
+        name=args.name or WF[target_type]['wf_name'],
+        title=args.title or WF[target_type]['wf_title'],
+        description=args.description or WF[target_type]['wf_description'],
         project=output_project.get_id(),
         folder=output_folder)
 
@@ -298,23 +321,33 @@ def main():
     run_idr = WF[target_type]['run_idr']
 
     if not args.nomap:
-        #a "superstage" is just a dict with a name, name(s) of input files, and then names and id's of stages that process that input
-        #each superstage here could be implemented as a stage in a more abstract workflow.  That stage would then call the various applets that are separate
-        #stages here.
-        mapping_superstages = [ # the order of this list is important in that
+        # a "superstage" is just a dict with a name, name(s) of input files,
+        # and then names and id's of stages that process that input
+        # each superstage here could be implemented as a stage in a more
+        # abstract workflow.  That stage would then call the various applets
+        # that are separate
+        # stages here.
+        mapping_superstages = [  # the order of this list is important in that
             {'name': 'Rep1', 'input_args': args.rep1},
             {'name': 'Rep2', 'input_args': args.rep2},
             {'name': 'Ctl1', 'input_args': args.ctl1}
         ]
-        if not args.unary_control:
-            mapping_superstages.append({'name': 'Ctl2', 'input_args': args.ctl2})
+        if args.unary_control:
+            pass
+        elif args.ctl2 or blank_workflow:
+            mapping_superstages.append(
+                {'name': 'Ctl2', 'input_args': args.ctl2})
 
-        mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
-        mapping_output_folder = resolve_folder(output_project, output_folder + '/' + mapping_applet.name)
+        mapping_applet = find_applet_by_name(
+            MAPPING_APPLET_NAME, applet_project.get_id())
+        mapping_output_folder = resolve_folder(
+            output_project, output_folder + '/' + mapping_applet.name)
         reference_tar = resolve_file(args.reference)
-        filter_qc_applet = find_applet_by_name(FILTER_QC_APPLET_NAME, applet_project.get_id())
+        filter_qc_applet = find_applet_by_name(
+            FILTER_QC_APPLET_NAME, applet_project.get_id())
         filter_qc_output_folder = mapping_output_folder
-        xcor_applet = find_applet_by_name(XCOR_APPLET_NAME, applet_project.get_id())
+        xcor_applet = find_applet_by_name(
+            XCOR_APPLET_NAME, applet_project.get_id())
         xcor_output_folder = mapping_output_folder
 
         # in the first pass create the mapping stage id's so we can use JBOR's
@@ -323,7 +356,7 @@ def main():
             superstage_name = mapping_superstage.get('name')
             mapped_stage_id = workflow.add_stage(
                 mapping_applet,
-                name='Map %s' %(superstage_name),
+                name='Map %s' % (superstage_name),
                 folder=mapping_output_folder
             )
             mapping_superstage.update({'map_stage_id': mapped_stage_id})
@@ -337,10 +370,15 @@ def main():
             if mapping_superstage.get('input_args') or blank_workflow:
                 mapping_stage_input = {}
                 if superstage_name != "Rep1":
-                    mapping_stage_input.update({'reference_tar': dxpy.dxlink({'stage': rep1_stage_id, 'inputField': 'reference_tar'})})
+                    mapping_stage_input.update(
+                        {'reference_tar': dxpy.dxlink(
+                            {'stage': rep1_stage_id,
+                             'inputField': 'reference_tar'})})
                 else:
                     if args.reference:
-                        mapping_stage_input.update({'reference_tar' : dxpy.dxlink(reference_tar.get_id())})
+                        mapping_stage_input.update(
+                            {'reference_tar': dxpy.dxlink(
+                                reference_tar.get_id())})
                 if not blank_workflow:
                     for arg_index, input_arg in enumerate(mapping_superstage['input_args']): #read pairs assumed be in order read1,read2
                         reads = dxpy.dxlink(resolve_file(input_arg).get_id())
@@ -390,11 +428,13 @@ def main():
                     {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
                      'outputField': 'CC_scores_file'})
         ctl_rep1_ta = dxpy.dxlink(
-                    {'stage' : next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl1'),
+                    {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl1'),
                      'outputField': 'tagAlign_file'})
-        if not args.unary_control:
+        if args.unary_control:
+            pass
+        elif args.ctl2 or blank_workflow:
             ctl_rep2_ta = dxpy.dxlink(
-                        {'stage' : next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl2'),
+                        {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl2'),
                          'outputField': 'tagAlign_file'})
         else:
             ctl_rep2_ta = ctl_rep1_ta
@@ -654,16 +694,6 @@ def main():
                 }
             )
             overlap_peaks_stages.append({'name': 'Overlap %s' %(peaktype), 'stage_id': overlap_peaks_stage_id})
-
-    if not (args.nomap):
-        logging.debug("Mapping stages: %s" %(mapping_superstages))
-    else:
-        logging.debug("xcor only stages: %s" %(xcor_only_stages))
-    # if not args.idronly:
-    #   logging.debug("Peak stages: %s" %(spp_stages))
-    logging.debug("Peak stages: %s" %(encode_spp_stages))
-    if run_idr:
-        logging.debug("IDR stages: %s" %(idr_stages))
 
     if args.yes:
         if args.debug:
