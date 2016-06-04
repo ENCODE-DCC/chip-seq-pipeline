@@ -327,8 +327,8 @@ def main():
                     name='Filter_QC %s' %(superstage_name),
                     folder=filter_qc_output_folder,
                     stage_input={
-                        'input_bam': dxpy.dxlink({'stage': mapped_stage_id, 'outputField': 'mapped_reads'}),
-                        'paired_end': dxpy.dxlink({'stage': mapped_stage_id, 'outputField': 'paired_end'})
+                        'input_bam': dxpy.dxlink({'stage': superstage_id, 'outputField': 'mapped_reads'}),
+                        'paired_end': dxpy.dxlink({'stage': superstage_id, 'outputField': 'paired_end'})
                     }
                 )
                 mapping_superstage.update({'filter_qc_stage_id': filter_qc_stage_id})
@@ -443,33 +443,32 @@ def main():
     encode_macs2_stages = []
     peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_macs2_applet.name)
 
-    if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
-        macs2_stage_input = {
-                'rep1_ta' : exp_rep1_ta,
-                'rep2_ta' : exp_rep2_ta,
-                'ctl1_ta': ctl_rep1_ta,
-                'ctl2_ta' : ctl_rep2_ta,
-                'rep1_xcor' : exp_rep1_cc,
-                'rep2_xcor' : exp_rep2_cc,
-                'rep1_paired_end': rep1_paired_end,
-                'rep2_paired_end': rep2_paired_end,
-                'narrowpeak_as': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
-                'gappedpeak_as': dxpy.dxlink(resolve_file(args.gappedpeak_as)),
-                'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as))
-            }
-        if genomesize:
-            macs2_stage_input.update({'genomesize': genomesize})
-        if chrom_sizes:
-            macs2_stage_input.update({'chrom_sizes': chrom_sizes})
-        else:
-            macs2_stage_input.update({'chrom_sizes': dxpy.dxlink({'stage': encode_spp_stage_id, 'inputField': 'chrom_sizes'})})
-        encode_macs2_stage_id = workflow.add_stage(
-            encode_macs2_applet,
-            name='ENCODE Peaks',
-            folder=peaks_output_folder,
-            stage_input=macs2_stage_input
-            )
-        encode_macs2_stages.append({'name': 'ENCODE Peaks', 'stage_id': encode_macs2_stage_id})
+    macs2_stage_input = {
+            'rep1_ta' : exp_rep1_ta,
+            'rep2_ta' : exp_rep2_ta,
+            'ctl1_ta': ctl_rep1_ta,
+            'ctl2_ta' : ctl_rep2_ta,
+            'rep1_xcor' : exp_rep1_cc,
+            'rep2_xcor' : exp_rep2_cc,
+            'rep1_paired_end': rep1_paired_end,
+            'rep2_paired_end': rep2_paired_end,
+            'narrowpeak_as': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
+            'gappedpeak_as': dxpy.dxlink(resolve_file(args.gappedpeak_as)),
+            'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as))
+        }
+    if genomesize:
+        macs2_stage_input.update({'genomesize': genomesize})
+    if chrom_sizes:
+        macs2_stage_input.update({'chrom_sizes': chrom_sizes})
+    else:
+        macs2_stage_input.update({'chrom_sizes': dxpy.dxlink({'stage': encode_spp_stage_id, 'inputField': 'chrom_sizes'})})
+    encode_macs2_stage_id = workflow.add_stage(
+        encode_macs2_applet,
+        name='ENCODE Peaks',
+        folder=peaks_output_folder,
+        stage_input=macs2_stage_input
+        )
+    encode_macs2_stages.append({'name': 'ENCODE Peaks', 'stage_id': encode_macs2_stage_id})
 
     if args.idr:
         # if args.idrversion == "1":
@@ -483,7 +482,7 @@ def main():
         encode_idr_applet = find_applet_by_name(ENCODE_IDR_APPLET_NAME, applet_project.get_id())
         idr_stages = []
         idr_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
-        if (args.rep1 and args.ctl1 and args.rep2 and args.ctl2) or blank_workflow:
+        if (args.rep1 and args.ctl1 and args.rep2) or blank_workflow:
             idr_stage_id = workflow.add_stage(
                 idr_applet,
                 name='IDR True Replicates',
