@@ -135,7 +135,9 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, npeaks, nodup
         pooled_replicates_xcor_subjob = xcor_only(pooled_replicates, paired_end, name='Pool cross-correlation')
 
         rep1_control = ctl1_ta #default.  May be changed later.
+        rep1_ctl_msg = "control rep1"
         rep2_control = ctl2_ta #default.  May be changed later.
+        rep2_ctl_msg = "control rep2"
 
         if unary_control:
             print "Only one control supplied.  Using it for both replicate 1 and 2 and for the pool."
