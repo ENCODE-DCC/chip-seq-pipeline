@@ -346,11 +346,11 @@ def histone(args, analysis, experiment_accession, first_analysis):
         #print outputs[output_name]['url']
 
     experiment = encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
-    description = '%s %s %s %s' %(
+    description = '%s %s %s %s' % (
         experiment['target']['label'],
         experiment['replicates'][0]['library']['biosample']['biosample_term_name'],
         experiment['replicates'][0]['library']['biosample'].get('life_stage'),
-        experiment['replicates'][0]['library']['biosample']['age_display'])
+        experiment['replicates'][0]['library']['biosample'].get('age_display'))
     longLabel = 'E3 Histone ChIP - %s - %s' %(experiment_accession, description)
     if args.tag:
         longLabel += ' - %s' %(args.tag)
@@ -396,10 +396,13 @@ def main():
             continue
 
         experiment_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks', analysis['name'])
-        experiment_accession = experiment_m.group(1)
         if not experiment_m:
             print "No accession in %s, skipping." % (analysis['name'])
             continue
+            # print "Temporary hack"
+            # experiment_accession = "ENCSR048KZD"
+        else:
+            experiment_accession = experiment_m.group(1)
 
         if args.pipeline:
             pipeline = args.pipeline
