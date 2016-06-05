@@ -149,6 +149,7 @@ def flagstat_parse(dxlink):
     with dxpy.DXFile(desc['id'], mode='r') as flagstat_file:
         if not flagstat_file:
             return None
+        flagstat_lines = flagstat_file.read().splitlines()
 
     qc_dict = {
         # values are regular expressions,
@@ -168,7 +169,7 @@ def flagstat_parse(dxlink):
         'mate_mapped_different_chr_hiQ':
             'with mate mapped to a different chr \(mapQ>=5\)'
     }
-    flagstat_lines = flagstat_file.read().splitlines()
+
     for (qc_key, qc_pattern) in qc_dict.items():
         qc_metrics = next(re.split(qc_pattern, line)
                           for line in flagstat_lines
