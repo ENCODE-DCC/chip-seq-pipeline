@@ -19,7 +19,7 @@ import common
 
 
 @dxpy.entry_point('main')
-def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed, chrom_sizes, as_file=None):
+def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed, chrom_sizes, as_file=None, prefix=None):
 
     # The following line(s) initialize your data object inputs on the platform
     # into dxpy.DXDataObject instances that you can start using immediately.
@@ -45,7 +45,10 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed, chrom_s
     xcor_scores_input_filename = xcor_scores_input_file.name
     dxpy.download_dxfile(xcor_scores_input_file.get_id(), xcor_scores_input_filename)
 
-    output_filename_prefix = experiment_filename.rstrip('.gz').rstrip('.tagAlign')
+    if not prefix:
+        output_filename_prefix = experiment_filename.rstrip('.gz').rstrip('.tagAlign')
+    else:
+        output_filename_prefix = prefix
     peaks_filename = output_filename_prefix + '.regionPeak'
     final_peaks_filename = peaks_filename + '.gz' #spp adds .gz, so this is the file name that's actually created
     xcor_plot_filename = output_filename_prefix + '.pdf'

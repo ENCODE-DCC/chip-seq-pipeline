@@ -60,7 +60,7 @@ def count_lines(filename):
         ])
         return int(out)
 
-def spp(experiment, control, xcor_scores, chrom_sizes, bigbed=False, as_file=None, name='spp'):
+def spp(experiment, control, xcor_scores, chrom_sizes, bigbed=False, as_file=None, name='spp', prefix=None):
         spp_applet = dxpy.find_one_data_object(
                 classname='applet', name='spp', project=dxpy.PROJECT_CONTEXT_ID,
                 zero_ok=False, more_ok=False, return_handler=True)
@@ -71,6 +71,8 @@ def spp(experiment, control, xcor_scores, chrom_sizes, bigbed=False, as_file=Non
                                  "chrom_sizes": chrom_sizes}
         if bigbed and as_file:
             spp_input.update({"as_file": as_file})
+        if prefix:
+            spp_input.update({"prefix": prefix})
         return spp_applet.run(spp_input, name=name)
 
 def xcor_only(tags, paired_end, name='xcor_only'):

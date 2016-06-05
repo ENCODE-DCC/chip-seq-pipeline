@@ -622,7 +622,7 @@ def main():
             )
             idr_stages.append({'name': 'IDR Pooled Pseudoreplicates', 'stage_id': idr_stage_id})
 
-            stage_input = {
+            final_idr_stage_input = {
                     'reps_peaks' : dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR True Replicates'),
                          'outputField': 'IDR_peaks'}),
@@ -635,19 +635,30 @@ def main():
                     'pooledpr_peaks': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Pooled Pseudoreplicates'),
                          'outputField': 'IDR_peaks'}),
-                    'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as))
+                    'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
+                    'rep1_signal': dxpy.dxlink(
+                        {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+                         'outputField': 'rep1_fc_signal'}),
+                    'rep2_signal': dxpy.dxlink(
+                        {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+                         'outputField': 'rep2_fc_signal'}),
+                    'pooled_signal': dxpy.dxlink(
+                        {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+                         'outputField': 'pooled_fc_signal'})
                 }
             if blacklist:
-                stage_input.update({'blacklist': blacklist})
+                final_idr_stage_input.update({'blacklist': blacklist})
             if chrom_sizes:
-                stage_input.update({'chrom_sizes': chrom_sizes})
+                final_idr_stage_input.update({'chrom_sizes': chrom_sizes})
             else:
-                stage_input.update({'chrom_sizes': dxpy.dxlink({'stage': encode_spp_stage_id, 'inputField': 'chrom_sizes'})})
+                final_idr_stage_input.update({'chrom_sizes': dxpy.dxlink({'stage': encode_spp_stage_id, 'inputField': 'chrom_sizes'})})
+
             idr_stage_id = workflow.add_stage(
                 encode_idr_applet,
                 name='Final IDR peak calls',
                 folder=idr_output_folder,
-                stage_input=stage_input
+                stage_input=final_idr_stage_input,
+
             )
             idr_stages.append({'name': 'Final IDR peak calls', 'stage_id': idr_stage_id})
 
@@ -670,30 +681,40 @@ def main():
 
             overlap_peaks_stage_id = workflow.add_stage(
                 overlap_peaks_applet,
-                name='Overlap %s' %(peaktype),
+                name='Final %s' %(peaktype),
                 folder=peaks_output_folder,
                 stage_input={
-                    'rep1_peaks' : dxpy.dxlink(
+                    'rep1_peaks': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
                          'outputField': 'rep1_%s' %(peaktype)}),
-                    'rep2_peaks' : dxpy.dxlink(
+                    'rep2_peaks': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
                          'outputField': 'rep2_%s' %(peaktype)}),
                     'pooled_peaks': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
                          'outputField': 'pooled_%s' %(peaktype)}),
-                    'pooledpr1_peaks' : dxpy.dxlink(
+                    'pooledpr1_peaks': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
                          'outputField': 'pooledpr1_%s' %(peaktype)}),
-                    'pooledpr2_peaks' : dxpy.dxlink(
+                    'pooledpr2_peaks': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
                          'outputField': 'pooledpr2_%s' %(peaktype)}),
                     'chrom_sizes': dxpy.dxlink(resolve_file(args.chrom_sizes)),
                     'as_file': as_file,
-                    'peak_type': peak_type_extension
+                    'peak_type': peak_type_extension,
+                    'prefix': 'final',
+                    'rep1_signal': dxpy.dxlink(
+                        {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+                         'outputField': 'rep1_fc_signal'}),
+                    'rep2_signal': dxpy.dxlink(
+                        {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+                         'outputField': 'rep2_fc_signal'}),
+                    'pooled_signal': dxpy.dxlink(
+                        {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+                         'outputField': 'pooled_fc_signal'})
                 }
             )
-            overlap_peaks_stages.append({'name': 'Overlap %s' %(peaktype), 'stage_id': overlap_peaks_stage_id})
+            overlap_peaks_stages.append({'name': 'Final %s' %(peaktype), 'stage_id': overlap_peaks_stage_id})
 
     if args.yes:
         if args.debug:

@@ -26,7 +26,7 @@ def count_lines(filename):
         ])
         return int(out)
 
-def macs2(experiment, control, xcor_scores, chrom_sizes, narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize):
+def macs2(experiment, control, xcor_scores, chrom_sizes, narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize, prefix=None):
         macs2_applet = dxpy.find_one_data_object(
                 classname='applet', name='macs2', project=dxpy.PROJECT_CONTEXT_ID,
                 zero_ok=False, more_ok=False, return_handler=True)
@@ -37,7 +37,9 @@ def macs2(experiment, control, xcor_scores, chrom_sizes, narrowpeak_as, gappedpe
                         "narrowpeak_as": narrowpeak_as,
                         "gappedpeak_as": gappedpeak_as,
                         "broadpeak_as": broadpeak_as,
-                        "genomesize": genomesize }
+                        "genomesize": genomesize}
+        if prefix:
+            macs2_input.update({'prefix': prefix})
         return macs2_applet.run(macs2_input)
 
 def xcor_only(tags, paired_end):
@@ -152,38 +154,47 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, rep1_paired_e
                     'gappedpeak_as':    gappedpeak_as,
                     'broadpeak_as':     broadpeak_as }
 
+    common_args.update({'prefix': 'r1'})
     rep1_peaks_subjob      = macs2( rep1_ta,
                                     rep1_control,
                                     rep1_xcor, **common_args)
 
+    common_args.update({'prefix': 'r2'})
     rep2_peaks_subjob      = macs2( rep2_ta,
                                     rep2_control,
                                     rep2_xcor, **common_args)
 
+    common_args.update({'prefix': 'pool'})
     pooled_peaks_subjob    = macs2( pooled_replicates,
                                     control_for_pool,   
                                     pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
 
+    common_args.update({'prefix': 'r1pr1'})
     rep1pr1_peaks_subjob   = macs2( rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
                                     rep1_control,
                                     rep1_pr1_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
 
+    common_args.update({'prefix': 'r1pr2'})
     rep1pr2_peaks_subjob   = macs2( rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
                                     rep1_control,
                                     rep1_pr2_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
 
+    common_args.update({'prefix': 'r2pr1'})
     rep2pr1_peaks_subjob   = macs2( rep2_pr_subjob.get_output_ref("pseudoreplicate1"),
                                     rep2_control,
                                     rep2_pr1_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
 
+    common_args.update({'prefix': 'r2pr2'})
     rep2pr2_peaks_subjob   = macs2( rep2_pr_subjob.get_output_ref("pseudoreplicate2"),
                                     rep2_control,
                                     rep2_pr2_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
 
+    common_args.update({'prefix': 'ppr1'})
     pooledpr1_peaks_subjob = macs2( pool_pr1_subjob.get_output_ref("pooled"),
                                     control_for_pool,
                                     pool_pr1_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
 
+    common_args.update({'prefix': 'ppr2'})
     pooledpr2_peaks_subjob = macs2( pool_pr2_subjob.get_output_ref("pooled"),
                                     control_for_pool,
                                     pool_pr2_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)

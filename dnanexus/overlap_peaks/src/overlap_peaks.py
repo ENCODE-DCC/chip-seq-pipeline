@@ -16,7 +16,9 @@ import dxpy
 import common
 
 @dxpy.entry_point('main')
-def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks, chrom_sizes, as_file, peak_type):
+def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks,
+         chrom_sizes, as_file, peak_type, prefix=None,
+         rep1_signal=None, rep2_signal=None, pooled_signal=None):
 
     # Initialize data object inputs on the platform
     # into dxpy.DXDataObject instances
@@ -40,11 +42,15 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks,
     as_file_fn          = '%s.as' %(peak_type)
 
     # Output filenames
-    m = re.match('(.*)(\.%s)+(\.((gz)|(Z)|(bz)|(bz2)))' %(peak_type), pooled_peaks.name) #strip off the peak and compression extensions
-    if m:
-        basename = m.group(1)
+    if prefix:
+        basename = prefix
     else:
-        basename = pooled_peaks.name
+        m = re.match('(.*)(\.%s)+(\.((gz)|(Z)|(bz)|(bz2)))' %(peak_type), pooled_peaks.name) #strip off the peak and compression extensions
+        if m:
+            basename = m.group(1)
+        else:
+            basename = pooled_peaks.name
+
     overlapping_peaks_fn    = '%s.replicated.%s' %(basename, peak_type)
     overlapping_peaks_bb_fn = overlapping_peaks_fn + '.bb'
     rejected_peaks_fn       = '%s.rejected.%s' %(basename, peak_type)
@@ -170,6 +176,15 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks,
         "npeaks_out"            : npeaks_out,
         'npeaks_rejected'       : npeaks_rejected
     }
+
+    # These are just passed through for convenience so that signals and tracks
+    # are available in one place.  Both input and output are optional.
+    if rep1_signal:
+        output.update({"rep1_signal": rep1_signal})
+    if rep2_signal:
+        output.update({"rep2_signal": rep2_signal})
+    if pooled_signal:
+        output.update({"pooled_signal": pooled_signal})
 
     return output
 

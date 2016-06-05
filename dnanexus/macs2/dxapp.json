@@ -54,6 +54,12 @@
 			"name": "genomesize",
 			"label": "string for MACS2, hs for human, mm for mouse",
 			"class": "string"
+		},
+		{
+			"name": "prefix",
+			"label": "Filename prefix",
+			"class": "string",
+			"optional": true
 		}
 	],
 	"outputSpec": [

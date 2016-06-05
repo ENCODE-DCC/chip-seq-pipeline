@@ -44,9 +44,7 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
     peaks_dirname = 'peaks_macs'
     if not os.path.exists(peaks_dirname):
         os.makedirs(peaks_dirname)
-    if args.prefix:
-        prefix = args.prefix
-    else:
+    if not prefix:
         prefix = experiment.name
     if prefix.endswith('.gz'):
         prefix = prefix[:-3]

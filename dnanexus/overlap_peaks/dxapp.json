@@ -55,6 +55,30 @@
 			"label": "narrowPeak, gappedPeak, or broadPeak",
 			"class": "string",
 			"optional": false
+		},
+		{
+			"name": "prefix",
+			"label": "Filename prefix",
+			"class": "string",
+			"optional": true
+		},
+		{
+			"name": "rep1_signal",
+			"label": "First replicate signal track",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "rep2_signal",
+			"label": "Second replicate signal track",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "pooled_signal",
+			"label": "Pooled replicates signal",
+			"class": "file",
+			"optional": true
 		}
 	],
 	"outputSpec": [
@@ -92,6 +116,24 @@
 			"name": "npeaks_rejected",
 			"label": "Number of peaks rejected",
 			"class": "int"
+		},
+		{
+			"name": "rep1_signal",
+			"label": "First replicate signal track",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "rep2_signal",
+			"label": "Second replicate signal track",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "pooled_signal",
+			"label": "Pooled replicates signal",
+			"class": "file",
+			"optional": true
 		}
 	],
 	"runSpec": {

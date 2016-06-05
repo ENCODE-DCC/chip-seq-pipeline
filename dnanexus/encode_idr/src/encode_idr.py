@@ -43,7 +43,9 @@ def blacklist_filter(input_fname, output_fname, input_blacklist_fname):
 
 
 @dxpy.entry_point("main")
-def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_sizes, as_file, blacklist=None):
+def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks,
+         chrom_sizes, as_file, blacklist=None,
+         rep1_signal=None, rep2_signal=None, pooled_signal=None):
 
     #TODO for now just taking the peak files.  This applet should actually call IDR instead of 
     #putting that in the workflow populator script
@@ -154,6 +156,15 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks, chrom_s
         "No": Nob,
         "Nc": Ncb
     })
+
+    # These are just passed through for convenience so that signals and tracks
+    # are available in one place.  Both input and output are optional.
+    if rep1_signal:
+        output.update({"rep1_signal": rep1_signal})
+    if rep2_signal:
+        output.update({"rep2_signal": rep2_signal})
+    if pooled_signal:
+        output.update({"pooled_signal": pooled_signal})
 
     logging.info("Exiting with output: %s", output)
     return output
