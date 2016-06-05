@@ -399,34 +399,8 @@ dx run \
 --watch \
 overlap_peaks
 
-# Build full TF pipeline on ENCSR464DKE chr21L extracts:
-chip_workflow.py \
---target tf \
---chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
---genomesize hs \
---reference "ENCODE Reference Files:/hg19/male.hg19.tar.gz" \
---blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
---outf "ENCSR464DKE-CTCF-chr21L-$(date +"%Y%m%d%H%M")" \
---title "ENCSR464DKE-CTCF-chr21L-$(date +"%Y%m%d%H%M")" \
---rep1 "/test_data/tf_chip/ENCFF921SED-chr21L.fq.gz" \
---rep2 "/test_data/tf_chip/ENCFF812KOM-chr21L.fq.gz" \
---ctl1 "/test_data/tf_chip/ENCFF690VPV-chr21L.fq.gz" \
---ctl2 "/test_data/tf_chip/ENCFF357TLV-chr21L.fq.gz" \
---yes
 
-# Build full TF pipeline on ENCSR000EEB chr21L extracts:
-chip_workflow.py \
---target tf \
---chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
---genomesize hs \
---reference "ENCODE Reference Files:/hg19/male.hg19.tar.gz" \
---blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
---outf "ENCSR000EEB-MAFK-chr21L-$(date +"%Y%m%d%H%M")" \
---title "ENCSR000EEB-MAFK-chr21L-$(date +"%Y%m%d%H%M")" \
---rep1 "/test_data/tf_chip/ENCFF000XTT-chr21L.fq.gz" \
---rep2 "/test_data/tf_chip/ENCFF000XTU-chr21L.fq.gz" \
---ctl1 "/test_data/tf_chip/ENCFF000XSJ-chr21L.fq.gz" \
---yes
+###### new tests for ChIP Demo
 
 # Build full TF pipeline on ENCSR464DKE chr21 extracts:
 chip_workflow.py \
@@ -437,10 +411,10 @@ chip_workflow.py \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
 --outf "ENCSR464DKE-hCTCF-chr21-$(date +"%Y%m%d%H%M")" \
 --title "ENCSR464DKE-hCTCF-chr21-$(date +"%Y%m%d%H%M")" \
---rep1 "/test_data/tf_chip/ENCFF921SED-chr21.fq.gz" \
---rep2 "/test_data/tf_chip/ENCFF812KOM-chr21.fq.gz" \
---ctl1 "/test_data/tf_chip/ENCFF690VPV-chr21.fq.gz" \
---ctl2 "/test_data/tf_chip/ENCFF357TLV-chr21.fq.gz" \
+--rep1 "/test_data/ENCSR464DKE-hCTCF/R1-ENCFF921SED.chr21.fq.gz" \
+--rep2 "/test_data/ENCSR464DKE-hCTCF/R2-ENCFF812KOM.chr21.fq.gz" \
+--ctl1 "/test_data/ENCSR464DKE-hCTCF/C1-ENCFF690VPV.chr21.fq.gz" \
+--ctl2 "/test_data/ENCSR464DKE-hCTCF/C2-ENCFF357TLV.chr21.fq.gz" \
 --yes
 
 # Build full TF pipeline on ENCSR000EEB chr21 extracts:
@@ -452,12 +426,12 @@ chip_workflow.py \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
 --outf "ENCSR000EEB-hMAFK-chr21-$(date +"%Y%m%d%H%M")" \
 --title "ENCSR000EEB-hMAFK-chr21-$(date +"%Y%m%d%H%M")" \
---rep1 "/test_data/tf_chip/ENCFF000XUL.chr21.fq.gz" \
---rep2 "/test_data/tf_chip/ENCFF000XUK.chr21.fq.gz" \
---ctl1 "/test_data/tf_chip/ENCFF000XTF.chr21.fq.gz" \
+--rep1 "/test_data/ENCSR000EEB-hMAFK/R1-ENCFF000XTT.chr21.fq.gz" \
+--rep2 "/test_data/ENCSR000EEB-hMAFK/R2-ENCFF000XTU.chr21.fq.gz" \
+--ctl1 "/test_data/ENCSR000EEB-hMAFK/C1-ENCFF000XSJ.chr21.fq.gz" \
 --yes
 
-# Build full histone pipeline on ? chr21 extracts:
+# Build full histone pipeline on ENCSR087PLZ chr21 extracts:
 chip_workflow.py \
 --target histone \
 --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
@@ -465,8 +439,58 @@ chip_workflow.py \
 --reference "ENCODE Reference Files:/mm10/male.mm10.tar.gz" \
 --outf "ENCSR087PLZ-mH3K9ac-chr19-$(date +"%Y%m%d%H%M")" \
 --title "ENCSR087PLZ-mH3K9ac-chr19-$(date +"%Y%m%d%H%M")" \
---rep1 "/test_data/histone_test_data/ENCSR087PLZ-chr19-R1.fq.gz" \
---rep2 "/test_data/histone_test_data/ENCSR087PLZ-chr19-R2.fq.gz" \
---ctl1 "/test_data/histone_test_data/ENCSR087PLZ-chr19-C1.fq.gz" \
---ctl2 "/test_data/histone_test_data/ENCSR087PLZ-chr19-C2.fq.gz" \
+--rep1 "/test_data/ENCSR087PLZ-mH3K9ac/R1-ENCFF560GLI.chr19.fq.gz" \
+--rep2 "/test_data/ENCSR087PLZ-mH3K9ac/R2-ENCFF891NNX.chr19.fq.gz" \
+--ctl1 "/test_data/ENCSR087PLZ-mH3K9ac/C1-ENCFF069WCH.chr19.fq.gz" \
+--ctl2 "/test_data/ENCSR087PLZ-mH3K9ac/C2-ENCFF101KOM.chr19.fq.gz" \
 --yes
+
+dx run \
+--input "paired_end=false" \
+--input "input_bam=/test_data/ENCFF000XUL.chr21.raw.srt.bam" \
+--verbose \
+--destination /test_output/ \
+--name filter_qc_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+--watch \
+/applets/filter_qc
+
+
+#######
+## deploy workflows to the ENCODE Universal Pipelines project
+chip_workflow.py \
+--target tf \
+--name "ENCODE TF ChIP-seq (no reference)" \
+--outf "/ChIP-seq/"
+
+chip_workflow.py \
+--target histone \
+--name "ENCODE Histone ChIP-seq (no reference)" \
+--outf "/ChIP-seq/"
+
+chip_workflow.py \
+--target tf \
+--name "ENCODE TF ChIP-seq (hg19)" \
+--chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--genomesize hs \
+--reference "ENCODE Reference Files:/hg19/male.hg19.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
+--outf "/ChIP-seq/"
+
+chip_workflow.py \
+--target histone \
+--name "ENCODE Histone ChIP-seq (mm10)" \
+--chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
+--genomesize mm \
+--reference "ENCODE Reference Files:/mm10/male.mm10.tar.gz" \
+--outf "/ChIP-seq/"
+
+chip_workflow.py \
+--target histone \
+--name "ENCODE Histone ChIP-seq (GRCh38)" \
+--chrom_sizes "ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
+--genomesize hs \
+--reference "ENCODE Reference Files:/GRCh38/GRCh38_no_alt_analysis_set_GCA_000001405.15.fa.gz" \
+--outf "/ChIP-seq/"
