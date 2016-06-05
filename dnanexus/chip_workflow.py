@@ -340,8 +340,9 @@ def main():
 
         mapping_applet = find_applet_by_name(
             MAPPING_APPLET_NAME, applet_project.get_id())
-        mapping_output_folder = resolve_folder(
-            output_project, output_folder + '/' + mapping_applet.name)
+        # mapping_output_folder = resolve_folder(
+        #     output_project, output_folder + '/' + mapping_applet.name)
+        mapping_output_folder = mapping_applet.name
         reference_tar = resolve_file(args.reference)
         filter_qc_applet = find_applet_by_name(
             FILTER_QC_APPLET_NAME, applet_project.get_id())
@@ -455,7 +456,8 @@ def main():
         #here we need to calculate the cc scores files, because we're only being supplied tagAligns
         #if we had mapped everything above we'd already have a handle to the cc file
         xcor_only_applet = find_applet_by_name(XCOR_ONLY_APPLET_NAME, applet_project.get_id())
-        xcor_output_folder = resolve_folder(output_project, output_folder + '/' + xcor_only_applet.name)
+        # xcor_output_folder = resolve_folder(output_project, output_folder + '/' + xcor_only_applet.name)
+        xcor_output_folder = xcor_only_applet.name
         xcor_only_stages = []
 
         exp_rep1_cc_stage_id = workflow.add_stage(
@@ -488,7 +490,8 @@ def main():
 
     encode_macs2_applet = find_applet_by_name(ENCODE_MACS2_APPLET_NAME, applet_project.get_id())
     encode_macs2_stages = []
-    peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_macs2_applet.name)
+    # peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_macs2_applet.name)
+    peaks_output_folder = encode_macs2_applet.name
 
     macs2_stage_input = {
             'rep1_ta' : exp_rep1_ta,
@@ -518,7 +521,8 @@ def main():
     if run_idr:
         encode_spp_applet = find_applet_by_name(ENCODE_SPP_APPLET_NAME, applet_project.get_id())
         encode_spp_stages = []
-        idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_spp_applet.name)
+        # idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_spp_applet.name)
+        idr_peaks_output_folder = encode_spp_applet.name
         PEAKS_STAGE_NAME = 'SPP Peaks'
         peaks_stage_input = {
                     'rep1_ta' : exp_rep1_ta,
@@ -548,7 +552,8 @@ def main():
         idr_applet = find_applet_by_name(IDR2_APPLET_NAME, applet_project.get_id())
         encode_idr_applet = find_applet_by_name(ENCODE_IDR_APPLET_NAME, applet_project.get_id())
         idr_stages = []
-        idr_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
+        # idr_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
+        idr_output_folder = idr_applet.name
         if (args.rep1 and args.ctl1 and args.rep2) or blank_workflow:
             idr_stage_id = workflow.add_stage(
                 idr_applet,
