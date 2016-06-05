@@ -18,6 +18,58 @@ import dxpy
 
 logger = logging.getLogger(__name__)
 
+
+def dup_parse(fname):
+    with open(fname, 'r') as dup_file:
+        if not dup_file:
+            return None
+
+        lines = iter(dup_file.read().splitlines())
+
+        for line in lines:
+            if line.startswith('## METRICS CLASS'):
+                headers = lines.next().rstrip('\n').lower()
+                metrics = lines.next().rstrip('\n')
+                break
+
+        headers = headers.split('\t')
+        metrics = metrics.split('\t')
+        headers.pop(0)
+        metrics.pop(0)
+
+        dup_qc = dict(zip(headers, metrics))
+    return dup_qc
+
+
+def pbc_parse(fname):
+    with open(fname, 'r') as pbc_file:
+        if not pbc_file:
+            return None
+
+        lines = pbc_file.read().splitlines()
+        line = lines[0].rstrip('\n')
+        # PBC File output:
+        #   TotalReadPairs <tab>
+        #   DistinctReadPairs <tab>
+        #   OneReadPair <tab>
+        #   TwoReadPairs <tab>
+        #   NRF=Distinct/Total <tab>
+        #   PBC1=OnePair/Distinct <tab>
+        #   PBC2=OnePair/TwoPair
+
+        headers = ['TotalReadPairs',
+                   'DistinctReadPairs',
+                   'OneReadPair',
+                   'TwoReadPairs',
+                   'NRF',
+                   'PBC1',
+                   'PBC2']
+        metrics = line.split('\t')
+
+        pbc_qc = dict(zip(headers, metrics))
+    return pbc_qc
+
+
 def run_pipe(steps, outfile=None):
     #break this out into a recursive function
     #TODO:  capture stderr
@@ -220,21 +272,29 @@ def main(input_bam=None, paired_end=None, samtools_params=None, input_JSON=None,
     filtered_bam = dxpy.upload_local_file(final_bam_filename)
     filtered_bam_index = dxpy.upload_local_file(final_bam_index_filename)
     filtered_mapstats = dxpy.upload_local_file(final_bam_file_mapstats_filename)
-    dup_file_qc = dxpy.upload_local_file(dup_file_qc_filename)
-    pbc_file_qc = dxpy.upload_local_file(pbc_file_qc_filename)
+    dup_file = dxpy.upload_local_file(dup_file_qc_filename)
+    pbc_file = dxpy.upload_local_file(pbc_file_qc_filename)
+    dup_qc = dup_parse(dup_file_qc_filename)
+    pbc_qc = pbc_parse(pbc_file_qc_filename)
+    print "dup_qc: %s" % (dup_qc)
+    print "pbc_qc: %s" % (pbc_qc)
 
     # Return links to the output files
     output = {
         "filtered_bam": dxpy.dxlink(filtered_bam),
         "filtered_bam_index": dxpy.dxlink(filtered_bam_index),
         "filtered_mapstats": dxpy.dxlink(filtered_mapstats),
-        "dup_file_qc": dxpy.dxlink(dup_file_qc),
-        "pbc_file_qc": dxpy.dxlink(pbc_file_qc),
-        "paired_end": paired_end
+        "dup_file_qc": dxpy.dxlink(dup_file),
+        "pbc_file_qc": dxpy.dxlink(pbc_file),
+        "paired_end": paired_end,
+        "NRF": pbc_qc.get('NRF'),
+        "PBC1": pbc_qc.get('PBC1'),
+        "PBC2": pbc_qc.get('PBC2'),
+        "duplicate_fraction": dup_qc.get('percent_duplication')
     }
     output.update({'output_JSON': output.copy()})
 
-    print "Exiting with output: %s" %(output)
+    print "Exiting with output: %s" % (output)
     return output
 
 dxpy.run()

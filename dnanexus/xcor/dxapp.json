@@ -46,8 +46,22 @@
 			"name": "paired_end",
 			"label": "True if the bam was derived from paired-end reads.",
 			"class": "boolean"
+		},
+		{
+			"name": "RSC",
+			"label": "Relative strand cross-correlation",
+			"class": "float"
+		},
+		{
+			"name": "NSC",
+			"label": "Normalized strand cross-correlation",
+			"class": "float"
+		},
+		{
+			"name": "est_frag_len",
+			"label": "Estimated fragment length",
+			"class": "int"
 		}
-
 	],
 	"runSpec": {
 		"interpreter": "python2.7",

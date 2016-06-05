@@ -16,6 +16,46 @@ from multiprocessing import Pool, cpu_count
 from subprocess import Popen, PIPE #debug only this should only need to be imported into run_pipe
 import dxpy
 
+
+def xcor_parse(fname):
+    with open(fname, 'r') as xcor_file:
+        if not xcor_file:
+            return None
+
+        lines = xcor_file.read().splitlines()
+        line = lines[0].rstrip('\n')
+        # CC_SCORE FILE format:
+        #   Filename <tab>
+        #   numReads <tab>
+        #   estFragLen <tab>
+        #   corr_estFragLen <tab>
+        #   PhantomPeak <tab>
+        #   corr_phantomPeak <tab>
+        #   argmin_corr <tab>
+        #   min_corr <tab>
+        #   phantomPeakCoef <tab>
+        #   relPhantomPeakCoef <tab>
+        #   QualityTag
+
+        headers = ['Filename',
+                   'numReads',
+                   'estFragLen',
+                   'corr_estFragLen',
+                   'PhantomPeak',
+                   'corr_phantomPeak',
+                   'argmin_corr',
+                   'min_corr',
+                   'phantomPeakCoef',
+                   'relPhantomPeakCoef',
+                   'QualityTag']
+        metrics = line.split('\t')
+        headers.pop(0)
+        metrics.pop(0)
+
+        xcor_qc = dict(zip(headers, metrics))
+    return xcor_qc
+
+
 def run_pipe(steps, outfile=None):
     #break this out into a recursive function
     #TODO:  capture stderr
@@ -147,16 +187,20 @@ def main(input_bam, paired_end):
 
     CC_scores_file = dxpy.upload_local_file(CC_scores_filename)
     CC_plot_file = dxpy.upload_local_file(CC_plot_filename)
+    xcor_qc = xcor_parse(CC_scores_filename)
 
     # Return the outputs
-
-    output = {}
-    output["tagAlign_file"] = dxpy.dxlink(tagAlign_file)
+    output = {
+        "tagAlign_file": dxpy.dxlink(tagAlign_file),
+        "CC_scores_file": dxpy.dxlink(CC_scores_file),
+        "CC_plot_file": dxpy.dxlink(CC_plot_file),
+        "paired_end": paired_end,
+        "RSC": float(xcor_qc.get('relPhantomPeakCoef')),
+        "NSC": float(xcor_qc.get('phantomPeakCoef')),
+        "est_frag_len": float(xcor_qc.get('estFragLen'))
+    }
     if paired_end:
-        output["BEDPE_file"] = dxpy.dxlink(BEDPE_file)
-    output["CC_scores_file"] = dxpy.dxlink(CC_scores_file)
-    output["CC_plot_file"] = dxpy.dxlink(CC_plot_file)
-    output["paired_end"] = paired_end
+        output.update({"BEDPE_file": dxpy.dxlink(BEDPE_file)})
 
     return output
 
