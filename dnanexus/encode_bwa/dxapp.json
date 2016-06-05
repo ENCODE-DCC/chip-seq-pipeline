@@ -78,6 +78,11 @@
       "class": "boolean"
     },
     {
+      "name": "n_mapped_reads",
+      "label": "Number of mapped reads",
+      "class": "int"
+    },
+    {
       "name": "output_JSON",
       "label": "Output as JSON",
       "class": "hash",
