@@ -507,5 +507,5 @@ chip_workflow.py \
 --name "ENCODE Histone ChIP-seq (GRCh38)" \
 --chrom_sizes "ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
 --genomesize hs \
---reference "ENCODE Reference Files:/GRCh38/GRCh38_no_alt_analysis_set_GCA_000001405.15.fa.gz" \
+--reference "ENCODE Reference Files:/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" \
 --outf "/ChIP-seq/"
