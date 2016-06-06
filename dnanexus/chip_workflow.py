@@ -9,13 +9,13 @@ import dxpy
 EPILOG = '''Notes:
 
 Examples:
-    Build blank TF workflow from fastq to peaks
+    # Build blank TF workflow from fastq to peaks
     %(prog)s --target tf --name "ENCODE TF ChIP-seq (no reference)" --outf "/ChIP-seq/"
 
-    Build blank histone workflow from fastq to peaks
+    # Build blank histone workflow from fastq to peaks
     %(prog)s --target histone --name "ENCODE Histone ChIP-seq (no reference)" --outf "/ChIP-seq/"
 
-    Build a pre-configured GRCh38 histone workflow, requiring only data to run
+    # Build a pre-configured GRCh38 histone workflow, requiring only data to run
     %(prog)s --target histone \\
     --name "ENCODE Histone ChIP-seq (GRCh38)" \\
     --chrom_sizes "ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \\
@@ -23,7 +23,7 @@ Examples:
     --reference "ENCODE Reference Files:/GRCh38/GRCh38_no_alt_analysis_set_GCA_000001405.15.fa.gz" \\
     --outf "/ChIP-seq/"
 
-    Build and run a complete hg19 TF workflow, specifying all inputs.
+    # Build and run a complete hg19 TF workflow, specifying all inputs.
     %(prog)s --target tf \\
     --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \\
     --genomesize hs \\
@@ -31,23 +31,36 @@ Examples:
     --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \\
     --outf "ENCSR464DKE-hCTCF-chr21" \\
     --title "ENCSR464DKE-hCTCF-chr21" \\
-    --rep1 "/test_data/ENCSR464DKE-hCTCF/R1-ENCFF921SED.chr21.fq.gz" \\
-    --rep2 "/test_data/ENCSR464DKE-hCTCF/R2-ENCFF812KOM.chr21.fq.gz" \\
-    --ctl1 "/test_data/ENCSR464DKE-hCTCF/C1-ENCFF690VPV.chr21.fq.gz" \\
-    --ctl2 "/test_data/ENCSR464DKE-hCTCF/C2-ENCFF357TLV.chr21.fq.gz" \\
+    --rep1 "/ChIP-seq/test_data/ENCSR464DKE-hCTCF/R1-ENCFF921SED.chr21.fq.gz" \\
+    --rep2 "/ChIP-seq/test_data/ENCSR464DKE-hCTCF/R2-ENCFF812KOM.chr21.fq.gz" \\
+    --ctl1 "/ChIP-seq/test_data/ENCSR464DKE-hCTCF/C1-ENCFF690VPV.chr21.fq.gz" \\
+    --ctl2 "/ChIP-seq/test_data/ENCSR464DKE-hCTCF/C2-ENCFF357TLV.chr21.fq.gz" \\
     --yes
 
-    Build and run a complete mm10 histone workflow, specifying all inputs.
+    # Build and run a complete hg19 TF workflow, with a unary control.
+    %(prog)s --target tf \\
+    --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \\
+    --genomesize hs \\
+    --reference "ENCODE Reference Files:/hg19/male.hg19.tar.gz" \\
+    --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \\
+    --outf "ENCSR000EEB-hMAFK-chr21" \\
+    --title "ENCSR000EEB-hMAFK-chr21" \\
+    --rep1 "/ChIP-seq/test_data/ENCSR000EEB-hMAFK/R1-ENCFF000XTT.chr21.fq.gz" \\
+    --rep2 "/ChIP-seq/test_data/ENCSR000EEB-hMAFK/R2-ENCFF000XTU.chr21.fq.gz" \\
+    --ctl1 "/ChIP-seq/test_data/ENCSR000EEB-hMAFK/C1-ENCFF000XSJ.chr21.fq.gz" \\
+    --yes
+
+    # Build and run a complete mm10 histone workflow, specifying all inputs.
     %(prog)s --target histone \\
     --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \\
     --genomesize mm \\
     --reference "ENCODE Reference Files:/mm10/male.mm10.tar.gz" \\
     --outf "ENCSR087PLZ-mH3K9ac-chr19" \\
     --title "ENCSR087PLZ-mH3K9ac-chr19" \\
-    --rep1 "/test_data/ENCSR087PLZ-mH3K9ac/R1-ENCFF560GLI.chr19.fq.gz" \\
-    --rep2 "/test_data/ENCSR087PLZ-mH3K9ac/R2-ENCFF891NNX.chr19.fq.gz" \\
-    --ctl1 "/test_data/ENCSR087PLZ-mH3K9ac/C1-ENCFF069WCH.chr19.fq.gz" \\
-    --ctl2 "/test_data/ENCSR087PLZ-mH3K9ac/C2-ENCFF101KOM.chr19.fq.gz" \\
+    --rep1 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/R1-ENCFF560GLI.chr19.fq.gz" \\
+    --rep2 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/R2-ENCFF891NNX.chr19.fq.gz" \\
+    --ctl1 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/C1-ENCFF069WCH.chr19.fq.gz" \\
+    --ctl2 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/C2-ENCFF101KOM.chr19.fq.gz" \\
     --yes
  
 '''
@@ -754,9 +767,9 @@ def main():
 
     if args.yes:
         if args.debug:
-            job_id = workflow.run({}, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
+            job_id = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
         else:
-            job_id = workflow.run({}, priority='high')
+            job_id = workflow.run({}, folder=output_folder, priority='high')
         logging.info("Running as job %s" %(job_id))
 
 if __name__ == '__main__':
