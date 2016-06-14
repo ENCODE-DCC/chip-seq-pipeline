@@ -343,6 +343,8 @@ def main():
 
     blank_workflow = not (args.rep1 or args.rep2 or args.ctl1 or args.ctl2)
 
+    unary_control = args.unary_control or (args.rep1 and args.rep2 and args.ctl1 and not args.ctl2)
+
     if not args.genomesize:
         genomesize = None
     else:
@@ -371,9 +373,7 @@ def main():
             {'name': 'Rep2', 'input_args': args.rep2},
             {'name': 'Ctl1', 'input_args': args.ctl1}
         ]
-        if args.unary_control:
-            pass
-        elif args.ctl2 or blank_workflow:
+        if not unary_control:
             mapping_superstages.append(
                 {'name': 'Ctl2', 'input_args': args.ctl2})
 
@@ -470,14 +470,12 @@ def main():
         ctl_rep1_ta = dxpy.dxlink(
                     {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl1'),
                      'outputField': 'tagAlign_file'})
-        if args.unary_control:
-            pass
-        elif args.ctl2 or blank_workflow:
+        if unary_control:
+            ctl_rep2_ta = ctl_rep1_ta
+        else:
             ctl_rep2_ta = dxpy.dxlink(
                         {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl2'),
                          'outputField': 'tagAlign_file'})
-        else:
-            ctl_rep2_ta = ctl_rep1_ta
         rep1_paired_end = dxpy.dxlink(
                         {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep1'),
                          'outputField': 'paired_end'})
