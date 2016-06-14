@@ -521,7 +521,8 @@ def main():
                 blacklist = None
 
         run_command = \
-            '~/chip-seq-pipeline/dnanexus/chip_workflow.py' + \
+            '~/chip-seq-pipeline/dnanexus/chip_workflow.py ' + \
+            '--target %s ' % (wf_target) + \
             '--title "%s" --outf "%s" --nomap --yes ' % (workflow_title, outf) + \
             '--rep1pe %s --rep2pe %s ' % (str(rep1_pe).lower(), str(rep2_pe).lower()) + \
             '--rep1 %s --rep2 %s ' % (tas['rep1_ta'].get('file_id'), tas['rep2_ta'].get('file_id')) + \
@@ -539,7 +540,7 @@ def main():
             try:
                 subprocess.check_call(run_command, shell=True)
             except subprocess.CalledProcessError as e:
-                logging.error("%s exited with non-zero code %d" %(workflow_spinner, e.returncode))
+                logging.error("chip_workflow exited with non-zero code %d" %(e.returncode))
             else:
                 print "%s workflow created" %(experiment['accession'])
                 logging.debug("patching internal_status to url %s" %(experiment_url))
