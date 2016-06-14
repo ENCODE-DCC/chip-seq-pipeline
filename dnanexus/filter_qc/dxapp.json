@@ -73,6 +73,26 @@
       "class": "boolean"
     },
     {
+      "name": "NRF",
+      "label": "Non-redundant fraction",
+      "class": "string"
+    },
+    {
+      "name": "PBC1",
+      "label": "PCR Bottleneck Coefficient 1",
+      "class": "string"
+    },
+    {
+      "name": "PBC2",
+      "label": "PCR Bottleneck Coefficient 2",
+      "class": "string"
+    },
+    {
+      "name": "duplicate_fraction",
+      "label": "Picard MarkDuplicates fraction",
+      "class": "string"
+    },
+    {
       "name": "output_JSON",
       "label": "Input parameters as JSON",
       "class": "hash",

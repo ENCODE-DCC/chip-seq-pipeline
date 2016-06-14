@@ -1,12 +1,52 @@
 #!/usr/bin/env python
 # ENCODE_BWA 0.0.1
 
-import os, subprocess, shlex, time
+import os
+import subprocess
+import shlex
+import time
+import re
 from multiprocessing import Pool, cpu_count
-from subprocess import Popen, PIPE #debug only this should only need to be imported into run_pipe
+from subprocess import Popen, PIPE  # debug only this should only need to be imported into run_pipe
 import dxpy
 
 logger = logging.getLogger(__name__)
+
+
+def flagstat_parse(fname):
+    with open(fname, 'r') as flagstat_file:
+        if not flagstat_file:
+            return None
+        flagstat_lines = flagstat_file.read().splitlines()
+
+    qc_dict = {
+        # values are regular expressions,
+        # will be replaced with scores [hiq, lowq]
+        'in_total': 'in total',
+        'duplicates': 'duplicates',
+        'mapped': 'mapped',
+        'paired_in_sequencing': 'paired in sequencing',
+        'read1': 'read1',
+        'read2': 'read2',
+        'properly_paired': 'properly paired',
+        'with_self_mate_mapped': 'with itself and mate mapped',
+        'singletons': 'singletons',
+        # i.e. at the end of the line
+        'mate_mapped_different_chr': 'with mate mapped to a different chr$',
+        # RE so must escape
+        'mate_mapped_different_chr_hiQ':
+            'with mate mapped to a different chr \(mapQ>=5\)'
+    }
+
+    for (qc_key, qc_pattern) in qc_dict.items():
+        qc_metrics = next(re.split(qc_pattern, line)
+                          for line in flagstat_lines
+                          if re.search(qc_pattern, line))
+        (hiq, lowq) = qc_metrics[0].split(' + ')
+        qc_dict[qc_key] = [int(hiq.rstrip()), int(lowq.rstrip())]
+
+    return qc_dict
+
 
 def run_pipe(steps, outfile=None):
     #break this out into a recursive function
@@ -41,9 +81,11 @@ def run_pipe(steps, outfile=None):
     out,err = p.communicate()
     return out,err
 
+
 def resolve_reference():
     # assume the reference file is the only .fa or .fna file
     return next((f for f in os.listdir(".") if f.endswith('.fa') or f.endswith('.fna') or f.endswith('.fa.gz') or f.endswith('.fna.gz')), None)
+
 
 @dxpy.entry_point("postprocess")
 def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samtools_version):
@@ -152,11 +194,15 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
     print subprocess.check_output('ls', shell=True)
     mapped_reads = dxpy.upload_local_file(raw_bam_filename)
     mapping_statistics = dxpy.upload_local_file(raw_bam_mapstats_filename)
+    flagstat_qc = flagstat_parse(raw_bam_mapstats_filename)
 
-    output = { "mapped_reads": dxpy.dxlink(mapped_reads),
-               "mapping_statistics": dxpy.dxlink(mapping_statistics) }
+    output = {'mapped_reads': dxpy.dxlink(mapped_reads),
+              'mapping_statistics': dxpy.dxlink(mapping_statistics),
+              'n_mapped_reads': flagstat_qc.get('mapped')[0]  # 0 is index for hi-q reads
+              }
     print "Returning from post with output: %s" %(output)
     return output
+
 
 @dxpy.entry_point("process")
 def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
@@ -217,6 +263,7 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
     print process_output
     return process_output
 
+
 @dxpy.entry_point("main")
 def main(reads1=None, reference_tar=None, bwa_aln_params=None, bwa_version=None, samtools_version=None, reads2=None, input_JSON=None, debug=False):
 
@@ -259,7 +306,7 @@ def main(reads1=None, reference_tar=None, bwa_aln_params=None, bwa_version=None,
 
     paired_end = reads2 is not None
     unmapped_reads = [r for r in [reads1, reads2] if r]
-    
+
     subjobs = []
     for reads in unmapped_reads:
         subjob_input = {"reads_file": reads,
@@ -282,11 +329,13 @@ def main(reads1=None, reference_tar=None, bwa_aln_params=None, bwa_version=None,
 
     mapped_reads = postprocess_job.get_output_ref("mapped_reads")
     mapping_statistics = postprocess_job.get_output_ref("mapping_statistics")
+    n_mapped_reads = postprocess_job.get_output_ref("n_mapped_reads")
 
     output = {
         "mapped_reads": mapped_reads,
         "mapping_statistics": mapping_statistics,
-        "paired_end": paired_end
+        "paired_end": paired_end,
+        "n_mapped_reads": n_mapped_reads
     }
     output.update({'output_JSON': output.copy()})
 

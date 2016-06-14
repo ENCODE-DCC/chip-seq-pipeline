@@ -12,7 +12,7 @@
       "name": "reads1",
       "label": "reads1",
       "class": "file",
-      "optional": false
+      "optional": true
     },
     {
       "name": "reads2",
@@ -76,6 +76,11 @@
     {
       "name": "paired_end",
       "class": "boolean"
+    },
+    {
+      "name": "n_mapped_reads",
+      "label": "Number of mapped reads",
+      "class": "int"
     },
     {
       "name": "output_JSON",

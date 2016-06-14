@@ -28,7 +28,7 @@ def get_args():
     parser.add_argument('--gsize', help="Genome size string for MACS2, e.g. mm or hs", required=True)
     parser.add_argument('--csizes', help="chrom.sizes file for bedtobigbed, e.g. ENCODE Reference Files:/mm10/male.mm10.chrom.sizes", required=True)
     parser.add_argument('--assembly', help="Genome assembly, e.g. hg19, mm10, GRCh38", required=True)
-    parser.add_argument('--idr', help="Run IDR. If not specified, run IDR for non-histone targets.", default=False, action='store_true')
+    # parser.add_argument('--idr', help="Run IDR. If not specified, run IDR for non-histone targets.", default=False, action='store_true')
     # parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default="2")
     parser.add_argument('--dryrun', help="Formulate the run command, but don't actually run", default=False, action='store_true')
 
@@ -509,13 +509,11 @@ def main():
 
         if any('histone' in target_type for target_type in investigated_as):
             print "Found to be histone.  No blacklist will be used."
-            IDR_default = False
-            workflow_spinner = '~/chip-seq-pipeline/dnanexus/histone_workflow.py'
+            wf_target = 'histone'
             blacklist = None
         else:
             print "Assumed to be tf"
-            IDR_default = True
-            workflow_spinner = '~/chip-seq-pipeline/dnanexus/tf_workflow.py'
+            wf_target = 'tf'
             if args.assembly == "hg19":
                 blacklist = "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
             else:
@@ -523,7 +521,9 @@ def main():
                 blacklist = None
 
         run_command = \
-            '%s --title "%s" --outf "%s" --nomap --yes ' % (workflow_spinner, workflow_title, outf) + \
+            '~/chip-seq-pipeline/dnanexus/chip_workflow.py ' + \
+            '--target %s ' % (wf_target) + \
+            '--title "%s" --outf "%s" --nomap --yes ' % (workflow_title, outf) + \
             '--rep1pe %s --rep2pe %s ' % (str(rep1_pe).lower(), str(rep2_pe).lower()) + \
             '--rep1 %s --rep2 %s ' % (tas['rep1_ta'].get('file_id'), tas['rep2_ta'].get('file_id')) + \
             '--ctl1 %s --ctl2 %s ' % (tas['rep1_ta'].get('control_id'), tas['rep2_ta'].get('control_id')) + \
@@ -532,8 +532,6 @@ def main():
             run_command += ' --blacklist "%s"' %(blacklist)
         if args.debug:
             run_command += ' --debug'
-        if args.idr or IDR_default:
-            run_command += ' --idr'
 
         print run_command
         if args.dryrun:
@@ -542,7 +540,7 @@ def main():
             try:
                 subprocess.check_call(run_command, shell=True)
             except subprocess.CalledProcessError as e:
-                logging.error("%s exited with non-zero code %d" %(workflow_spinner, e.returncode))
+                logging.error("chip_workflow exited with non-zero code %d" %(e.returncode))
             else:
                 print "%s workflow created" %(experiment['accession'])
                 logging.debug("patching internal_status to url %s" %(experiment_url))

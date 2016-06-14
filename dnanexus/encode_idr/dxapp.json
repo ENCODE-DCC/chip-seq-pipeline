@@ -56,7 +56,26 @@
 			"label": "Blacklist (gzipped BED file)",
 			"class": "file",
 			"optional": true
+		},
+		{
+			"name": "rep1_signal",
+			"label": "First replicate signal track",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "rep2_signal",
+			"label": "Second replicate signal track",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "pooled_signal",
+			"label": "Pooled replicates signal",
+			"class": "file",
+			"optional": true
 		}
+
 	],
 	"outputSpec": [
 		{
@@ -125,6 +144,24 @@
 			"name": "reproducibility_test",
 			"label": "Result of the reproducibility test",
 			"class": "string"
+		},
+		{
+			"name": "rep1_signal",
+			"label": "First replicate signal track",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "rep2_signal",
+			"label": "Second replicate signal track",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "pooled_signal",
+			"label": "Pooled replicates signal",
+			"class": "file",
+			"optional": true
 		}
 	],
 	"runSpec": {
