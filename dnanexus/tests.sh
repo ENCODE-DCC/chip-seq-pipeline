@@ -495,6 +495,16 @@ chip_workflow.py \
 --outf "/ChIP-seq/"
 
 chip_workflow.py \
+--target tf \
+--name "ENCODE TF ChIP-seq Unary Control (hg19)" \
+--chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--genomesize hs \
+--reference "ENCODE Reference Files:/hg19/male.hg19.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
+--outf "/ChIP-seq/" \
+--unary_control
+
+chip_workflow.py \
 --target histone \
 --name "ENCODE Histone ChIP-seq (mm10)" \
 --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
