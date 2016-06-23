@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 DEFAULT_PROJECT='ENCODE - ChIP Production'
-DEFAULT_FOLDER='applets/'
+DEFAULT_FOLDER='/applets/'
 
 project=${1:-$DEFAULT_PROJECT}
 folder=${2:-$DEFAULT_FOLDER}
