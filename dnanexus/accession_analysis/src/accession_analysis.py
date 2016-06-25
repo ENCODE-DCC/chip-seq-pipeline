@@ -199,27 +199,42 @@ def get_attachment(dxlink):
 # and mapping_report uses them.
 
 def qc(stages):
-    raw_mapping_stage = stages['Map ENCSR*']['stage_metadata']
+    raw_mapping_stage = next(
+        stages[stage_name]['stage_metadata']
+        for stage_name in stages.keys()
+        if stage_name.startswith("Map ENCSR"))
     return flagstat_parse(raw_mapping_stage['output']['mapping_statistics'])
 
 
 def dup_qc(stages):
-    qc_stage = stages['Filter and QC*']['stage_metadata']
+    qc_stage = next(
+        stages[stage_name]['stage_metadata']
+        for stage_name in stages.keys()
+        if stage_name.startswith("Filter and QC"))
     return dup_parse(qc_stage['output']['dup_file_qc'])
 
 
 def pbc_qc(stages):
-    qc_stage = stages['Filter and QC*']['stage_metadata']
+    qc_stage = next(
+        stages[stage_name]['stage_metadata']
+        for stage_name in stages.keys()
+        if stage_name.startswith("Filter and QC"))
     return pbc_parse(qc_stage['output']['pbc_file_qc'])
 
 
 def filtered_qc(stages):
-    qc_stage = stages['Filter and QC*']['stage_metadata']
+    qc_stage = next(
+        stages[stage_name]['stage_metadata']
+        for stage_name in stages.keys()
+        if stage_name.startswith("Filter and QC"))
     return flagstat_parse(qc_stage['output']['filtered_mapstats'])
 
 
 def xcor_qc(stages):
-    xcor_stage = stages['Calculate cross-correlation*']['stage_metadata']
+    xcor_stage = next(
+        stages[stage_name]['stage_metadata']
+        for stage_name in stages.keys()
+        if stage_name.startswith("Calculate cross-correlation"))
     return xcor_parse(xcor_stage['output']['CC_scores_file'])
 
 
@@ -233,8 +248,14 @@ def chipseq_filter_quality_metric(step_run, stages, files):
         resolve_name_to_accessions(stages, output_name)
         for output_name in files])))
 
-    qc_stage = stages['Filter and QC*']['stage_metadata']
-    xcor_stage = stages['Calculate cross-correlation*']['stage_metadata']
+    qc_stage = next(
+        stages[stage_name]['stage_metadata']
+        for stage_name in stages.keys()
+        if stage_name.startswith("Filter and QC"))
+    xcor_stage = next(
+        stages[stage_name]['stage_metadata']
+        for stage_name in stages.keys()
+        if stage_name.startswith("Calculate cross-correlation"))
 
     xcor_plot = get_attachment(xcor_stage['output']['CC_plot_file'])
     xcor_scores = get_attachment(xcor_stage['output']['CC_scores_file'])
@@ -368,16 +389,20 @@ def samtools_flagstats_quality_metric(step_run, stages, files):
 
     quality_metric_objects = []
 
-    if stages.get('Map ENCSR*'):
+    if any([stage_name.startswith('Map ENCSR') for stage_name in stages.keys()]):
         quality_metric_objects.append(get_flagstat_obj(
             step_run,
-            stages['Map ENCSR*']['stage_metadata'],
+            next(stages[stage_name]['stage_metadata']
+                 for stage_name in stages.keys()
+                 if stage_name.startswith("Map ENCSR")),
             file_accessions))
 
-    if stages.get('Filter and QC*'):
+    if any([stage_name.startswith('Filter and QC') for stage_name in stages.keys()]):
         quality_metric_objects.append(get_flagstat_obj(
             step_run,
-            stages['Filter and QC*']['stage_metadata'],
+            next(stages[stage_name]['stage_metadata']
+                 for stage_name in stages.keys()
+                 if stage_name.startswith("Filter and QC")),
             file_accessions))
 
     return quality_metric_objects
@@ -553,9 +578,20 @@ def get_rep_fastqs(experiment, keypair, server, repn):
     return rep_fastqs
 
 
-def get_stage_metadata(analysis, stage_name):
-    logger.debug('in get_stage_metadata with analysis %s and stage_name %s'
-                 % (analysis['id'], stage_name))
+def get_stage_name(pattern, stages):
+    if not isinstance(stages, list):
+        stages = [stages]
+    logger.debug('in get_stage_name with stages %s and pattern %s'
+                 % ([stage.get('name') for stage in stages], pattern))
+    return next(
+        re.match(pattern, stage['name']).group(0)
+        for stage in stages
+        if re.match(pattern, stage['name'])) or None
+
+
+def get_stage_metadata(analysis, stage_pattern):
+    logger.debug('in get_stage_metadata with analysis %s and stage_pattern %s'
+                 % (analysis['id'], stage_pattern))
     # unfortunately, very early runs of the IDR pipeline mispelled
     # a stage.  We still need to go back to those runs to harvest QC or for
     # other reasons, so here we just special-case it then over-ride the
@@ -563,9 +599,9 @@ def get_stage_metadata(analysis, stage_name):
     try:
         stage_metadata = \
             next(s['execution'] for s in analysis.get('stages')
-                 if re.match(stage_name, s['execution']['name']))
+                 if re.match(stage_pattern, s['execution']['name']))
     except StopIteration:
-        if stage_name == "IDR Pooled Pseudoreplicates":
+        if stage_pattern == "IDR Pooled Pseudoreplicates":
             tmp_metadata = \
                 get_stage_metadata(analysis, "IDR Pooled Pseudoeplicates")
             tmp_metadata['name'] = "IDR Pooled Pseudoreplicates"
@@ -658,22 +694,23 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     logger.info('%s: Found accessioned experiment fastqs with accessions %s'
                 % (experiment_accession, experiment_fastq_accessions))
 
-    mapping_stages = mapping_analysis.get('stages')
+    analysis_stages = \
+        [stage['execution'] for stage in mapping_analysis.get('stages')]
 
     input_stage = \
-        next(stage for stage in mapping_stages
-             if stage['execution']['name'].startswith("Gather inputs"))
-    logger.debug("input_stage['execution']['input'] JSON:")
-    logger.debug(pprint.pformat(input_stage['execution']['input']))
+        next(stage for stage in analysis_stages
+             if stage['name'].startswith("Gather inputs"))
+    logger.debug("input_stage['input'] JSON:")
+    logger.debug(pprint.pformat(input_stage['input']))
 
     input_fastq_accessions = []
-    input_fastq_accessions.extend(input_stage['execution']['input']['reads1'])
+    input_fastq_accessions.extend(input_stage['input']['reads1'])
     logger.debug('reads1 only input_fastq_accessions %s' % (input_fastq_accessions))
 
-    if input_stage['execution']['input']['reads2']:
+    if input_stage['input']['reads2']:
         # Coerce into a list here because in earlier versions of the pipeline
         # code, reads2 was just a string.
-        reads2 = input_stage['execution']['input']['reads2']
+        reads2 = input_stage['input']['reads2']
         logger.debug('found reads2 %s' % (reads2))
         if type(reads2) is list:
             input_fastq_accessions.extend(reads2)
@@ -708,15 +745,15 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             '--fqcheck is False, so not checking to see if experiment and mapped fastqs match')
 
     raw_mapping_stage = next(
-        stage for stage in mapping_stages
-        if stage['execution']['name'].startswith("Map ENCSR"))
+        stage for stage in analysis_stages
+        if stage['name'].startswith("Map ENCSR"))
 
     bam = dxpy.describe(
-        raw_mapping_stage['execution']['output']['mapped_reads'])
+        raw_mapping_stage['output']['mapped_reads'])
 
     # here we get the actual DNAnexus file that was used as the reference
     reference_file = dxpy.describe(
-        input_stage['execution']['output']['output_JSON']['reference_tar'])
+        input_stage['output']['output_JSON']['reference_tar'])
 
     # and construct the alias to find the corresponding file at ENCODEd
     reference_alias = "dnanexus:" + reference_file.get('id')
@@ -738,8 +775,8 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         'output_type': 'unfiltered alignments'
         }, common_file_metadata)
 
-    rep_mapping_stages = {
-        "Map ENCSR*": {
+    mapping_stages = {
+        get_stage_name("Map ENCSR.*", analysis_stages): {
             'input_files': [
 
                 {'name': 'rep%s_fastqs' % (repn),
@@ -768,13 +805,13 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         }
     }
 
-    for stage_name in rep_mapping_stages:
+    for stage_name in mapping_stages:
         if not stage_name.startswith('_'):
-            rep_mapping_stages[stage_name].update(
+            mapping_stages[stage_name].update(
                 {'stage_metadata': get_stage_metadata(
                     mapping_analysis, stage_name)})
 
-    return rep_mapping_stages
+    return mapping_stages
 
 
 def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
@@ -802,22 +839,23 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     logger.info('%s: Found accessioned experiment fastqs with accessions %s'
                 % (experiment_accession, experiment_fastq_accessions))
 
-    mapping_stages = mapping_analysis.get('stages')
+    analysis_stages = \
+        [stage['execution'] for stage in mapping_analysis.get('stages')]
 
     input_stage = \
-        next(stage for stage in mapping_stages
-             if stage['execution']['name'].startswith("Gather inputs"))
-    logger.debug("input_stage['execution']['input'] JSON:")
-    logger.debug(pprint.pformat(input_stage['execution']['input']))
+        next(stage for stage in analysis_stages
+             if stage['name'].startswith("Gather inputs"))
+    logger.debug("input_stage['input'] JSON:")
+    logger.debug(pprint.pformat(input_stage['input']))
 
     input_fastq_accessions = []
-    input_fastq_accessions.extend(input_stage['execution']['input']['reads1'])
+    input_fastq_accessions.extend(input_stage['input']['reads1'])
     logger.debug('reads1 only input_fastq_accessions %s' % (input_fastq_accessions))
 
-    if input_stage['execution']['input']['reads2']:
+    if input_stage['input']['reads2']:
         # Coerce into a list here because in earlier versions of the pipeline
         # code, reads2 was just a string.
-        reads2 = input_stage['execution']['input']['reads2']
+        reads2 = input_stage['input']['reads2']
         logger.debug('found reads2 %s' % (reads2))
         if type(reads2) is list:
             input_fastq_accessions.extend(reads2)
@@ -852,14 +890,14 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             '--fqcheck is False, so not checking to see if experiment and mapped fastqs match')
 
     filter_qc_stage = next(
-        stage for stage in mapping_stages
-        if stage['execution']['name'].startswith("Filter and QC"))
+        stage for stage in analysis_stages
+        if stage['name'].startswith("Filter and QC"))
 
-    bam = dxpy.describe(filter_qc_stage['execution']['output']['filtered_bam'])
+    bam = dxpy.describe(filter_qc_stage['output']['filtered_bam'])
 
     # here we get the actual DNAnexus file that was used as the reference
     reference_file = dxpy.describe(
-        input_stage['execution']['output']['output_JSON']['reference_tar'])
+        input_stage['output']['output_JSON']['reference_tar'])
 
     # and construct the alias to find the corresponding file at ENCODEd
     reference_alias = "dnanexus:" + reference_file.get('id')
@@ -880,16 +918,16 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         'output_type': 'alignments'
         }, common_file_metadata)
 
-    rep_mapping_stages = {
+    mapping_stages = {
 
-        "Map ENCSR*": {
+        get_stage_name("Map ENCSR.*", analysis_stages): {
             'input_files': [],
             'output_files': [],
             'qc': [],
             'stage_metadata': {}  # initialized below
         },
 
-        "Filter and QC*": {
+        get_stage_name("Filter and QC.*", analysis_stages): {
             'input_files': [
 
                 {'name': 'rep%s_fastqs' % (repn),
@@ -915,7 +953,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             'stage_metadata': {}  # initialized below
         },
 
-        "Calculate cross-correlation*": {
+        get_stage_name("Calculate cross-correlation.*", analysis_stages): {
             'input_files': [],
             'output_files': [],
             'qc': [],
@@ -923,13 +961,13 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         }
     }
 
-    for stage_name in rep_mapping_stages:
+    for stage_name in mapping_stages:
         if not stage_name.startswith('_'):
-            rep_mapping_stages[stage_name].update(
+            mapping_stages[stage_name].update(
                 {'stage_metadata': get_stage_metadata(
                     mapping_analysis, stage_name)})
 
-    return rep_mapping_stages
+    return mapping_stages
 
 
 def get_control_mapping_stages(peaks_analysis, experiment, keypair, server,
@@ -940,17 +978,18 @@ def get_control_mapping_stages(peaks_analysis, experiment, keypair, server,
         % (peaks_analysis['id']) +
         'experiment %s; reps %s' % (experiment['accession'], reps))
 
-    peaks_stages = peaks_analysis.get('stages')
+    peaks_stages = \
+        [stage['execution'] for stage in peaks_analysis.get('stages')]
 
     peaks_stage = next(
         stage for stage in peaks_stages
-        if stage['execution']['name'] == "ENCODE Peaks")
+        if stage['name'] == "ENCODE Peaks")
 
     # here reps is always 1,2 because the peaks job rep numbers are 1,2 ...
     # these are not the ENCODEd biological_replicate_numbers, which are
     # only known to the analysis via its name, or by going back to ENCODEd and
     # figuring out where the fastqs came from
-    tas = [dxpy.describe(peaks_stage['execution']['input']['ctl%s_ta' % (n)])
+    tas = [dxpy.describe(peaks_stage['input']['ctl%s_ta' % (n)])
            for n in reps]
 
     mapping_jobs = [dxpy.describe(ta['createdBy']['job']) for ta in tas]
@@ -1000,13 +1039,14 @@ def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server,
                      'experiment %s; reps %s'
                      % (experiment['accession'], reps))
 
-    peaks_stages = peaks_analysis.get('stages')
+    peaks_stages = \
+        [stage['execution'] for stage in peaks_analysis.get('stages')]
 
     peaks_stage = next(
         stage for stage in peaks_stages
-        if stage['execution']['name'] == "ENCODE Peaks")
+        if stage['name'] == "ENCODE Peaks")
 
-    tas = [dxpy.describe(peaks_stage['execution']['input']['rep%s_ta' % (n)])
+    tas = [dxpy.describe(peaks_stage['input']['rep%s_ta' % (n)])
            for n in reps]
 
     mapping_jobs = \
@@ -1060,22 +1100,19 @@ def pooled_controls(peaks_analysis, rep):
     peaks_stages = peaks_analysis.get('stages')
 
     ENCODE_Peaks_stage = next(
-        stage for stage in peaks_stages
+        stage['execution'] for stage in peaks_stages
         if stage['execution']['name'] == "ENCODE Peaks")
 
     ENCODE_Peaks_exp_file = \
-        ENCODE_Peaks_stage['execution']['input']['rep%s_ta' % (rep)]
+        ENCODE_Peaks_stage['input']['rep%s_ta' % (rep)]
 
     ENCODE_Peaks_ctl_file = \
-        ENCODE_Peaks_stage['execution']['input']['ctl%s_ta' % (rep)]
-
-    # print ENCODE_Peaks_stage['execution']['id']
-    # print ENCODE_Peaks_stage['execution']['project']
+        ENCODE_Peaks_stage['input']['ctl%s_ta' % (rep)]
 
     child_jobs = dxpy.find_jobs(
-        parent_job=ENCODE_Peaks_stage['execution']['id'],
+        parent_job=ENCODE_Peaks_stage['id'],
         name="MACS2",
-        project=ENCODE_Peaks_stage['execution']['project'],
+        project=ENCODE_Peaks_stage['project'],
         describe=True)
 
     rep_job = next(
@@ -1164,12 +1201,15 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
     else:
         rep2_ctl = [rep2_ctl_bam]
 
+    analysis_stages = \
+        [stage['execution'] for stage in peaks_analysis.get('stages')]
+
     peak_stages = {
         # derived_from is by name here, will be patched into the file metadata
         # after all files are accessioned
         # derived_from can also be a tuple of (stages,name) to connect to#
         # files outside of this set of stages
-        "ENCODE Peaks": {
+        get_stage_name("ENCODE Peaks", analysis_stages): {
             'output_files': [
 
                 {'name': 'rep1_narrowpeaks',
@@ -1226,7 +1266,9 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
             'stage_metadata': {}  # initialized below
         },
 
-        "Overlap narrowpeaks": {
+        # older pipeline versions called this "Overlap" so need a pattern for
+        # backward compatibility
+        get_stage_name("(Overlap|Final) narrowpeaks", analysis_stages): {
             'output_files': [
 
                 {'name': 'overlapping_peaks',
@@ -1333,13 +1375,16 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
     else:
         rep2_ctl = [rep2_ctl_bam]
 
+    analysis_stages = \
+        [stage['execution'] for stage in peaks_analysis.get('stages')]
+
     peak_stages = {
         # derived_from is by name here, will be patched into the file metadata
         # after all files are accessioned
         # derived_from can also be a tuple of (stages,name) to connect to files
         # outside of this set of stages
 
-        "SPP Peaks": {
+        get_stage_name("SPP Peaks", analysis_stages): {
             'output_files': [
 
                 {'name': 'rep1_peaks',
@@ -1372,7 +1417,7 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
             'stage_metadata': {}  # initialized below
         },
 
-        "ENCODE Peaks": {
+        get_stage_name("ENCODE Peaks", analysis_stages): {
 
             'output_files': [
 
@@ -1406,31 +1451,31 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
             'stage_metadata': {}  # initialized below
         },
 
-        "IDR True Replicates": {
+        get_stage_name("IDR True Replicates", analysis_stages): {
             'output_files': [],
             'qc': [],
             'stage_metadata': {}  # initialized below
         },
 
-        "IDR Rep 1 Self-pseudoreplicates": {
+        get_stage_name("IDR Rep 1 Self-pseudoreplicates", analyis_stages): {
             'output_files': [],
             'qc': [],
             'stage_metadata': {}  # initialized below
         },
 
-        "IDR Rep 2 Self-pseudoreplicates": {
+        get_stage_name("IDR Rep 2 Self-pseudoreplicates", analysis_stages): {
             'output_files': [],
             'qc': [],
             'stage_metadata': {}  # initialized below
         },
 
-        "IDR Pooled Pseudoreplicates": {
+        get_stage_name("IDR Pooled Pseudoreplicates", analysis_stages): {
             'output_files': [],
             'qc': [],
             'stage_metadata': {}  # initialized below
         },
 
-        "Final IDR peak calls": {
+        get_stage_name("Final IDR peak calls", analysis_stages): {
 
             'output_files': [
 
@@ -1557,37 +1602,51 @@ def accession_file(f, keypair, server, dryrun, force):
     # upload to S3
     # remove the local file (to save space)
     # return the ENCODEd file object
-    logger.debug('in accession_file with f %s' %(pprint.pformat(f['submitted_file_name'])))
-    dx = f.pop('dx')
+    logger.debug(
+        'in accession_file with f %s'
+        % (pprint.pformat(f['submitted_file_name'])))
+    dx_fh = f.pop('dx')
 
-    local_fname = dx.name
-    logger.info("Downloading %s" %(local_fname))
-    dxpy.download_dxfile(dx.get_id(),local_fname)
-    f.update({'md5sum': common.md5(local_fname)})
+    if 'md5sum' in dx_fh.get_properties():
+        f.update({'md5sum': dx_fh.get_properties()['md5sum']})
+        local_fname = None
+    else:
+        local_fname = dx_fh.name
+        logger.info("Downloading %s" % (local_fname))
+        dxpy.download_dxfile(dx_fh.get_id(), local_fname)
+        md5sum = common.md5(local_fname)
+        dx_fh.set_properties({'md5sum': md5sum})
+        f.update({'md5sum': md5sum})
     f['notes'] = json.dumps(f.get('notes'))
 
-    #check to see if md5 already in the database
-    url = server + '/md5:%s?format=json&frame=object' %(f.get('md5sum'))
+    # check to see if md5 already in the database
+    url = \
+        server + \
+        '/md5:%s?format=json&frame=object' % (f.get('md5sum'))
     r = common.encoded_get(url, keypair, return_response=True)
     try:
         r.raise_for_status()
     except:
         if r.status_code == 404:
-            logger.info('No md5 matches %s' %(f.get('md5sum')))
+            logger.info('No md5 matches %s' % (f.get('md5sum')))
             md5_exists = False
         else:
-            logger.error('MD5 duplicate check. GET failed: %s %s' % (r.status_code, r.reason))
+            logger.error(
+                'MD5 duplicate check. GET failed: %s %s'
+                % (r.status_code, r.reason))
             logger.error(r.text)
             md5_exists = None
     else:
         md5_exists = r.json()
 
-
-    #check if an ENCODE accession number in in the list of tags, as it would be if accessioned by this script or similar scripts
-    for tag in dx.tags:
+    # check if an ENCODE accession number in in the list of tags, as it would
+    # be if accessioned by this script or similar scripts
+    for tag in dx_fh.tags:
         m = re.findall(r'ENCFF\d{3}\D{3}', tag)
         if m:
-            logger.info('%s appears to contain ENCODE accession number in tag %s.' %(dx.get_id(),m))
+            logger.info(
+                '%s appears to contain ENCODE accession number in tag %s.'
+                % (dx_fh.get_id(), m))
             accession_in_tag = True
             # if not force:
             #   return
@@ -1606,9 +1665,6 @@ def accession_file(f, keypair, server, dryrun, force):
         logger.info('posting new file %s' %(f.get('submitted_file_name')))
         logger.debug('%s' %(f))
         new_file_object = post_file(f, keypair, server, dryrun)
-
-
-    if new_file_object:
         creds = new_file_object['upload_credentials']
         env = os.environ.copy()
         env.update({
@@ -1628,14 +1684,14 @@ def accession_file(f, keypair, server, dryrun, force):
             end = time.time()
             duration = end - start
             logger.info("Uploaded in %.2f seconds" % duration)
-            dx.add_tags([new_file_object.get('accession')])
+            dx_fh.add_tags([new_file_object.get('accession')])
 
-    try:
-        os.remove(local_fname)
-    except:
-        pass
+        try:
+            os.remove(local_fname)
+        except:
+            pass
 
-    return new_file_object
+        return new_file_object
 
 def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force):
     url = urlparse.urljoin(server,'/analysis-step-runs/')
@@ -1671,7 +1727,7 @@ def accession_outputs(stages, experiment, keypair, server, dryrun, force):
             dx_desc = dx.describe()
             surfaced_outputs = [o for o in outputs['qc'] if isinstance(o,str)] #this will be a list of strings
             calculated_outputs = [o for o in outputs['qc'] if not isinstance(o,str)] #this will be a list of functions/methods
-            logger.debug('in accession_outputs with stage metadata\n%s' % (pprint.pformat(stage_metadata)))
+            logger.debug('in accession_outputs with stage metadata\n%s' % (stage_metadata.get('name')))
             logger.debug('in accession_ouputs with surfaced_ouputs %s and calculated_outputs %s from project %s' % (surfaced_outputs, calculated_outputs, project))
             notes_qc = dict(zip(surfaced_outputs,[stage_metadata['output'][metric] for metric in surfaced_outputs]))
             notes_qc.update(dict(zip([f.__name__ for f in calculated_outputs],[f(stages) for f in calculated_outputs])))
@@ -1828,12 +1884,16 @@ def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force):
     for (analysis_step_version_name, steps) in analysis_step_versions.iteritems():
         for step in steps:
             if not (step['stages'] and step['stage_name'] and step['file_names']):
-                logger.warning('%s missing stage metadata (files or stage_name) ... skipping' %(analysis_step_version_name))
+                logger.warning('%s missing stage metadata (files or stage_name) ... skipping' % (analysis_step_version_name))
                 continue
             stage_name = step['stage_name']
+            print stage_name
+            print step.keys()
+            print step['stages'].keys()
             jobid = step['stages'][stage_name]['stage_metadata']['id']
-            analysis_step_version = 'versionof:%s' %(analysis_step_version_name)
-            alias = 'dnanexus:%s' %(jobid)
+            analysis_step_version = \
+                'versionof:%s' % (analysis_step_version_name)
+            alias = 'dnanexus:%s' % (jobid)
             if step.get('status') == 'virtual':
                 alias += '-virtual-file-conversion-step'
             analysis_step_run_metadata = {
@@ -1842,18 +1902,33 @@ def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force):
                 'status': step['status'],
                 'dx_applet_details': [{
                     'dx_status': 'finished',
-                    'dx_job_id': 'dnanexus:%s' %(jobid),
+                    'dx_job_id': 'dnanexus:%s' % (jobid),
                 }]
             }
-            analysis_step_run = accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force)
-            logger.debug('in accession_pipeline analysis_step_run %s' %(pprint.pformat(analysis_step_run)))
+            analysis_step_run = accession_analysis_step_run(
+                analysis_step_run_metadata, keypair, server, dryrun, force)
+            logger.debug(
+                'in accession_pipeline analysis_step_run %s'
+                % (pprint.pformat(analysis_step_run)))
             for qc in step['qc_objects']:
                 qc_object_name, files_to_associate = next(qc.iteritems())
-                qc_objects = globals()[qc_object_name](analysis_step_run.get('@id'), step['stages'], files_to_associate)
+                qc_objects = \
+                    globals()[qc_object_name](
+                        analysis_step_run.get('@id'),
+                        step['stages'],
+                        files_to_associate)
                 for qc_object in qc_objects:
-                    new_object = accession_qc_object(qc_object_name, qc_object, keypair, server, dryrun, force)
-                    logger.info('New %s qc object %s aliases %s' %(qc_object_name, new_object.get('uuid'), new_object.get('aliases')))
-                    logger.debug('%s' %(pprint.pformat(new_object)))
+                    new_object = accession_qc_object(
+                        qc_object_name,
+                        qc_object,
+                        keypair,
+                        server,
+                        dryrun,
+                        force)
+                    logger.info(
+                        'New %s qc object %s aliases %s'
+                        % (qc_object_name, new_object.get('uuid'), new_object.get('aliases')))
+                    logger.debug('%s' % (pprint.pformat(new_object)))
 
             for file_name in step['file_names']:
                 for file_accession in resolve_name_to_accessions(step['stages'], file_name):
@@ -1861,7 +1936,8 @@ def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force):
                         'accession': file_accession,
                         'step_run': analysis_step_run.get('@id')
                     }
-                    patched_file = patch_file(patch_metadata, keypair, server, dryrun)
+                    patched_file = \
+                        patch_file(patch_metadata, keypair, server, dryrun)
                     patched_files.append(patched_file)
 
     return patched_files
@@ -1894,6 +1970,8 @@ def accession_mapping_analysis_files(
         urlparse.urljoin(
             server, '/experiments/%s' % (experiment_accession)), keypair)
 
+    analysis_stages = \
+        [stage['execution'] for stage in mapping_analysis.get('stages')]
     mapping_stages = get_mapping_stages(
         mapping_analysis, keypair, server, fqcheck, repn)
     if not mapping_stages:
@@ -1936,7 +2014,7 @@ def accession_mapping_analysis_files(
         'bwa-alignment-step-v-1': [
             {
                 'stages': mapping_stages,
-                'stage_name': 'Filter and QC*',
+                'stage_name': get_stage_name('Filter and QC.*', analysis_stages),
                 'file_names': ['filtered_bam'],
                 'status': 'finished',
                 'qc_objects': [
@@ -1951,7 +2029,7 @@ def accession_mapping_analysis_files(
         mapping_analysis_step_versions['bwa-alignment-step-v-1'].append(
             {
                 'stages': raw_mapping_stages,
-                'stage_name': 'Map ENCSR*',
+                'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
                 'file_names': ['mapped_reads'],
                 'status': 'finished',
                 'qc_objects': [
@@ -1983,11 +2061,13 @@ def accession_raw_mapping_analysis_files(
     logger.info("%s rep %d: accessioning mapping." %(experiment_accession, repn))
 
     experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
+
+    analysis_stages = \
+        [stage['execution'] for stage in mapping_analysis.get('stages')]
     raw_mapping_stages = get_raw_mapping_stages(
         mapping_analysis, keypair, server, fqcheck, repn)
 
     output_files = accession_outputs(raw_mapping_stages, experiment, keypair, server, dryrun, force)
-
     files_with_derived = patch_outputs(raw_mapping_stages, keypair, server, dryrun)
 
     raw_mapping_analysis_step_versions = {
@@ -2003,7 +2083,7 @@ def accession_raw_mapping_analysis_files(
         'bwa-raw-alignment-step-v-1' : [
             {
                 'stages' : raw_mapping_stages,
-                'stage_name': 'Map ENCSR*',
+                'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
                 'file_names' : ['mapped_reads'],
                 'status' : 'finished',
                 'qc_objects' : [
@@ -2016,148 +2096,172 @@ def accession_raw_mapping_analysis_files(
     patched_files = accession_pipeline(raw_mapping_analysis_step_versions, keypair, server, dryrun, force)
     return patched_files
 
-def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun, force, fqcheck):
 
-    # m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
-    # if m:
-    #   experiment_accession = m.group(1)
-    #   logger.info(experiment_accession)
+def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
+                                     force, fqcheck):
+
     experiment_accession = get_experiment_accession(peaks_analysis)
 
     if experiment_accession:
-        logger.info('%s: accession histone peaks' %(experiment_accession))
+        logger.info('%s: accession histone peaks' % (experiment_accession))
     else:
-        logger.error("No experiment accession in %s, skipping." %(peaks_analysis['executableName']))
+        logger.error(
+            "No experiment accession in %s, skipping."
+            % (peaks_analysis['executableName']))
         return None
 
-    #returns the experiment object
-    experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
+    # returns the experiment object
+    experiment = common.encoded_get(
+        urlparse.urljoin(
+            server, '/experiments/%s' % (experiment_accession)), keypair)
 
-    #returns a list with two elements:  the mapping stages for [rep1,rep2]
-    #in this context rep1,rep2 are the first and second replicates in the pipeline.  They may have been accessioned
-    #on the portal with any arbitrary biological_replicate_numbers.
-    mapping_stages = get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, fqcheck)
+    # returns a list with two elements:  the mapping stages for [rep1,rep2]
+    # in this context rep1,rep2 are the first and second replicates in the
+    # pipeline.  They may have been accessioned on the portal with any
+    # arbitrary biological_replicate_numbers.
+    mapping_stages = get_peak_mapping_stages(
+        peaks_analysis, experiment, keypair, server, fqcheck)
     if not mapping_stages:
         logger.error("Failed to find peak mapping stages")
         return None
 
-    #returns a list with three elements: the mapping stages for the controls for [rep1, rep2, pooled]
-    #the control stages for rep1 and rep2 might be the same as the pool if the experiment used pooled controls
-    control_stages = get_control_mapping_stages(peaks_analysis, experiment, keypair, server, fqcheck)
+    # returns a list with three elements: the mapping stages for the controls
+    # for [rep1, rep2, pooled]
+    # the control stages for rep1 and rep2 might be the same as the pool if the
+    #  experiment used pooled controls
+    control_stages = get_control_mapping_stages(
+        peaks_analysis, experiment, keypair, server, fqcheck)
     if not control_stages:
         logger.error("Failed to find control mapping stages")
         return None
 
-    #returns the stages for peak calling
-    peak_stages = get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages, experiment, keypair, server)
+    # returns the stages for peak calling
+    peak_stages = get_histone_peak_stages(
+        peaks_analysis,
+        mapping_stages,
+        control_stages,
+        experiment,
+        keypair,
+        server)
     if not peak_stages:
         logger.error("Failed to find peak stages")
         return None
 
-    #accession all the output files
+    # accession all the output files
     output_files = []
     for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
         logger.info('accessioning output')
-        output_files.extend(accession_outputs(stages, experiment, keypair, server, dryrun, force))
+        output_files.extend(
+            accession_outputs(
+                stages, experiment, keypair, server, dryrun, force))
 
-    #now that we have file accessions, loop again and patch derived_from
+    # now that we have file accessions, loop again and patch derived_from
     files_with_derived = []
     for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
-        files_with_derived.extend(patch_outputs(stages, keypair, server, dryrun))
+        files_with_derived.extend(
+            patch_outputs(stages, keypair, server, dryrun))
 
     full_analysis_step_versions = {
-        'bwa-indexing-step-v-1' : [
+        'bwa-indexing-step-v-1': [
             {
-                'stages' : "",
+                'stages': "",
                 'stage_name': "",
-                'file_names' : [],
-                'status' : 'finished',
+                'file_names': [],
+                'status': 'finished',
                 'qc_objects': []
             }
         ],
-        'bwa-alignment-step-v-1' : [
+        'bwa-alignment-step-v-1': [
             {
-                'stages' : control_stages[0],
-                'stage_name': 'Filter and QC*',
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
+                'stages': control_stages[0],
+                'stage_name': next(stage_name for stage_name in control_stages[0].keys() if stage_name.startswith('Filter and QC')),
+                'file_names': ['filtered_bam'],
+                'status': 'finished',
+                'qc_objects': [
                     {'chipseq_filter_quality_metric': ['filtered_bam']},
                     {'samtools_flagstats_quality_metric': ['filtered_bam']}
 
                 ]
             },
             {
-                'stages' : control_stages[1],
-                'stage_name': 'Filter and QC*',
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
+                'stages': control_stages[1],
+                'stage_name': next(stage_name for stage_name in control_stages[1].keys() if stage_name.startswith('Filter and QC')),
+                'file_names': ['filtered_bam'],
+                'status': 'finished',
+                'qc_objects': [
                     {'chipseq_filter_quality_metric': ['filtered_bam']},
                     {'samtools_flagstats_quality_metric': ['filtered_bam']}
                 ]
             },
             {
-                'stages' : mapping_stages[0],
-                'stage_name': 'Filter and QC*',
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
+                'stages': mapping_stages[0],
+                'stage_name': next(stage_name for stage_name in mapping_stages[0].keys() if stage_name.startswith('Filter and QC')),
+                'file_names': ['filtered_bam'],
+                'status': 'finished',
+                'qc_objects': [
                     {'chipseq_filter_quality_metric': ['filtered_bam']},
                     {'samtools_flagstats_quality_metric': ['filtered_bam']}
                 ]
             },
             {
-                'stages' : mapping_stages[1],
-                'stage_name': 'Filter and QC*',
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
+                'stages': mapping_stages[1],
+                'stage_name': next(stage_name for stage_name in mapping_stages[1].keys() if stage_name.startswith('Filter and QC')),
+                'file_names': ['filtered_bam'],
+                'status': 'finished',
+                'qc_objects': [
                     {'chipseq_filter_quality_metric': ['filtered_bam']},
                     {'samtools_flagstats_quality_metric': ['filtered_bam']}
                 ]
-            }           
+            }
         ],
-        'histone-peak-calling-step-v-1' : [
+        'histone-peak-calling-step-v-1': [
             {
-                'stages' : peak_stages,
+                'stages': peak_stages,
                 'stage_name': 'ENCODE Peaks',
-                'file_names' : ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal', 'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal', 'rep1_narrowpeaks', 'rep2_narrowpeaks', 'pooled_narrowpeaks'],
-                'status' : 'finished',
+                'file_names':
+                    ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal',
+                     'rep1_pvalue_signal', 'rep2_pvalue_signal',
+                     'pooled_pvalue_signal', 'rep1_narrowpeaks',
+                     'rep2_narrowpeaks', 'pooled_narrowpeaks'],
+                'status': 'finished',
                 'qc_objects': []
             }
         ],
-        'histone-overlap-peaks-step-v-1' : [
+        'histone-overlap-peaks-step-v-1': [
             {
-                'stages' : peak_stages,
-                'stage_name': 'Overlap narrowpeaks',
-                'file_names' : ['overlapping_peaks'],
-                'status' : 'finished',
+                'stages': peak_stages,
+                'stage_name': next(stage_name for stage_name in peak_stages.keys() if re.match('(Overlap|Final) narrowpeaks', stage_name)),
+                'file_names': ['overlapping_peaks'],
+                'status': 'finished',
                 'qc_objects': []
             }
         ],
-        'histone-peaks-to-bigbed-step-v-1' : [
+        'histone-peaks-to-bigbed-step-v-1': [
             {
-                'stages' : peak_stages,
+                'stages': peak_stages,
                 'stage_name': 'ENCODE Peaks',
-                'file_names' : ['rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb', 'pooled_narrowpeaks_bb'],
-                'status' : 'virtual',
+                'file_names':
+                    ['rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb',
+                     'pooled_narrowpeaks_bb'],
+                'status': 'virtual',
                 'qc_objects': []
             }
         ],
-        'histone-replicated-peaks-to-bigbed-step-v-1' : [
+        'histone-replicated-peaks-to-bigbed-step-v-1': [
             {
-                'stages' : peak_stages,
-                'stage_name': 'Overlap narrowpeaks',
-                'file_names' : ['overlapping_peaks_bb'],
-                'status' : 'virtual',
+                'stages': peak_stages,
+                'stage_name': next(stage_name for stage_name in peak_stages.keys() if re.match('(Overlap|Final) narrowpeaks', stage_name)),
+                'file_names': ['overlapping_peaks_bb'],
+                'status': 'virtual',
                 'qc_objects': []
             }
         ]
     }
 
-    patched_files = accession_pipeline(full_analysis_step_versions, keypair, server, dryrun, force)
+    patched_files = accession_pipeline(
+        full_analysis_step_versions, keypair, server, dryrun, force)
     return patched_files
+
 
 def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force, fqcheck):
 
@@ -2221,7 +2325,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force, 
         'bwa-alignment-step-v-1' : [
             {
                 'stages' : control_stages[0],
-                'stage_name': 'Filter and QC*',
+                'stage_name': next(stage_name for stage_name in control_stages[0].keys() if stage_name.startswith('Filter and QC')),
                 'file_names' : ['filtered_bam'],
                 'status' : 'finished',
                 'qc_objects' : [
@@ -2232,7 +2336,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force, 
             },
             {
                 'stages' : control_stages[1],
-                'stage_name': 'Filter and QC*',
+                'stage_name': next(stage_name for stage_name in control_stages[1].keys() if stage_name.startswith('Filter and QC')),
                 'file_names' : ['filtered_bam'],
                 'status' : 'finished',
                 'qc_objects' : [
@@ -2242,7 +2346,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force, 
             },
             {
                 'stages' : mapping_stages[0],
-                'stage_name': 'Filter and QC*',
+                'stage_name': next(stage_name for stage_name in mapping_stages[0].keys() if stage_name.startswith('Filter and QC')),
                 'file_names' : ['filtered_bam'],
                 'status' : 'finished',
                 'qc_objects' : [
@@ -2252,7 +2356,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force, 
             },
             {
                 'stages' : mapping_stages[1],
-                'stage_name': 'Filter and QC*',
+                'stage_name': next(stage_name for stage_name in mapping_stages[1].keys() if stage_name.startswith('Filter and QC')),
                 'file_names' : ['filtered_bam'],
                 'status' : 'finished',
                 'qc_objects' : [
