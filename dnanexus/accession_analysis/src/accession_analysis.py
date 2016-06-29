@@ -1457,7 +1457,7 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
             'stage_metadata': {}  # initialized below
         },
 
-        get_stage_name("IDR Rep 1 Self-pseudoreplicates", analyis_stages): {
+        get_stage_name("IDR Rep 1 Self-pseudoreplicates", analysis_stages): {
             'output_files': [],
             'qc': [],
             'stage_metadata': {}  # initialized below
@@ -1615,7 +1615,23 @@ def accession_file(f, keypair, server, dryrun, force):
         logger.info("Downloading %s" % (local_fname))
         dxpy.download_dxfile(dx_fh.get_id(), local_fname)
         md5sum = common.md5(local_fname)
-        dx_fh.set_properties({'md5sum': md5sum})
+        try:
+            dx_fh.set_properties({'md5sum': md5sum})
+        except dxpy.exceptions.ResourceNotFound as e:
+            logger.warning('%s.  Will try in current project.' % (e))
+            try:
+                current_project_fh = dxpy.DXFile(
+                    dx_fh.get_id(), project=dxpy.PROJECT_CONTEXT_ID)
+                current_project_fh.set_properties({'md5sum': md5sum})
+            except dxpy.exceptions.ResourceNotFound as e2:
+                # give up
+                logger.warning('%s.  Skipping saving md5 property.' % (e2))
+                pass
+            except:
+                raise
+        except:
+            raise
+
         f.update({'md5sum': md5sum})
     f['notes'] = json.dumps(f.get('notes'))
 
