@@ -1,8 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
-import sys, os, subprocess, shlex, logging, re, urlparse
+import sys
+import os
+import subprocess
+import shlex
+import logging
+import re
+import urlparse
 import dateutil.parser
 from time import sleep
+
 
 def test():
     print "In common.test"
