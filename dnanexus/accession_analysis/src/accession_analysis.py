@@ -1709,6 +1709,7 @@ def accession_file(f, keypair, server, dryrun, force):
 
         return new_file_object
 
+
 def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force):
     url = urlparse.urljoin(server,'/analysis-step-runs/')
     if dryrun:
@@ -1733,13 +1734,18 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dry
             logger.info("New analysis_step_run uuid: %s" %(new_object.get('uuid')))
     return new_object
 
+
 def accession_outputs(stages, experiment, keypair, server, dryrun, force):
     files = []
     for (stage_name, outputs) in stages.iteritems():
         stage_metadata = outputs['stage_metadata']
         for i,file_metadata in enumerate(outputs['output_files']):
             project = stage_metadata['project']
-            dx = dxpy.DXFile(stage_metadata['output'][file_metadata['name']], project=project)
+            file_id = stage_metadata['output'][file_metadata['name']]
+            logger.debug(
+                'in accession_outputs getting handler for file %s in %s'
+                % (file_id, project))
+            dx = dxpy.DXFile(file_id, project=project)
             dx_desc = dx.describe()
             surfaced_outputs = [o for o in outputs['qc'] if isinstance(o,str)] #this will be a list of strings
             calculated_outputs = [o for o in outputs['qc'] if not isinstance(o,str)] #this will be a list of functions/methods
@@ -1763,6 +1769,7 @@ def accession_outputs(stages, experiment, keypair, server, dryrun, force):
             stages[stage_name]['output_files'][i].update({'encode_object': new_file})
             files.append(new_file)
     return files
+
 
 def patch_outputs(stages, keypair, server, dryrun):
     logger.debug('in patch_outputs')
