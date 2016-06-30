@@ -169,6 +169,17 @@ def rescale_scores(fn, scores_col, new_min=10, new_max=1000):
         rescaled_fn)
     return rescaled_fn
 
+
+def slop_clip(filename, chrom_sizes):
+    clipped_fn = '%s-clipped' % (filename)
+    # Remove coordinates outside chromosome sizes
+    pipe = ['slopBed -i %s -g %s -b 0' % (filename, chrom_sizes),
+            'bedClip stdin %s %s' % (chrom_sizes, clipped_fn)]
+    print pipe
+    out, err = run_pipe(pipe)
+    return clipped_fn
+
+
 def processkey(key=None, keyfile=None):
 
     import json
@@ -226,11 +237,16 @@ def processkey(key=None, keyfile=None):
 
     return (authid,authpw,server)
 
+
 def encoded_get(url, keypair=None, frame='object', return_response=False):
     import urlparse, urllib, requests
     #it is not strictly necessary to include both the accept header, and format=json, but we do
     #so as to get exactly the same URL as one would use in a web browser
+
+    RETRY_CODES = [500]
+    RETRY_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.SSLError)
     HEADERS = {'accept': 'application/json'}
+
     url_obj = urlparse.urlsplit(url)
     new_url_list = list(url_obj)
     query = urlparse.parse_qs(url_obj.query)
@@ -252,19 +268,33 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
                 response = requests.get(get_url, auth=keypair, headers=HEADERS)
             else:
                 response = requests.get(get_url, headers=HEADERS)
-        except (requests.exceptions.ConnectionError, requests.exceptions.SSLError) as e:
-            print >> sys.stderr, e
+        except RETRY_EXCEPTIONS as e:
+            logging.warning(
+                "%s ... %d retries left." % (e, max_retries))
             sleep(max_sleep - max_retries)
             max_retries -= 1
             continue
         except Exception as e:
-            print >> sys.stderr, e
+            logging.error("%s" % (e))
             return None
         else:
+            if response.status_code in RETRY_CODES:
+                logging.warning(
+                    "%d %s ... %d retries left."
+                    % (response.status_code, response.text, max_retries))
+                sleep(max_sleep - max_retries)
+                max_retries -= 1
+                continue
             if return_response:
                 return response
             else:
-                return response.json()
+                try:
+                    return response.json()
+                except:
+                    return response.text
+    logging.error("Max retried exhausted.")
+    return None
+
 
 def encoded_update(method, url, keypair, payload, return_response):
     import urlparse, urllib, requests, json
@@ -278,22 +308,42 @@ def encoded_update(method, url, keypair, payload, return_response):
         logging.error('Invalid HTTP method: %s' %(method))
         return
 
+    RETRY_CODES = [500]
+    RETRY_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.SSLError)
     HEADERS = {'accept': 'application/json', 'content-type': 'application/json'}
+
     max_retries = 10
     max_sleep = 10
     while max_retries:
         try:
-            response = request_method(url, auth=keypair, headers=HEADERS, data=json.dumps(payload))
-        except (requests.exceptions.ConnectionError, requests.exceptions.SSLError) as e:
-            logging.warning("%s ... %d retries left." %(e, max_retries))
+            response = request_method(
+                url, auth=keypair, headers=HEADERS, data=json.dumps(payload))
+        except RETRY_EXCEPTIONS as e:
+            logging.warning(
+                "%s ... %d retries left." % (e, max_retries))
             sleep(max_sleep - max_retries)
             max_retries -= 1
             continue
+        except Exception as e:
+            logging.error("%s" % (e))
+            return None
         else:
+            if response.status_code in RETRY_CODES:
+                logging.warning(
+                    "%d %s ... %d retries left."
+                    % (response.status_code, response.text, max_retries))
+                sleep(max_sleep - max_retries)
+                max_retries -= 1
+                continue
             if return_response:
                 return response
             else:
-                return response.json()
+                try:
+                    return response.json()
+                except:
+                    return response.text
+    logging.error("Max retried exhausted.")
+    return None
 
 def encoded_patch(url, keypair, payload, return_response=False):
     return encoded_update('patch', url, keypair, payload, return_response)
@@ -378,3 +428,35 @@ def biorep_ns_generator(f, server, keypair):
 
 def biorep_ns(f, server, keypair):
     return [n for n in set(biorep_ns_generator(f, server, keypair)) if n is not None]
+
+
+def derived_from_references_generator(f, server, keypair):
+    if isinstance(f, dict):
+        acc = f.get('accession')
+    else:
+        m = re.match('^/?(files)?/?(\w*)', f)
+        if m:
+            acc = m.group(2)
+        else:
+            acc = re.search('ENCFF[0-9]{3}[A-Z]{3}', f).group(0)
+    if not acc:
+        return
+    url = urlparse.urljoin(server, '/files/%s' % (acc))
+    file_object = encoded_get(url, keypair)
+
+    if not file_object.get('derived_from'):
+        return
+    else:
+        for derived_from_uri in file_object.get('derived_from', []):
+            derived_from_url = urlparse.urljoin(server, derived_from_uri)
+            derived_from_file = encoded_get(derived_from_url, keypair)
+            if derived_from_file.get('output_category') == "reference":
+                yield derived_from_file.get('@id')
+            else:
+                for derived_from_reference in derived_from_references_generator(derived_from_file, server, keypair):
+                    yield derived_from_reference
+
+
+def derived_from_references(f, server, keypair):
+    return [n for n in set(derived_from_references_generator(f, server, keypair)) if n is not None]
+

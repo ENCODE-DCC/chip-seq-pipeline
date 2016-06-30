@@ -237,11 +237,16 @@ def processkey(key=None, keyfile=None):
 
     return (authid,authpw,server)
 
+
 def encoded_get(url, keypair=None, frame='object', return_response=False):
     import urlparse, urllib, requests
     #it is not strictly necessary to include both the accept header, and format=json, but we do
     #so as to get exactly the same URL as one would use in a web browser
+
+    RETRY_CODES = [500]
+    RETRY_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.SSLError)
     HEADERS = {'accept': 'application/json'}
+
     url_obj = urlparse.urlsplit(url)
     new_url_list = list(url_obj)
     query = urlparse.parse_qs(url_obj.query)
@@ -263,19 +268,33 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
                 response = requests.get(get_url, auth=keypair, headers=HEADERS)
             else:
                 response = requests.get(get_url, headers=HEADERS)
-        except (requests.exceptions.ConnectionError, requests.exceptions.SSLError) as e:
-            print >> sys.stderr, e
+        except RETRY_EXCEPTIONS as e:
+            logging.warning(
+                "%s ... %d retries left." % (e, max_retries))
             sleep(max_sleep - max_retries)
             max_retries -= 1
             continue
         except Exception as e:
-            print >> sys.stderr, e
+            logging.error("%s" % (e))
             return None
         else:
+            if response.status_code in RETRY_CODES:
+                logging.warning(
+                    "%d %s ... %d retries left."
+                    % (response.status_code, response.text, max_retries))
+                sleep(max_sleep - max_retries)
+                max_retries -= 1
+                continue
             if return_response:
                 return response
             else:
-                return response.json()
+                try:
+                    return response.json()
+                except:
+                    return response.text
+    logging.error("Max retried exhausted.")
+    return None
+
 
 def encoded_update(method, url, keypair, payload, return_response):
     import urlparse, urllib, requests, json
@@ -289,22 +308,42 @@ def encoded_update(method, url, keypair, payload, return_response):
         logging.error('Invalid HTTP method: %s' %(method))
         return
 
+    RETRY_CODES = [500]
+    RETRY_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.SSLError)
     HEADERS = {'accept': 'application/json', 'content-type': 'application/json'}
+
     max_retries = 10
     max_sleep = 10
     while max_retries:
         try:
-            response = request_method(url, auth=keypair, headers=HEADERS, data=json.dumps(payload))
-        except (requests.exceptions.ConnectionError, requests.exceptions.SSLError) as e:
-            logging.warning("%s ... %d retries left." %(e, max_retries))
+            response = request_method(
+                url, auth=keypair, headers=HEADERS, data=json.dumps(payload))
+        except RETRY_EXCEPTIONS as e:
+            logging.warning(
+                "%s ... %d retries left." % (e, max_retries))
             sleep(max_sleep - max_retries)
             max_retries -= 1
             continue
+        except Exception as e:
+            logging.error("%s" % (e))
+            return None
         else:
+            if response.status_code in RETRY_CODES:
+                logging.warning(
+                    "%d %s ... %d retries left."
+                    % (response.status_code, response.text, max_retries))
+                sleep(max_sleep - max_retries)
+                max_retries -= 1
+                continue
             if return_response:
                 return response
             else:
-                return response.json()
+                try:
+                    return response.json()
+                except:
+                    return response.text
+    logging.error("Max retried exhausted.")
+    return None
 
 def encoded_patch(url, keypair, payload, return_response=False):
     return encoded_update('patch', url, keypair, payload, return_response)
