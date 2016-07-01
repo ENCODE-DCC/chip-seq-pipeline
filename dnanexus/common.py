@@ -24,6 +24,7 @@ def flat(l):
             result.append(el)
     return result
 
+
 def rstrips(string, substring):
     if not string.endswith(substring):
         return string
