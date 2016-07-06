@@ -1588,7 +1588,7 @@ def post_file(payload, keypair, server, dryrun):
     return new_file_object
 
 
-def accession_file(f, keypair, server, dryrun, force):
+def accession_file(f, server, keypair, dryrun, force):
     # check for duplication
     # - if it has ENCFF or TSTFF number in it's tag, or
     # - if there exists an accessioned file with the same submitted_file_name that is not deleted, replaced, revoked and has the same size
@@ -1670,44 +1670,34 @@ def accession_file(f, keypair, server, dryrun, force):
             accession_in_tag = False
 
     #TODO check here if file is deprecated and, if so, warn
-    if md5_exists:
-        if force:
-            f['accession'] = md5_exists['accession']
-            return patch_file(f, keypair, server, dryrun)
-        else:
-            logger.info("Returning duplicate file unchanged")
-            return md5_exists
+    if md5_exists and not force:
+        logger.info("accession_file: Returning duplicate file unchanged")
+        return md5_exists
+
+    if not local_fname:
+        local_fname = dx_fh.name
+        logger.info("Downloading %s" % (local_fname))
+        dxpy.download_dxfile(dx_fh.get_id(), local_fname)
+
+    if md5_exists and force:
+        logger.info("accession_file: MD5 exisits, but force selected, so uploading and patching file metatdata")
+        f['accession'] = md5_exists['accession']
+        return_code = common.s3_cp(f, local_fname, dx_fh, server, keypair)
+        logger.debug('s3_cp returned %s' % (return_code))
+        new_file_object = patch_file(f, keypair, server, dryrun)
     else:
-        logger.info('posting new file %s' %(f.get('submitted_file_name')))
-        logger.debug('%s' %(f))
+        logger.info("accession_file: New MD5")
+        logger.info('posting new file %s' % (f.get('submitted_file_name')))
+        logger.debug('%s' % (f))
         new_file_object = post_file(f, keypair, server, dryrun)
-        creds = new_file_object['upload_credentials']
-        env = os.environ.copy()
-        env.update({
-            'AWS_ACCESS_KEY_ID': creds['access_key'],
-            'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
-            'AWS_SECURITY_TOKEN': creds['session_token'],
-        })
+        return_code = common.s3_cp(new_file_object, local_fname, dx_fh, server, keypair)
+        logger.debug('s3_cp returned %s' % (return_code))
+    try:
+        os.remove(local_fname)
+    except:
+        pass
 
-        logger.info("Uploading file.")
-        start = time.time()
-        try:
-            subprocess.check_call(['aws', 's3', 'cp', local_fname, creds['upload_url'], '--quiet'], env=env)
-        except subprocess.CalledProcessError as e:
-            # The aws command returns a non-zero exit code on error.
-            logger.error("Upload failed with exit code %d" % e.returncode)
-        else:
-            end = time.time()
-            duration = end - start
-            logger.info("Uploaded in %.2f seconds" % duration)
-            dx_fh.add_tags([new_file_object.get('accession')])
-
-        try:
-            os.remove(local_fname)
-        except:
-            pass
-
-        return new_file_object
+    return new_file_object
 
 
 def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dryrun, force):
@@ -1765,7 +1755,7 @@ def accession_outputs(stages, experiment, keypair, server, dryrun, force):
                 'file_size': dx_desc.get('size'),
                 'submitted_file_name': dx.get_proj_id() + ':' + '/'.join([dx.folder,dx.name])}
             post_metadata.update(file_metadata['metadata'])
-            new_file = accession_file(post_metadata, keypair, server, dryrun, force)
+            new_file = accession_file(post_metadata, server, keypair, dryrun, force)
             stages[stage_name]['output_files'][i].update({'encode_object': new_file})
             files.append(new_file)
     return files
