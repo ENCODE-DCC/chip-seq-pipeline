@@ -8,7 +8,11 @@ import logging
 import re
 import urlparse
 import dateutil.parser
-from time import sleep
+from time import time, sleep
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+logger.propagate = True
 
 
 def test():
@@ -468,3 +472,38 @@ def derived_from_references_generator(f, server, keypair):
 def derived_from_references(f, server, keypair):
     return [n for n in set(derived_from_references_generator(f, server, keypair)) if n is not None]
 
+
+def s3_cp(file_object, local_fname, dx_fh, server, keypair, overwrite=False):
+    # TODO check overwrite and regenerate credential if necessary
+    if 'upload_credentials' not in file_object:
+        url = server + '/files/%s/upload/' % (file_object['accession'])
+        response_json = encoded_get(url, keypair)
+        logger.debug('s3_cp: Got %s response_json %s' % (url, response_json))
+        creds = response_json['@graph'][0]['upload_credentials']
+    else:
+        creds = file_object['upload_credentials']
+    logger.debug('s3_cp: Got creds %s' % (creds))
+    env = os.environ.copy()
+    env.update({
+        'AWS_ACCESS_KEY_ID': creds['access_key'],
+        'AWS_SECRET_ACCESS_KEY': creds['secret_key'],
+        'AWS_SECURITY_TOKEN': creds['session_token'],
+    })
+    logger.info("Uploading file.")
+    start = time()
+    logger.debug('accession_file local_fname %s' % (local_fname))
+    logger.debug('accession_file upload_url %s' % (creds['upload_url']))
+    try:
+        return_code = subprocess.check_call(
+            ['aws', 's3', 'cp', local_fname, creds['upload_url'], '--quiet'],
+            env=env)
+    except subprocess.CalledProcessError as e:
+        # The aws command returns a non-zero exit code on error.
+        logger.error("Upload failed with exit code %d" % e.returncode)
+        return e.returncode
+    else:
+        end = time()
+        duration = end - start
+        logger.info("Uploaded in %.2f seconds" % duration)
+        dx_fh.add_tags([file_object.get('accession')])
+        return return_code
