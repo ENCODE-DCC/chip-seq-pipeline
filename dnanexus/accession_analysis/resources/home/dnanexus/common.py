@@ -473,7 +473,7 @@ def derived_from_references(f, server, keypair):
     return [n for n in set(derived_from_references_generator(f, server, keypair)) if n is not None]
 
 
-def s3_cp(file_object, local_fname, dx_fh, server, keypair, overwrite=False):
+def s3_cp(file_object, local_fname, server, keypair, overwrite=False):
     # TODO check overwrite and regenerate credential if necessary
     if 'upload_credentials' not in file_object:
         url = server + '/files/%s/upload/' % (file_object['accession'])
@@ -505,5 +505,4 @@ def s3_cp(file_object, local_fname, dx_fh, server, keypair, overwrite=False):
         end = time()
         duration = end - start
         logger.info("Uploaded in %.2f seconds" % duration)
-        dx_fh.add_tags([file_object.get('accession')])
         return return_code
