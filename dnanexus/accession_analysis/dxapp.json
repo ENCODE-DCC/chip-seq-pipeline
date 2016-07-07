@@ -64,7 +64,13 @@
       "default": false
     },
     {
-      "name": "force",
+      "name": "force_patch",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    },
+    {
+      "name": "force_upload",
       "class": "boolean",
       "optional": true,
       "default": false
