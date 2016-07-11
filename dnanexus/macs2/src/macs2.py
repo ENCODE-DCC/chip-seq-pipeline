@@ -125,7 +125,7 @@ def main(experiment, control, xcor_scores_input, chrom_sizes, narrowpeak_as, gap
     out,err = common.run_pipe(pipe,'%s' %(broadPeak_gz_fn))
 
     # MACS2 sometimes calls features off the end of chromosomes.  Fix that.
-    clipped_gappedpeaks_fn = common.slop_clip('%s/%s_peaks.gappedPeak' %(peaks_dirname, prefix), chrom_sizes.name)
+    clipped_gappedpeaks_fn = common.slop_clip('%s/%s_peaks.gappedPeak' %(peaks_dirname, prefix), chrom_sizes.name, bed_type='gappedPeak')
 
     # Rescale Col5 scores to range 10-1000 to conform to narrowPeak.as format (score must be <1000)
     rescaled_gappedpeak_fn = common.rescale_scores(clipped_gappedpeaks_fn, scores_col=5)
