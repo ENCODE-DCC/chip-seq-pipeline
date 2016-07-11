@@ -182,14 +182,91 @@ def rescale_scores(fn, scores_col, new_min=10, new_max=1000):
     return rescaled_fn
 
 
-def slop_clip(filename, chrom_sizes):
+def slop_clip(filename, chrom_sizes, bed_type='bed'):
+    assert bed_type in ['bed', 'gappedPeak'], \
+        "slop_clip: unsupported bed_type %s" % (bed_type)
     clipped_fn = '%s-clipped' % (filename)
     # Remove coordinates outside chromosome sizes
     pipe = ['slopBed -i %s -g %s -b 0' % (filename, chrom_sizes),
             'bedClip stdin %s %s' % (chrom_sizes, clipped_fn)]
     print pipe
     out, err = run_pipe(pipe)
-    return clipped_fn
+    if bed_type == 'bed':
+        return clipped_fn
+    elif bed_type == 'gappedPeak':
+        clipped_gappedPeaks_fn = '%s-gapclipped' % (clipped_fn)
+        import csv
+        import copy
+        with open(clipped_fn, 'rb') as in_fh, open(clipped_gappedPeaks_fn, 'wb') as out_fh:
+            fieldnames = [
+                'chrom', 'chromStart', 'chromEnd', 'name', 'score',
+                'strand', 'thickStart', 'thickEnd', 'reserved',
+                'blockCount', 'blockSizes', 'blockStarts',
+                'signalValue', 'pValue', 'qValue']
+            reader = \
+                csv.DictReader(in_fh, fieldnames=fieldnames, delimiter='\t')
+            writer = \
+                csv.DictWriter(out_fh, fieldnames=fieldnames, delimiter='\t', lineterminator='\n')
+            for line in reader:
+                peak = dict(zip(fieldnames, [
+                    line['chrom'],
+                    int(line['chromStart']),
+                    int(line['chromEnd']),
+                    line['name'],
+                    line['score'],
+                    line['strand'],
+                    int(line['thickStart']),
+                    int(line['thickEnd']),
+                    line['reserved'],
+                    int(line['blockCount']),
+                    [int(s) for s in line['blockSizes'].split(',')],
+                    [int(s) for s in line['blockStarts'].split(',')],
+                    line['signalValue'],
+                    line['pValue'],
+                    line['qValue']]))
+                chromStart = peak['chromStart']
+                chromEnd = peak['chromEnd']
+                if peak['thickStart'] < chromStart:
+                    peak['thickStart'] = chromStart
+                if peak['thickEnd'] > chromEnd:
+                    peak['thickEnd'] = chromEnd
+                blocks = [
+                    dict(zip(
+                        ['start', 'end'],
+                        [chromStart+peak['blockStarts'][i], chromStart+(peak['blockStarts'][i] + peak['blockSizes'][i])]))
+                    for i in range(peak['blockCount'])]
+                newblocks = []
+                for block in blocks:
+                    if block['start'] < chromStart and block['end'] < chromStart:
+                        continue
+                    elif block['start'] > chromEnd and block['end'] > chromEnd:
+                        continue
+                    elif block['end'] > chromEnd:
+                        block['end'] = chromEnd
+                    elif block['start'] < block['start']:
+                        block['start'] = chromStart
+                    newblocks.append(block)
+                if not [b for b in blocks if b['start'] == chromStart]:
+                    newblocks.insert(
+                        0,
+                        {'start': chromStart, 'end': chromStart+1})
+                if not [b for b in blocks if b['end'] == chromEnd]:
+                    newblocks.append(
+                        {'start': chromEnd-1, 'end': chromEnd})
+
+                peak['blockCount'] = len(newblocks)
+                peak['blockSizes'] = \
+                    [(block['end']-block['start']) for block in newblocks]
+                peak['blockStarts'] = \
+                    [block['start']-chromStart for block in newblocks]
+                if peak['blockCount']:
+                    peak['blockSizes'] = \
+                        ','.join([str(x) for x in peak['blockSizes']])
+                    peak['blockStarts'] = \
+                        ','.join([str(x) for x in peak['blockStarts']])
+                    writer.writerow(peak)
+
+        return clipped_gappedPeaks_fn
 
 
 def processkey(key=None, keyfile=None):
@@ -204,8 +281,10 @@ def processkey(key=None, keyfile=None):
         if not keyfile:
             if 'KEYFILE' in globals(): #this is to support scripts where KEYFILE is a global
                 keyfile = KEYFILE
+            elif os.path.isfile(os.path.expanduser('~/keypairs.json')):
+                keyfile = os.path.expanduser('~/keypairs.json')
             else:
-                logging.error("Keyfile must be specified or in global KEYFILE.")
+                logging.error("Keyfile must be specified, in ~/keypairs.json or in global KEYFILE.")
                 return None
         if key:
             try:
