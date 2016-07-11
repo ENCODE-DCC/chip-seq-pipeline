@@ -106,8 +106,7 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks,
         cut_command = 'cut -f 1-9'
         bed_type = 'bed6+3'
     else:
-        print "%s is unrecognized.  peak_type should be narrowPeak, gappedPeak or broadPeak."
-        sys.exit()
+        assert peak_type in ['narrowPeak', 'gappedPeak', 'broadPeak'], "%s is unrecognized.  peak_type should be narrowPeak, gappedPeak or broadPeak." % (peak_type)
 
     # Find pooled peaks that overlap Rep1 and Rep2 where overlap is defined as the fractional overlap wrt any one of the overlapping peak pairs  > 0.5
     out, err = common.run_pipe([
@@ -155,6 +154,8 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks, pooledpr1_peaks, pooledpr2_peaks,
     #make bigBed files for visualization
     overlapping_peaks_bb_fn = common.bed2bb(overlapping_peaks_fn, chrom_sizes_fn, as_file_fn, bed_type=bed_type)
     rejected_peaks_bb_fn    = common.bed2bb(rejected_peaks_fn, chrom_sizes_fn, as_file_fn, bed_type=bed_type)
+    # overlapping_peaks_bb_fn = common.bed2bb(common.slop_clip(overlapping_peaks_fn, chrom_sizes_fn, "gappedPeak"), chrom_sizes_fn, as_file_fn, bed_type=bed_type)
+    # rejected_peaks_bb_fn    = common.bed2bb(common.slop_clip(rejected_peaks_fn, chrom_sizes_fn, "gappedPeak"), chrom_sizes_fn, as_file_fn, bed_type=bed_type)
 
     # Upload file outputs from the local file system.
 
