@@ -1697,7 +1697,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         new_file_object = post_file(f, keypair, server, dryrun)
         return_code = common.s3_cp(
             new_file_object, local_fname, server, keypair)
-        dx_fh.add_tags([file_object.get('accession')])
+        dx_fh.add_tags([new_file_object.get('accession')])
         logger.debug('s3_cp returned %s' % (return_code))
     try:
         os.remove(local_fname)

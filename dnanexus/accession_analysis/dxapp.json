@@ -85,7 +85,7 @@
       "name": "accession_raw",
       "class": "boolean",
       "optional": true,
-      "default": false
+      "default": true
     }
   ],
   "outputSpec": [
