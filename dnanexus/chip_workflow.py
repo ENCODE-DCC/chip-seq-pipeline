@@ -155,10 +155,6 @@ def get_args():
 
     logging.debug("rep1 is: %s" % (args.rep1))
 
-    if args.nomap and (args.rep1pe is None or args.rep2pe is None):
-        logging.error("With --nomap, endedness of replicates must be specified with --rep1pe and --rep2pe")
-        raise ValueError
-
     return args
 
 
@@ -319,6 +315,12 @@ def find_applet_by_name(applet_name, applets_project_id):
 def main():
     args = get_args()
 
+    blank_workflow = not (args.rep1 or args.rep2 or args.ctl1 or args.ctl2)
+
+    if args.nomap and (args.rep1pe is None or args.rep2pe is None) and not blank_workflow:
+        logging.error("With --nomap, endedness of replicates must be specified with --rep1pe and --rep2pe")
+        raise ValueError
+
     if not args.target:
         target_type = 'default'  # default
     else:
@@ -341,7 +343,6 @@ def main():
         project=output_project.get_id(),
         folder=output_folder)
 
-    blank_workflow = not (args.rep1 or args.rep2 or args.ctl1 or args.ctl2)
 
     unary_control = args.unary_control or (args.rep1 and args.rep2 and args.ctl1 and not args.ctl2)
 
@@ -483,10 +484,17 @@ def main():
                         {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
                          'outputField': 'paired_end'})
     else: #skipped the mapping, so just bring in the inputs from arguments
-        exp_rep1_ta = dxpy.dxlink(resolve_file(args.rep1[0]).get_id())
-        exp_rep2_ta = dxpy.dxlink(resolve_file(args.rep2[0]).get_id())
-        ctl_rep1_ta = dxpy.dxlink(resolve_file(args.ctl1[0]).get_id())
-        ctl_rep2_ta = dxpy.dxlink(resolve_file(args.ctl2[0]).get_id())
+        if not blank_workflow:
+            exp_rep1_ta = dxpy.dxlink(resolve_file(args.rep1[0]).get_id())
+            exp_rep2_ta = dxpy.dxlink(resolve_file(args.rep2[0]).get_id())
+            ctl_rep1_ta = dxpy.dxlink(resolve_file(args.ctl1[0]).get_id())
+            ctl_rep2_ta = dxpy.dxlink(resolve_file(args.ctl2[0]).get_id())
+        else:
+            exp_rep1_ta = None
+            exp_rep2_ta = None
+            ctl_rep1_ta = None
+            ctl_rep2_ta = None
+
         rep1_paired_end = args.rep1pe
         rep2_paired_end = args.rep2pe
 
