@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# ENCODE_BWA 0.0.1
+# ENCODE_map 0.0.1
 
 import os
 import subprocess
@@ -7,10 +7,13 @@ import shlex
 import time
 import re
 from multiprocessing import Pool, cpu_count
-from subprocess import Popen, PIPE  # debug only this should only need to be imported into run_pipe
 import dxpy
+import common
+import logging
 
 logger = logging.getLogger(__name__)
+logger.addHandler(dxpy.DXLogHandler())
+logger.propagate = False
 
 
 def flagstat_parse(fname):
@@ -46,40 +49,6 @@ def flagstat_parse(fname):
         qc_dict[qc_key] = [int(hiq.rstrip()), int(lowq.rstrip())]
 
     return qc_dict
-
-
-def run_pipe(steps, outfile=None):
-    #break this out into a recursive function
-    #TODO:  capture stderr
-    from subprocess import Popen, PIPE
-    p = None
-    p_next = None
-    first_step_n = 1
-    last_step_n = len(steps)
-    for n,step in enumerate(steps, start=first_step_n):
-        print "step %d: %s" %(n,step)
-        if n == first_step_n:
-            if n == last_step_n and outfile: #one-step pipeline with outfile
-                with open(outfile, 'w') as fh:
-                    print "one step shlex: %s to file: %s" %(shlex.split(step), outfile)
-                    p = Popen(shlex.split(step), stdout=fh)
-                break
-            print "first step shlex to stdout: %s" %(shlex.split(step))
-            p = Popen(shlex.split(step), stdout=PIPE)
-            #need to close p.stdout here?
-        elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
-            with open(outfile, 'w') as fh:
-                print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
-                p_last = Popen(shlex.split(step), stdin=p.stdout, stdout=fh)
-                p.stdout.close()
-                p = p_last
-        else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
-            print "intermediate step %d shlex to stdout: %s" %(n,shlex.split(step))
-            p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
-            p.stdout.close()
-            p = p_next
-    out,err = p.communicate()
-    return out,err
 
 
 def resolve_reference():
@@ -162,7 +131,7 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
                   r"""awk 'BEGIN {FS="\t" ; OFS="\t"} ! /^@/ && $6!="*" { cigar=$6; gsub("[0-9]+D","",cigar); n = split(cigar,vals,"[A-Z]"); s = 0; for (i=1;i<=n;i++) s=s+vals[i]; seqlen=length($10) ; if (s!=seqlen) print $1"\t" ; }'""",
                   "sort",
                   "uniq" ]
-        out,err = run_pipe(steps,badcigar_filename)
+        out,err = common.run_pipe(steps,badcigar_filename)
         if err:
             print "sampe error: %s" %(err)
 
@@ -180,7 +149,7 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar, bwa_version, samto
                       "%s sort -@%d - %s" %(samtools, cpu_count(), raw_bam_filename.rstrip('.bam')) ]) # samtools adds .bam
     print "Running pipe:"
     print steps
-    out,err = run_pipe(steps)
+    out,err = common.run_pipe(steps)
 
     if out:
         print "samtools output: %s" %(out)
@@ -265,7 +234,8 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version):
 
 
 @dxpy.entry_point("main")
-def main(reads1=None, reference_tar=None, bwa_aln_params=None, bwa_version=None, samtools_version=None, reads2=None, input_JSON=None, debug=False):
+def main(reads1, reads2, crop_length, reference_tar,
+         bwa_version, bwa_aln_params, samtools_version, input_JSON, debug):
 
     # Main entry-point.  Parameter defaults assumed to come from dxapp.json.
     # reads1, reference_tar, reads2 are links to DNAnexus files or None
@@ -308,24 +278,30 @@ def main(reads1=None, reference_tar=None, bwa_aln_params=None, bwa_version=None,
     unmapped_reads = [r for r in [reads1, reads2] if r]
 
     subjobs = []
+
+
+
     for reads in unmapped_reads:
-        subjob_input = {"reads_file": reads,
-                        "reference_tar": reference_tar,
-                        "bwa_aln_params": bwa_aln_params,
-                        "bwa_version": bwa_version}
-        print "Submitting:"
-        print subjob_input
+        mapping_subjob_input = {
+            "reads_file": reads,
+            "reference_tar": reference_tar,
+            "bwa_aln_params": bwa_aln_params,
+            "bwa_version": bwa_version}
+        logger.info("Submitting: %s" % (subjob_input))
         subjobs.append(dxpy.new_dxjob(subjob_input, "process"))
 
-    # Create the job that will perform the "postprocess" step.  depends_on=subjobs, so blocks on all subjobs
+    # Create the job that will perform the "postprocess" step.
+    # depends_on=subjobs, so blocks on all subjobs
 
-    postprocess_job = dxpy.new_dxjob(fn_input={ "indexed_reads": [subjob.get_output_ref("output") for subjob in subjobs],
-                                                "unmapped_reads": unmapped_reads,
-                                                "reference_tar": reference_tar,
-                                                "bwa_version": bwa_version,
-                                                "samtools_version": samtools_version },
-                                     fn_name="postprocess",
-                                     depends_on=subjobs)
+    postprocess_job = dxpy.new_dxjob(
+        fn_input={
+            "indexed_reads": [subjob.get_output_ref("output") for subjob in subjobs],
+            "unmapped_reads": unmapped_reads,
+            "reference_tar": reference_tar,
+            "bwa_version": bwa_version,
+            "samtools_version": samtools_version},
+        fn_name="postprocess",
+        depends_on=subjobs)
 
     mapped_reads = postprocess_job.get_output_ref("mapped_reads")
     mapping_statistics = postprocess_job.get_output_ref("mapping_statistics")

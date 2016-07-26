@@ -1,7 +1,7 @@
 <!-- dx-header -->
-# ENCODE BWA (DNAnexus Platform App)
+# ENCODE map (DNAnexus Platform App)
 
-Map reads with BWA 0.7.7
+Optionally crop, then map reads
 
 This is the source code for an app that runs on the DNAnexus Platform.
 For more information about how to run or modify it, see
