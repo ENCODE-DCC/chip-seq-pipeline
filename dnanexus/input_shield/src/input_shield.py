@@ -15,6 +15,10 @@ import logging
 import re
 import dxpy
 import common
+import subprocess
+import shlex
+import requests
+import urlparse
 
 KEYFILE = 'keypairs.json'
 DEFAULT_SERVER = 'https://www.encodeproject.org'
@@ -24,6 +28,62 @@ DATA_CACHE_PROJECT = None  # if specified, look in that project for ENCFF files
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
+
+
+def s3_dxcp(accession, key=None):
+
+    (AUTHID,AUTHPW,SERVER) = common.processkey(key,KEYFILE)
+    keypair = (AUTHID,AUTHPW)
+
+    url = SERVER + '/search/?type=file&accession=%s&format=json&frame=embedded&limit=all' %(accession)
+    #get the file object
+    response = common.encoded_get(url, keypair)
+    logger.debug(response)
+
+    #select your file
+    result = response.get('@graph')
+    if not result:
+        logger.error('Failed to find %s at %s' %(accession, url))
+        return None
+    else:
+        f_obj = result[0]
+        logger.debug(f_obj)
+
+    #make the URL that will get redirected - get it from the file object's href property
+    encode_url = urlparse.urljoin(SERVER,f_obj.get('href'))
+    logger.debug("URL: %s" %(encode_url))
+    logger.debug("%s:%s" %(AUTHID, AUTHPW))
+    #stream=True avoids actually downloading the file, but it evaluates the redirection
+    r = requests.get(encode_url, auth=(AUTHID,AUTHPW), headers={'content-type': 'application/json'}, allow_redirects=True, stream=True)
+    try:
+        r.raise_for_status
+    except:
+        logger.error('%s href does not resolve' %(f_obj.get('accession')))
+    logger.debug("Response: %s", (r))
+
+    #this is the actual S3 https URL after redirection
+    s3_url = r.url
+    logger.debug(s3_url)
+
+    #release the connection
+    r.close()
+
+    #split up the url into components
+    o = urlparse.urlparse(s3_url)
+
+    #pull out the filename
+    filename = os.path.basename(o.path)
+
+    #hack together the s3 cp url (with the s3 method instead of https)
+    bucket_url = S3_SERVER.rstrip('/') + o.path
+
+    #cp the file from the bucket
+    subprocess.check_call(shlex.split('aws s3 cp %s . --quiet' %(bucket_url)), stderr=subprocess.STDOUT)
+    subprocess.check_call(shlex.split('ls -l %s' %(filename)))
+
+    dx_file = dxpy.upload_local_file(filename)
+
+    return dx_file
 
 
 def resolve_project(identifier, privs='r'):
@@ -90,7 +150,7 @@ def resolve_accession(accession, key):
 
     # we're here because we couldn't find the cache or couldn't find the file in the cache, so look in AWS
 
-    dx_file = common.s3cp(accession, key) #this returns a link to the file in the applet's project context
+    dx_file = s3_dxcp(accession, key) #this returns a link to the file in the applet's project context
 
     if not dx_file:
         logger.warning('Cannot find %s.  Giving up.' %(accession))
