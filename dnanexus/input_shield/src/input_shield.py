@@ -11,302 +11,219 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, requests, logging, re, urlparse, subprocess, requests, json, shlex
+import logging
+import re
 import dxpy
 import common
 
 KEYFILE = 'keypairs.json'
 DEFAULT_SERVER = 'https://www.encodeproject.org'
-S3_SERVER='s3://encode-files/'
-DATA_CACHE_PROJECT = None #if specified, look anywhere in this project for ENCFF files
+S3_SERVER = 's3://encode-files/'
+DATA_CACHE_PROJECT = None  # if specified, look in that project for ENCFF files
 
 logger = logging.getLogger(__name__)
+logger.addHandler(dxpy.DXLogHandler())
+logger.propagate = False
 
-# def processkey(key):
-
-# 	if key:
-# 		keysf = open(KEYFILE,'r')
-# 		keys_json_string = keysf.read()
-# 		keysf.close()
-# 		keys = json.loads(keys_json_string)
-# 		logger.debug("Keys: %s" %(keys))
-# 		key_dict = keys[key]
-# 	else:
-# 		key_dict = {}
-# 	AUTHID = key_dict.get('key')
-# 	AUTHPW = key_dict.get('secret')
-# 	if key:
-# 		SERVER = key_dict.get('server')
-# 	else:
-# 		SERVER = 'https://www.encodeproject.org/'
-
-# 	if not SERVER.endswith("/"):
-# 		SERVER += "/"
-
-# 	return (AUTHID,AUTHPW,SERVER)
-
-# def encoded_get(url, AUTHID=None, AUTHPW=None):
-# 	HEADERS = {'content-type': 'application/json'}
-# 	if AUTHID and AUTHPW:
-# 		response = requests.get(url, auth=(AUTHID,AUTHPW), headers=HEADERS)
-# 	else:
-# 		response = requests.get(url, headers=HEADERS)
-# 	return response
-
-def s3cp(accession, key=None):
-
-	(AUTHID,AUTHPW,SERVER) = common.processkey(key,KEYFILE)
-	keypair = (AUTHID,AUTHPW)
-
-	url = SERVER + '/search/?type=file&accession=%s&format=json&frame=embedded&limit=all' %(accession)
-	#get the file object
-	response = common.encoded_get(url, keypair)
-	logger.debug(response)
-
-	#select your file
-	result = response.get('@graph')
-	if not result:
-		logger.error('Failed to find %s at %s' %(accession, url))
-		return None
-	else:
-		f_obj = result[0]
-		logger.debug(f_obj)
-
-	#make the URL that will get redirected - get it from the file object's href property
-	encode_url = urlparse.urljoin(SERVER,f_obj.get('href'))
-	logger.debug("URL: %s" %(encode_url))
-	logger.debug("%s:%s" %(AUTHID, AUTHPW))
-	#stream=True avoids actually downloading the file, but it evaluates the redirection
-	r = requests.get(encode_url, auth=(AUTHID,AUTHPW), headers={'content-type': 'application/json'}, allow_redirects=True, stream=True)
-	try:
-		r.raise_for_status
-	except:
-		logger.error('%s href does not resolve' %(f_obj.get('accession')))
-	logger.debug("Response: %s", (r))
-
-	#this is the actual S3 https URL after redirection
-	s3_url = r.url
-	logger.debug(s3_url)
-
-	#release the connection
-	r.close()
-
-	#split up the url into components
-	o = urlparse.urlparse(s3_url)
-
-	#pull out the filename
-	filename = os.path.basename(o.path)
-
-	#hack together the s3 cp url (with the s3 method instead of https)
-	bucket_url = S3_SERVER.rstrip('/') + o.path
-
-	#cp the file from the bucket
-	subprocess.check_call(shlex.split('aws s3 cp %s . --quiet' %(bucket_url)), stderr=subprocess.STDOUT)
-	subprocess.check_call(shlex.split('ls -l %s' %(filename)))
-
-	dx_file = dxpy.upload_local_file(filename)
-
-	return dx_file
 
 def resolve_project(identifier, privs='r'):
-	logger.debug("In resolve_project with identifier %s" %(identifier))
-	project = dxpy.find_one_project(name=identifier, level='VIEW', name_mode='exact', return_handler=True, zero_ok=True)
-	if project == None:
-		try:
-			project = dxpy.get_handler(identifier)
-		except:
-			logger.error('Could not find a unique project with name or id %s' %(identifier))
-			raise ValueError(identifier)
-	logger.debug('Project %s access level is %s' %(project.name, project.describe()['level']))
-	if privs == 'w' and project.describe()['level'] == 'VIEW':
-		logger.error('Output project %s is read-only' %(identifier))
-		raise ValueError(identifier)
-	return project
+    logger.debug("In resolve_project with identifier %s" %(identifier))
+    project = dxpy.find_one_project(name=identifier, level='VIEW', name_mode='exact', return_handler=True, zero_ok=True)
+    if project == None:
+        try:
+            project = dxpy.get_handler(identifier)
+        except:
+            logger.error('Could not find a unique project with name or id %s' %(identifier))
+            raise ValueError(identifier)
+    logger.debug('Project %s access level is %s' %(project.name, project.describe()['level']))
+    if privs == 'w' and project.describe()['level'] == 'VIEW':
+        logger.error('Output project %s is read-only' %(identifier))
+        raise ValueError(identifier)
+    return project
+
 
 def resolve_folder(project, identifier):
-	if not identifier.startswith('/'):
-		identifier = '/' + identifier
-	try:
-		project_id = project.list_folder(identifier)
-	except:
-		try:
-			project_id = project.new_folder(identifier, parents=True)
-		except:
-			logger.error("Cannot create folder %s in project %s" %(identifier, project.name))
-			raise ValueError('%s:%s' %(project.name, identifier))
-		else:
-			logger.info("New folder %s created in project %s" %(identifier, project.name))
-	return identifier
+    if not identifier.startswith('/'):
+        identifier = '/' + identifier
+    try:
+        project_id = project.list_folder(identifier)
+    except:
+        try:
+            project_id = project.new_folder(identifier, parents=True)
+        except:
+            logger.error("Cannot create folder %s in project %s" %(identifier, project.name))
+            raise ValueError('%s:%s' %(project.name, identifier))
+        else:
+            logger.info("New folder %s created in project %s" %(identifier, project.name))
+    return identifier
 
 
 def resolve_accession(accession, key):
-	logger.debug("Looking for accession %s" %(accession))
-	
-	if not re.match(r'''^ENCFF\d{3}[A-Z]{3}''', accession):
-		logger.warning("%s is not a valid accession format" %(accession))
-		return None
+    logger.debug("Looking for accession %s" %(accession))
 
-	if DATA_CACHE_PROJECT:
-		logger.debug('Looking for cache project %s' %(DATA_CACHE_PROJECT))
-		try:
-			project_handler = resolve_project(DATA_CACHE_PROJECT)
-			snapshot_project = project_handler
-		except:
-			logger.error("Cannot find cache project %s" %(DATA_CACHE_PROJECT))
-			snapshot_project = None
+    if not re.match(r'''^ENCFF\d{3}[A-Z]{3}''', accession):
+        logger.warning("%s is not a valid accession format" %(accession))
+        return None
 
-		logger.debug('Cache project: %s' %(snapshot_project))
+    if DATA_CACHE_PROJECT:
+        logger.debug('Looking for cache project %s' %(DATA_CACHE_PROJECT))
+        try:
+            project_handler = resolve_project(DATA_CACHE_PROJECT)
+            snapshot_project = project_handler
+        except:
+            logger.error("Cannot find cache project %s" %(DATA_CACHE_PROJECT))
+            snapshot_project = None
 
-		if snapshot_project:
-			try:
-				accession_search = accession + '*'
-				logger.debug('Looking recursively for %s in %s' %(accession_search, snapshot_project.name))
-				file_handler = dxpy.find_one_data_object(
-					name=accession_search, name_mode='glob', more_ok=False, classname='file', recurse=True, return_handler=True,
-					folder='/', project=snapshot_project.get_id())
-				logger.debug('Got file handler for %s' %(file_handler.name))
-				return file_handler
-			except:
-				logger.debug("Cannot find accession %s in project %s" %(accession, snapshot_project))
+        logger.debug('Cache project: %s' %(snapshot_project))
 
-	# we're here because we couldn't find the cache or couldn't find the file in the cache, so look in AWS
-	
-	dx_file = s3cp(accession, key) #this returns a link to the file in the applet's project context
+        if snapshot_project:
+            try:
+                accession_search = accession + '*'
+                logger.debug('Looking recursively for %s in %s' %(accession_search, snapshot_project.name))
+                file_handler = dxpy.find_one_data_object(
+                    name=accession_search, name_mode='glob', more_ok=False, classname='file', recurse=True, return_handler=True,
+                    folder='/', project=snapshot_project.get_id())
+                logger.debug('Got file handler for %s' %(file_handler.name))
+                return file_handler
+            except:
+                logger.debug("Cannot find accession %s in project %s" %(accession, snapshot_project))
 
-	if not dx_file:
-		logger.warning('Cannot find %s.  Giving up.' %(accession))
-		return None
-	else:
-		return dx_file
+    # we're here because we couldn't find the cache or couldn't find the file in the cache, so look in AWS
+
+    dx_file = common.s3cp(accession, key) #this returns a link to the file in the applet's project context
+
+    if not dx_file:
+        logger.warning('Cannot find %s.  Giving up.' %(accession))
+        return None
+    else:
+        return dx_file
+
 
 def resolve_file(identifier, key):
-	logger.debug("resolve_file: %s" %(identifier))
+    logger.debug("resolve_file: %s" %(identifier))
 
-	assert identifier, "No file identifier passed to resolve_file"
+    assert identifier, "No file identifier passed to resolve_file"
 
-	m = re.match(r'''^([\w\-\ \.]+):([\w\-\ /\.]+)''', identifier)
-	if m: #fully specified with project:path
-		project_identifier = m.group(1)
-		file_identifier = m.group(2)
-	else:
-		logger.debug("Defaulting to the current project")
-		project_identifier = dxpy.WORKSPACE_ID
-		file_identifier = identifier    
+    m = re.match(r'''^([\w\-\ \.]+):([\w\-\ /\.]+)''', identifier)
+    if m: #fully specified with project:path
+        project_identifier = m.group(1)
+        file_identifier = m.group(2)
+    else:
+        logger.debug("Defaulting to the current project")
+        project_identifier = dxpy.WORKSPACE_ID
+        file_identifier = identifier    
 
-	project = resolve_project(project_identifier)
-	logger.debug("Got project %s" %(project.name))
-	logger.debug("Now looking for file %s" %(file_identifier))
+    project = resolve_project(project_identifier)
+    logger.debug("Got project %s" %(project.name))
+    logger.debug("Now looking for file %s" %(file_identifier))
 
-	m = re.match(r'''(^[\w\-\ /\.]+)/([\w\-\ \.]+)''', file_identifier)
-	if m:
-		folder_name = m.group(1)
-		if not folder_name.startswith('/'):
-			folder_name = '/' + folder_name
-		file_name = m.group(2)
-	else:
-		folder_name = '/'
-		file_name = file_identifier
+    m = re.match(r'''(^[\w\-\ /\.]+)/([\w\-\ \.]+)''', file_identifier)
+    if m:
+        folder_name = m.group(1)
+        if not folder_name.startswith('/'):
+            folder_name = '/' + folder_name
+        file_name = m.group(2)
+    else:
+        folder_name = '/'
+        file_name = file_identifier
 
-	logger.debug("Looking for file %s in folder %s" %(file_name, folder_name))
+    logger.debug("Looking for file %s in folder %s" %(file_name, folder_name))
 
-	try:
-		file_handler = dxpy.find_one_data_object(name=file_name, folder=folder_name, project=project.get_id(),
-			more_ok=False, zero_ok=False, return_handler=True)
-	except:
-		logger.debug('%s not found in project %s folder %s' %(file_name, project.get_id(), folder_name))
-		try: #maybe it's just  filename in the default workspace
-			file_handler = dxpy.DXFile(dxid=identifier, mode='r')
-		except:
-			logger.debug('%s not found as a dxid' %(identifier))
-			file_handler = resolve_accession(identifier, key)
+    try:
+        file_handler = dxpy.find_one_data_object(name=file_name, folder=folder_name, project=project.get_id(),
+            more_ok=False, zero_ok=False, return_handler=True)
+    except:
+        logger.debug('%s not found in project %s folder %s' %(file_name, project.get_id(), folder_name))
+        try: #maybe it's just  filename in the default workspace
+            file_handler = dxpy.DXFile(dxid=identifier, mode='r')
+        except:
+            logger.debug('%s not found as a dxid' %(identifier))
+            file_handler = resolve_accession(identifier, key)
 
-	assert file_handler, "Failed to resolve file identifier %s" %(identifier)
-	logger.debug("Resolved file identifier %s to %s" %(identifier, file_handler.name))
-	return file_handler
+    assert file_handler, "Failed to resolve file identifier %s" %(identifier)
+    logger.debug("Resolved file identifier %s to %s" %(identifier, file_handler.name))
+    return file_handler
+
 
 def pooled(files):
-	pool_applet = dxpy.find_one_data_object(
-		classname='applet', name='pool', project=dxpy.PROJECT_CONTEXT_ID,
-		zero_ok=False, more_ok=False, return_handler=True)
-	logger.debug('input files:%s' %(files))
-	logger.debug('input file ids:%s' %([dxf.get_id() for dxf in files]))
-	logger.debug('input files dxlinks:%s' %([dxpy.dxlink(dxf) for dxf in files]))
-	pool_subjob = pool_applet.run({"inputs": [dxpy.dxlink(dxf) for dxf in files]})
-	pooled_file = pool_subjob.get_output_ref("pooled")
-	return pooled_file
+    pool_applet = dxpy.find_one_data_object(
+        classname='applet', name='pool', project=dxpy.PROJECT_CONTEXT_ID,
+        zero_ok=False, more_ok=False, return_handler=True)
+    logger.debug('input files:%s' %(files))
+    logger.debug('input file ids:%s' %([dxf.get_id() for dxf in files]))
+    logger.debug('input files dxlinks:%s' %([dxpy.dxlink(dxf) for dxf in files]))
+    pool_subjob = pool_applet.run({"inputs": [dxpy.dxlink(dxf) for dxf in files]})
+    pooled_file = pool_subjob.get_output_ref("pooled")
+    return pooled_file
+
 
 @dxpy.entry_point('main')
-def main(reads1, reads2, bwa_aln_params, bwa_version, samtools_version, reference_tar, key, debug):
-	#reads1 and reads2 are expected to be an arrays of file identifiers (either DNAnexus files or ENCODE file accession numbers)
-	#For SE, reads2 is empty
-	#For PE, len(reads1) = len(reads2)
-	#Multiple PE pairs or SE files are just catted before mapping
-	#Error on mixed SE/PE - although this can be implemented as just a "" entry at that position in reads2 array
-	#TODO: Add option to down-sample mixed read lengths
-	#TODO: Add option to down-sample mixed PE/SE to SE
-	if debug:
-		logger.setLevel(logging.DEBUG)
-	else:
-		logger.setLevel(logging.INFO)
+def main(reads1, reads2, crop_length, reference_tar,
+         bwa_aln_params, bwa_version, samtools_version, key, debug):
 
-	print "reads1:"
-	print reads1
-	print "reads2:"
-	print reads2
+    # reads1 and reads2 are expected to be an arrays of file identifiers
+    # indentifiers can be DNAnexus files or ENCODE file accession numbers
+    # For SE, reads2 is empty
+    # For PE, len(reads1) = len(reads2)
+    # Multiple PE pairs or SE files are just catted before mapping
+    # Error on mixed SE/PE - although this can be implemented as just a
+    # "" entry at that position in reads2 array
+    # TODO: Add option to down-sample mixed PE/SE to SE
 
-	if reads2:
-		paired_end = True
-		assert len(reads1) == len(reads2), "Paired-end and unequal numbers of read1 and read2 identifiers: %s %s" %(reads1, reads2)
-	else:
-		paired_end = False
+    if debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
 
-	reads1_files = [resolve_file(read, key) for read in reads1]
+    logger.info("reads1: %s" % (reads1))
+    logger.info("reads2: %s" % (reads2))
 
-	if paired_end:
-		reads2_files = [resolve_file(read, key) for read in reads2]
-	else:
-		reads2_files = []
+    if reads2:
+        paired_end = True
+        assert len(reads1) == len(reads2), "Paired-end and unequal numbers of read1 and read2 identifiers: %s %s" %(reads1, reads2)
+    else:
+        paired_end = False
 
-	#pooling of multiple fastqs
-	if len(reads1_files) > 1:
-		reads1_file = pooled(reads1_files)
-	else:
-		reads1_file = reads1_files[0]
+    reads1_files = [resolve_file(read, key) for read in reads1]
 
-	if len(reads2_files) > 1:
-		reads2_file = pooled(reads2_files)
-	elif len(reads2_files) == 1:
-		reads2_file = reads2_files[0]
-	else:
-		reads2_file = None
+    if paired_end:
+        reads2_files = [resolve_file(read, key) for read in reads2]
+    else:
+        reads2_files = []
 
-	reference_tar_file = resolve_file(reference_tar, key)
+    # pooling multiple fastqs
+    if len(reads1_files) > 1:
+        reads1_file = pooled(reads1_files)
+    else:
+        reads1_file = reads1_files[0]
 
-	logger.info('Resolved reads1 to %s', reads1_file)
-	if reads2_file:
-		logger.info('Resolved reads2 to %s', reads2_file)
-	logger.info('Resolved reference_tar to %s', reference_tar_file)
+    if len(reads2_files) > 1:
+        reads2_file = pooled(reads2_files)
+    elif len(reads2_files) == 1:
+        reads2_file = reads2_files[0]
+    else:
+        reads2_file = None
 
-	output_json = {
-		"reads1": reads1_file,
-		"reference_tar": reference_tar_file,
-		"bwa_aln_params": bwa_aln_params,
-		"bwa_version": bwa_version,
-		"samtools_version": samtools_version
-	}
+    reference_tar_file = resolve_file(reference_tar, key)
 
-	output = {}
-	output.update({'reads1': reads1_file})
-	if reads2_file:
-		output.update({"reads2": reads2_file})
-		output_json.update({"reads2": reads2_file})
+    logger.info('Resolved reads1 to %s', reads1_file)
+    if reads2_file:
+        logger.info('Resolved reads2 to %s', reads2_file)
+    logger.info('Resolved reference_tar to %s', reference_tar_file)
 
-	output.update({'output_JSON': output_json})
-	#logger.info('Exiting with output_JSON: %s' %(json.dumps(output)))
-	#return {'output_JSON': json.dumps(output)}
+    output = {
+        "reads1": reads1_file,
+        "reference_tar": reference_tar_file,
+        "crop_length": crop_length,
+        "bwa_aln_params": bwa_aln_params,
+        "bwa_version": bwa_version,
+        "samtools_version": samtools_version
+    }
+    if reads2_file:
+        output.update({"reads2": reads2_file})
 
-	logger.info('Exiting with output: %s' %(output))
+    logger.info('Exiting with output: %s' % (output))
 
-	return output
+    return output
 
 dxpy.run()

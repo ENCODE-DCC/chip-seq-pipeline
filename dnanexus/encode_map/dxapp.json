@@ -10,28 +10,26 @@
   "inputSpec": [
     {
       "name": "reads1",
-      "label": "reads1",
-      "class": "file",
-      "optional": true
+      "label": "Forward reads (SE or PE)",
+      "class": "file"
     },
     {
       "name": "reads2",
-      "label": "reads2",
+      "label": "Reverse reads (PE)",
       "class": "file",
       "optional": true
     },
     {
       "name": "crop_length",
-      "label": "Native or length to crop reads to",
+      "label": "native or length to crop reads",
       "class": "string",
       "optional": true,
       "default": "native"
     },
     {
       "name": "reference_tar",
-      "label": "E.g. male or female hg19; mm9.",
-      "class": "file",
-      "optional": true
+      "label": "Reference files for bwa",
+      "class": "file"
     },
     {
       "name": "bwa_version",
@@ -55,19 +53,12 @@
       "default": "1.0"
     },
     {
-      "name": "input_JSON",
-      "label": "Input parameters as JSON",
-      "class": "hash",
-      "optional": true
-    },
-    {
       "name": "debug",
       "label": "debug mode",
       "class": "boolean",
       "optional": true,
       "default": false
     }
-
   ],
   "outputSpec": [
     {
@@ -82,6 +73,7 @@
     },
     {
       "name": "paired_end",
+      "label": "True if input reads were PE",
       "class": "boolean"
     },
     {
@@ -90,17 +82,20 @@
       "class": "int"
     },
     {
-      "name": "output_JSON",
-      "label": "Output as JSON",
-      "class": "hash",
-      "optional": true
+      "name": "crop_length",
+      "label": "native or length to crop reads",
+      "class": "string"
     }
   ],
   "runSpec": {
     "interpreter": "python2.7",
     "file": "src/ENCODE_map.py",
+    "execDepends": [
+      {"name": "openjdk-6-jdk"}
+    ],
     "systemRequirements": {
       "main":        {"instanceType": "mem2_hdd2_x1"},
+      "crop":        {"instanceType": "mem3_ssd1_x32"},
       "process":     {"instanceType": "mem3_ssd1_x32"},
       "postprocess": {"instanceType": "mem3_hdd2_x2"}
     }
