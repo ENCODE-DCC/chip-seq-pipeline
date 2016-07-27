@@ -86,27 +86,32 @@
     {
       "name": "crop_length",
       "label": "Native or length to crop reads to",
-      "class": "string",
+      "class": "string"
     },
     {
       "name": "reference_tar",
       "label": "Over-rides the otherwise automatically-chosen reference",
-      "class": "string",
+      "class": "file"
     },
     {
       "name": "bwa_aln_params",
       "label": "Command-line parameters to BWA aln",
-      "class": "string",
+      "class": "string"
     },
     {
       "name": "bwa_version",
       "label": "BWA version",
-      "class": "string",
+      "class": "string"
     },
     {
       "name": "samtools_version",
       "label": "samtools version",
-      "class": "string",
+      "class": "string"
+    },
+    {
+      "name": "debug",
+      "label": "debug mode",
+      "class": "boolean"
     }
   ],
   "runSpec": {

@@ -154,8 +154,10 @@ def crop(reads1_file, reads2_file, crop_length, debug):
             SE_output = dxpy.upload_local_file(SE_output_filename)
             cropped_reads = [dxpy.dxlink(SE_output), None]
         else:
-            output_fwd_paired = dxpy.upload(output_fwd_paired_filename)
-            output_rev_paired = dxpy.upload(output_rev_paired_filename)
+            output_fwd_paired = \
+                dxpy.upload_local_file(output_fwd_paired_filename)
+            output_rev_paired = \
+                dxpy.upload_local_file(output_rev_paired_filename)
             cropped_reads = [
                 dxpy.dxlink(output_fwd_paired),
                 dxpy.dxlink(output_rev_paired)]

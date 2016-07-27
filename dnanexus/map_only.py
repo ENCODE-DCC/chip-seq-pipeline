@@ -128,6 +128,11 @@ def get_args():
         default=False,
         action='store_true')
 
+    parser.add_argument(
+        '--crop_length',
+        help="Length to crop reads before mapping.  Default is native (no crop)",
+        default='native')
+
     args = parser.parse_args()
 
     if args.debug:
@@ -296,16 +301,27 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
     input_shield_stage_id = workflow.add_stage(
         input_shield_applet,
-        name='Gather inputs %s rep%d' %(experiment.get('accession'), biorep_n),
+        name='Gather inputs %s rep%d' % (experiment.get('accession'), biorep_n),
         folder=fastq_output_folder,
         stage_input=input_shield_stage_input
     )
-    
+
+    input_names = \
+        [name for name in ['reads1', 'reads2', 'crop_length', 'reference_tar',
+         'bwa_version', 'bwa_aln_params', 'samtools_version', 'debug']
+         if name in input_shield_stage_input]
+    logging.debug('input_names: %s' % (input_names))
+    mapping_stage_input = dict(zip(
+        input_names,
+        [dxpy.dxlink(
+            {'stage': input_shield_stage_id, 'outputField': input_name})
+         for input_name in input_names]))
+    logging.debug('mapping_stage_input: %s' % (mapping_stage_input))
     mapping_stage_id = workflow.add_stage(
         mapping_applet,
-        name='Map %s rep%d' %(experiment.get('accession'), biorep_n),
+        name='Map %s rep%d' % (experiment.get('accession'), biorep_n),
         folder=mapping_output_folder,
-        stage_input={'input_JSON': dxpy.dxlink({'stage': input_shield_stage_id, 'outputField': 'output_JSON'})}
+        stage_input=mapping_stage_input
     )
 
     if not args.raw:
@@ -364,7 +380,9 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
     '''
     return workflow
 
-def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific):
+
+def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
+             crop_length):
 
     if not files:
         logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
@@ -380,9 +398,10 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific):
         return
 
     input_shield_stage_input.update({
-        'reference_tar' : reference_tar,
+        'reference_tar': reference_tar,
         'debug': args.debug,
-        'key': key
+        'key': key,
+        'crop_length': crop_length
     })
 
     if all(isinstance(f, dict) for f in files): #single end
@@ -411,6 +430,7 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific):
             else:
                 jobs.append(wf.run({}, priority='high'))
     return jobs
+
 
 def main():
     global args
@@ -477,10 +497,16 @@ def main():
                 if biorep_files:
                     logging.warning('%s: leftover file(s) %s' %(experiment.get('accession'), biorep_files))
                 if paired_files:
-                    pe_jobs = map_only(experiment, biorep_n, paired_files, args.key, server, keypair, args.sex_specific)
+                    pe_jobs = \
+                        map_only(experiment, biorep_n, paired_files,
+                                 args.key, server, keypair, args.sex_specific,
+                                 args.crop_length)
                     in_process = True
                 if unpaired_files:
-                    se_jobs = map_only(experiment, biorep_n, unpaired_files, args.key, server, keypair, args.sex_specific)
+                    se_jobs = \
+                        map_only(experiment, biorep_n, unpaired_files,
+                                 args.key, server, keypair, args.sex_specific,
+                                 args.crop_length)
                     in_process = True
                 if paired_files and pe_jobs:
                     outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))

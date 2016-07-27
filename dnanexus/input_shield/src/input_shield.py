@@ -217,7 +217,8 @@ def main(reads1, reads2, crop_length, reference_tar,
         "crop_length": crop_length,
         "bwa_aln_params": bwa_aln_params,
         "bwa_version": bwa_version,
-        "samtools_version": samtools_version
+        "samtools_version": samtools_version,
+        "debug": debug
     }
     if reads2_file:
         output.update({"reads2": reads2_file})
