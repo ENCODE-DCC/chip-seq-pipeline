@@ -220,6 +220,62 @@ histone_workflow.py --debug --title ENCSR678FIT-ta-OL --outf /ENCSR678FIT-ta-OL-
 
 ## single applets
 
+# Run ENCODE_map on 36 bp SE chr21 extract
+dx run \
+--input "reads1=ENCODE Uniform Processing Pipelines:/ChIP-seq/test_data/ENCSR000EEB-hMAFK/R1-ENCFF000XTT.chr21.fq.gz" \
+--input "reference_tar=ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" \
+--verbose \
+--destination /encode_map_test/test_$(date +"%Y%m%d%H%M") \
+--name encode_map_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+encode_map
+
+
+# Run ENCODE_map on 36 bp SE chr21 extract, crop to 25 bp
+dx run \
+--input "reads1=ENCODE Uniform Processing Pipelines:/ChIP-seq/test_data/ENCSR000EEB-hMAFK/R1-ENCFF000XTT.chr21.fq.gz" \
+--input "reference_tar=ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" \
+--input "crop_length=25" \
+--verbose \
+--destination /encode_map_test/test_$(date +"%Y%m%d%H%M") \
+--name encode_map_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+encode_map
+
+
+# Run ENCODE_map on 100 bp PE
+dx run \
+--input "reads1=/test_data/TF_PE/ENCFF109UIV.fastq.gz" \
+--input "reads2=/test_data/TF_PE/ENCFF748SHJ.fastq.gz" \
+--input "reference_tar=ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" \
+--verbose \
+--destination /encode_map_test/test_$(date +"%Y%m%d%H%M") \
+--name encode_map_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+encode_map
+
+
+# Run ENCODE_map on 100 bp PE crop to 36
+dx run \
+--input "reads1=/test_data/TF_PE/ENCFF109UIV.fastq.gz" \
+--input "reads2=/test_data/TF_PE/ENCFF748SHJ.fastq.gz" \
+--input "reference_tar=ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" \
+--input "crop_length=36" \
+--verbose \
+--destination /encode_map_test/test_$(date +"%Y%m%d%H%M") \
+--name encode_map_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+encode_map
+
+
 # Run IDRv1 applet with ENCSR000EEB chr21 rep1 vs rep2
 dx run \
 --input "rep1_peaks=/test_data/ENCFF000XUL-chr21.regionPeak.gz" \

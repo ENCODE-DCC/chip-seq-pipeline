@@ -1,7 +1,7 @@
 {
-  "name": "encode_bwa",
-  "title": "ENCODE BWA",
-  "summary": "Map reads with BWA",
+  "name": "encode_map",
+  "title": "ENCODE Map",
+  "summary": "Map reads with BWA, optionally after cropping",
   "dxapi": "1.0.0",
   "version": "0.0.1",
   "categories": [
@@ -12,7 +12,7 @@
       "name": "reads1",
       "label": "reads1",
       "class": "file",
-      "optional": false
+      "optional": true
     },
     {
       "name": "reads2",
@@ -46,6 +46,13 @@
       "class": "string",
       "optional": true,
       "default": "1.0"
+    },
+    {
+      "name": "crop_length",
+      "label": "Native or length to crop reads to",
+      "class": "string",
+      "optional": true,
+      "default": "native"
     },
     {
       "name": "input_JSON",
@@ -86,7 +93,7 @@
   ],
   "runSpec": {
     "interpreter": "python2.7",
-    "file": "src/ENCODE_BWA.py",
+    "file": "src/ENCODE_map.py",
     "systemRequirements": {
       "main":        {"instanceType": "mem2_hdd2_x1"},
       "process":     {"instanceType": "mem3_ssd1_x32"},

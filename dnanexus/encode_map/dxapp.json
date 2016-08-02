@@ -1,7 +1,7 @@
 {
-  "name": "encode_bwa",
-  "title": "ENCODE BWA",
-  "summary": "Map reads with BWA",
+  "name": "encode_map",
+  "title": "ENCODE Map",
+  "summary": "Map reads with BWA, optionally after cropping",
   "dxapi": "1.0.0",
   "version": "0.0.1",
   "categories": [
@@ -10,28 +10,26 @@
   "inputSpec": [
     {
       "name": "reads1",
-      "label": "reads1",
-      "class": "file",
-      "optional": true
+      "label": "Forward reads (SE or PE)",
+      "class": "file"
     },
     {
       "name": "reads2",
-      "label": "reads2",
+      "label": "Reverse reads (PE)",
       "class": "file",
       "optional": true
+    },
+    {
+      "name": "crop_length",
+      "label": "native or length to crop reads",
+      "class": "string",
+      "optional": true,
+      "default": "native"
     },
     {
       "name": "reference_tar",
-      "label": "E.g. male or female hg19; mm9.",
-      "class": "file",
-      "optional": true
-    },
-    {
-      "name": "bwa_aln_params",
-      "label": "Command-line parameters to BWA aln",
-      "class": "string",
-      "optional": true,
-      "default": "-q 5 -l 32 -k 2"
+      "label": "Reference files for bwa",
+      "class": "file"
     },
     {
       "name": "bwa_version",
@@ -41,17 +39,18 @@
       "default": "0.7.10"
     },
     {
+      "name": "bwa_aln_params",
+      "label": "Command-line parameters to BWA aln",
+      "class": "string",
+      "optional": true,
+      "default": "-q 5 -l 32 -k 2"
+    },
+    {
       "name": "samtools_version",
       "label": "samtools version",
       "class": "string",
       "optional": true,
       "default": "1.0"
-    },
-    {
-      "name": "input_JSON",
-      "label": "Input parameters as JSON",
-      "class": "hash",
-      "optional": true
     },
     {
       "name": "debug",
@@ -60,7 +59,6 @@
       "optional": true,
       "default": false
     }
-
   ],
   "outputSpec": [
     {
@@ -75,6 +73,7 @@
     },
     {
       "name": "paired_end",
+      "label": "True if input reads were PE",
       "class": "boolean"
     },
     {
@@ -83,17 +82,20 @@
       "class": "int"
     },
     {
-      "name": "output_JSON",
-      "label": "Output as JSON",
-      "class": "hash",
-      "optional": true
+      "name": "crop_length",
+      "label": "native or length to crop reads",
+      "class": "string"
     }
   ],
   "runSpec": {
     "interpreter": "python2.7",
-    "file": "src/ENCODE_BWA.py",
+    "file": "src/ENCODE_map.py",
+    "execDepends": [
+      {"name": "openjdk-6-jdk"}
+    ],
     "systemRequirements": {
       "main":        {"instanceType": "mem2_hdd2_x1"},
+      "crop":        {"instanceType": "mem3_ssd1_x32"},
       "process":     {"instanceType": "mem3_ssd1_x32"},
       "postprocess": {"instanceType": "mem3_hdd2_x2"}
     }

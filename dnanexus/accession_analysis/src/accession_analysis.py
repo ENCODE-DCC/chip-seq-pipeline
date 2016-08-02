@@ -753,7 +753,7 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     # here we get the actual DNAnexus file that was used as the reference
     reference_file = dxpy.describe(
-        input_stage['output']['output_JSON']['reference_tar'])
+        input_stage['output']['reference_tar'])
 
     # and construct the alias to find the corresponding file at ENCODEd
     reference_alias = "dnanexus:" + reference_file.get('id')
@@ -897,7 +897,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     # here we get the actual DNAnexus file that was used as the reference
     reference_file = dxpy.describe(
-        input_stage['output']['output_JSON']['reference_tar'])
+        input_stage['output']['reference_tar'])
 
     # and construct the alias to find the corresponding file at ENCODEd
     reference_alias = "dnanexus:" + reference_file.get('id')

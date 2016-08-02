@@ -1,4 +1,4 @@
-# ENCODE_BWA Developer Readme
+# ENCODE_map Developer Readme
 
 <!--
 TODO: Please edit this Readme.developer.md file to include information
