@@ -241,8 +241,10 @@ def xcor_qc(stages):
 def chipseq_filter_quality_metric(step_run, stages, files):
     # this is currently a mix of deduplication and cross-correlation stats
     # maybe break out all the xcor stuff to its own object
-    logger.debug("in chip_seq_filter_quality_metric with step_run %s stages.keys() %s output files %s"
-                 % (step_run, stages.keys(), files))
+    logger.debug(
+        "in chip_seq_filter_quality_metric with "
+        "step_run %s stages.keys() %s output files %s"
+        % (step_run, stages.keys(), files))
 
     file_accessions = list(set(flat([
         resolve_name_to_accessions(stages, output_name)
@@ -380,8 +382,10 @@ def get_flagstat_obj(step_run, stage, file_accessions):
 
 
 def samtools_flagstats_quality_metric(step_run, stages, files):
-    logger.debug("in chip_seq_filter_quality_metric with step_run %s stages.keys() %s output files %s"
-                 % (step_run, stages.keys(), files))
+    logger.debug(
+        "in chip_seq_filter_quality_metric with "
+        "step_run %s stages.keys() %s output files %s"
+        % (step_run, stages.keys(), files))
 
     file_accessions = list(set(flat([
         resolve_name_to_accessions(stages, output_name)
@@ -410,8 +414,10 @@ def samtools_flagstats_quality_metric(step_run, stages, files):
 
 def idr_quality_metric(step_run, stages, files):
 
-    logger.debug("in idr_seq_filter_quality_metric with step_run %s stages.keys() %s output files %s"
-                 % (step_run, stages.keys(), files))
+    logger.debug(
+        "in idr_seq_filter_quality_metric with "
+        "step_run %s stages.keys() %s output files %s"
+        % (step_run, stages.keys(), files))
 
     file_accessions = list(set(flat([
         resolve_name_to_accessions(stages, output_name)
@@ -429,7 +435,8 @@ def idr_quality_metric(step_run, stages, files):
             stages[stage_name]['stage_metadata']['output']['EM_parameters_log'])
 
     def IDR_threshold(stage_name):
-        return float(stages[stage_name]['stage_metadata']['originalInput']['idr_threshold'])
+        return float(
+            stages[stage_name]['stage_metadata']['originalInput']['idr_threshold'])
 
     obj = {
         'assay_term_id':     'OBI:0000716',
@@ -705,7 +712,9 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     input_fastq_accessions = []
     input_fastq_accessions.extend(input_stage['input']['reads1'])
-    logger.debug('reads1 only input_fastq_accessions %s' % (input_fastq_accessions))
+    logger.debug(
+        'reads1 only input_fastq_accessions %s'
+        % (input_fastq_accessions))
 
     if input_stage['input']['reads2']:
         # Coerce into a list here because in earlier versions of the pipeline
@@ -717,7 +726,9 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         else:
             input_fastq_accessions.extend([reads2])
 
-    logger.debug('reads1 and reads2 input_fastq_accessions %s' % (input_fastq_accessions))
+    logger.debug(
+        'reads1 and reads2 input_fastq_accessions %s'
+        % (input_fastq_accessions))
 
     fastqs = []
     for acc in input_fastq_accessions:
@@ -742,7 +753,8 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             return None
     else:
         logger.warning(
-            '--fqcheck is False, so not checking to see if experiment and mapped fastqs match')
+            '--fqcheck is False, '
+            'so not checking to see if experiment and mapped fastqs match')
 
     raw_mapping_stage = next(
         stage for stage in analysis_stages
@@ -750,6 +762,26 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     bam = dxpy.describe(
         raw_mapping_stage['output']['mapped_reads'])
+    crop_length = raw_mapping_stage['output'].get('crop_length')
+
+    if not crop_length or crop_length == 'native':
+        logger.warning(
+            'crop_length %s. Inferring mapped_read_length from fastqs'
+            % (crop_length))
+        native_lengths = set([fq.get('read_length') for fq in fastqs])
+        try:
+            assert len(native_lengths) == 1 and \
+                   all([isinstance(rl, int) for rl in native_lengths])
+        except:
+            logger.error(
+                'fastqs with different or non-integer read_lengths: %s'
+                % ([(fq.get('accessin'), fq.get('read_length'))
+                    for fq in fastqs]))
+            raise
+        else:
+            mapped_read_length = int(next(l for l in native_lengths))
+    else:
+        mapped_read_length = int(crop_length)
 
     # here we get the actual DNAnexus file that was used as the reference
     reference_file = dxpy.describe(
@@ -771,9 +803,9 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     bam_metadata = common.merge_dicts({
         'file_format': 'bam',
-        # 'output_type': 'alignments'
-        'output_type': 'unfiltered alignments'
-        }, common_file_metadata)
+        'output_type': 'unfiltered alignments',
+        'mapped_read_length': mapped_read_length
+    }, common_file_metadata)
 
     mapping_stages = {
         get_stage_name("Map ENCSR.*", analysis_stages): {
@@ -850,7 +882,9 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     input_fastq_accessions = []
     input_fastq_accessions.extend(input_stage['input']['reads1'])
-    logger.debug('reads1 only input_fastq_accessions %s' % (input_fastq_accessions))
+    logger.debug(
+        'reads1 only input_fastq_accessions %s'
+        % (input_fastq_accessions))
 
     if input_stage['input']['reads2']:
         # Coerce into a list here because in earlier versions of the pipeline
@@ -862,7 +896,9 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         else:
             input_fastq_accessions.extend([reads2])
 
-    logger.debug('reads1 and reads2 input_fastq_accessions %s' % (input_fastq_accessions))
+    logger.debug(
+        'reads1 and reads2 input_fastq_accessions %s'
+        % (input_fastq_accessions))
 
     fastqs = []
     for acc in input_fastq_accessions:
@@ -887,13 +923,37 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             return None
     else:
         logger.warning(
-            '--fqcheck is False, so not checking to see if experiment and mapped fastqs match')
+            '--fqcheck is False, '
+            'so not checking to see if experiment and mapped fastqs match')
 
+    raw_mapping_stage = next(
+        stage for stage in analysis_stages
+        if stage['name'].startswith("Map ENCSR"))
     filter_qc_stage = next(
         stage for stage in analysis_stages
         if stage['name'].startswith("Filter and QC"))
 
     bam = dxpy.describe(filter_qc_stage['output']['filtered_bam'])
+    crop_length = raw_mapping_stage['output'].get('crop_length')
+
+    if not crop_length or crop_length == 'native':
+        logger.warning(
+            'crop_length %s. Inferring mapped_read_length from fastqs'
+            % (crop_length))
+        native_lengths = set([fq.get('read_length') for fq in fastqs])
+        try:
+            assert len(native_lengths) == 1 and \
+                   all([isinstance(rl, int) for rl in native_lengths])
+        except:
+            logger.error(
+                'fastqs with different or non-integer read_lengths: %s'
+                % ([(fq.get('accessin'), fq.get('read_length'))
+                    for fq in fastqs]))
+            raise
+        else:
+            mapped_read_length = int(next(l for l in native_lengths))
+    else:
+        mapped_read_length = int(crop_length)
 
     # here we get the actual DNAnexus file that was used as the reference
     reference_file = dxpy.describe(
@@ -915,8 +975,9 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     bam_metadata = common.merge_dicts({
         'file_format': 'bam',
-        'output_type': 'alignments'
-        }, common_file_metadata)
+        'output_type': 'alignments',
+        'mapped_read_length': mapped_read_length
+    }, common_file_metadata)
 
     mapping_stages = {
 
@@ -1527,7 +1588,7 @@ def resolve_name_to_accessions(stages, stage_file_name):
         for stage_file in all_files:
             if stage_file['name'] == stage_file_name:
                 encode_object = stage_file.get('encode_object')
-                if isinstance(encode_object,list):
+                if isinstance(encode_object, list):
                     for obj in encode_object:
                         accessions.append(obj.get('accession'))
                 else:
