@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 
 # full IDR template
-tf_workflow.py --debug --title IDR_Template --outp "E3 ChIP-seq"
+chip_workflow.py --target tf --debug --title IDR_Template --outp "E3 ChIP-seq"
 
 
 ## Complete experiments
 
 # ECSR000EEB SE IDR
-tf_workflow.py --debug --title ENCSR000EEB-fullIDR --outf /ENCSR000EEB-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
+chip_workflow.py --target tf --debug --title ENCSR000EEB-fullIDR --outf /ENCSR000EEB-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL.fastq.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK.fastq.gz \
 --ctl1 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz \
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz
 
 # ECSR000EEB SE IDRv2
-tf_workflow.py --debug --title ENCSR000EEB-fullIDR --outf /ENCSR000EEB-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
+chip_workflow.py --target tf --debug --title ENCSR000EEB-fullIDR --outf /ENCSR000EEB-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
 --idrversion 2 \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL.fastq.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK.fastq.gz \
@@ -22,7 +22,7 @@ tf_workflow.py --debug --title ENCSR000EEB-fullIDR --outf /ENCSR000EEB-fullIDR-$
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF.fastq.gz
 
 # ENCSR000EEB IDRv2 from TA
-tf_workflow.py --debug --nomap --yes \
+chip_workflow.py --target tf --debug --nomap --yes \
 --title ENCSR000EEB-fullIDRnomap --outf /ENCSR000EEB-fullIDRnomap-$(date +"%Y%m%d%H%M")  \
 --rep1pe false --rep2pe false \
 --idr --idrversion 2 \
@@ -35,7 +35,7 @@ tf_workflow.py --debug --nomap --yes \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR000BUA SE IDRv2
-tf_workflow.py --debug --yes \
+chip_workflow.py --target tf --debug --yes \
 --title ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-$(date +"%Y%m%d%H%M") \
 --idr --idrversion 2 \
 --rep1 /ENCSR000BUA/rep1/ENCFF000RBI.fastq.gz \
@@ -47,7 +47,7 @@ tf_workflow.py --debug --yes \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR000BUA SE IDRv2 from TA
-tf_workflow.py --debug --nomap --yes \
+chip_workflow.py --target tf --debug --nomap --yes \
 --title ENCSR000BUA-fullIDR --outf /ENCSR000BUA-fullIDRv2-$(date +"%Y%m%d%H%M") \
 --rep1pe false --rep2pe false \
 --idr --idrversion 2 \
@@ -60,7 +60,7 @@ tf_workflow.py --debug --nomap --yes \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR000DMT SE IDRv2
-tf_workflow.py --debug --title ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --yes \
+chip_workflow.py --target tf --debug --title ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --yes \
 --idrversion 2 \
 --rep1 /ENCSR000DMT/rep1/ENCFF000SBI.fastq.gz \
 --rep2 /ENCSR000DMT/rep2/ENCFF000SBK.fastq.gz \
@@ -68,7 +68,7 @@ tf_workflow.py --debug --title ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2
 --ctl2 /ENCSR000DMT/ctl/ENCFF000SAZ.fastq.gz
 
 # ENCSR000DMT SE IDRv2 from TA
-tf_workflow.py --debug --nomap --yes \
+chip_workflow.py --target tf --debug --nomap --yes \
 --title ENCSR000DMT-fullIDR --outf /ENCSR000DMT-fullIDRv2-$(date +"%Y%m%d%H%M") \
 --idr  --idrversion 2 \
 --rep1pe false --rep2pe false \
@@ -81,7 +81,7 @@ tf_workflow.py --debug --nomap --yes \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR769ZTN PE IDRv2
-tf_workflow.py --debug --title ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --yes \
+chip_workflow.py --target tf --debug --title ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-$(date +"%Y%m%d%H%M") --idr --yes \
 --idrversion 2 \
 --rep1 /ENCSR769ZTN/rep1/ENCFF002ELM.fastq.gz /ENCSR769ZTN/rep1/ENCFF002ELL.fastq.gz \
 --rep2 /ENCSR769ZTN/rep2/ENCFF002ELK.fastq.gz /ENCSR769ZTN/rep2/ENCFF002ELJ.fastq.gz \
@@ -89,7 +89,7 @@ tf_workflow.py --debug --title ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2
 --ctl2 /ENCSR769ZTN/ctl2/ENCFF002EFU.fastq.gz /ENCSR769ZTN/ctl2/ENCFF002EFS.fastq.gz
 
 # ENCSR769ZTN PE IDRv2 from TA
-tf_workflow.py --debug --nomap --yes \
+chip_workflow.py --target tf --debug --nomap --yes \
 --title ENCSR769ZTN-fullIDR --outf /ENCSR769ZTN-fullIDRv2-$(date +"%Y%m%d%H%M") \
 --idr --idrversion 2 \
 --rep1pe true --rep2pe true \
@@ -102,7 +102,7 @@ tf_workflow.py --debug --nomap --yes \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR795HTY PE IDRv2 map and call peaks
-tf_workflow.py --debug --yes \
+chip_workflow.py --target tf --debug --yes \
 --title ENCSR795HTY-map-idr2-$(date +"%Y%m%d%H%M") --outf /ENCSR795HTY-map-idr2-$(date +"%Y%m%d%H%M") \
 --idr --idrversion 2 \
 --rep1 /ENCSR795HTY/rep1/ENCFF240UHP.fastq.gz /ENCSR795HTY/rep1/ENCFF555NNB.fastq.gz \
@@ -114,7 +114,7 @@ tf_workflow.py --debug --yes \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR795HTY PE IDRv2 from TA
-tf_workflow.py --debug --nomap --yes \
+chip_workflow.py --target tf --debug --nomap --yes \
 --title ENCSR795HTY-nomap-idr2 --outf /ENCSR795HTY-nomap-idr2-$(date +"%Y%m%d%H%M") \
 --idr --idrversion 2 \
 --rep1pe true --rep2pe true \
@@ -130,7 +130,7 @@ tf_workflow.py --debug --nomap --yes \
 ## chr1 extracts
 
 # ENCSR000EEB chr1 IDR from TA
-tf_workflow.py --debug --title ENCSR000EEB-fullIDRtachr1 --outf /ENCSR000EEB-fullIDRtachr1 --idr --nomap --yes \
+chip_workflow.py --target tf --debug --title ENCSR000EEB-fullIDRtachr1 --outf /ENCSR000EEB-fullIDRtachr1 --idr --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr1.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr1.tagAlign.gz \
@@ -141,7 +141,7 @@ tf_workflow.py --debug --title ENCSR000EEB-fullIDRtachr1 --outf /ENCSR000EEB-ful
 ## chr21 extracts
 
 # ECSR000EEB chr21 SE IDRv2
-tf_workflow.py --debug --title ENCSR000EEBchr21-fullIDR --outf /ENCSR000EEBchr21-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
+chip_workflow.py --target tf --debug --title ENCSR000EEBchr21-fullIDR --outf /ENCSR000EEBchr21-fullIDR-$(date +"%Y%m%d%H%M") --idr --yes \
 --idrversion 2 \
 --rep1 /test_data/ENCFF000XUL.chr21.fq.gz \
 --rep2 /test_data/ENCFF000XUK.chr21.fq.gz \
@@ -149,7 +149,7 @@ tf_workflow.py --debug --title ENCSR000EEBchr21-fullIDR --outf /ENCSR000EEBchr21
 --ctl2 /test_data/ENCFF000XTF.chr21.fq.gz
 
 # ENCSR000EEB chr21 IDR from TA
-tf_workflow.py --debug --title ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
+chip_workflow.py --target tf --debug --title ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --idr --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr21.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr21.tagAlign.gz \
@@ -157,7 +157,7 @@ tf_workflow.py --debug --title ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fu
 --ctl2 /ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz
 
 # ENCSR000EEB chr21 IDRv2 from TA
-tf_workflow.py --debug --yes --nomap \
+chip_workflow.py --target tf --debug --yes --nomap \
 --title ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") \
 --idr --idrversion 2 \
 --rep1pe false --rep2pe false \
@@ -170,7 +170,7 @@ tf_workflow.py --debug --yes --nomap \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 # ENCSR000EEB chr21 no idr from TA
-tf_workflow.py --debug --title ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --nomap --yes \
+chip_workflow.py --target tf --debug --title ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fullIDRtachr21-$(date +"%Y%m%d%H%M") --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /ENCSR000EEB/rep1/ENCFF000XUL-chr21.tagAlign.gz \
 --rep2 /ENCSR000EEB/rep2/ENCFF000XUK-chr21.tagAlign.gz \
@@ -180,7 +180,7 @@ tf_workflow.py --debug --title ENCSR000EEB-fullIDRtachr21 --outf /ENCSR000EEB-fu
 ## histones
 
 # ENCSR678FIT chr19 IDRv2 from TA
-histone_workflow.py --debug --title ENCSR678FIT-chr19-ta-IDR2 --outf /ENCSR678FIT-chr19-ta-IDR2-$(date +"%Y%m%d%H%M") --idr --idrversion 2 --nomap --yes \
+chip_workflow.py --target histone --debug --title ENCSR678FIT-chr19-ta-IDR2 --outf /ENCSR678FIT-chr19-ta-IDR2-$(date +"%Y%m%d%H%M") --idr --idrversion 2 --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
 --rep2 /test_data/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
@@ -189,7 +189,7 @@ histone_workflow.py --debug --title ENCSR678FIT-chr19-ta-IDR2 --outf /ENCSR678FI
 --genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
 
 # ENCSR678FIT IDRv2 from TA
-histone_workflow.py --debug --title ENCSR678FIT-ta-IDR2 --outf /ENCSR678FIT-ta-IDR2-$(date +"%Y%m%d%H%M") --idr --idrversion 2 --nomap --yes \
+chip_workflow.py --target histone --debug --title ENCSR678FIT-ta-IDR2 --outf /ENCSR678FIT-ta-IDR2-$(date +"%Y%m%d%H%M") --idr --idrversion 2 --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /mm10_mapping/e165_experiments/bams/ENCSR678FIT/rep1/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --rep2 /mm10_mapping/e165_experiments/bams/ENCSR678FIT/rep2/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
@@ -198,7 +198,7 @@ histone_workflow.py --debug --title ENCSR678FIT-ta-IDR2 --outf /ENCSR678FIT-ta-I
 --genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
 
 # ENCSR678FIT chr19 overlap only from TA
-histone_workflow.py --debug --title ENCSR678FIT-chr19-ta-OL --outf /ENCSR678FIT-chr19-ta-OL-$(date +"%Y%m%d%H%M") --nomap --yes \
+chip_workflow.py --target histone --debug --title ENCSR678FIT-chr19-ta-OL --outf /ENCSR678FIT-chr19-ta-OL-$(date +"%Y%m%d%H%M") --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
 --rep2 /test_data/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
@@ -207,7 +207,7 @@ histone_workflow.py --debug --title ENCSR678FIT-chr19-ta-OL --outf /ENCSR678FIT-
 --genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
 
 # ENCSR678FIT overlap only from TA
-histone_workflow.py --debug --title ENCSR678FIT-ta-OL --outf /ENCSR678FIT-ta-OL-$(date +"%Y%m%d%H%M") --nomap --yes \
+chip_workflow.py --target histone --debug --title ENCSR678FIT-ta-OL --outf /ENCSR678FIT-ta-OL-$(date +"%Y%m%d%H%M") --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /mm10_mapping/e165_experiments/bams/ENCSR678FIT/rep1/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
 --rep2 /mm10_mapping/e165_experiments/bams/ENCSR678FIT/rep2/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
