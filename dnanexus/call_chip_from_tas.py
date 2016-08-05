@@ -19,14 +19,17 @@ ASSEMBLY_METADATA = {
     'mm10': {
         'gsize': 'mm',
         'csizes': "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes",
+        'blacklist': None
     },
     'GRCh38': {
         'gsize': 'hs',
-        'csizes': "ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes"
+        'csizes': "ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes",
+        'blacklist': "ENCODE Reference Files:/GRCh38/blacklists/hglft_genome_7399_3e01a0.bed.gz"
     },
     'hg19': {
         'gsize': 'hs',
-        'csizes': "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes"
+        'csizes': "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes",
+        'blacklist': "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
     }
 }
 
@@ -49,6 +52,7 @@ def get_args():
     parser.add_argument('--keyfile', default=os.path.expanduser("~/keypairs.json"), help="The keypair file.  Default is --keyfile=%s" %(os.path.expanduser("~/keypairs.json")))
     parser.add_argument('--gsize', help="Genome size string for MACS2, e.g. mm or hs", default=None)
     parser.add_argument('--csizes', help="chrom.sizes file for bedtobigbed, e.g. ENCODE Reference Files:/mm10/male.mm10.chrom.sizes", default=None)
+    parser.add_argument('--blacklist', help="Regions to exclude from final peaks list", default=None)
     parser.add_argument('--assembly', help="Genome assembly, e.g. hg19, mm10, GRCh38", required=True)
     # parser.add_argument('--idr', help="Run IDR. If not specified, run IDR for non-histone targets.", default=False, action='store_true')
     # parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default="2")
@@ -551,8 +555,10 @@ def main():
         else:
             logging.info("Assumed to be tf")
             wf_target = 'tf'
-            if args.assembly == "hg19":
-                blacklist = "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
+
+        if not args.blacklist:
+            if args.assembly in ASSEMBLY_METADATA:
+                blacklist = ASSEMBLY_METADATA[args.assembly]['blacklist']
             else:
                 logging.warning(
                     "%s: No blacklist for assembly %s, proceeding with no blacklist"
