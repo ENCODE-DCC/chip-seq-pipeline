@@ -290,7 +290,7 @@ def histone(args, analysis, experiment_accession, first_analysis):
 
     stages = analysis.get('stages')
     peaks_stage = next(stage for stage in stages if stage['execution']['name'] == "ENCODE Peaks")['execution']
-    replicated_stages = [stage['execution'] for stage in stages if 'Overlap' in stage['execution']['name']]
+    replicated_stages = [stage['execution'] for stage in stages if 'Final' in stage['execution']['name']]
 
     output_names = [
         'rep1_narrowpeaks_bb',
@@ -309,9 +309,9 @@ def histone(args, analysis, experiment_accession, first_analysis):
     outputs = dict(zip(output_names,[{'dx': dxpy.DXFile(peaks_stage['output'][output_name])} for output_name in output_names]))
 
     output_names.insert(3,'replicated_narrowpeaks_bb')
-    outputs.update({'replicated_narrowpeaks_bb' : {'dx': dxpy.DXFile(next(stage['execution']['output']['overlapping_peaks_bb'] for stage in stages if stage['execution']['name'] == 'Overlap narrowpeaks'))}})
+    outputs.update({'replicated_narrowpeaks_bb' : {'dx': dxpy.DXFile(next(stage['execution']['output']['overlapping_peaks_bb'] for stage in stages if stage['execution']['name'] == 'Final narrowpeaks'))}})
     output_names.insert(7,'replicated_gappedpeaks_bb')
-    outputs.update({'replicated_gappedpeaks_bb' : {'dx': dxpy.DXFile(next(stage['execution']['output']['overlapping_peaks_bb'] for stage in stages if stage['execution']['name'] == 'Overlap gappedpeaks'))}})
+    outputs.update({'replicated_gappedpeaks_bb' : {'dx': dxpy.DXFile(next(stage['execution']['output']['overlapping_peaks_bb'] for stage in stages if stage['execution']['name'] == 'Final gappedpeaks'))}})
 
     track_directory = os.path.join(args.ddir, experiment_accession)
     url_base = urlparse.urljoin(args.turl, experiment_accession+'/')
