@@ -2451,9 +2451,11 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force_p
 
 
 def infer_pipeline(analysis):
-    if (analysis.get('name') == 'histone_chip_seq'):
+    if any(name == 'histone_chip_seq' for name in
+           [analysis.get('executableName'), analysis.get('name')]):
         return "histone"
-    elif analysis.get('executableName') == 'tf_chip_seq':
+    elif any(name == 'tf_chip_seq' for name in
+             [analysis.get('executableName'), analysis.get('name')]):
         return "tf"
     elif (analysis.get('executableName') == 'ENCODE mapping pipeline' or
           (any([re.match("Map", stage['name'])
