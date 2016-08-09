@@ -751,10 +751,11 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     if fqcheck:
         if cmp(sorted(flat(experiment_fastq_accessions)),
                sorted(flat(input_fastq_accessions))):
-            logger.error(
+            fastqs_match = False
+            assert fastqs_match, (
                 '%s rep%d: Accessioned experiment fastqs differ from analysis.'
                 % (experiment_accession, repn) +
-                'Experiment probably needs remapping')
+                'Suppress with fqcheck=False')
             return None
     else:
         logger.warning(
@@ -774,17 +775,12 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             'crop_length %s. Inferring mapped_read_length from fastqs'
             % (crop_length))
         native_lengths = set([fq.get('read_length') for fq in fastqs])
-        try:
-            assert len(native_lengths) == 1 and \
-                   all([isinstance(rl, int) for rl in native_lengths])
-        except:
-            logger.error(
-                'fastqs with different or non-integer read_lengths: %s'
-                % ([(fq.get('accessin'), fq.get('read_length'))
+        assert (len(native_lengths) == 1 and
+                all([isinstance(rl, int) for rl in native_lengths])), \
+               ('fastqs with different or non-integer read_lengths: %s'
+                % ([(fq.get('accession'), fq.get('read_length'))
                     for fq in fastqs]))
-            raise
-        else:
-            mapped_read_length = int(next(l for l in native_lengths))
+        mapped_read_length = int(next(l for l in native_lengths))
     else:
         mapped_read_length = int(crop_length)
 
@@ -923,10 +919,11 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     if fqcheck:
         if cmp(sorted(flat(experiment_fastq_accessions)),
                sorted(flat(input_fastq_accessions))):
-            logger.error(
+            fastqs_match = False
+            assert fastqs_match, (
                 '%s rep%d: Accessioned experiment fastqs differ from analysis.'
                 % (experiment_accession, repn) +
-                'Experiment probably needs remapping')
+                'Suppress with fqcheck=False')
             return None
     else:
         logger.warning(
@@ -948,17 +945,12 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             'crop_length %s. Inferring mapped_read_length from fastqs'
             % (crop_length))
         native_lengths = set([fq.get('read_length') for fq in fastqs])
-        try:
-            assert len(native_lengths) == 1 and \
-                   all([isinstance(rl, int) for rl in native_lengths])
-        except:
-            logger.error(
-                'fastqs with different or non-integer read_lengths: %s'
-                % ([(fq.get('accessin'), fq.get('read_length'))
+        assert (len(native_lengths) == 1 and
+                all([isinstance(rl, int) for rl in native_lengths])), \
+               ('fastqs with different or non-integer read_lengths: %s'
+                % ([(fq.get('accession'), fq.get('read_length'))
                     for fq in fastqs]))
-            raise
-        else:
-            mapped_read_length = int(next(l for l in native_lengths))
+        mapped_read_length = int(next(l for l in native_lengths))
     else:
         mapped_read_length = int(crop_length)
 
