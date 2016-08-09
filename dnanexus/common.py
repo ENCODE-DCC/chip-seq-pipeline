@@ -383,8 +383,11 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
                     return response.json()
                 except:
                     return response.text
-    logging.error("Max retried exhausted.")
-    return None
+    logging.error("Max retries exhausted.")
+    if return_response:
+        return response
+    else:
+        return None
 
 
 def encoded_update(method, url, keypair, payload, return_response):
@@ -433,8 +436,11 @@ def encoded_update(method, url, keypair, payload, return_response):
                     return response.json()
                 except:
                     return response.text
-    logging.error("Max retried exhausted.")
-    return None
+    logging.error("Max retries exhausted.")
+    if return_response:
+        return response
+    else:
+        return None
 
 def encoded_patch(url, keypair, payload, return_response=False):
     return encoded_update('patch', url, keypair, payload, return_response)
