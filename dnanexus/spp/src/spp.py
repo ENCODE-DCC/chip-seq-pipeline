@@ -69,13 +69,14 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed, chrom_s
     else:
         run_spp = '/phantompeakqualtools/run_spp.R'
     #install spp
-    print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
-    print subprocess.check_output(shlex.split('R CMD INSTALL %s' %(spp_tarball)), stderr=subprocess.STDOUT)
+    subprocess.check_call('ls -l', shell=True)
+    subprocess.check_call(shlex.split('R CMD INSTALL %s' %(spp_tarball)))
     spp_command = "Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%d -savr=%s -savp=%s -rf -out=%s" %(run_spp, cpu_count(), experiment_filename, control_filename, npeaks, fragment_length, peaks_filename, xcor_plot_filename, xcor_scores_filename)
     print spp_command
-    process = subprocess.Popen(shlex.split(spp_command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
-    for line in iter(process.stdout.readline, ''):
-        sys.stdout.write(line)
+    # process = subprocess.Popen(shlex.split(spp_command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+    # for line in iter(process.stdout.readline, ''):
+    #     sys.stdout.write(line)
+    subprocess.check_call(shlex.split(spp_command))
 
     #when one of the peak coordinates are an exact multiple of 10, spp (R) outputs the coordinate in scientific notation
     #this changes any such coodinates to decimal notation
