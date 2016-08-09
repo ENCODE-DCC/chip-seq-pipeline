@@ -621,7 +621,12 @@ def get_stage_metadata(analysis, stage_pattern):
         return stage_metadata
 
 
-def get_experiment_accession(analysis):
+def get_experiment_accession(analysis_or_id):
+
+    if isinstance(analysis_or_id, dict):
+        analysis = analysis_or_id
+    else:  # assumed to be an analysis id
+        analysis = dxpy.describe(analysis_or_id)
 
     m_executableName = \
         re.search('(ENCSR[0-9]{3}[A-Z]{3})', analysis['executableName'])
@@ -784,8 +789,10 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         mapped_read_length = int(crop_length)
 
     # here we get the actual DNAnexus file that was used as the reference
-    reference_file = dxpy.describe(
-        input_stage['output']['reference_tar'])
+    # need to remain backwards-compatible with analyses that used output_JSON
+    input_stage_output = \
+        input_stage['output'].get('output_JSON') or input_stage['output']
+    reference_file = dxpy.describe(input_stage_output['reference_tar'])
 
     # and construct the alias to find the corresponding file at ENCODEd
     reference_alias = "dnanexus:" + reference_file.get('id')
@@ -956,8 +963,10 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         mapped_read_length = int(crop_length)
 
     # here we get the actual DNAnexus file that was used as the reference
-    reference_file = dxpy.describe(
-        input_stage['output']['reference_tar'])
+    # need to remain backwards-compatible with analyses that used output_JSON
+    input_stage_output = \
+        input_stage['output'].get('output_JSON') or input_stage['output']
+    reference_file = dxpy.describe(input_stage_output['reference_tar'])
 
     # and construct the alias to find the corresponding file at ENCODEd
     reference_alias = "dnanexus:" + reference_file.get('id')
@@ -1031,13 +1040,12 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     return mapping_stages
 
 
-def get_control_mapping_stages(peaks_analysis, experiment, keypair, server,
+def get_control_mapping_stages(peaks_analysis, keypair, server,
                                fqcheck, reps=[1, 2]):
     # Find the control inputs
     logger.debug(
-        'in get_control_mapping_stages with peaks_analysis %s'
-        % (peaks_analysis['id']) +
-        'experiment %s; reps %s' % (experiment['accession'], reps))
+        'in get_control_mapping_stages with peaks_analysis %s reps %s'
+        % (peaks_analysis['id'], reps))
 
     peaks_stages = \
         [stage['execution'] for stage in peaks_analysis.get('stages')]
@@ -1074,7 +1082,7 @@ def get_control_mapping_stages(peaks_analysis, experiment, keypair, server,
     return mapping_stages
 
 
-def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server,
+def get_peak_mapping_stages(peaks_analysis, keypair, server,
                             fqcheck, reps=[1, 2]):
 
     # Find the tagaligns actually used as inputs into the analysis
@@ -1086,19 +1094,14 @@ def get_peak_mapping_stages(peaks_analysis, experiment, keypair, server,
         logger.debug(
             'in get_peak_mapping_stages: peaks_analysis is %s'
             % (peaks_analysis))
-    elif not experiment:
-        logger.debug(
-            'in get_peak_mapping_stages: experiment is %s'
-            % (experiment))
     elif not reps:
         logger.debug(
             'in get_peak_maping_stages: reps is %s'
             % (reps))
     else:
-        logger.debug('in get_peak_mapping_stages with peaks_analysis %s'
-                     % (peaks_analysis['id']) +
-                     'experiment %s; reps %s'
-                     % (experiment['accession'], reps))
+        logger.debug(
+            'in get_peak_mapping_stages with peaks_analysis %s reps %s'
+            % (peaks_analysis['id'], reps))
 
     peaks_stages = \
         [stage['execution'] for stage in peaks_analysis.get('stages')]
@@ -1793,12 +1796,14 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server, dry
     return new_object
 
 
-def accession_outputs(stages, experiment, keypair, server, dryrun, force_patch, force_upload):
+def accession_outputs(stages, keypair, server, dryrun, force_patch, force_upload):
     files = []
     for (stage_name, outputs) in stages.iteritems():
         stage_metadata = outputs['stage_metadata']
         for i,file_metadata in enumerate(outputs['output_files']):
             project = stage_metadata['project']
+            analysis = stage_metadata['parentAnalysis']
+            dataset_accession = get_experiment_accession(analysis)
             file_id = stage_metadata['output'][file_metadata['name']]
             logger.debug(
                 'in accession_outputs getting handler for file %s in %s'
@@ -1819,7 +1824,7 @@ def accession_outputs(stages, experiment, keypair, server, dryrun, force_patch, 
                     'qc': notes_qc
                 },
                 #'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
-                'dataset': experiment.get('accession'),
+                'dataset': dataset_accession,
                 'file_size': dx_desc.get('size'),
                 'submitted_file_name': dx.get_proj_id() + ':' + '/'.join([dx.folder,dx.name])}
             post_metadata.update(file_metadata['metadata'])
@@ -2071,8 +2076,9 @@ def accession_mapping_analysis_files(
         raw_mapping_stages = None
 
     for stages in [i for i in [raw_mapping_stages, mapping_stages] if i]:
-        output_files = accession_outputs(
-            stages, experiment, keypair, server, dryrun, force_patch, force_upload)
+        output_files = \
+            accession_outputs(stages, keypair, server, dryrun,
+                              force_patch, force_upload)
         if not output_files:
             logger.error(
                 'in accession_mapping_analysis_files, accession_outputs failed')
@@ -2148,7 +2154,9 @@ def accession_raw_mapping_analysis_files(
     raw_mapping_stages = get_raw_mapping_stages(
         mapping_analysis, keypair, server, fqcheck, repn)
 
-    output_files = accession_outputs(raw_mapping_stages, experiment, keypair, server, dryrun, force_patch, force_upload)
+    output_files = \
+        accession_outputs(raw_mapping_stages, keypair, server, dryrun,
+                          force_patch, force_upload)
     files_with_derived = patch_outputs(raw_mapping_stages, keypair, server, dryrun)
 
     raw_mapping_analysis_step_versions = {
@@ -2200,8 +2208,8 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
     # in this context rep1,rep2 are the first and second replicates in the
     # pipeline.  They may have been accessioned on the portal with any
     # arbitrary biological_replicate_numbers.
-    mapping_stages = get_peak_mapping_stages(
-        peaks_analysis, experiment, keypair, server, fqcheck)
+    mapping_stages = \
+        get_peak_mapping_stages(peaks_analysis, keypair, server, fqcheck)
     if not mapping_stages:
         logger.error("Failed to find peak mapping stages")
         return None
@@ -2210,8 +2218,8 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
     # for [rep1, rep2, pooled]
     # the control stages for rep1 and rep2 might be the same as the pool if the
     #  experiment used pooled controls
-    control_stages = get_control_mapping_stages(
-        peaks_analysis, experiment, keypair, server, fqcheck)
+    control_stages = \
+        get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck)
     if not control_stages:
         logger.error("Failed to find control mapping stages")
         return None
@@ -2232,9 +2240,8 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
     output_files = []
     for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
         logger.info('accessioning output')
-        output_files.extend(
-            accession_outputs(
-                stages, experiment, keypair, server, dryrun, force_patch, force_upload))
+        output_files.extend(accession_outputs(stages, keypair, server, dryrun,
+                            force_patch, force_upload))
 
     # now that we have file accessions, loop again and patch derived_from
     files_with_derived = []
@@ -2364,14 +2371,16 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force_p
     #returns a list with two elements:  the mapping stages for [rep1,rep2]
     #in this context rep1,rep2 are the first and second replicates in the pipeline.  They may have been accessioned
     #on the portal with any arbitrary biological_replicate_numbers.
-    mapping_stages = get_peak_mapping_stages(peaks_analysis, experiment, keypair, server, fqcheck)
+    mapping_stages = \
+        get_peak_mapping_stages(peaks_analysis, keypair, server, fqcheck)
     if not mapping_stages:
         logger.error("Failed to find peak mapping stages")
         return None
 
     #returns a list with three elements: the mapping stages for the controls for [rep1, rep2, pooled]
     #the control stages for rep1 and rep2 might be the same as the pool if the experiment used pooled controls
-    control_stages = get_control_mapping_stages(peaks_analysis, experiment, keypair, server, fqcheck)
+    control_stages = \
+        get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck)
     if not control_stages:
         logger.error("Failed to find control mapping stages")
         return None
@@ -2386,7 +2395,8 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force_p
     output_files = []
     for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
         logger.info('accessioning output')
-        output_files.extend(accession_outputs(stages, experiment, keypair, server, dryrun, force_patch, force_upload))
+        output_files.extend(accession_outputs(stages, keypair, server, dryrun,
+                                              force_patch, force_upload))
 
     #now that we have file accessions, loop again and patch derived_from
     files_with_derived = []
@@ -2502,9 +2512,11 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force_p
 
 
 def infer_pipeline(analysis):
-    if (analysis.get('name') == 'histone_chip_seq'):
+    if any(name == 'histone_chip_seq' for name in
+           [analysis.get('executableName'), analysis.get('name')]):
         return "histone"
-    elif analysis.get('executableName') == 'tf_chip_seq':
+    elif any(name == 'tf_chip_seq' for name in
+             [analysis.get('executableName'), analysis.get('name')]):
         return "tf"
     elif (analysis.get('executableName') == 'ENCODE mapping pipeline' or
           (any([re.match("Map", stage['name'])

@@ -133,12 +133,20 @@ def get_args():
         help="Length to crop reads before mapping.  Default is native (no crop)",
         default='native')
 
+    parser.add_argument(
+        '--use_existing_folders',
+        help="Reuse existing folders even if results have already been saved there",
+        default=False,
+        action='store_true')
+
     args = parser.parse_args()
 
     if args.debug:
-        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-    else: #use the defaulf logging level
-        logging.basicConfig(format='%(levelname)s:%(message)s')
+        logging.basicConfig(
+            format='%(levelname)s:%(message)s', level=logging.DEBUG)
+    else:  # use the defaulf logging level
+        logging.basicConfig(
+            format='%(levelname)s:%(message)s')
 
     return args
 
@@ -156,20 +164,32 @@ def resolve_project(identifier, privs='r'):
         raise ValueError(identifier)
     return project
 
+
+def create_folder(project, folder_name):
+    try:
+        project.new_folder(folder_name, parents=True)
+    except:
+        logging.error(
+            "Cannot create folder %s in project %s"
+            % (folder_name, project.name))
+        return None
+    else:
+        logging.info(
+            "New folder %s created in project %s"
+            % (folder_name, project.name))
+        return folder_name
+
+
 def resolve_folder(project, identifier):
     if not identifier.startswith('/'):
         identifier = '/' + identifier
     try:
-        project_id = project.list_folder(identifier)
+        project.list_folder(identifier)
     except:
-        try:
-            project_id = project.new_folder(identifier, parents=True)
-        except:
-            logging.error("Cannot create folder %s in project %s" %(identifier, project.name))
-            raise ValueError('%s:%s' %(project.name, identifier))
-        else:
-            logging.info("New folder %s created in project %s" %(identifier, project.name))
-    return identifier
+        return None
+    else:
+        return identifier
+
 
 def find_applet_by_name(applet_name, applets_project_id):
     '''Looks up an applet by name in the project that holds tools.  From Joe Dale's code.'''
@@ -215,7 +235,7 @@ def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
                 logging.error('%s: Reads file has no replicate' %(file_obj.get('accession')))
         return files
 
-def replicates_to_map(files, server, keypair, biorep_ns=[]):
+def replicates_to_map(files, server, keypair, map_only_reps=[]):
     if not files:
         return []
     else:
@@ -223,7 +243,7 @@ def replicates_to_map(files, server, keypair, biorep_ns=[]):
         for f in files:
             replicate = common.encoded_get(urlparse.urljoin(server,f.get('replicate')),keypair)
             if not replicate in replicate_objects:
-                if not biorep_ns or (biorep_ns and replicate['biological_replicate_number'] in biorep_ns):
+                if not map_only_reps or (map_only_reps and replicate['biological_replicate_number'] in map_only_reps):
                     replicate_objects.append(replicate)
 
         return replicate_objects
@@ -263,34 +283,57 @@ def choose_reference(experiment, biorep_n, server, keypair, sex_specific):
     logging.debug('Found reference %s' %(reference))
     return reference
 
+
 def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
     output_project = resolve_project(args.outp, 'w')
-    logging.debug('Found output project %s' %(output_project.name))
+    logging.debug('Found output project %s' % (output_project.name))
 
     applet_project = resolve_project(args.applets, 'r')
-    logging.debug('Found applet project %s' %(applet_project.name))
+    logging.debug('Found applet project %s' % (applet_project.name))
 
-    mapping_applet = find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
-    logging.debug('Found applet %s' %(mapping_applet.name))
+    mapping_applet = \
+        find_applet_by_name(MAPPING_APPLET_NAME, applet_project.get_id())
+    logging.debug('Found applet %s' % (mapping_applet.name))
 
-    input_shield_applet = find_applet_by_name(INPUT_SHIELD_APPLET_NAME, applet_project.get_id())
-    logging.debug('Found applet %s' %(input_shield_applet.name))
+    input_shield_applet = \
+        find_applet_by_name(INPUT_SHIELD_APPLET_NAME, applet_project.get_id())
+    logging.debug('Found applet %s' % (input_shield_applet.name))
 
-    workflow_output_folder = resolve_folder(output_project, args.outf + '/workflows/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
-
-    fastq_output_folder = resolve_folder(output_project, args.outf + '/fastqs/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
-    mapping_output_folder = resolve_folder(output_project, args.outf + '/raw_bams/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
+    folders = ['workflows', 'fastqs', 'raw_bams', 'bams']
+    folder_paths = \
+        ['/'.join([args.outf,
+                   folder_name,
+                   experiment.get('accession'),
+                   'rep%d' % (biorep_n)])
+         for folder_name in folders]
+    paths_exist = \
+        [resolve_folder(output_project, folder_path)
+         for folder_path in folder_paths
+         if resolve_folder(output_project, folder_path)]
+    if any(paths_exist):
+        logging.error(
+            "%s: output paths already exist: %s"
+            % (experiment.get('accession'), paths_exist))
+        return None
+    else:
+        workflow_output_folder, fastq_output_folder, mapping_output_folder, final_output_folder = \
+            tuple(create_folder(output_project, folder_path)
+                  for folder_path in folder_paths)
 
     if args.raw:
-        workflow_title = 'Map %s rep%d to %s (no filter)' %(experiment.get('accession'), biorep_n, args.assembly)
+        workflow_title = \
+            ('Map %s rep%d to %s (no filter)'
+             % (experiment.get('accession'), biorep_n, args.assembly))
         workflow_name = 'ENCODE raw mapping pipeline'
     else:
-        workflow_title = 'Map %s rep%d to %s and filter' %(experiment.get('accession'), biorep_n, args.assembly)
+        workflow_title = \
+            ('Map %s rep%d to %s and filter'
+             % (experiment.get('accession'), biorep_n, args.assembly))
         workflow_name = 'ENCODE mapping pipeline'
 
     if args.tag:
-        workflow_title += ': %s' %(args.tag)
+        workflow_title += ': %s' % (args.tag)
 
     workflow = dxpy.new_dxworkflow(
         title=workflow_title,
@@ -325,14 +368,13 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
     )
 
     if not args.raw:
-        final_output_folder = resolve_folder(output_project, args.outf + '/bams/' + experiment.get('accession') + '/' + 'rep%d' %(biorep_n))
-
-        filter_qc_applet = find_applet_by_name(FILTER_QC_APPLET_NAME, applet_project.get_id())
-        logging.debug('Found applet %s' %(filter_qc_applet.name))
+        filter_qc_applet = \
+            find_applet_by_name(FILTER_QC_APPLET_NAME, applet_project.get_id())
+        logging.debug('Found applet %s' % (filter_qc_applet.name))
 
         filter_qc_stage_id = workflow.add_stage(
             filter_qc_applet,
-            name='Filter and QC %s rep%d' %(experiment.get('accession'), biorep_n),
+            name='Filter and QC %s rep%d' % (experiment.get('accession'), biorep_n),
             folder=final_output_folder,
             stage_input={
                 'input_bam': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'mapped_reads'}),
@@ -424,11 +466,18 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
 
     jobs = []
     if args.yes:
-        for wf in workflows:
+        for workflow in [wf for wf in workflows if wf]:
             if args.debug:
-                jobs.append(wf.run({}, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['*']))
+                jobs.append(workflow.run(
+                    {},
+                    priority='high',
+                    debug={'debugOn': ['AppInternalError', 'AppError']},
+                    delay_workspace_destruction=True,
+                    allow_ssh=['*']))
             else:
-                jobs.append(wf.run({}, priority='high'))
+                jobs.append(workflow.run(
+                    {},
+                    priority='high'))
     return jobs
 
 
@@ -444,28 +493,30 @@ def main():
     else:
         exp_ids = csv.reader(args.infile)
 
-    for instring in exp_ids:
-        if instring[0].startswith('#'):
+    for row in exp_ids:
+        if row[0].startswith('#'):
             continue
-        exp_id = instring[0].strip()
-        if len(instring) > 1:
+        exp_id = row[0].strip()
+        if len(row) > 1:
             repns = []
-            for s in instring[1:]:
+            for s in row[1:]:
                 repns.extend(s.split(','))
-            biorep_ns = list(set([int(s) for s in repns]))
+            map_only_reps = list(set([int(s) for s in repns]))
         else:
-            biorep_ns = []
+            map_only_reps = []
         outstrings = []
-        encode_url = urlparse.urljoin(server,exp_id)
+        encode_url = urlparse.urljoin(server, exp_id)
         experiment = common.encoded_get(encode_url, keypair)
         outstrings.append(exp_id)
         files = files_to_map(experiment, server, keypair, args.no_sfn_dupes)
         outstrings.append(str(len(files)))
         outstrings.append(str([f.get('accession') for f in files]))
-        replicates = replicates_to_map(files, server, keypair, biorep_ns)
+        replicates = replicates_to_map(files, server, keypair, map_only_reps)
+        biorep_numbers = \
+            set([rep.get('biological_replicate_number') for rep in replicates])
         in_process = False
         if files:
-            for biorep_n in set([rep.get('biological_replicate_number') for rep in replicates]):
+            for biorep_n in biorep_numbers:
                 outstrings.append('rep%s' %(biorep_n))
                 biorep_files = [f for f in files if biorep_n in common.biorep_ns(f,server,keypair)]
                 paired_files = []
@@ -525,8 +576,8 @@ def main():
                 except:
                     logging.error("Tried and failed to set internal_status")
                     logging.error(r.text)
-            print '\t'.join(outstrings)
-        else: # no files
+            print('\t'.join(outstrings))
+        else:  # no files
             if not replicates:
                 logging.warning('%s: No files and no replicates' %experiment.get('accession'))
             else:
