@@ -360,6 +360,86 @@ dx run \
 --yes \
 spp
 
+# Test SPP with full GRCh38 vs GRCh38-minimalized tagAligns
+dx run \
+--input "control=/test_TF_38/ENCFF972NVS.raw.srt.filt.nodup.srt.SE.minimal.tagAlign.gz" \
+--input "experiment=/test_TF_38/ENCFF002AXG.raw.srt.filt.nodup.srt.SE.minimal.tagAlign.gz" \
+--input "xcor_scores_input=/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "bigbed=true" \
+--input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--verbose \
+--destination /spp_test \
+--name spp_test_minimal \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+/applets/spp
+
+dx run \
+--input "control=/test_TF_38/ENCFF972NVS.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
+--input "experiment=/test_TF_38/ENCFF002AXG.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
+--input "xcor_scores_input=/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "bigbed=true" \
+--input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--verbose \
+--destination /spp_test \
+--name spp_test_full \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+/applets/spp
+
+dx run \
+--input "control=/test_TF_38/c1_22.tagAlign.gz" \
+--input "experiment=/test_TF_38/r1_22.tagAlign.gz" \
+--input "xcor_scores_input=/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "bigbed=true" \
+--input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--verbose \
+--destination /spp_test \
+--name spp_test_22 \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+/applets/spp
+
+dx run \
+--input "control=/test_TF_38/c1_22_Un.tagAlign.gz" \
+--input "experiment=/test_TF_38/r1_22_Un.tagAlign.gz" \
+--input "xcor_scores_input=/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "bigbed=true" \
+--input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--verbose \
+--destination /spp_test \
+--name spp_test_22_Un \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+/applets/spp
+
+dx run \
+--input "control=/test_TF_38/c1_22_all.tagAlign.gz" \
+--input "experiment=/test_TF_38/r1_22_all.tagAlign.gz" \
+--input "xcor_scores_input=/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "bigbed=true" \
+--input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--verbose \
+--destination /spp_test \
+--name spp_test_22_all \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+--instance-type mem3_ssd1_x16 \
+--debug-on All \
+--ssh \
+/applets/spp
+
+
 # Run MACS2 with ENCSR678FIT chr19
 dx run \
 --input "experiment=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
@@ -456,6 +536,19 @@ dx run \
 overlap_peaks
 
 
+dx run \
+--input "paired_end=false" \
+--input "input_bam=/test_data/ENCFF000XUL.chr21.raw.srt.bam" \
+--verbose \
+--destination /test_output/ \
+--name filter_qc_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+--watch \
+/applets/filter_qc
+
+
 ###### new tests for ChIP Demo
 
 # Build full TF pipeline on ENCSR464DKE chr21 extracts:
@@ -515,18 +608,6 @@ chip_workflow.py \
 --ctl1 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/C1-ENCFF069WCH.chr19.fq.gz" \
 --ctl2 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/C2-ENCFF101KOM.chr19.fq.gz" \
 --yes
-
-dx run \
---input "paired_end=false" \
---input "input_bam=/test_data/ENCFF000XUL.chr21.raw.srt.bam" \
---verbose \
---destination /test_output/ \
---name filter_qc_test \
---delay-workspace-destruction \
---priority high \
---yes \
---watch \
-/applets/filter_qc
 
 
 #######
