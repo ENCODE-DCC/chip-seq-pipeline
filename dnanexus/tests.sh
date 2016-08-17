@@ -362,12 +362,13 @@ spp
 
 # Test SPP with full GRCh38 vs GRCh38-minimalized tagAligns
 dx run \
---input "control=/test_TF_38/ENCFF972NVS.raw.srt.filt.nodup.srt.SE.minimal.tagAlign.gz" \
---input "experiment=/test_TF_38/ENCFF002AXG.raw.srt.filt.nodup.srt.SE.minimal.tagAlign.gz" \
---input "xcor_scores_input=/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "control=ENCODE - ChIP Production:/test_TF_38/ENCFF972NVS.raw.srt.filt.nodup.srt.SE.minimal.tagAlign.gz" \
+--input "experiment=ENCODE - ChIP Production:/test_TF_38/ENCFF002AXG.raw.srt.filt.nodup.srt.SE.minimal.tagAlign.gz" \
+--input "xcor_scores_input=ENCODE - ChIP Production:/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
 --input "bigbed=true" \
 --input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
 --input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input 'spp_version=1.14' \
 --verbose \
 --destination /spp_test \
 --name spp_test_minimal \
@@ -377,12 +378,13 @@ dx run \
 /applets/spp
 
 dx run \
---input "control=/test_TF_38/ENCFF972NVS.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
---input "experiment=/test_TF_38/ENCFF002AXG.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
---input "xcor_scores_input=/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "control=ENCODE - ChIP Production:/test_TF_38/ENCFF972NVS.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
+--input "experiment=ENCODE - ChIP Production:/test_TF_38/ENCFF002AXG.raw.srt.filt.nodup.srt.SE.tagAlign.gz" \
+--input "xcor_scores_input=ENCODE - ChIP Production:/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
 --input "bigbed=true" \
 --input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
 --input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input 'spp_version=1.14' \
 --verbose \
 --destination /spp_test \
 --name spp_test_full \
@@ -392,12 +394,13 @@ dx run \
 /applets/spp
 
 dx run \
---input "control=/test_TF_38/c1_22.tagAlign.gz" \
---input "experiment=/test_TF_38/r1_22.tagAlign.gz" \
---input "xcor_scores_input=/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "control=ENCODE - ChIP Production:/test_TF_38/c1_22.tagAlign.gz" \
+--input "experiment=ENCODE - ChIP Production:/test_TF_38/r1_22.tagAlign.gz" \
+--input "xcor_scores_input=ENCODE - ChIP Production:/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
 --input "bigbed=true" \
 --input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
 --input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input 'spp_version=1.14' \
 --verbose \
 --destination /spp_test \
 --name spp_test_22 \
@@ -407,9 +410,9 @@ dx run \
 /applets/spp
 
 dx run \
---input "control=/test_TF_38/c1_22_Un.tagAlign.gz" \
---input "experiment=/test_TF_38/r1_22_Un.tagAlign.gz" \
---input "xcor_scores_input=/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "control=ENCODE - ChIP Production:/test_TF_38/c1_22_Un.tagAlign.gz" \
+--input "experiment=ENCODE - ChIP Production:/test_TF_38/r1_22_Un.tagAlign.gz" \
+--input "xcor_scores_input=ENCODE - ChIP Production:/mapping_GRCh38/bams/ENCSR464DKE/rep1/ENCFF002AXG.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
 --input "bigbed=true" \
 --input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
 --input "as_file=ENCODE Reference Files:/narrowPeak.as" \
