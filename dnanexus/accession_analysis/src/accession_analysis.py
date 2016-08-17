@@ -1353,7 +1353,7 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
 
 
 def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
-                       experiment, keypair, server):
+                       experiment, keypair, server, signal_only):
 
     logger.debug(
         'in get_tf_peak_stages with peaks_analysis %s;'
@@ -1435,44 +1435,6 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         [stage['execution'] for stage in peaks_analysis.get('stages')]
 
     peak_stages = {
-        # derived_from is by name here, will be patched into the file metadata
-        # after all files are accessioned
-        # derived_from can also be a tuple of (stages,name) to connect to files
-        # outside of this set of stages
-
-        get_stage_name("SPP Peaks", analysis_stages): {
-            'output_files': [
-
-                {'name': 'rep1_peaks',
-                 'derived_from': [rep1_bam] + rep1_ctl,
-                 'metadata': narrowpeak_metadata},
-
-                {'name': 'rep2_peaks',
-                 'derived_from': [rep2_bam] + rep2_ctl,
-                 'metadata': narrowpeak_metadata},
-
-                {'name': 'pooled_peaks',
-                 'derived_from': [rep1_bam, rep2_bam] + pooled_ctl_bams,
-                 'metadata': narrowpeak_metadata},
-
-                {'name': 'rep1_peaks_bb',
-                 'derived_from': ['rep1_peaks'],
-                 'metadata': narrowpeak_bb_metadata},
-
-                {'name': 'rep2_peaks_bb',
-                 'derived_from': ['rep2_peaks'],
-                 'metadata': narrowpeak_bb_metadata},
-
-                {'name': 'pooled_peaks_bb',
-                 'derived_from': ['pooled_peaks'],
-                 'metadata': narrowpeak_bb_metadata}
-            ],
-
-            'qc': [],
-
-            'stage_metadata': {}  # initialized below
-        },
-
         get_stage_name("ENCODE Peaks", analysis_stages): {
 
             'output_files': [
@@ -1505,60 +1467,101 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
             'qc': [],
 
             'stage_metadata': {}  # initialized below
-        },
-
-        get_stage_name("IDR True Replicates", analysis_stages): {
-            'output_files': [],
-            'qc': [],
-            'stage_metadata': {}  # initialized below
-        },
-
-        get_stage_name("IDR Rep 1 Self-pseudoreplicates", analysis_stages): {
-            'output_files': [],
-            'qc': [],
-            'stage_metadata': {}  # initialized below
-        },
-
-        get_stage_name("IDR Rep 2 Self-pseudoreplicates", analysis_stages): {
-            'output_files': [],
-            'qc': [],
-            'stage_metadata': {}  # initialized below
-        },
-
-        get_stage_name("IDR Pooled Pseudoreplicates", analysis_stages): {
-            'output_files': [],
-            'qc': [],
-            'stage_metadata': {}  # initialized below
-        },
-
-        get_stage_name("Final IDR peak calls", analysis_stages): {
-
-            'output_files': [
-
-                {'name': 'conservative_set',
-                 'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                 'metadata': idr_conservative_narrowpeak_metadata},
-
-                {'name': 'conservative_set_bb',
-                 'derived_from': ['conservative_set'],
-                 'metadata': idr_conservative_narrowpeak_bb_metadata},
-
-                {'name': 'optimal_set',
-                 'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                 'metadata': idr_optimal_narrowpeak_metadata},
-
-                {'name': 'optimal_set_bb',
-                 'derived_from': ['optimal_set'],
-                 'metadata': idr_optimal_narrowpeak_bb_metadata}
-
-            ],
-
-            'qc': ['reproducibility_test', 'rescue_ratio', 'Np', 'N1', 'N2',
-                   'Nt', 'self_consistency_ratio'],
-
-            'stage_metadata': {}  # initialized below
         }
     }
+
+    if not signal_only:
+        peak_stages.update({
+            # derived_from is by name here, will be patched into the file metadata
+            # after all files are accessioned
+            # derived_from can also be a tuple of (stages,name) to connect to files
+            # outside of this set of stages
+
+            get_stage_name("SPP Peaks", analysis_stages): {
+                'output_files': [
+
+                    {'name': 'rep1_peaks',
+                     'derived_from': [rep1_bam] + rep1_ctl,
+                     'metadata': narrowpeak_metadata},
+
+                    {'name': 'rep2_peaks',
+                     'derived_from': [rep2_bam] + rep2_ctl,
+                     'metadata': narrowpeak_metadata},
+
+                    {'name': 'pooled_peaks',
+                     'derived_from': [rep1_bam, rep2_bam] + pooled_ctl_bams,
+                     'metadata': narrowpeak_metadata},
+
+                    {'name': 'rep1_peaks_bb',
+                     'derived_from': ['rep1_peaks'],
+                     'metadata': narrowpeak_bb_metadata},
+
+                    {'name': 'rep2_peaks_bb',
+                     'derived_from': ['rep2_peaks'],
+                     'metadata': narrowpeak_bb_metadata},
+
+                    {'name': 'pooled_peaks_bb',
+                     'derived_from': ['pooled_peaks'],
+                     'metadata': narrowpeak_bb_metadata}
+                ],
+
+                'qc': [],
+
+                'stage_metadata': {}  # initialized below
+            },
+
+            get_stage_name("IDR True Replicates", analysis_stages): {
+                'output_files': [],
+                'qc': [],
+                'stage_metadata': {}  # initialized below
+            },
+
+            get_stage_name("IDR Rep 1 Self-pseudoreplicates", analysis_stages): {
+                'output_files': [],
+                'qc': [],
+                'stage_metadata': {}  # initialized below
+            },
+
+            get_stage_name("IDR Rep 2 Self-pseudoreplicates", analysis_stages): {
+                'output_files': [],
+                'qc': [],
+                'stage_metadata': {}  # initialized below
+            },
+
+            get_stage_name("IDR Pooled Pseudoreplicates", analysis_stages): {
+                'output_files': [],
+                'qc': [],
+                'stage_metadata': {}  # initialized below
+            },
+
+            get_stage_name("Final IDR peak calls", analysis_stages): {
+
+                'output_files': [
+
+                    {'name': 'conservative_set',
+                     'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                     'metadata': idr_conservative_narrowpeak_metadata},
+
+                    {'name': 'conservative_set_bb',
+                     'derived_from': ['conservative_set'],
+                     'metadata': idr_conservative_narrowpeak_bb_metadata},
+
+                    {'name': 'optimal_set',
+                     'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                     'metadata': idr_optimal_narrowpeak_metadata},
+
+                    {'name': 'optimal_set_bb',
+                     'derived_from': ['optimal_set'],
+                     'metadata': idr_optimal_narrowpeak_bb_metadata}
+
+                ],
+
+                'qc': ['reproducibility_test', 'rescue_ratio', 'Np', 'N1', 'N2',
+                       'Nt', 'self_consistency_ratio'],
+
+                'stage_metadata': {}  # initialized below
+            }
+        })
 
     for stage_name in peak_stages:
         if not stage_name.startswith('_'):
@@ -2343,7 +2346,8 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
     return patched_files
 
 
-def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force_patch, force_upload, fqcheck):
+def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
+                                force_patch, force_upload, fqcheck, signal_only):
 
     # m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
     # if m:
@@ -2378,7 +2382,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force_p
         return None
 
     #returns the stages for peak calling
-    peak_stages = get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages, experiment, keypair, server)
+    peak_stages = get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages, experiment, keypair, server, signal_only)
     if not peak_stages:
         logger.error("Failed to find peak stages")
         return None
@@ -2446,15 +2450,6 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force_p
                     {'chipseq_filter_quality_metric': ['filtered_bam']},
                     {'samtools_flagstats_quality_metric': ['filtered_bam']}
                 ]
-            }           
-        ],
-        'tf-spp-peak-calling-step-v-1' : [
-            {
-                'stages' : peak_stages,
-                'stage_name': 'SPP Peaks',
-                'file_names' : ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                'status' : 'finished',
-                'qc_objects': []
             }
         ],
         'tf-macs2-signal-calling-step-v-1' : [
@@ -2466,38 +2461,51 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun, force_p
                 'qc_objects': []
             }
         ],
-        'tf-idr-step-v-1' : [
-            {
-                'stages' : peak_stages,
-                'stage_name': 'Final IDR peak calls',
-                'file_names' : ['conservative_set','optimal_set'],
-                'status' : 'finished',
-                'qc_objects': [
-                    {'idr_quality_metric': ['conservative_set','optimal_set']}
-                ]
-            }
-        ],
-        'tf-peaks-to-bigbed-step-v-1' : [
-            {
-                'stages' : peak_stages,
-                'stage_name': 'SPP Peaks',
-                'file_names' : ['rep1_peaks_bb', 'rep2_peaks_bb', 'pooled_peaks_bb'],
-                'status' : 'virtual',
-                'qc_objects': []
-            }
-        ],
-        'tf-idr-peaks-to-bigbed-step-v-1' : [
-            {
-                'stages' : peak_stages,
-                'stage_name': 'Final IDR peak calls',
-                'file_names' : ['conservative_set_bb','optimal_set_bb'],
-                'status' : 'virtual',
-                'qc_objects': [
-                    {'idr_quality_metric': ['conservative_set_bb','optimal_set_bb']}
-                ]
-            }
-        ]
     }
+
+    if not signal_only:
+        full_analysis_step_versions.update({
+            'tf-spp-peak-calling-step-v-1' : [
+                {
+                    'stages' : peak_stages,
+                    'stage_name': 'SPP Peaks',
+                    'file_names' : ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                    'status' : 'finished',
+                    'qc_objects': []
+                }
+            ],
+            'tf-idr-step-v-1' : [
+                {
+                    'stages' : peak_stages,
+                    'stage_name': 'Final IDR peak calls',
+                    'file_names' : ['conservative_set','optimal_set'],
+                    'status' : 'finished',
+                    'qc_objects': [
+                        {'idr_quality_metric': ['conservative_set','optimal_set']}
+                    ]
+                }
+            ],
+            'tf-peaks-to-bigbed-step-v-1' : [
+                {
+                    'stages' : peak_stages,
+                    'stage_name': 'SPP Peaks',
+                    'file_names' : ['rep1_peaks_bb', 'rep2_peaks_bb', 'pooled_peaks_bb'],
+                    'status' : 'virtual',
+                    'qc_objects': []
+                }
+            ],
+            'tf-idr-peaks-to-bigbed-step-v-1' : [
+                {
+                    'stages' : peak_stages,
+                    'stage_name': 'Final IDR peak calls',
+                    'file_names' : ['conservative_set_bb','optimal_set_bb'],
+                    'status' : 'virtual',
+                    'qc_objects': [
+                        {'idr_quality_metric': ['conservative_set_bb','optimal_set_bb']}
+                    ]
+                }
+            ]
+        })
 
     patched_files = accession_pipeline(full_analysis_step_versions, keypair, server, dryrun, force_patch, force_upload)
     return patched_files
@@ -2529,7 +2537,7 @@ def infer_pipeline(analysis):
 def main(outfn, assembly, debug, key, keyfile, dryrun,
          force_patch, force_upload, fqcheck,
          pipeline=None, analysis_ids=None, infile=None, project=None,
-         accession_raw=False):
+         accession_raw=False, signal_only=False):
 
     if debug:
         logger.info('setting logger level to logging.DEBUG')
@@ -2612,7 +2620,8 @@ def main(outfn, assembly, debug, key, keyfile, dryrun,
                         {'dx_pipeline': 'tf_chip_seq'})
                     accessioned_files = \
                         accession_tf_analysis_files(
-                            analysis, keypair, server, dryrun, force_patch, force_upload, fqcheck)
+                            analysis, keypair, server, dryrun, force_patch,
+                            force_upload, fqcheck, signal_only)
                     logger.info('accession tf_chip_seq analysis completed')
                 elif inferred_pipeline == "raw":
                     logger.info('accession raw mapping analysis started')
