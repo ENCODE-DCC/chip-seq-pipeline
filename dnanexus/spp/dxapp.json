@@ -58,6 +58,11 @@
       "label": ".as file for bedToBigBed",
       "class": "file",
       "optional": true
+    },
+    {
+      "name": "spp_version",
+      "label": "The version of SPP to use",
+      "class": "string"
     }
   ],
   "outputSpec": [
