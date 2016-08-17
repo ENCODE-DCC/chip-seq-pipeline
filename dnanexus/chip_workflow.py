@@ -136,6 +136,7 @@ def get_args():
     parser.add_argument('--rep1pe', help='Specify if rep1 is PE (required only if --nomap)', type=bool, default=None)
     parser.add_argument('--rep2pe', help='Specify if rep2 is PE (required only if --nomap)', type=bool, default=None)
     parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks")
+    parser.add_argument('--spp_version', help="Version of SPP to run", default="1.10.1")
     # parser.add_argument('--idr',     help='Report peaks with and without IDR analysis',                 default=False, action='store_true')
     # parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
     # parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default="2")
@@ -451,7 +452,8 @@ def main():
                     folder=xcor_output_folder,
                     stage_input={
                         'input_bam': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'filtered_bam'}),
-                        'paired_end': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'paired_end'})
+                        'paired_end': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'paired_end'}),
+                        'spp_version': args.spp_version
                     }
                 )
                 mapping_superstage.update({'xcor_stage_id': xcor_stage_id})
@@ -511,7 +513,8 @@ def main():
             folder=xcor_output_folder,
             stage_input={
                 'input_tagAlign': exp_rep1_ta,
-                'paired_end': rep1_paired_end
+                'paired_end': rep1_paired_end,
+                'spp_version': args.spp_version
             }
         )
         xcor_only_stages.append({'xcor_only_rep1_id': exp_rep1_cc_stage_id})
@@ -525,7 +528,8 @@ def main():
             folder=xcor_output_folder,
             stage_input={
                 'input_tagAlign': exp_rep2_ta,
-                'paired_end': rep2_paired_end
+                'paired_end': rep2_paired_end,
+                'spp_version': args.spp_version
             }
         )
         xcor_only_stages.append({'xcor_only_rep2_id': exp_rep2_cc_stage_id})
@@ -579,7 +583,8 @@ def main():
                     'rep1_paired_end': rep1_paired_end,
                     'rep2_paired_end': rep2_paired_end,
                     'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
-                    'idr_peaks': True
+                    'idr_peaks': True,
+                    'spp_version': args.spp_version
                     }
         if chrom_sizes:
             peaks_stage_input.update({'chrom_sizes': chrom_sizes})

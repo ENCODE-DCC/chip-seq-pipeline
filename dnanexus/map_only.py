@@ -139,6 +139,11 @@ def get_args():
         default=False,
         action='store_true')
 
+    parser.add_argument(
+        '--spp_version',
+        help="Version of spp to use for the cross-correlation analysis",
+        default='1.10.1')
+
     args = parser.parse_args()
 
     if args.debug:
@@ -391,7 +396,8 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
             folder=final_output_folder,
             stage_input={
                 'input_bam': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'filtered_bam'}),
-                'paired_end': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'paired_end'})
+                'paired_end': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'paired_end'}),
+                'spp_version': args.spp_version
             }
         )
 
