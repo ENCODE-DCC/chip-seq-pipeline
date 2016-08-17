@@ -155,29 +155,6 @@ def get_rep_ta(experiment, repn, default_project, ta_folders):
         return None
 
 
-def get_repns(exp_id, ta_folders):
-    for base_folder in ta_folders:
-        if ':' in base_folder:
-            project_name, path = base_folder.split(':')
-            project = resolve_project(project_name)
-            project = project.get_id()
-            project_name += ":"
-        else:
-            project = default_project
-            project_name = ""
-            path = base_folder
-        if not path.startswith('/'):
-            path = '/' + path
-        print((project, project_name, path))
-        for dxfile in dxpy.find_data_objects(classname='file', state='closed', folder=path, describe=True, recurse=True, project=project):
-            desc = dxfile.get('describe')
-            if exp_id in desc.get('folder') and '/bams' in desc.get('folder') and desc.get('name').endswith(('tagAlign', 'tagAlign.gz')):
-                possible_files.append(desc)
-    print("%s %i possible files" % (exp_id, len(possible_files)))
-    folders = [f.get('folder') for f in possible_files]
-    print("%s folders %s" % (exp_id, folders))
-
-
 def get_possible_ctl_ta(experiment, repn, server, keypair, default_project,
                         ta_folders, used_control_ids):
     exp_id = experiment['accession']
@@ -555,15 +532,14 @@ def main():
         else:
             logging.info("Assumed to be tf")
             wf_target = 'tf'
-
-        if not args.blacklist:
-            if args.assembly in ASSEMBLY_METADATA:
-                blacklist = ASSEMBLY_METADATA[args.assembly]['blacklist']
-            else:
-                logging.warning(
-                    "%s: No blacklist for assembly %s, proceeding with no blacklist"
-                    % (exp_id, args.assembly))
-                blacklist = None
+            if not args.blacklist:
+                if args.assembly in ASSEMBLY_METADATA:
+                    blacklist = ASSEMBLY_METADATA[args.assembly]['blacklist']
+                else:
+                    logging.warning(
+                        "%s: No blacklist for assembly %s, proceeding with no blacklist"
+                        % (exp_id, args.assembly))
+                    blacklist = None
 
         if not args.gsize:
             if args.assembly in ASSEMBLY_METADATA:
