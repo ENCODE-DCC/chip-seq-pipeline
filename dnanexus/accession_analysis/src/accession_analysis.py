@@ -32,11 +32,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
 
-common_metadata = {
+COMMON_METADATA = {
     'lab': 'encode-processing-pipeline',
     'award': 'U41HG006992'
 }
-common_file_metadata = copy.copy(common_metadata)
 
 DEPRECATED = ['deleted', 'replaced', 'revoked']
 
@@ -284,7 +283,7 @@ def chipseq_filter_quality_metric(step_run, stages, files):
     # so we change that to the string "Infinity"
     if obj['PBC2'] == float('inf'):
         obj['PBC2'] = 'Infinity'
-    obj.update(common_metadata)
+    obj.update(COMMON_METADATA)
     return [obj]
 
 
@@ -376,7 +375,7 @@ def get_flagstat_obj(step_run, stage, file_accessions):
             'diff_chroms_qc_failed':
                 int(flagstat_qc['mate_mapped_different_chr_hiQ'][1])
         })
-    obj.update(common_metadata)
+    obj.update(COMMON_METADATA)
 
     return obj
 
@@ -484,78 +483,78 @@ def idr_quality_metric(step_run, stages, files):
     else:  # this is a serious enough error to block creation of the object
         logger.error('Unequal IDR cutoffs: %s' % (idr_cutoffs))
         return None
-    obj.update(common_metadata)
+    obj.update(COMMON_METADATA)
 
     return [obj]
 
 
-def get_rep_bams(experiment, assembly, keypair, server):
-    logger.debug('in get_rep_bams with experiment[accession] %s'
-                 % (experiment.get('accession')))
-    original_files = [common.encoded_get(
-        urlparse.urljoin(server, '%s' % (uri)), keypair)
-        for uri in experiment.get('original_files')]
+# def get_rep_bams(experiment, assembly, keypair, server):
+#     logger.debug('in get_rep_bams with experiment[accession] %s'
+#                  % (experiment.get('accession')))
+#     original_files = [common.encoded_get(
+#         urlparse.urljoin(server, '%s' % (uri)), keypair)
+#         for uri in experiment.get('original_files')]
 
-    # resolve the biorep_n for each fastq
-    for fastq in [f for f in original_files
-                  if f.get('file_format') in ['fastq', 'fasta']]:
-        replicate = common.encoded_get(
-            urlparse.urljoin(server, '%s' % (fastq.get('replicate'))), keypair)
-        fastq.update(
-            {'biorep_n': replicate.get('biological_replicate_number')})
+#     # resolve the biorep_n for each fastq
+#     for fastq in [f for f in original_files
+#                   if f.get('file_format') in ['fastq', 'fasta']]:
+#         replicate = common.encoded_get(
+#             urlparse.urljoin(server, '%s' % (fastq.get('replicate'))), keypair)
+#         fastq.update(
+#             {'biorep_n': replicate.get('biological_replicate_number')})
 
-    # resolve the biorep_n's from derived_from for each bam
-    for bam in [f for f in original_files
-                if f.get('file_format') == 'bam' and
-                f.get('assembly') == assembly]:
+#     # resolve the biorep_n's from derived_from for each bam
+#     for bam in [f for f in original_files
+#                 if f.get('file_format') == 'bam' and
+#                 f.get('assembly') == assembly]:
 
-        biorep_ns = set()
+#         biorep_ns = set()
 
-        for derived_from_uri in bam.get('derived_from'):
+#         for derived_from_uri in bam.get('derived_from'):
 
-            # this assumes frame=object
-            derived_from_accession = os.path.basename(
-                derived_from_uri.strip('/'))
+#             # this assumes frame=object
+#             derived_from_accession = os.path.basename(
+#                 derived_from_uri.strip('/'))
 
-            biorep_ns.add(next(
-                f.get('biorep_n')
-                for f in original_files
-                if f.get('accession') == derived_from_accession))
+#             biorep_ns.add(next(
+#                 f.get('biorep_n')
+#                 for f in original_files
+#                 if f.get('accession') == derived_from_accession))
 
-        if len(biorep_ns) != 1:
-            logger.error("%s %s expected 1 biorep_n, found %d, skipping."
-                         % (experiment.get('accession'), bam.get('accession')))
-            return
+#         if len(biorep_ns) != 1:
+#             logger.error("%s %s expected 1 biorep_n, found %d, skipping."
+#                          % (experiment.get('accession'), bam.get('accession')))
+#             return
 
-        else:
-            biorep_n = biorep_ns.pop()
-            bam.update({'biorep_n': biorep_n})
+#         else:
+#             biorep_n = biorep_ns.pop()
+#             bam.update({'biorep_n': biorep_n})
 
-    # remove any bams that are older than another bam
-    # resulting in only the most recent surviving
-    for bam in [f for f in original_files
-                if f.get('file_format') == 'bam' and
-                f.get('biorep_n') == biorep_n and
-                common.after(bam.get('date_created'), f.get('date_created'))]:
-        original_files.remove(bam)
+#     # remove any bams that are older than another bam
+#     # resulting in only the most recent surviving
+#     for bam in [f for f in original_files
+#                 if f.get('file_format') == 'bam' and
+#                 f.get('biorep_n') == biorep_n and
+#                 common.after(bam.get('date_created'), f.get('date_created'))]:
+#         original_files.remove(bam)
 
-    try:
-        rep1_bam = next(f for f in original_files
-                        if f.get('file_format') == 'bam' and
-                        f.get('biorep_n') == 1)
-    except StopIteration:
-        logger.error('%s has no rep1 bam.' % (experiment.get('accession')))
-        rep1_bam = None
-    try:
-        rep2_bam = next(f for f in original_files
-                        if f.get('file_format') == 'bam' and
-                        f.get('biorep_n') == 2)
-    except StopIteration:
-        logger.error('%s has no rep2 bam.' % (experiment.get('accession')))
-        rep2_bam = None
-    logger.debug('get_rep_bams returning %s, %s'
-                 % (rep1_bam.get('accession'), rep2_bam.get('accession')))
-    return rep1_bam, rep2_bam
+#     try:
+#         rep1_bam = next(f for f in original_files
+#                         if f.get('file_format') == 'bam' and
+#                         f.get('biorep_n') == 1)
+#     except StopIteration:
+#         logger.error('%s has no rep1 bam.' % (experiment.get('accession')))
+#         rep1_bam = None
+#     try:
+#         rep2_bam = next(f for f in original_files
+#                         if f.get('file_format') == 'bam' and
+#                         f.get('biorep_n') == 2)
+#     except StopIteration:
+#         logger.error('%s has no rep2 bam.' % (experiment.get('accession')))
+#         rep2_bam = None
+#     logger.debug('get_rep_bams returning %s, %s'
+#                  % (rep1_bam.get('accession'), rep2_bam.get('accession')))
+#     return rep1_bam, rep2_bam
 
 
 def get_rep_fastqs(experiment, keypair, server, repn):
@@ -798,17 +797,15 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     reference = common.encoded_get(
         urlparse.urljoin(server, 'files/%s' % (reference_alias)), keypair)
-
-    if reference:
-        logger.debug('found reference file %s' % (reference.get('accession')))
-    else:
-        logger.error('failed to find reference file %s' % (reference_alias))
+    assert reference, "Reference file %s not found on Portal" % (reference_alias) 
+    logger.debug('found reference file %s' % (reference.get('accession')))
 
     bam_metadata = common.merge_dicts({
         'file_format': 'bam',
         'output_type': 'unfiltered alignments',
+        'assembly': reference.get('assembly'),
         'mapped_read_length': mapped_read_length
-    }, common_file_metadata)
+    }, COMMON_METADATA)
 
     mapping_stages = {
         get_stage_name("Map ENCSR.*", analysis_stages): {
@@ -968,17 +965,15 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     reference = common.encoded_get(
         urlparse.urljoin(server, 'files/%s' % (reference_alias)), keypair)
-
-    if reference:
-        logger.debug('found reference file %s' % (reference.get('accession')))
-    else:
-        logger.error('failed to find reference file %s' % (reference_alias))
+    assert reference, "Reference file %s not found on Portal" % (reference_alias) 
+    logger.debug('found reference file %s' % (reference.get('accession')))
 
     bam_metadata = common.merge_dicts({
         'file_format': 'bam',
         'output_type': 'alignments',
-        'mapped_read_length': mapped_read_length
-    }, common_file_metadata)
+        'mapped_read_length': mapped_read_length,
+        'assembly': reference.get('assembly')
+    }, COMMON_METADATA)
 
     mapping_stages = {
 
@@ -1202,6 +1197,36 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         'experiment %s and len(mapping_stages) %d len(control_stages) %d'
         % (experiment['accession'], len(mapping_stages), len(control_stages)))
 
+    rep1_bam, rep2_bam = \
+        [(mapping_stages[n], 'filtered_bam') for n in range(2)]
+
+    rep1_ctl_bam, rep2_ctl_bam = \
+        [(control_stages[n], 'filtered_bam') for n in range(2)]
+
+    assemblies = \
+        [bam.get('metadata').get('assembly')
+         for bam in [rep1_bam, rep2_bam, rep1_ctl_bam, rep2_ctl_bam]]
+    observed_assemblies = set(assemblies)
+    assert len(observed_assemblies) == 1, "Different bam assemblies for rep1,2 and control rep1,2 bams: %s" % (assemblies)
+    assembly = observed_assemblies[0]
+
+    pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
+
+    if pooled_controls(peaks_analysis, rep=1):
+        rep1_ctl = pooled_ctl_bams
+    else:
+        rep1_ctl = [rep1_ctl_bam]
+    if pooled_controls(peaks_analysis, rep=2):
+        rep2_ctl = pooled_ctl_bams
+    else:
+        rep2_ctl = [rep2_ctl_bam]
+
+    analysis_stages = \
+        [stage['execution'] for stage in peaks_analysis.get('stages')]
+
+    common_file_metadata = copy.copy(COMMON_METADATA)
+    common_file_metadata.update({'assembly': assembly})
+
     narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
@@ -1239,26 +1264,6 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         'file_format': 'bigWig',
         'output_type': 'signal p-value'},
         common_file_metadata)
-
-    rep1_bam, rep2_bam = \
-        [(mapping_stages[n], 'filtered_bam') for n in range(2)]
-
-    rep1_ctl_bam, rep2_ctl_bam = \
-        [(control_stages[n], 'filtered_bam') for n in range(2)]
-
-    pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
-
-    if pooled_controls(peaks_analysis, rep=1):
-        rep1_ctl = pooled_ctl_bams
-    else:
-        rep1_ctl = [rep1_ctl_bam]
-    if pooled_controls(peaks_analysis, rep=2):
-        rep2_ctl = pooled_ctl_bams
-    else:
-        rep2_ctl = [rep2_ctl_bam]
-
-    analysis_stages = \
-        [stage['execution'] for stage in peaks_analysis.get('stages')]
 
     peak_stages = {
         # derived_from is by name here, will be patched into the file metadata
@@ -1361,6 +1366,37 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         'experiment %s and len(mapping_stages) %d len(control_stages) %d'
         % (experiment['accession'], len(mapping_stages), len(control_stages)))
 
+    rep1_bam, rep2_bam = \
+        [(mapping_stages[n], 'filtered_bam') for n in range(2)]
+
+    rep1_ctl_bam, rep2_ctl_bam = \
+        [(control_stages[n], 'filtered_bam') for n in range(2)]
+
+    assemblies = \
+        [bam.get('metadata').get('assembly')
+         for bam in [rep1_bam, rep2_bam, rep1_ctl_bam, rep2_ctl_bam]]
+    observed_assemblies = set(assemblies)
+    assert len(observed_assemblies) == 1, "Different bam assemblies for rep1,2 and control rep1,2 bams: %s" % (assemblies)
+    assembly = observed_assemblies[0]
+
+    pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
+
+    if pooled_controls(peaks_analysis, rep=1):
+        rep1_ctl = pooled_ctl_bams
+    else:
+        rep1_ctl = [rep1_ctl_bam]
+
+    if pooled_controls(peaks_analysis, rep=2):
+        rep2_ctl = pooled_ctl_bams
+    else:
+        rep2_ctl = [rep2_ctl_bam]
+
+    analysis_stages = \
+        [stage['execution'] for stage in peaks_analysis.get('stages')]
+
+    common_file_metadata = copy.copy(COMMON_METADATA)
+    common_file_metadata.update({'assembly': assembly})
+
     narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
@@ -1412,27 +1448,6 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         {'file_format': 'bigWig',
          'output_type': 'signal p-value'},
         common_file_metadata)
-
-    rep1_bam, rep2_bam = \
-        [(mapping_stages[n], 'filtered_bam') for n in range(2)]
-
-    rep1_ctl_bam, rep2_ctl_bam = \
-        [(control_stages[n], 'filtered_bam') for n in range(2)]
-
-    pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
-
-    if pooled_controls(peaks_analysis, rep=1):
-        rep1_ctl = pooled_ctl_bams
-    else:
-        rep1_ctl = [rep1_ctl_bam]
-
-    if pooled_controls(peaks_analysis, rep=2):
-        rep2_ctl = pooled_ctl_bams
-    else:
-        rep2_ctl = [rep2_ctl_bam]
-
-    analysis_stages = \
-        [stage['execution'] for stage in peaks_analysis.get('stages')]
 
     peak_stages = {
         get_stage_name("ENCODE Peaks", analysis_stages): {
@@ -1746,7 +1761,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
             logger.info("accession_file: MD5 exisits, but force_upload, so uploading and patching file metatdata")
             return_code = common.s3_cp(
                 f, local_fname, server, keypair)
-            dx_fh.add_tags([file_object.get('accession')])
+            dx_fh.add_tags([new_file_object.get('accession')])
 
             logger.debug('s3_cp returned %s' % (return_code))
     else:
@@ -1968,9 +1983,9 @@ def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force_pa
                 logger.warning('%s missing stage metadata (files or stage_name) ... skipping' % (analysis_step_version_name))
                 continue
             stage_name = step['stage_name']
-            print stage_name
-            print step.keys()
-            print step['stages'].keys()
+            logger.info(stage_name)
+            logger.debug(step.keys())
+            logger.debug(step['stages'].keys())
             jobid = step['stages'][stage_name]['stage_metadata']['id']
             analysis_step_version = \
                 'versionof:%s' % (analysis_step_version_name)
@@ -2534,7 +2549,7 @@ def infer_pipeline(analysis):
 
 
 @dxpy.entry_point('main')
-def main(outfn, assembly, debug, key, keyfile, dryrun,
+def main(outfn, debug, key, keyfile, dryrun,
          force_patch, force_upload, fqcheck,
          pipeline=None, analysis_ids=None, infile=None, project=None,
          accession_raw=False, signal_only=False):
@@ -2560,15 +2575,12 @@ def main(outfn, assembly, debug, key, keyfile, dryrun,
     authid, authpw, server = common.processkey(key, keyfile)
     keypair = (authid, authpw)
 
-    common_file_metadata.update({'assembly': assembly})
-
     with open(outfn, 'w') as fh:
         if dryrun:
             fh.write('---DRYRUN: No files have been modified---\n')
         fieldnames = [
             'analysis',
             'experiment',
-            'assembly',
             'dx_pipeline',
             'files',
             'error'
@@ -2580,21 +2592,21 @@ def main(outfn, assembly, debug, key, keyfile, dryrun,
             logger.debug('debug %s' % (analysis_id))
             analysis = dxpy.describe(analysis_id.strip())
             experiment = get_experiment_accession(analysis)
+
+            if not pipeline:
+                inferred_pipeline = infer_pipeline(analysis)
+            else:
+                inferred_pipeline = pipeline
+
             output = {
                 'analysis': analysis_id,
                 'experiment': experiment,
-                'assembly': assembly
             }
             logger.info(
                 'Accessioning %s name %s executableName %s'
                 % (analysis.get('id'),
                    analysis.get('name'),
                    analysis.get('executableName')))
-
-            if not pipeline:
-                inferred_pipeline = infer_pipeline(analysis)
-            else:
-                inferred_pipeline = pipeline
 
             try:
                 if inferred_pipeline == "histone":

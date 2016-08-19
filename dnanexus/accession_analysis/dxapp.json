@@ -25,11 +25,6 @@
       "default": "accession_analysis.csv"
     },
     {
-      "name": "assembly",
-      "class": "string",
-      "optional": false
-    },
-    {
       "name": "debug",
       "class": "boolean",
       "optional": true,
