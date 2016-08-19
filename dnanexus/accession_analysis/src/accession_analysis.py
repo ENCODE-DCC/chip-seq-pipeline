@@ -1188,6 +1188,15 @@ def pooled_controls(peaks_analysis, rep):
         return True
 
 
+def get_assembly(stage_output_tuple):
+    stages, output_key = stage_output_tuple
+    for stage in stages.itervalues():
+        output_files = stage.get('output_files')
+        if output_files:
+            output_file_metadata = next(output_file.get('metadata') for output_file in output_files if output_file.get('name') == output_key)
+            return output_file_metadata.get('assembly')
+
+
 def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
                             experiment, keypair, server):
 
@@ -1204,11 +1213,11 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         [(control_stages[n], 'filtered_bam') for n in range(2)]
 
     assemblies = \
-        [bam.get('metadata').get('assembly')
+        [get_assembly(bam)
          for bam in [rep1_bam, rep2_bam, rep1_ctl_bam, rep2_ctl_bam]]
     observed_assemblies = set(assemblies)
     assert len(observed_assemblies) == 1, "Different bam assemblies for rep1,2 and control rep1,2 bams: %s" % (assemblies)
-    assembly = observed_assemblies[0]
+    assembly = observed_assemblies.pop()
 
     pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
 
@@ -1373,11 +1382,11 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         [(control_stages[n], 'filtered_bam') for n in range(2)]
 
     assemblies = \
-        [bam.get('metadata').get('assembly')
+        [get_assembly(bam)
          for bam in [rep1_bam, rep2_bam, rep1_ctl_bam, rep2_ctl_bam]]
     observed_assemblies = set(assemblies)
     assert len(observed_assemblies) == 1, "Different bam assemblies for rep1,2 and control rep1,2 bams: %s" % (assemblies)
-    assembly = observed_assemblies[0]
+    assembly = observed_assemblies.pop()
 
     pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
 
