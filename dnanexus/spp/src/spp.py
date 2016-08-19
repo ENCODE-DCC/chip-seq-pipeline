@@ -22,7 +22,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
-
+logger.setLevel(logging.DEBUG)
 
 SPP_VERSION_MAP = {
     "1.10.1": "/phantompeakqualtools/spp_1.10.1.tar.gz",
