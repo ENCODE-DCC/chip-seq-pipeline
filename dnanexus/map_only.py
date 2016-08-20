@@ -477,7 +477,7 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
             else:
                 jobs.append(workflow.run(
                     {},
-                    priority='high'))
+                    priority='normal'))
     return jobs
 
 
