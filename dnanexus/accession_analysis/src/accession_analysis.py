@@ -1668,17 +1668,62 @@ def post_file(payload, keypair, server, dryrun):
         else:
             new_file_object = r.json()['@graph'][0]
             logger.info("New accession: %s" %(new_file_object.get('accession')))
-    
+
     return new_file_object
+
+
+def add_tag(dx_fh, tag):
+    try:
+        dx_fh.add_tags([tag])
+    except dxpy.exceptions.ResourceNotFound as e:
+        logger.warning(
+            '%s adding tag to %s.  Will try in current project.'
+            % (e, dx_fh.name))
+        try:
+            current_project_fh = dxpy.DXFile(
+                dx_fh.get_id(), project=dxpy.PROJECT_CONTEXT_ID)
+            current_project_fh.add_tags([tag])
+        except dxpy.exceptions.ResourceNotFound as e2:
+            # give up
+            logger.warning('%s.  Skipping saving tag.' % (e2))
+            pass
+        except:
+            raise
+    except:
+        raise
+
+
+def set_property(dx_fh, prop):
+    try:
+        dx_fh.set_properties(prop)
+    except dxpy.exceptions.ResourceNotFound as e:
+        logger.warning(
+            '%s adding property to %s.  Will try in current project.'
+            % (e, dx_fh.name))
+        try:
+            current_project_fh = dxpy.DXFile(
+                dx_fh.get_id(), project=dxpy.PROJECT_CONTEXT_ID)
+            current_project_fh.set_properties(prop)
+        except dxpy.exceptions.ResourceNotFound as e2:
+            # give up
+            logger.warning('%s.  Skipping saving property.' % (e2))
+            pass
+        except:
+            raise
+    except:
+        raise
 
 
 def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
     # check for duplication
     # - if it has ENCFF or TSTFF number in it's tag, or
-    # - if there exists an accessioned file with the same submitted_file_name that is not deleted, replaced, revoked and has the same size
-    # - then there should be a file with the same md5.  If not, warn of a mismatch between what's at DNAnexus and ENCODEd.
-    # - If same md5, return the existing object.  
-    # - Next, check if there's already a file with the same md5.  If it's deleted, replaced, revoked, then remodel it if --force_patch=true,
+    # - if there exists an accessioned file with the same submitted_file_name
+    #   that is not deleted, replaced, revoked and has the same size
+    # - then there should be a file with the same md5.  If not, warn of a
+    #   mismatch between what's at DNAnexus and ENCODEd.
+    # - If same md5, return the existing object.
+    # - Next, check if there's already a file with the same md5.  If it's
+    #   deleted, replaced, revoked, then remodel it if --force_patch=true,
     # - Else warn and return None
     # download
     # calculate md5 and add to f.md5sum
@@ -1699,24 +1744,9 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         logger.info("Downloading %s" % (local_fname))
         dxpy.download_dxfile(dx_fh.get_id(), local_fname)
         md5sum = common.md5(local_fname)
-        try:
-            dx_fh.set_properties({'md5sum': md5sum})
-        except dxpy.exceptions.ResourceNotFound as e:
-            logger.warning('%s.  Will try in current project.' % (e))
-            try:
-                current_project_fh = dxpy.DXFile(
-                    dx_fh.get_id(), project=dxpy.PROJECT_CONTEXT_ID)
-                current_project_fh.set_properties({'md5sum': md5sum})
-            except dxpy.exceptions.ResourceNotFound as e2:
-                # give up
-                logger.warning('%s.  Skipping saving md5 property.' % (e2))
-                pass
-            except:
-                raise
-        except:
-            raise
-
+        set_property(dx_fh, {'md5sum': md5sum})
         f.update({'md5sum': md5sum})
+
     f['notes'] = json.dumps(f.get('notes'))
 
     # check to see if md5 already in the database
@@ -1753,7 +1783,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         else:
             accession_in_tag = False
 
-    #TODO check here if file is deprecated and, if so, warn
+    # TODO check here if file is deprecated and, if so, warn
     if md5_exists and not force_patch:
         logger.info("accession_file: Returning duplicate file unchanged")
         return md5_exists
@@ -1764,16 +1794,17 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         dxpy.download_dxfile(dx_fh.get_id(), local_fname)
 
     if md5_exists and (force_patch or force_upload):
-        logger.info("accession_file: MD5 exisits, but force_patch, so patching file metatdata")
+        logger.info(
+            "accession_file: MD5 exisits, but force_patch, so patching file metatdata")
         f['accession'] = md5_exists['accession']
         new_file_object = patch_file(f, keypair, server, dryrun)
         if force_upload:
-            logger.info("accession_file: MD5 exisits, but force_upload, so uploading and patching file metatdata")
+            logger.info(
+                "accession_file: MD5 exisits, but force_upload, so uploading and patching file metatdata")
             return_code = common.s3_cp(
                 f, local_fname, server, keypair)
-            dx_fh.add_tags([new_file_object.get('accession')])
-
             logger.debug('s3_cp returned %s' % (return_code))
+            add_tag(dx_fh, new_file_object.get('accession'))
     else:
         logger.info("accession_file: New MD5")
         logger.info('posting new file %s' % (f.get('submitted_file_name')))
@@ -1781,8 +1812,8 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         new_file_object = post_file(f, keypair, server, dryrun)
         return_code = common.s3_cp(
             new_file_object, local_fname, server, keypair)
-        dx_fh.add_tags([new_file_object.get('accession')])
         logger.debug('s3_cp returned %s' % (return_code))
+        add_tag(dx_fh, new_file_object.get('accession'))
     try:
         os.remove(local_fname)
     except:
