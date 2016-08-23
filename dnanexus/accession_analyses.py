@@ -83,7 +83,8 @@ def main():
         'dx run applets/accession_analysis',
         '-i "outfn=%s"' % (args.outfile),
         '--destination "%s"' % (args.destination),
-        '--name "%s"' % (args.name)
+        '--name "%s"' % (args.name),
+        '--yes'
     ]
     if args.watch:
         tokens.append('--watch')
@@ -116,7 +117,7 @@ def main():
         tokens.append('-i "analysis_ids=%s"' % (analysis_id))
 
     command_string = ' '.join(tokens)
-    print(command_string)
+    logger.debug(command_string)
     subprocess.check_call(shlex.split(command_string))
 
 if __name__ == '__main__':
