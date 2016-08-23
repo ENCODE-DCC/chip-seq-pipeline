@@ -2753,7 +2753,8 @@ def main(outfn, debug, key, keyfile, dryrun,
             dxpy.new_dxjob(
                 fn_input=accession_subjob_input,
                 fn_name="accession_analysis_id",
-                name="accession_%s" % (analysis_id)))
+                name="accession_%s" % (analysis_id),
+                properties={'id': analysis_id}))
 
     postprocess_subjob = dxpy.new_dxjob(
         fn_input={
