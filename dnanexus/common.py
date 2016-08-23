@@ -330,7 +330,9 @@ def processkey(key=None, keyfile=None):
 
 
 def encoded_get(url, keypair=None, frame='object', return_response=False):
-    import urlparse, urllib, requests
+    import urlparse
+    import urllib
+    import requests
     #it is not strictly necessary to include both the accept header, and format=json, but we do
     #so as to get exactly the same URL as one would use in a web browser
 
@@ -367,7 +369,10 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
             continue
         except Exception as e:
             logging.error("%s" % (e))
-            return None
+            if return_response:
+                return response
+            else:
+                return None
         else:
             if response.status_code in RETRY_CODES:
                 logging.warning(
