@@ -235,13 +235,14 @@ def get_ta_from_accessions(accessions, default_project, ta_folders):
             'Could not find tagAlign with accessions %s' % (accessions))
         return None
     elif len(matched_files) > 1:
-        logging.error(
+        logging.warning(
             'Found multiple tagAligns that matched accessions %s'
             % (accessions))
-        logging.error(
+        logging.warning(
             'Matched files %s'
             % ([(f['folder'], f['name']) for f in matched_files]))
-        return None
+        logging.warning('Using first one found')
+        return matched_files[0]
     else:
         return matched_files[0]
 
