@@ -57,7 +57,7 @@ def get_args():
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
     parser.add_argument('--fqcheck', help="Check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--accession_raw', help="Accession unfiltered bams", type=t_or_f, default=None)
-    parser.add_argument('--signal_only', help="Accession unfiltered bams", type=t_or_f, default=None)
+    parser.add_argument('--signal_only', help="Accession through signal generation only", type=t_or_f, default=None)
     args = parser.parse_args()
 
     return args
