@@ -58,6 +58,7 @@ def get_args():
     parser.add_argument('--fqcheck', help="Check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--accession_raw', help="Accession unfiltered bams", type=t_or_f, default=None)
     parser.add_argument('--signal_only', help="Accession through signal generation only", type=t_or_f, default=None)
+    parser.add_argument('--skip_control', help="Accession no control files or metadata", type=t_or_f, default=None)
     args = parser.parse_args()
 
     return args
@@ -108,6 +109,8 @@ def main():
         tokens.append('-i "accession_raw=%s"' % (args.accession_raw))
     if args.signal_only is not None:
         tokens.append('-i "signal_only=%s"' % (args.signal_only))
+    if args.skip_control is not None:
+        tokens.append('-i "skip_control=%s"' % (args.skip_control))
 
     for (i, analysis_id) in enumerate(ids):
         if analysis_id.startswith('#'):
