@@ -19,6 +19,7 @@ import subprocess
 import shlex
 import requests
 import urlparse
+import os
 
 KEYFILE = 'keypairs.json'
 DEFAULT_SERVER = 'https://www.encodeproject.org'
@@ -32,27 +33,20 @@ logger.propagate = False
 
 def s3_dxcp(accession, key=None):
 
-    (AUTHID,AUTHPW,SERVER) = common.processkey(key,KEYFILE)
-    keypair = (AUTHID,AUTHPW)
+    (AUTHID, AUTHPW, SERVER) = common.processkey(key, KEYFILE)
+    keypair = (AUTHID, AUTHPW)
 
-    url = SERVER + '/search/?type=file&accession=%s&format=json&frame=embedded&limit=all' %(accession)
-    #get the file object
-    response = common.encoded_get(url, keypair)
-    logger.debug(response)
+    url = SERVER + '/files/%s' % (accession)
+    # get the file object
+    f_obj = common.encoded_get(url, keypair)
 
-    #select your file
-    result = response.get('@graph')
-    if not result:
-        logger.error('Failed to find %s at %s' %(accession, url))
+    if not f_obj:
+        logger.error('Failed to find %s at %s' % (accession, url))
         return None
-    else:
-        f_obj = result[0]
-        logger.debug(f_obj)
 
     #make the URL that will get redirected - get it from the file object's href property
     encode_url = urlparse.urljoin(SERVER,f_obj.get('href'))
     logger.debug("URL: %s" %(encode_url))
-    logger.debug("%s:%s" %(AUTHID, AUTHPW))
     #stream=True avoids actually downloading the file, but it evaluates the redirection
     r = requests.get(encode_url, auth=(AUTHID,AUTHPW), headers={'content-type': 'application/json'}, allow_redirects=True, stream=True)
     try:
@@ -78,8 +72,8 @@ def s3_dxcp(accession, key=None):
     bucket_url = S3_SERVER.rstrip('/') + o.path
 
     #cp the file from the bucket
-    subprocess.check_call(shlex.split('aws s3 cp %s . --quiet' %(bucket_url)), stderr=subprocess.STDOUT)
-    subprocess.check_call(shlex.split('ls -l %s' %(filename)))
+    subprocess.check_output(shlex.split('aws s3 cp %s . --quiet' % (bucket_url)), stderr=subprocess.STDOUT)
+    subprocess.check_output(shlex.split('ls -l %s' % (filename)))
 
     dx_file = dxpy.upload_local_file(filename)
 
@@ -219,7 +213,9 @@ def pooled(files):
 
 @dxpy.entry_point('main')
 def main(reads1, reads2, crop_length, reference_tar,
-         bwa_aln_params, bwa_version, samtools_version, key, debug):
+         bwa_aln_params, bwa_version, samtools_version, key, debug,
+         reuse_mappings_filtered=None, reuse_mappings_unfiltered=None,
+         reuse_mappings_paired_end=None):
 
     # reads1 and reads2 are expected to be an arrays of file identifiers
     # indentifiers can be DNAnexus files or ENCODE file accession numbers
@@ -238,7 +234,11 @@ def main(reads1, reads2, crop_length, reference_tar,
     logger.info("reads1: %s" % (reads1))
     logger.info("reads2: %s" % (reads2))
 
+    if reuse_mappings_filtered or reuse_mappings_unfiltered:
+        assert reuse_mappings_paired_end is not None, "reuse_mappings_paired_end must be specified if reuse mappings is true"
+
     if reads2:
+        assert not(reuse_mappings_filtered or reuse_mappings_unfiltered), 'bam input to reads2 not supported'
         paired_end = True
         assert len(reads1) == len(reads2), "Paired-end and unequal numbers of read1 and read2 identifiers: %s %s" %(reads1, reads2)
     else:
@@ -253,6 +253,7 @@ def main(reads1, reads2, crop_length, reference_tar,
 
     # pooling multiple fastqs
     if len(reads1_files) > 1:
+        assert not(reuse_mappings_filtered or reuse_mappings_unfiltered), 'Multiple bam input not supported'
         reads1_file = pooled(reads1_files)
     else:
         reads1_file = reads1_files[0]
@@ -282,6 +283,12 @@ def main(reads1, reads2, crop_length, reference_tar,
     }
     if reads2_file:
         output.update({"reads2": reads2_file})
+    if reuse_mappings_unfiltered is not None:
+        output.update({"reuse_mappings_unfiltered": reuse_mappings_unfiltered})
+        output.update({"reuse_mappings_paired_end": reuse_mappings_paired_end})
+    if reuse_mappings_filtered is not None:
+        output.update({"reuse_mappings_filtered": reuse_mappings_filtered})
+        output.update({"reuse_mappings_paired_end": reuse_mappings_paired_end})
 
     logger.info('Exiting with output: %s' % (output))
 

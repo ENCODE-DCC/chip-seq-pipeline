@@ -69,6 +69,24 @@
       "class": "boolean",
       "optional": true,
       "default": false
+    },
+    {
+      "name": "reuse_mappings_filtered",
+      "label": "reuse mappings (filtered)",
+      "class": "boolean",
+      "optional": true
+    },
+    {
+      "name": "reuse_mappings_unfiltered",
+      "label": "reuse mappings (unfiltered)",
+      "class": "boolean",
+      "optional": true
+    },
+    {
+      "name": "reuse_mappings_paired_end",
+      "label": "reuse mappings (unfiltered)",
+      "class": "boolean",
+      "optional": true
     }
   ],
   "outputSpec": [
@@ -112,6 +130,24 @@
       "name": "debug",
       "label": "debug mode",
       "class": "boolean"
+    },
+    {
+      "name": "reuse_mappings_filtered",
+      "label": "reuse mappings (filtered)",
+      "class": "boolean",
+      "optional": true
+    },
+    {
+      "name": "reuse_mappings_unfiltered",
+      "label": "reuse mappings (unfiltered)",
+      "class": "boolean",
+      "optional": true
+    },
+    {
+      "name": "reuse_mappings_paired_end",
+      "label": "reuse mappings (unfiltered)",
+      "class": "boolean",
+      "optional": true
     }
   ],
   "runSpec": {

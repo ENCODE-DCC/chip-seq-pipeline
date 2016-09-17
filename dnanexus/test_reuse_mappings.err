@@ -1,0 +1,78 @@
+DEBUG:encoded_get: https://www.encodeproject.org/ENCSR841SVX?format=json&frame=object&limit=all
+INFO:Starting new HTTPS connection (1): www.encodeproject.org
+DEBUG:"GET /ENCSR841SVX?format=json&frame=object&limit=all HTTP/1.1" 301 157
+DEBUG:"GET /experiments/ENCSR841SVX/?format=json&frame=object&limit=all HTTP/1.1" 200 729
+DEBUG:encoded_get: https://www.encodeproject.org/files/ENCFF182WHU/?format=json&frame=object&limit=all
+INFO:Starting new HTTPS connection (1): www.encodeproject.org
+DEBUG:"GET /files/ENCFF182WHU/?format=json&frame=object&limit=all HTTP/1.1" 200 687
+DEBUG:encoded_get: https://www.encodeproject.org/files/ENCFF810LLR/?format=json&frame=object&limit=all
+INFO:Starting new HTTPS connection (1): www.encodeproject.org
+DEBUG:"GET /files/ENCFF810LLR/?format=json&frame=object&limit=all HTTP/1.1" 200 689
+DEBUG:reuse_mappings and found files [u'ENCFF810LLR']
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+INFO:Starting new HTTPS connection (1): api.dnanexus.com
+DEBUG:"POST /system/findProjects HTTP/1.1" 200 26
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/describe HTTP/1.1" 200 584
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/describe HTTP/1.1" 200 584
+DEBUG:Project E3 ChIP-seq access level is ADMINISTER
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/describe HTTP/1.1" 200 584
+DEBUG:Found output project E3 ChIP-seq
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /system/findProjects HTTP/1.1" 200 26
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/describe HTTP/1.1" 200 584
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/describe HTTP/1.1" 200 584
+DEBUG:Project E3 ChIP-seq access level is ADMINISTER
+DEBUG:Found applet project E3 ChIP-seq
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /system/findDataObjects HTTP/1.1" 200 111
+INFO:Resolved applet encode_map to applet-BzK5JB80bpZYB61Zk0zBjB4f
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /applet-BzK5JB80bpZYB61Zk0zBjB4f/describe HTTP/1.1" 200 4575
+DEBUG:Found applet encode_map
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /system/findDataObjects HTTP/1.1" 200 111
+INFO:Resolved applet input_shield to applet-BzK5Jy80bpZvXfj3ZQzGj2gY
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /applet-BzK5Jy80bpZvXfj3ZQzGj2gY/describe HTTP/1.1" 200 4923
+DEBUG:Found applet input_shield
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/listFolder HTTP/1.1" 404 None
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+INFO:Starting new HTTPS connection (1): api.dnanexus.com
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/listFolder HTTP/1.1" 404 None
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+INFO:Starting new HTTPS connection (1): api.dnanexus.com
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/listFolder HTTP/1.1" 404 None
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+INFO:Starting new HTTPS connection (1): api.dnanexus.com
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/listFolder HTTP/1.1" 404 None
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+INFO:Starting new HTTPS connection (1): api.dnanexus.com
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/newFolder HTTP/1.1" 200 41
+INFO:New folder /test_reuse_mappings_filtered_GRCh38//workflows/ENCSR841SVX created in project E3 ChIP-seq
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/newFolder HTTP/1.1" 200 41
+INFO:New folder /test_reuse_mappings_filtered_GRCh38//fastqs/ENCSR841SVX created in project E3 ChIP-seq
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/newFolder HTTP/1.1" 200 41
+INFO:New folder /test_reuse_mappings_filtered_GRCh38//raw_bams/ENCSR841SVX created in project E3 ChIP-seq
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /project-BKp5K980bpZZ096Xp1XQ02fZ/newFolder HTTP/1.1" 200 41
+INFO:New folder /test_reuse_mappings_filtered_GRCh38//bams/ENCSR841SVX created in project E3 ChIP-seq
+DEBUG:Converted retries value: False -> Retry(total=False, connect=None, read=None, redirect=0)
+DEBUG:"POST /workflow/new HTTP/1.1" 200 58
+Traceback (most recent call last):
+  File "/Users/jseth/bin/map_only", line 692, in <module>
+    main()
+  File "/Users/jseth/bin/map_only", line 663, in main
+    reuse_mappings_unfiltered=args.reuse_mappings_unfiltered)
+  File "/Users/jseth/bin/map_only", line 534, in map_only
+    build_workflow(experiment, biorep_n, input_shield_stage_input, key))
+  File "/Users/jseth/bin/map_only", line 404, in build_workflow
+    name='Gather inputs %s rep%d' % (experiment.get('accession'), biorep_n),
+TypeError: %d format: a number is required, not NoneType

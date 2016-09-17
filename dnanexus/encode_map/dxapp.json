@@ -58,6 +58,24 @@
       "class": "boolean",
       "optional": true,
       "default": false
+    },
+    {
+      "name": "reuse_mappings_filtered",
+      "label": "reuse mappings (filtered)",
+      "class": "boolean",
+      "optional": true
+    },
+    {
+      "name": "reuse_mappings_unfiltered",
+      "label": "reuse mappings (unfiltered)",
+      "class": "boolean",
+      "optional": true
+    },
+    {
+      "name": "reuse_mappings_paired_end",
+      "label": "reuse mappings are paired end",
+      "class": "boolean",
+      "optional": true
     }
   ],
   "outputSpec": [
@@ -69,7 +87,8 @@
     {
       "name": "mapping_statistics",
       "label": "Mapping statistics",
-      "class": "file"
+      "class": "file",
+      "optional": true
     },
     {
       "name": "paired_end",
@@ -79,12 +98,18 @@
     {
       "name": "n_mapped_reads",
       "label": "Number of mapped reads",
-      "class": "int"
+      "class": "int",
+      "optional": true
     },
     {
       "name": "crop_length",
       "label": "native or length to crop reads",
       "class": "string"
+    },
+    {
+      "name": "skip_filter",
+      "label": "skip filter",
+      "class": "boolean"
     }
   ],
   "runSpec": {

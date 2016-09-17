@@ -170,7 +170,8 @@ def crop(reads1_file, reads2_file, crop_length, debug):
 
 @dxpy.entry_point("postprocess")
 def postprocess(indexed_reads, unmapped_reads, reference_tar,
-                bwa_version, samtools_version, debug):
+                bwa_version, samtools_version, debug,
+                unfiltered_mappings=None):
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -182,6 +183,60 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar,
     bwa = BWA_PATH.get(bwa_version)
     assert bwa, "BWA version %s is not supported" % (bwa_version)
     logger.info("In postprocess with samtools %s and bwa %s" % (samtools, bwa))
+
+    reference_tar_filename = dxpy.describe(reference_tar)['name']
+    logger.info("reference_tar: %s" % (reference_tar_filename))
+    dxpy.download_dxfile(reference_tar, reference_tar_filename)
+    # extract the reference files from the tar
+    reference_dirname = 'reference_files'
+    reference_filename = \
+        resolve_reference(reference_tar_filename, reference_dirname)
+    logger.info("Using reference file: %s" % (reference_filename))
+
+    if unfiltered_mappings:
+        unfiltered_bam_filename = dxpy.describe(unfiltered_mappings)['name']
+        m = re.search('(.*)\.bam$', unfiltered_bam_filename)
+        if m:
+            reuse_bam_basename = m.group(1)
+        else:
+            reuse_bam_basename = unfiltered_bam_filename
+        reuse_bam_sorted_filename = reuse_bam_basename + '-sort.bam'
+        logger.info('downloading %s' % (unfiltered_bam_filename))
+        dxpy.download(unfiltered_mappings, unfiltered_bam_filename)
+
+        if samtools_version == "0.1.9":
+            sort_command = \
+                "%s sort -o %s %s" \
+                % (samtools,
+                   reuse_bam_sorted_filename, unfiltered_bam_filename)
+        else:
+            sort_command = \
+                "%s sort -@%d -o %s %s" \
+                % (samtools, cpu_count(),
+                   reuse_bam_sorted_filename, unfiltered_bam_filename)
+        logger.info('sorting %s' % (unfiltered_bam_filename))
+        print(sort_command)
+        subprocess.check_output(shlex.split(sort_command))
+
+        bam_mapstats_filename = unfiltered_bam_filename + '.flagstat'
+        flagstat_command = \
+            "%s flagstat %s" % (samtools, unfiltered_bam_filename)
+        print(flagstat_command)
+        with open(bam_mapstats_filename, 'w') as fh:
+            subprocess.check_call(shlex.split(flagstat_command), stdout=fh)
+        print(subprocess.check_output('ls -l', shell=True))
+
+        mapped_reads = dxpy.upload_local_file(reuse_bam_sorted_filename)
+        mapping_statistics = dxpy.upload_local_file(bam_mapstats_filename)
+        flagstat_qc = flagstat_parse(bam_mapstats_filename)
+
+        output = {
+            'mapped_reads': dxpy.dxlink(mapped_reads),
+            'mapping_statistics': dxpy.dxlink(mapping_statistics),
+            'n_mapped_reads': flagstat_qc.get('mapped')[0],  # 0 is hi-q reads
+        }
+        logger.info("Returning from postprocess with output: %s" % (output))
+        return output
 
     indexed_reads_filenames = []
     unmapped_reads_filenames = []
@@ -198,15 +253,6 @@ def postprocess(indexed_reads, unmapped_reads, reference_tar,
         logger.info("unmapped reads %d: %s" % (read_pair_number, fn))
         unmapped_reads_filenames.append(fn)
         dxpy.download_dxfile(unmapped, fn)
-
-    reference_tar_filename = dxpy.describe(reference_tar)['name']
-    logger.info("reference_tar: %s" % (reference_tar_filename))
-    dxpy.download_dxfile(reference_tar, reference_tar_filename)
-    # extract the reference files from the tar
-    reference_dirname = 'reference_files'
-    reference_filename = \
-        resolve_reference(reference_tar_filename, reference_dirname)
-    logger.info("Using reference file: %s" % (reference_filename))
 
     paired_end = len(indexed_reads) == 2
 
@@ -342,7 +388,9 @@ def process(reads_file, reference_tar, bwa_aln_params, bwa_version, debug):
 
 @dxpy.entry_point("main")
 def main(reads1, crop_length, reference_tar,
-         bwa_version, bwa_aln_params, samtools_version, debug, reads2=None):
+         bwa_version, bwa_aln_params, samtools_version, debug, reads2=None,
+         reuse_mappings_filtered=None, reuse_mappings_unfiltered=None,
+         reuse_mappings_paired_end=None):
 
     # Main entry-point.  Parameter defaults assumed to come from dxapp.json.
     # reads1, reference_tar, reads2 are links to DNAnexus files or None
@@ -361,12 +409,13 @@ def main(reads1, crop_length, reference_tar,
 
     # Initialize file handlers for input files.
 
-    paired_end = reads2 is not None
+    paired_end = (reads2 is not None) or reuse_mappings_paired_end
 
     if crop_length == 'native':
         crop_subjob = None
         unmapped_reads = [reads1, reads2]
     else:
+        assert not (reuse_mappings_filtered or reuse_mappings_unfiltered), 'Cropping of reuse mappings not supported'
         crop_subjob_input = {
             "reads1_file": reads1,
             "reads2_file": reads2,
@@ -381,55 +430,86 @@ def main(reads1, crop_length, reference_tar,
         else:
             unmapped_reads.append(None)
 
-    unmapped_reads = [r for r in unmapped_reads if r]
+    if not (reuse_mappings_filtered or reuse_mappings_unfiltered):
+        unmapped_reads = [r for r in unmapped_reads if r]
 
-    mapping_subjobs = []
-    for reads in unmapped_reads:
-        mapping_subjob_input = {
-            "reads_file": reads,
-            "reference_tar": reference_tar,
-            "bwa_aln_params": bwa_aln_params,
-            "bwa_version": bwa_version,
-            "debug": debug
-        }
-        logger.info("Mapping job input: %s" % (mapping_subjob_input))
-        if crop_subjob:
-            mapping_subjobs.append(dxpy.new_dxjob(
-                fn_input=mapping_subjob_input,
-                fn_name="process",
-                depends_on=[crop_subjob]))
-        else:
-            mapping_subjobs.append(dxpy.new_dxjob(
-                fn_input=mapping_subjob_input,
-                fn_name="process"))
+        mapping_subjobs = []
+        for reads in unmapped_reads:
+            mapping_subjob_input = {
+                "reads_file": reads,
+                "reference_tar": reference_tar,
+                "bwa_aln_params": bwa_aln_params,
+                "bwa_version": bwa_version,
+                "debug": debug
+            }
+            logger.info("Mapping job input: %s" % (mapping_subjob_input))
+            if crop_subjob:
+                mapping_subjobs.append(dxpy.new_dxjob(
+                    fn_input=mapping_subjob_input,
+                    fn_name="process",
+                    depends_on=[crop_subjob]))
+            else:
+                mapping_subjobs.append(dxpy.new_dxjob(
+                    fn_input=mapping_subjob_input,
+                    fn_name="process"))
 
-    # Create the job that will perform the "postprocess" step.
-    # depends_on=mapping_subjobs, so blocks on all mapping subjobs
+        # Create the job that will perform the "postprocess" step.
+        # depends_on=mapping_subjobs, so blocks on all mapping subjobs
 
-    postprocess_job = dxpy.new_dxjob(
-        fn_input={
-            "indexed_reads": [
-                subjob.get_output_ref("suffix_array_index")
-                for subjob in mapping_subjobs],
-            "unmapped_reads": unmapped_reads,
-            "reference_tar": reference_tar,
-            "bwa_version": bwa_version,
-            "samtools_version": samtools_version,
-            "debug": debug},
-        fn_name="postprocess",
-        depends_on=mapping_subjobs)
+        postprocess_job = dxpy.new_dxjob(
+            fn_input={
+                "indexed_reads": [
+                    subjob.get_output_ref("suffix_array_index")
+                    for subjob in mapping_subjobs],
+                "unmapped_reads": unmapped_reads,
+                "reference_tar": reference_tar,
+                "bwa_version": bwa_version,
+                "samtools_version": samtools_version,
+                "debug": debug},
+            fn_name="postprocess",
+            depends_on=mapping_subjobs)
 
-    mapped_reads = postprocess_job.get_output_ref("mapped_reads")
-    mapping_statistics = postprocess_job.get_output_ref("mapping_statistics")
-    n_mapped_reads = postprocess_job.get_output_ref("n_mapped_reads")
+        mapped_reads = postprocess_job.get_output_ref("mapped_reads")
+        mapping_statistics = postprocess_job.get_output_ref("mapping_statistics")
+        n_mapped_reads = postprocess_job.get_output_ref("n_mapped_reads")
+
+    elif reuse_mappings_unfiltered:
+
+        postprocess_job = dxpy.new_dxjob(
+            fn_input={
+                "indexed_reads": [None],
+                "unmapped_reads": None,
+                "reference_tar": reference_tar,
+                "bwa_version": bwa_version,
+                "samtools_version": samtools_version,
+                "debug": debug,
+                "unfiltered_mappings": reads1},
+            fn_name="postprocess")
+
+        mapped_reads = postprocess_job.get_output_ref("mapped_reads")
+        mapping_statistics = postprocess_job.get_output_ref("mapping_statistics")
+        n_mapped_reads = postprocess_job.get_output_ref("n_mapped_reads")
+
+    elif reuse_mappings_filtered:
+        mapped_reads = reads1
+        mapping_statistics = None
+        n_mapped_reads = None
 
     output = {
         "mapped_reads": mapped_reads,
         "crop_length": crop_length,
-        "mapping_statistics": mapping_statistics,
         "paired_end": paired_end,
-        "n_mapped_reads": n_mapped_reads
+        "skip_filter": reuse_mappings_filtered is True
     }
+    if mapping_statistics is not None:
+        output.update({
+            "mapping_statistics": mapping_statistics
+        })
+    if n_mapped_reads is not None:
+        output.update({
+            "n_mapped_reads": n_mapped_reads
+        })
+
     logger.info("Exiting with output: %s" % (output))
     return output
 

@@ -61,6 +61,21 @@ def get_args():
         default=sys.stdin)
 
     parser.add_argument(
+        '--reuse_mappings_filtered',
+        help='Do not map.  Use filtered bams already in the experiment',
+        action='store_true')
+
+    parser.add_argument(
+        '--reuse_mappings_unfiltered',
+        help='Do not map.  Use unfiltered bams already in the experiment',
+        action='store_true')
+
+    parser.add_argument(
+        '--reuse_mappings_paired_end',
+        help='If reuse mappings is true, must specify if PE or not',
+        action='store_true')
+
+    parser.add_argument(
         '--assembly',
         help="Reference genome assembly, e.g. GRCh38, hg19, or mm10")
 
@@ -150,6 +165,7 @@ def get_args():
 
     return args
 
+
 def resolve_project(identifier, privs='r'):
     project = dxpy.find_one_project(name=identifier, level='VIEW', name_mode='exact', return_handler=True, zero_ok=True)
     if project == None:
@@ -204,13 +220,39 @@ def find_applet_by_name(applet_name, applets_project_id):
     logging.info(cached + "Resolved applet %s to %s" %(applet_name, APPLETS[(applet_name, applets_project_id)].get_id()))
     return APPLETS[(applet_name, applets_project_id)]
 
+
 def filenames_in(files=None):
     if not len(files):
         return []
     else:
         return [f.get('submitted_file_name') for f in files]
 
-def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
+
+def mappings_to_reuse(exp_obj, server, keypair, no_sfn_dupes, assembly,
+                      output_type, file_format='bam'):
+    if not exp_obj or not (exp_obj.get('files') or exp_obj.get('original_files')):
+        logging.warning('Experiment %s or experiment has no files' %(exp_obj.get('accession')))
+        return []
+    else:
+        files = []
+        for file_uri in exp_obj.get('original_files'):
+            file_obj = common.encoded_get(urlparse.urljoin(server, file_uri), keypair=keypair)
+            if file_obj.get('status') in FILE_STATUSES_TO_MAP and \
+                    file_obj.get('output_type') == output_type and \
+                    file_obj.get('file_format') == file_format and \
+                    file_obj.get('assembly') == assembly:
+                if file_obj.get('submitted_file_name') in filenames_in(files):
+                    if no_sfn_dupes:
+                        logging.error('%s:%s Duplicate submitted_file_name found, skipping that file.' %(exp_obj.get('accession'),file_obj.get('accession')))
+                    else:
+                        logging.warning('%s:%s Duplicate submitted_file_name found, but allowing duplicates.' %(exp_obj.get('accession'),file_obj.get('accession')))
+                        files.extend([file_obj])
+                else:
+                    files.extend([file_obj])
+        return files
+
+
+def fastqs_to_map(exp_obj, server, keypair, no_sfn_dupes):
     if not exp_obj or not (exp_obj.get('files') or exp_obj.get('original_files')):
         logging.warning('Experiment %s or experiment has no files' %(exp_obj.get('accession')))
         return []
@@ -235,6 +277,7 @@ def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
                 logging.error('%s: Reads file has no replicate' %(file_obj.get('accession')))
         return files
 
+
 def replicates_to_map(files, server, keypair, map_only_reps=[]):
     if not files:
         return []
@@ -248,10 +291,10 @@ def replicates_to_map(files, server, keypair, map_only_reps=[]):
 
         return replicate_objects
 
+
 def choose_reference(experiment, biorep_n, server, keypair, sex_specific):
 
     replicates = [common.encoded_get(urlparse.urljoin(server,rep_uri), keypair, frame='embedded') for rep_uri in experiment['replicates']]
-    replicate = next(rep for rep in replicates if rep.get('biological_replicate_number') == biorep_n)
     logging.debug('Replicate uuid %s' %(replicate.get('uuid')))
     organism_uri = replicate.get('library').get('biosample').get('organism')
     organism_obj = common.encoded_get(urlparse.urljoin(server,organism_uri), keypair)
@@ -276,7 +319,7 @@ def choose_reference(experiment, biorep_n, server, keypair, sex_specific):
         logging.debug('Organism %s sex %s' %(organism_name, sex))
     else:
         sex = 'male'
-    
+
     genome_assembly = args.assembly
 
     reference = next((ref.get('file') for ref in REFERENCES if ref.get('organism') == organism_name and ref.get('sex') == sex and ref.get('assembly') == genome_assembly), None)
@@ -301,12 +344,21 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
     logging.debug('Found applet %s' % (input_shield_applet.name))
 
     folders = ['workflows', 'fastqs', 'raw_bams', 'bams']
-    folder_paths = \
-        ['/'.join([args.outf,
-                   folder_name,
-                   experiment.get('accession'),
-                   'rep%d' % (biorep_n)])
-         for folder_name in folders]
+
+    if biorep_n is not None:
+        folder_paths = \
+            ['/'.join([args.outf,
+                       folder_name,
+                       experiment.get('accession'),
+                       'rep%d' % (biorep_n)])
+             for folder_name in folders]
+    else:
+        folder_paths = \
+            ['/'.join([args.outf,
+                       folder_name,
+                       experiment.get('accession')])
+             for folder_name in folders]
+
     paths_exist = \
         [resolve_folder(output_project, folder_path)
          for folder_path in folder_paths
@@ -323,12 +375,22 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
     if args.raw:
         workflow_title = \
-            ('Map %s rep%d to %s (no filter)'
+            ('Map %s rep%s to %s (no filter)'
              % (experiment.get('accession'), biorep_n, args.assembly))
         workflow_name = 'ENCODE raw mapping pipeline'
+    elif args.reuse_mappings_filtered:
+        workflow_title = \
+            ('Map %s rep%s to %s (reuse filtered alignments)'
+             % (experiment.get('accession'), biorep_n, args.assembly))
+        workflow_name = 'ENCODE mapping pipeline'
+    elif args.reuse_mappings_unfiltered:
+        workflow_title = \
+            ('Map %s rep%s to %s (reuse unfiltered alignments)'
+             % (experiment.get('accession'), biorep_n, args.assembly))
+        workflow_name = 'ENCODE mapping pipeline'
     else:
         workflow_title = \
-            ('Map %s rep%d to %s and filter'
+            ('Map %s rep%s to %s and filter'
              % (experiment.get('accession'), biorep_n, args.assembly))
         workflow_name = 'ENCODE mapping pipeline'
 
@@ -344,14 +406,17 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
     input_shield_stage_id = workflow.add_stage(
         input_shield_applet,
-        name='Gather inputs %s rep%d' % (experiment.get('accession'), biorep_n),
+        name='Gather inputs %s rep%s' % (experiment.get('accession'), biorep_n),
         folder=fastq_output_folder,
         stage_input=input_shield_stage_input
     )
 
     input_names = \
-        [name for name in ['reads1', 'reads2', 'crop_length', 'reference_tar',
-         'bwa_version', 'bwa_aln_params', 'samtools_version', 'debug']
+        [name for name in
+         ['reads1', 'reads2', 'crop_length', 'reference_tar',
+          'bwa_version', 'bwa_aln_params', 'samtools_version', 'debug',
+          'reuse_mappings_filtered', 'reuse_mappings_unfiltered',
+          'reuse_mappings_paired_end']
          if name in input_shield_stage_input]
     logging.debug('input_names: %s' % (input_names))
     mapping_stage_input = dict(zip(
@@ -362,7 +427,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
     logging.debug('mapping_stage_input: %s' % (mapping_stage_input))
     mapping_stage_id = workflow.add_stage(
         mapping_applet,
-        name='Map %s rep%d' % (experiment.get('accession'), biorep_n),
+        name='Map %s rep%s' % (experiment.get('accession'), biorep_n),
         folder=mapping_output_folder,
         stage_input=mapping_stage_input
     )
@@ -374,11 +439,12 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
         filter_qc_stage_id = workflow.add_stage(
             filter_qc_applet,
-            name='Filter and QC %s rep%d' % (experiment.get('accession'), biorep_n),
+            name='Filter and QC %s rep%s' % (experiment.get('accession'), biorep_n),
             folder=final_output_folder,
             stage_input={
                 'input_bam': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'mapped_reads'}),
-                'paired_end': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'paired_end'})
+                'paired_end': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'paired_end'}),
+                'skip_filter': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'skip_filter'})
             }
         )
 
@@ -387,7 +453,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
         xcor_stage_id = workflow.add_stage(
             xcor_applet,
-            name='Calculate cross-correlation %s rep%d' %(experiment.get('accession'), biorep_n),
+            name='Calculate cross-correlation %s rep%s' %(experiment.get('accession'), biorep_n),
             folder=final_output_folder,
             stage_input={
                 'input_bam': dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'filtered_bam'}),
@@ -424,19 +490,32 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
 
 def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
-             crop_length):
+             crop_length, reuse_mappings_filtered=None,
+             reuse_mappings_unfiltered=None, reuse_mappings_paired_end=None):
 
     if not files:
-        logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
+        logging.debug(
+            '%s:%s No files to map' % (experiment.get('accession'), biorep_n))
         return
-    #look into the structure of files parameter to decide on pooling, paired end etc.
+    # look into the structure of files parameter to decide on pooling,
+    #  paired end etc.
 
     workflows = []
     input_shield_stage_input = {}
 
-    reference_tar = choose_reference(experiment, biorep_n, server, keypair, sex_specific)
+    if (reuse_mappings_filtered or reuse_mappings_unfiltered):
+        # TODO:  This is actually never used in the pipeline if we're reusing
+        # mappings.  But I don't want to make it an optional parameter for the
+        # pipeline, so we just supply something here as a place-holder
+        reference_tar = \
+            next((ref.get('file') for ref in REFERENCES if ref.get('sex') == 'male' and ref.get('assembly') == args.assembly), None)
+    else:
+        reference_tar = \
+            choose_reference(experiment, biorep_n, server, keypair, sex_specific)
     if not reference_tar:
-        logging.warning('%s:%s Cannot determine reference' %(experiment.get('accession'), biorep_n))
+        logging.error(
+            '%s:%s Cannot determine reference'
+            % (experiment.get('accession'), biorep_n))
         return
 
     input_shield_stage_input.update({
@@ -446,12 +525,25 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
         'crop_length': crop_length
     })
 
-    if all(isinstance(f, dict) for f in files): #single end
-        input_shield_stage_input.update({'reads1': [f.get('accession') for f in files]})
-        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key))
-    elif all(isinstance(f, tuple) for f in files): #paired-end
-        #launches separate mapping jobs for each readpair
-        #TODO: upadte input_shield to take an array of read1/read2 PE pairs then pass that array from here
+    if reuse_mappings_filtered is not None:
+        input_shield_stage_input.update(
+            {'reuse_mappings_filtered': reuse_mappings_filtered})
+    if reuse_mappings_unfiltered is not None:
+        input_shield_stage_input.update(
+            {'reuse_mappings_unfiltered': reuse_mappings_unfiltered})
+    if reuse_mappings_paired_end is not None:
+        input_shield_stage_input.update(
+            {'reuse_mappings_paired_end': reuse_mappings_paired_end})
+
+    if all(isinstance(f, dict) for f in files):  # single end
+        input_shield_stage_input.update(
+            {'reads1': [f.get('accession') for f in files]})
+        workflows.append(
+            build_workflow(experiment, biorep_n, input_shield_stage_input, key))
+    elif all(isinstance(f, tuple) for f in files):  # paired-end
+        # launches separate mapping jobs for each readpair
+        # TODO: upadte input_shield to take an array of read1/read2 PE pairs
+        # then pass that array from here
         input_shield_stage_input.update({'reads1': [], 'reads2': []})
         for readpair in files:
             try:
@@ -508,24 +600,41 @@ def main():
         encode_url = urlparse.urljoin(server, exp_id)
         experiment = common.encoded_get(encode_url, keypair)
         outstrings.append(exp_id)
-        files = files_to_map(experiment, server, keypair, args.no_sfn_dupes)
+        if args.reuse_mappings_filtered or args.reuse_mappings_unfiltered:
+            if args.reuse_mappings_filtered:
+                output_type = 'alignments'
+            elif args.reuse_mappings_unfiltered:
+                output_type = 'unfiltered alignments'
+            files = mappings_to_reuse(
+                experiment, server, keypair, args.no_sfn_dupes, args.assembly,
+                output_type)
+            logging.debug(
+                'reuse_mappings and found files %s'
+                % ([f.get('accession') for f in files]))
+            biological_replicates = []
+            for repns in [f.get('biological_replcates') for f in files if f.get('biological_replicates')]:
+                biological_replicates.extend(repns)
+            biorep_numbers = set(biological_replicates)
+            replicates = []  # not needed for reuse_mappings
+        else:
+            files = fastqs_to_map(experiment, server, keypair, args.no_sfn_dupes)
+            replicates = replicates_to_map(files, server, keypair, map_only_reps)
+            biorep_numbers = \
+                set([rep.get('biological_replicate_number') for rep in replicates])
         outstrings.append(str(len(files)))
         outstrings.append(str([f.get('accession') for f in files]))
-        replicates = replicates_to_map(files, server, keypair, map_only_reps)
-        biorep_numbers = \
-            set([rep.get('biological_replicate_number') for rep in replicates])
         in_process = False
         if files:
-            for biorep_n in biorep_numbers:
-                outstrings.append('rep%s' %(biorep_n))
-                biorep_files = [f for f in files if biorep_n in common.biorep_ns(f,server,keypair)]
+            for biorep_n in biorep_numbers or [None]:
+                outstrings.append('rep%s' % (biorep_n))
+                biorep_files = [f for f in files if not biorep_n or biorep_n in common.biorep_ns(f,server,keypair)]
                 paired_files = []
                 unpaired_files = []
                 while biorep_files:
                     file_object = biorep_files.pop()
-                    if file_object.get('paired_end') == None: # group all the unpaired reads for this biorep together
+                    if file_object.get('paired_end') is None:  # group all the unpaired reads for this biorep together
                         unpaired_files.append(file_object)
-                    elif file_object.get('paired_end') in ['1','2']:
+                    elif file_object.get('paired_end') in ['1', '2']:
                         if file_object.get('paired_with'):
                             mate = next((f for f in biorep_files if f.get('@id') == file_object.get('paired_with')), None)
                         else: #have to find the file that is paired with this one
@@ -557,7 +666,10 @@ def main():
                     se_jobs = \
                         map_only(experiment, biorep_n, unpaired_files,
                                  args.key, server, keypair, args.sex_specific,
-                                 args.crop_length)
+                                 args.crop_length,
+                                 reuse_mappings_filtered=args.reuse_mappings_filtered,
+                                 reuse_mappings_unfiltered=args.reuse_mappings_unfiltered,
+                                 reuse_mappings_paired_end=args.reuse_mappings_paired_end)
                     in_process = True
                 if paired_files and pe_jobs:
                     outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))
