@@ -87,6 +87,12 @@
       "class": "boolean",
       "optional": true,
       "default": false
+    },
+    {
+      "name": "skip_control",
+      "class": "boolean",
+      "optional": true,
+      "default": false
     }
   ],
   "outputSpec": [

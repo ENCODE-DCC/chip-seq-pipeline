@@ -847,9 +847,14 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
 
 def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
-    logger.debug('in get_mapping_stages with mapping analysis %s and rep %s'
-                 % (mapping_analysis['id'], repn))
+    logger.debug(
+        'in get_mapping_stages with mapping analysis %s and rep %s'
+        % (mapping_analysis['id'], repn))
 
+    if not mapping_analysis:
+        logger.warning(
+            'get_mapping_stages got empty mapping_analysis, returning None')
+        return None
     experiment_accession = get_experiment_accession(mapping_analysis)
     url = urlparse.urljoin(
             server, '/experiments/%s' % (experiment_accession))
@@ -1061,11 +1066,10 @@ def get_control_mapping_stages(peaks_analysis, keypair, server,
             mapping_analyses[i], keypair, server, fqcheck, repn)
 
         if not mapping_stage:
-            logger.error('%s: failed to find mapping stages for rep%d'
-                         % (peaks_analysis['id'], repn))
-            return None
-        else:
-            mapping_stages.append(mapping_stage)
+            logger.warning(
+                '%s: failed to find mapping stages for rep%d'
+                % (peaks_analysis['id'], repn))
+        mapping_stages.append(mapping_stage)
 
     return mapping_stages
 
@@ -1191,6 +1195,8 @@ def pooled_controls(peaks_analysis, rep):
 
 def get_assembly(stage_output_tuple):
     stages, output_key = stage_output_tuple
+    if not stages:
+        return None
     for stage in stages.itervalues():
         output_files = stage.get('output_files')
         if output_files:
@@ -1384,9 +1390,10 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
 
     assemblies = \
         [get_assembly(bam)
-         for bam in [rep1_bam, rep2_bam, rep1_ctl_bam, rep2_ctl_bam]]
+         for bam in [rep1_bam, rep2_bam, rep1_ctl_bam, rep2_ctl_bam]
+         if get_assembly(bam)]
     observed_assemblies = set(assemblies)
-    assert len(observed_assemblies) == 1, "Different bam assemblies for rep1,2 and control rep1,2 bams: %s" % (assemblies)
+    assert len(observed_assemblies) == 1, "Different (or no) bam assemblies found for rep1,2 and control rep1,2 bams: %s" % (assemblies)
     assembly = observed_assemblies.pop()
 
     pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
@@ -1603,7 +1610,9 @@ def resolve_name_to_accessions(stages, stage_file_name):
     logger.debug("in resolve_name_to_accessions with stage_file_name")
     logger.debug("%s" % (pprint.pformat(stage_file_name)))
     accessions = []
-    for stage_name in stages:
+    if not stages:
+        return [None]
+    for stage_name in [s for s in stages if s]:
         if stages[stage_name].get('input_files'):
             all_files = stages[stage_name].get('output_files') + stages[stage_name].get('input_files')
         else:
@@ -1851,7 +1860,7 @@ def accession_outputs(stages, keypair, server, dryrun, force_patch, force_upload
     files = []
     for (stage_name, outputs) in stages.iteritems():
         stage_metadata = outputs['stage_metadata']
-        for i,file_metadata in enumerate(outputs['output_files']):
+        for i, file_metadata in enumerate(outputs['output_files']):
             project = stage_metadata['project']
             analysis = stage_metadata['parentAnalysis']
             dataset_accession = get_experiment_accession(analysis)
@@ -1888,8 +1897,8 @@ def accession_outputs(stages, keypair, server, dryrun, force_patch, force_upload
 def patch_outputs(stages, keypair, server, dryrun):
     logger.debug('in patch_outputs')
     files = []
-    for stage_name in stages:
-        for n,file_metadata in enumerate(stages[stage_name]['output_files']):
+    for stage_name in [s for s in stages if s]:
+        for n, file_metadata in enumerate(stages[stage_name]['output_files']):
             if file_metadata.get('encode_object'):
                 logger.info('patch outputs stage_name %s n %s file_metadata[name] %s encode_object[accession] %s' %(stage_name, n, file_metadata['name'], file_metadata['encode_object'].get('accession')))
                 logger.debug("encode_object %s" %(pprint.pformat(file_metadata['encode_object']['@id'])))
@@ -1912,7 +1921,8 @@ def patch_outputs(stages, keypair, server, dryrun):
                     #May see the same accession twice.  If, for example, a single control is reused, there
                     #will be two paths back to it (one via rep1 one via rep2) and so it will come out of this loop twice.
                     for acc in resolve_name_to_accessions(stages_to_use, name_to_use):
-                        derived_from_accessions.add(acc)
+                        if acc:
+                            derived_from_accessions.add(acc)
                 logger.debug('derived_from_accessions = %s' %(pprint.pformat(derived_from_accessions)))
                 patch_metadata = {
                     'accession': accession,
@@ -2211,22 +2221,22 @@ def accession_raw_mapping_analysis_files(
     files_with_derived = patch_outputs(raw_mapping_stages, keypair, server, dryrun)
 
     raw_mapping_analysis_step_versions = {
-        'bwa-indexing-step-v-1' : [
+        'bwa-indexing-step-v-1': [
             {
-                'stages' : "",
+                'stages': "",
                 'stage_name': "",
-                'file_names' : [],
-                'status' : 'finished',
+                'file_names': [],
+                'status': 'finished',
                 'qc_objects': []
             }
         ],
-        'bwa-raw-alignment-step-v-1' : [
+        'bwa-raw-alignment-step-v-1': [
             {
-                'stages' : raw_mapping_stages,
+                'stages': raw_mapping_stages,
                 'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
-                'file_names' : ['mapped_reads'],
-                'status' : 'finished',
-                'qc_objects' : [
+                'file_names': ['mapped_reads'],
+                'status': 'finished',
+                'qc_objects': [
                     {'samtools_flagstats_quality_metric': ['mapped_reads']}
                 ]
             }
@@ -2403,7 +2413,8 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
 
 
 def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
-                                force_patch, force_upload, fqcheck, signal_only):
+                                force_patch, force_upload, fqcheck,
+                                signal_only, skip_control):
 
     # m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
     # if m:
@@ -2431,11 +2442,15 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
 
     #returns a list with three elements: the mapping stages for the controls for [rep1, rep2, pooled]
     #the control stages for rep1 and rep2 might be the same as the pool if the experiment used pooled controls
-    control_stages = \
-        get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck)
-    if not control_stages:
-        logger.error("Failed to find control mapping stages")
-        return None
+    if skip_control:
+        control_stages = [None, None, None]
+        logger.info("skip_control, so ignoring control mapping stages")
+    else:
+        control_stages = \
+            get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck)
+        if not control_stages:
+            logger.error("Failed to find control mapping stages")
+            return None
 
     #returns the stages for peak calling
     peak_stages = get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages, experiment, keypair, server, signal_only)
@@ -2446,74 +2461,81 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
     #accession all the output files
     output_files = []
     for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
-        logger.info('accessioning output')
-        output_files.extend(accession_outputs(stages, keypair, server, dryrun,
-                                              force_patch, force_upload))
+        if stages:
+            logger.info('accessioning output')
+            output_files.extend(accession_outputs(stages, keypair, server, dryrun,
+                                                  force_patch, force_upload))
 
     #now that we have file accessions, loop again and patch derived_from
     files_with_derived = []
     for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
-        files_with_derived.extend(patch_outputs(stages, keypair, server, dryrun))
+        if stages:
+            files_with_derived.extend(patch_outputs(stages, keypair, server, dryrun))
+
+    alignment_substeps = [
+        {
+            'stages': mapping_stages[0],
+            'stage_name': next(stage_name for stage_name in mapping_stages[0].keys() if stage_name.startswith('Filter and QC')),
+            'file_names': ['filtered_bam'],
+            'status': 'finished',
+            'qc_objects': [
+                {'chipseq_filter_quality_metric': ['filtered_bam']},
+                {'samtools_flagstats_quality_metric': ['filtered_bam']}
+            ]
+        },
+        {
+            'stages': mapping_stages[1],
+            'stage_name': next(stage_name for stage_name in mapping_stages[1].keys() if stage_name.startswith('Filter and QC')),
+            'file_names': ['filtered_bam'],
+            'status': 'finished',
+            'qc_objects': [
+                {'chipseq_filter_quality_metric': ['filtered_bam']},
+                {'samtools_flagstats_quality_metric': ['filtered_bam']}
+            ]
+        }
+    ]
+    if not skip_control:
+        alignment_substeps.extend([
+            {
+                'stages': control_stages[0],
+                'stage_name': next(stage_name for stage_name in control_stages[0].keys() if stage_name.startswith('Filter and QC')),
+                'file_names': ['filtered_bam'],
+                'status': 'finished',
+                'qc_objects': [
+                    {'chipseq_filter_quality_metric': ['filtered_bam']},
+                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
+
+                ]
+            },
+            {
+                'stages': control_stages[1],
+                'stage_name': next(stage_name for stage_name in control_stages[1].keys() if stage_name.startswith('Filter and QC')),
+                'file_names': ['filtered_bam'],
+                'status': 'finished',
+                'qc_objects': [
+                    {'chipseq_filter_quality_metric': ['filtered_bam']},
+                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
+                ]
+            },
+        ])
 
     full_analysis_step_versions = {
-        'bwa-indexing-step-v-1' : [
+        'bwa-indexing-step-v-1': [
             {
-                'stages' : "",
+                'stages': "",
                 'stage_name': "",
-                'file_names' : [],
-                'status' : 'finished',
+                'file_names': [],
+                'status': 'finished',
                 'qc_objects': []
             }
         ],
-        'bwa-alignment-step-v-1' : [
+        'bwa-alignment-step-v-1': alignment_substeps,
+        'tf-macs2-signal-calling-step-v-1': [
             {
-                'stages' : control_stages[0],
-                'stage_name': next(stage_name for stage_name in control_stages[0].keys() if stage_name.startswith('Filter and QC')),
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-
-                ]
-            },
-            {
-                'stages' : control_stages[1],
-                'stage_name': next(stage_name for stage_name in control_stages[1].keys() if stage_name.startswith('Filter and QC')),
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-                ]
-            },
-            {
-                'stages' : mapping_stages[0],
-                'stage_name': next(stage_name for stage_name in mapping_stages[0].keys() if stage_name.startswith('Filter and QC')),
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-                ]
-            },
-            {
-                'stages' : mapping_stages[1],
-                'stage_name': next(stage_name for stage_name in mapping_stages[1].keys() if stage_name.startswith('Filter and QC')),
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-                ]
-            }
-        ],
-        'tf-macs2-signal-calling-step-v-1' : [
-            {
-                'stages' : peak_stages,
+                'stages': peak_stages,
                 'stage_name': 'ENCODE Peaks',
-                'file_names' : ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal', 'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal'],
-                'status' : 'finished',
+                'file_names': ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal', 'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal'],
+                'status': 'finished',
                 'qc_objects': []
             }
         ],
@@ -2521,41 +2543,41 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
 
     if not signal_only:
         full_analysis_step_versions.update({
-            'tf-spp-peak-calling-step-v-1' : [
+            'tf-spp-peak-calling-step-v-1': [
                 {
-                    'stages' : peak_stages,
+                    'stages': peak_stages,
                     'stage_name': 'SPP Peaks',
-                    'file_names' : ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                    'status' : 'finished',
+                    'file_names': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                    'status': 'finished',
                     'qc_objects': []
                 }
             ],
-            'tf-idr-step-v-1' : [
+            'tf-idr-step-v-1': [
                 {
-                    'stages' : peak_stages,
+                    'stages': peak_stages,
                     'stage_name': 'Final IDR peak calls',
-                    'file_names' : ['conservative_set','optimal_set'],
-                    'status' : 'finished',
+                    'file_names': ['conservative_set','optimal_set'],
+                    'status': 'finished',
                     'qc_objects': [
                         {'idr_quality_metric': ['conservative_set','optimal_set']}
                     ]
                 }
             ],
-            'tf-peaks-to-bigbed-step-v-1' : [
+            'tf-peaks-to-bigbed-step-v-1': [
                 {
-                    'stages' : peak_stages,
+                    'stages': peak_stages,
                     'stage_name': 'SPP Peaks',
-                    'file_names' : ['rep1_peaks_bb', 'rep2_peaks_bb', 'pooled_peaks_bb'],
-                    'status' : 'virtual',
+                    'file_names': ['rep1_peaks_bb', 'rep2_peaks_bb', 'pooled_peaks_bb'],
+                    'status': 'virtual',
                     'qc_objects': []
                 }
             ],
-            'tf-idr-peaks-to-bigbed-step-v-1' : [
+            'tf-idr-peaks-to-bigbed-step-v-1': [
                 {
-                    'stages' : peak_stages,
+                    'stages': peak_stages,
                     'stage_name': 'Final IDR peak calls',
-                    'file_names' : ['conservative_set_bb','optimal_set_bb'],
-                    'status' : 'virtual',
+                    'file_names': ['conservative_set_bb','optimal_set_bb'],
+                    'status': 'virtual',
                     'qc_objects': [
                         {'idr_quality_metric': ['conservative_set_bb','optimal_set_bb']}
                     ]
@@ -2592,7 +2614,7 @@ def infer_pipeline(analysis):
 @dxpy.entry_point('accession_analysis_id')
 def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
                           force_upload, fqcheck, analysis_id, pipeline,
-                          project, accession_raw, signal_only):
+                          project, accession_raw, signal_only, skip_control):
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -2650,7 +2672,7 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
             accessioned_files = \
                 accession_tf_analysis_files(
                     analysis, keypair, server, dryrun, force_patch,
-                    force_upload, fqcheck, signal_only)
+                    force_upload, fqcheck, signal_only, skip_control)
             logger.info('accession tf_chip_seq analysis completed')
         elif inferred_pipeline == "raw":
             logger.info('accession raw mapping analysis started')
@@ -2741,7 +2763,7 @@ def postprocess(outfn, output_rows):
 def main(outfn, debug, key, keyfile, dryrun,
          force_patch, force_upload, fqcheck,
          pipeline=None, analysis_ids=None, infile=None, project=None,
-         accession_raw=False, signal_only=False):
+         accession_raw=False, signal_only=False, skip_control=False):
 
     if debug:
         logger.info('setting logger level to logging.DEBUG')
@@ -2776,7 +2798,8 @@ def main(outfn, debug, key, keyfile, dryrun,
             "analysis_id": analysis_id,
             "project": project,
             "accession_raw": accession_raw,
-            "signal_only": signal_only
+            "signal_only": signal_only,
+            "skip_control": skip_control
         }
 
         logger.info("Acession job input: %s" % (accession_subjob_input))
