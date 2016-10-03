@@ -11,11 +11,7 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os
 import subprocess
-import shlex
-import time
-import re
 import dxpy
 import common
 import logging
@@ -87,22 +83,25 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
     unary_control = ctl1_ta == ctl2_ta
     ctl1_ta_file = dxpy.DXFile(ctl1_ta)
     ctl2_ta_file = dxpy.DXFile(ctl2_ta)
-    rep1_xcor_file = dxpy.DXFile(rep1_xcor)
-    rep2_xcor_file = dxpy.DXFile(rep2_xcor)
+    # not necessary to actually download these - just pass through
+    # rep1_xcor_file = dxpy.DXFile(rep1_xcor)
+    # rep2_xcor_file = dxpy.DXFile(rep2_xcor)
 
     dxpy.download_dxfile(rep1_ta_file.get_id(), rep1_ta_file.name)
     dxpy.download_dxfile(rep2_ta_file.get_id(), rep2_ta_file.name)
     dxpy.download_dxfile(ctl1_ta_file.get_id(), ctl1_ta_file.name)
     dxpy.download_dxfile(ctl2_ta_file.get_id(), ctl2_ta_file.name)
-    dxpy.download_dxfile(rep1_xcor_file.get_id(), rep1_xcor_file.name)
-    dxpy.download_dxfile(rep2_xcor_file.get_id(), rep2_xcor_file.name)
+    # not necessary to actually download these - just pass through
+    # dxpy.download_dxfile(rep1_xcor_file.get_id(), rep1_xcor_file.name)
+    # dxpy.download_dxfile(rep2_xcor_file.get_id(), rep2_xcor_file.name)
 
     rep1_ta_filename = rep1_ta_file.name
     rep2_ta_filename = rep2_ta_file.name
     ctl1_ta_filename = ctl1_ta_file.name
     ctl2_ta_filename = ctl2_ta_file.name
-    rep1_xcor_filename = rep1_xcor_file.name
-    rep2_xcor_filename = rep2_xcor_file.name
+    # not necessary to actually download these - just pass through
+    # rep1_xcor_filename = rep1_xcor_file.name
+    # rep2_xcor_filename = rep2_xcor_file.name
 
     ntags_rep1 = count_lines(rep1_ta_filename)
     ntags_rep2 = count_lines(rep2_ta_filename)
@@ -176,20 +175,22 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
     pool_pr2_subjob = pool_applet.run(
         {"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
                     rep2_pr_subjob.get_output_ref("pseudoreplicate2")]})
-
     pooled_replicates_xcor_subjob = xcor_only(pooled_replicates, paired_end)
-    rep1_pr1_xcor_subjob = \
-        xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
-    rep1_pr2_xcor_subjob = \
-        xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
-    rep2_pr1_xcor_subjob = \
-        xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
-    rep2_pr2_xcor_subjob = \
-        xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
-    pool_pr1_xcor_subjob = \
-        xcor_only(pool_pr1_subjob.get_output_ref("pooled"), paired_end)
-    pool_pr2_xcor_subjob = \
-        xcor_only(pool_pr2_subjob.get_output_ref("pooled"), paired_end)
+
+    # no longer calculated - now we take the cross-correlation metrics for the
+    # pseudoreplicates as those from the true reps
+    # rep1_pr1_xcor_subjob = \
+    #     xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
+    # rep1_pr2_xcor_subjob = \
+    #     xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
+    # rep2_pr1_xcor_subjob = \
+    #     xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
+    # rep2_pr2_xcor_subjob = \
+    #     xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
+    # pool_pr1_xcor_subjob = \
+    #     xcor_only(pool_pr1_subjob.get_output_ref("pooled"), paired_end)
+    # pool_pr2_xcor_subjob = \
+    #     xcor_only(pool_pr2_subjob.get_output_ref("pooled"), paired_end)
 
     common_args = {
         'chrom_sizes':      chrom_sizes,
@@ -217,32 +218,32 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
     common_args.update({'prefix': 'r1pr1'})
     rep1pr1_peaks_subjob   = macs2( rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
                                     rep1_control,
-                                    rep1_pr1_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
+                                    rep1_xcor, **common_args)
 
     common_args.update({'prefix': 'r1pr2'})
     rep1pr2_peaks_subjob   = macs2( rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
                                     rep1_control,
-                                    rep1_pr2_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
+                                    rep1_xcor, **common_args)
 
     common_args.update({'prefix': 'r2pr1'})
     rep2pr1_peaks_subjob   = macs2( rep2_pr_subjob.get_output_ref("pseudoreplicate1"),
                                     rep2_control,
-                                    rep2_pr1_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
+                                    rep2_xcor, **common_args)
 
     common_args.update({'prefix': 'r2pr2'})
     rep2pr2_peaks_subjob   = macs2( rep2_pr_subjob.get_output_ref("pseudoreplicate2"),
                                     rep2_control,
-                                    rep2_pr2_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
+                                    rep2_xcor, **common_args)
 
     common_args.update({'prefix': 'ppr1'})
     pooledpr1_peaks_subjob = macs2( pool_pr1_subjob.get_output_ref("pooled"),
                                     control_for_pool,
-                                    pool_pr1_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
+                                    pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
 
     common_args.update({'prefix': 'ppr2'})
     pooledpr2_peaks_subjob = macs2( pool_pr2_subjob.get_output_ref("pooled"),
                                     control_for_pool,
-                                    pool_pr2_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
+                                    pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
 
     output = {
         'rep1_narrowpeaks':         rep1_peaks_subjob.get_output_ref("narrowpeaks"),
