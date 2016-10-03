@@ -16,7 +16,7 @@ logger.propagate = True
 
 
 def test():
-    print "In common.test"
+    print("In common.test")
 
 
 def flat(l):
@@ -35,9 +35,11 @@ def rstrips(string, substring):
     else:
         return string[:len(string)-len(substring)]
 
+
 def touch(fname, times=None):
     with open(fname, 'a'):
         os.utime(fname, times)
+
 
 def block_on(command):
     process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
@@ -46,52 +48,49 @@ def block_on(command):
     process.wait()
     return process.returncode
 
+
 def run_pipe(steps, outfile=None):
-    #break this out into a recursive function
-    #TODO:  capture stderr
+    # TODO:  capture stderr
     from subprocess import Popen, PIPE
     p = None
     p_next = None
     first_step_n = 1
     last_step_n = len(steps)
-    for n,step in enumerate(steps, start=first_step_n):
-        print "step %d: %s" %(n,step)
+    for n, step in enumerate(steps, start=first_step_n):
+        print("step %d: %s" % (n, step))
         if n == first_step_n:
-            if n == last_step_n and outfile: #one-step pipeline with outfile
+            if n == last_step_n and outfile:  # one-step pipeline with outfile
                 with open(outfile, 'w') as fh:
-                    print "one step shlex: %s to file: %s" %(shlex.split(step), outfile)
+                    print("one step shlex: %s to file: %s" % (shlex.split(step), outfile))
                     p = Popen(shlex.split(step), stdout=fh)
                 break
-            print "first step shlex to stdout: %s" %(shlex.split(step))
+            print("first step shlex to stdout: %s" % (shlex.split(step)))
             p = Popen(shlex.split(step), stdout=PIPE)
-            #need to close p.stdout here?
-        elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
+        elif n == last_step_n and outfile:  # only treat the last step specially if you're sending stdout to a file
             with open(outfile, 'w') as fh:
-                print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
+                print("last step shlex: %s to file: %s" % (shlex.split(step), outfile))
                 p_last = Popen(shlex.split(step), stdin=p.stdout, stdout=fh)
                 p.stdout.close()
                 p = p_last
-        else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
-            print "intermediate step %d shlex to stdout: %s" %(n,shlex.split(step))
+        else:  # handles intermediate steps and, in the case of a pipe to stdout, the last step
+            print("intermediate step %d shlex to stdout: %s" % (n, shlex.split(step)))
             p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
             p.stdout.close()
             p = p_next
-    out,err = p.communicate()
-    return out,err
+    out, err = p.communicate()
+    return out, err
 
 
 def uncompress(filename):
-    #leaves compressed file intact
-    m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename)
+    # leaves compressed file intact
+    m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))', filename)
     if m:
         basename = m.group(1)
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
-        logging.info("Decompressing %s" %(filename))
-        #logging.info(subprocess.check_output(shlex.split('gzip -dc %s' %(filename))))
-        out,err = run_pipe([
-            'gzip -dc %s' %(filename)],
+        logging.info("Decompressing %s" % (filename))
+        # logging.info(subprocess.check_output(shlex.split('gzip -dc %s' %(filename))))
+        out, err = run_pipe([
+            'gzip -dc %s' % (filename)],
             basename)
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(basename))))
         return basename
     else:
         return filename
