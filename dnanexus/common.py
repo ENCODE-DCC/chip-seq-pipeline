@@ -79,6 +79,7 @@ def run_pipe(steps, outfile=None):
     out,err = p.communicate()
     return out,err
 
+
 def uncompress(filename):
     #leaves compressed file intact
     m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename)
@@ -95,24 +96,47 @@ def uncompress(filename):
     else:
         return filename
 
-def compress(filename):
-    #leaves uncompressed file intact
-    if re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename):
-        return filename
+
+def compress(fname):
+    # leaves uncompressed file intact
+    from magic import from_file
+    compressed_mimetypes = [
+        "application/x-compress",
+        "application/x-bzip2",
+        "application/x-gzip"
+        ]
+    mime_type = from_file(fname, mime=True)
+    if mime_type in compressed_mimetypes:
+        return fname
     else:
-        logging.info(subprocess.check_output(shlex.split('cp %s tmp' %(filename))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
-        logging.info("Compressing %s" %(filename))
-        logging.info(subprocess.check_output(shlex.split('gzip %s' %(filename))))
-        new_filename = filename + '.gz'
-        logging.info(subprocess.check_output(shlex.split('cp tmp %s' %(filename))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
-        return new_filename
+        logging.info(subprocess.check_output(shlex.split('cp %s tmp' %(fname))))
+        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(fname))))
+        logging.info("Compressing %s" %(fname))
+        logging.info(subprocess.check_output(shlex.split('gzip %s' %(fname))))
+        new_fname = fname + '.gz'
+        logging.info(subprocess.check_output(shlex.split('cp tmp %s' %(fname))))
+        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_fname))))
+        return new_fname
+
 
 def count_lines(fname):
-    wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
-    lines = wc_output.split()[0]
-    return int(lines)
+    from magic import from_file
+    compressed_mimetypes = [
+        "application/x-compress",
+        "application/x-bzip2",
+        "application/x-gzip"
+        ]
+    mime_type = from_file(fname, mime=True)
+    if mime_type in compressed_mimetypes:
+        catcommand = 'gzip -dc'
+    else:
+        catcommand = 'cat'
+    out, err = run_pipe([
+        '%s %s' % (catcommand, fname),
+        'wc -l'
+        ])
+    return int(out)
+
 
 def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
     if bed_filename.endswith('.bed'):

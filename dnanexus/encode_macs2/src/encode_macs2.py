@@ -21,18 +21,6 @@ logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
 
 
-def count_lines(filename):
-        if filename.endswith(('.Z', '.gz', '.bz', '.bz2')):
-                catcommand = 'gzip -dc'
-        else:
-                catcommand = 'cat'
-        out, err = common.run_pipe([
-                '%s %s' % (catcommand, filename),
-                'wc -l'
-        ])
-        return int(out)
-
-
 def macs2(experiment, control, xcor_scores, chrom_sizes,
           narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize, prefix=None):
         macs2_applet = dxpy.find_one_data_object(
@@ -103,10 +91,10 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
     # rep1_xcor_filename = rep1_xcor_file.name
     # rep2_xcor_filename = rep2_xcor_file.name
 
-    ntags_rep1 = count_lines(rep1_ta_filename)
-    ntags_rep2 = count_lines(rep2_ta_filename)
-    ntags_ctl1 = count_lines(ctl1_ta_filename)
-    ntags_ctl2 = count_lines(ctl2_ta_filename)
+    ntags_rep1 = common.count_lines(rep1_ta_filename)
+    ntags_rep2 = common.count_lines(rep2_ta_filename)
+    ntags_ctl1 = common.count_lines(ctl1_ta_filename)
+    ntags_ctl2 = common.count_lines(ctl2_ta_filename)
 
     for n, name, filename in [(ntags_rep1, 'replicate 1', rep1_ta_filename),
                               (ntags_rep2, 'replicate 2', rep2_ta_filename),
