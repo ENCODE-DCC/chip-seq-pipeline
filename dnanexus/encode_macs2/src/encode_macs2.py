@@ -11,50 +11,76 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, subprocess, shlex, time, re
+import os
+import subprocess
+import shlex
+import time
+import re
 import dxpy
 import common
+import logging
+
+logger = logging.getLogger(__name__)
+logger.addHandler(dxpy.DXLogHandler())
+logger.propagate = False
+
 
 def count_lines(filename):
-        if filename.endswith(('.Z','.gz','.bz','.bz2')):
+        if filename.endswith(('.Z', '.gz', '.bz', '.bz2')):
                 catcommand = 'gzip -dc'
         else:
                 catcommand = 'cat'
-        out,err = common.run_pipe([
-                '%s %s' %(catcommand, filename),
+        out, err = common.run_pipe([
+                '%s %s' % (catcommand, filename),
                 'wc -l'
         ])
         return int(out)
 
-def macs2(experiment, control, xcor_scores, chrom_sizes, narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize, prefix=None):
+
+def macs2(experiment, control, xcor_scores, chrom_sizes,
+          narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize, prefix=None):
         macs2_applet = dxpy.find_one_data_object(
-                classname='applet', name='macs2', project=dxpy.PROJECT_CONTEXT_ID,
-                zero_ok=False, more_ok=False, return_handler=True)
-        macs2_input = { "experiment": experiment,
-                        "control": control,
-                        "xcor_scores_input": xcor_scores,
-                        "chrom_sizes": chrom_sizes,
-                        "narrowpeak_as": narrowpeak_as,
-                        "gappedpeak_as": gappedpeak_as,
-                        "broadpeak_as": broadpeak_as,
-                        "genomesize": genomesize}
+                classname='applet',
+                name='macs2',
+                project=dxpy.PROJECT_CONTEXT_ID,
+                zero_ok=False,
+                more_ok=False,
+                return_handler=True)
+        macs2_input = {
+            "experiment": experiment,
+            "control": control,
+            "xcor_scores_input": xcor_scores,
+            "chrom_sizes": chrom_sizes,
+            "narrowpeak_as": narrowpeak_as,
+            "gappedpeak_as": gappedpeak_as,
+            "broadpeak_as": broadpeak_as,
+            "genomesize": genomesize
+            }
         if prefix:
             macs2_input.update({'prefix': prefix})
         return macs2_applet.run(macs2_input)
 
+
 def xcor_only(tags, paired_end):
         xcor_only_applet = dxpy.find_one_data_object(
-                classname='applet', name='xcor_only', zero_ok=False, more_ok=False, return_handler=True)
-        return xcor_only_applet.run({"input_tagAlign": tags, "paired_end": paired_end})
+                classname='applet',
+                name='xcor_only',
+                zero_ok=False,
+                more_ok=False,
+                return_handler=True)
+        return xcor_only_applet.run({
+            "input_tagAlign": tags,
+            "paired_end": paired_end
+            })
+
 
 @dxpy.entry_point('main')
-def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, rep1_paired_end, rep2_paired_end, chrom_sizes, genomesize, narrowpeak_as, gappedpeak_as, broadpeak_as):
+def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
+         rep1_paired_end, rep2_paired_end, chrom_sizes, genomesize,
+         narrowpeak_as, gappedpeak_as, broadpeak_as):
 
-    if not rep1_paired_end == rep2_paired_end:
-      raise ValueError('Mixed PE/SE not supported (yet)')
+    assert rep1_paired_end == rep2_paired_end, 'Mixed PE/SE not supported'
     paired_end = rep1_paired_end
-    # The following lines initialize the data object inputs on the platform
-    # into dxpy.DXDataObject instances that you can start using immediately.
 
     rep1_ta_file = dxpy.DXFile(rep1_ta)
     rep2_ta_file = dxpy.DXFile(rep2_ta)
@@ -63,9 +89,6 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, rep1_paired_e
     ctl2_ta_file = dxpy.DXFile(ctl2_ta)
     rep1_xcor_file = dxpy.DXFile(rep1_xcor)
     rep2_xcor_file = dxpy.DXFile(rep2_xcor)
-
-    # The following line(s) download your file inputs to the local file system
-    # using variable names for the filenames.
 
     dxpy.download_dxfile(rep1_ta_file.get_id(), rep1_ta_file.name)
     dxpy.download_dxfile(rep2_ta_file.get_id(), rep2_ta_file.name)
@@ -86,73 +109,95 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor, rep1_paired_e
     ntags_ctl1 = count_lines(ctl1_ta_filename)
     ntags_ctl2 = count_lines(ctl2_ta_filename)
 
-    for n,name,filename in [(ntags_rep1, 'replicate 1', rep1_ta_filename),
-                            (ntags_rep2, 'replicate 2', rep2_ta_filename),
-                            (ntags_ctl1, 'control 1', ctl1_ta_filename),
-                            (ntags_ctl2, 'control 2', ctl2_ta_filename)]:
-        print "Found %d tags in %s file %s" %(n,name,filename)
+    for n, name, filename in [(ntags_rep1, 'replicate 1', rep1_ta_filename),
+                              (ntags_rep2, 'replicate 2', rep2_ta_filename),
+                              (ntags_ctl1, 'control 1', ctl1_ta_filename),
+                              (ntags_ctl2, 'control 2', ctl2_ta_filename)]:
+        logger.info("Found %d tags in %s file %s" % (n, name, filename))
 
-    print subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
+    subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
 
     pool_applet = dxpy.find_one_data_object(
-        classname='applet', name='pool', zero_ok=False, more_ok=False, return_handler=True)
+        classname='applet',
+        name='pool',
+        zero_ok=False,
+        more_ok=False,
+        return_handler=True)
     pool_replicates_subjob = pool_applet.run({"inputs": [rep1_ta, rep2_ta]})
     pooled_replicates = pool_replicates_subjob.get_output_ref("pooled")
 
-    rep1_control = ctl1_ta #default.  May be changed later.
-    rep2_control = ctl2_ta #default.  May be changed later.
+    rep1_control = ctl1_ta  # default.  May be changed later.
+    rep2_control = ctl2_ta  # default.  May be changed later.
 
     if unary_control:
-        print "Only one control supplied.  Using it for both replicate 1 and 2 and for the pool."
+        logger.info("Only one control supplied.  Using it for both replicate 1 and 2 and for the pool.")
         control_for_pool = rep1_control
     else:
         pool_controls_subjob = pool_applet.run({"inputs": [ctl1_ta, ctl2_ta]})
         pooled_controls = pool_controls_subjob.get_output_ref("pooled")
-        #always use the pooled controls for the pool
+        # always use the pooled controls for the pool
         control_for_pool = pooled_controls
 
-        #use the pooled controls for the reps depending on the ration of rep to control reads
+        # use the pooled controls for the reps depending on the ratio of rep to
+        # control reads
         ratio_ctl_reads = float(ntags_ctl1)/float(ntags_ctl2)
         if ratio_ctl_reads < 1:
                 ratio_ctl_reads = 1/ratio_ctl_reads
         ratio_cutoff = 1.2
         if ratio_ctl_reads > ratio_cutoff:
-                print "Number of reads in controls differ by > factor of %f. Using pooled controls." %(ratio_cutoff)
+                logger.info(
+                    "Number of reads in controls differ by > factor of %f. Using pooled controls."
+                    % (ratio_cutoff))
                 rep1_control = pooled_controls
                 rep2_control = pooled_controls
         else:
                 if ntags_ctl1 < ntags_rep1:
-                        print "Fewer reads in control replicate 1 than experiment replicate 1.  Using pooled controls for replicate 1."
+                        logger.info("Fewer reads in control replicate 1 than experiment replicate 1.  Using pooled controls for replicate 1.")
                         rep1_control = pooled_controls
                 elif ntags_ctl2 < ntags_rep2:
-                        print "Fewer reads in control replicate 2 than experiment replicate 2.  Using pooled controls for replicate 2."
+                        logger.info("Fewer reads in control replicate 2 than experiment replicate 2.  Using pooled controls for replicate 2.")
                         rep2_control = pooled_controls
                 else:
-                    print "Using distinct controls for replicate 1 and 2."
+                    logger.info(
+                        "Using distinct controls for replicate 1 and 2.")
 
     pseudoreplicator_applet = dxpy.find_one_data_object(
-        classname='applet', name='pseudoreplicator', zero_ok=False, more_ok=False, return_handler=True)
+        classname='applet',
+        name='pseudoreplicator',
+        zero_ok=False,
+        more_ok=False,
+        return_handler=True)
     rep1_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep1_ta})
     rep2_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep2_ta})
 
-    pool_pr1_subjob = pool_applet.run({"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
-                                                  rep2_pr_subjob.get_output_ref("pseudoreplicate1")]})
-    pool_pr2_subjob = pool_applet.run({"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
-                                                  rep2_pr_subjob.get_output_ref("pseudoreplicate2")]})
+    pool_pr1_subjob = pool_applet.run(
+        {"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
+                    rep2_pr_subjob.get_output_ref("pseudoreplicate1")]})
+    pool_pr2_subjob = pool_applet.run(
+        {"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
+                    rep2_pr_subjob.get_output_ref("pseudoreplicate2")]})
 
     pooled_replicates_xcor_subjob = xcor_only(pooled_replicates, paired_end)
-    rep1_pr1_xcor_subjob = xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
-    rep1_pr2_xcor_subjob = xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
-    rep2_pr1_xcor_subjob = xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
-    rep2_pr2_xcor_subjob = xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
-    pool_pr1_xcor_subjob = xcor_only(pool_pr1_subjob.get_output_ref("pooled"), paired_end)
-    pool_pr2_xcor_subjob = xcor_only(pool_pr2_subjob.get_output_ref("pooled"), paired_end)
+    rep1_pr1_xcor_subjob = \
+        xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
+    rep1_pr2_xcor_subjob = \
+        xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
+    rep2_pr1_xcor_subjob = \
+        xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
+    rep2_pr2_xcor_subjob = \
+        xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
+    pool_pr1_xcor_subjob = \
+        xcor_only(pool_pr1_subjob.get_output_ref("pooled"), paired_end)
+    pool_pr2_xcor_subjob = \
+        xcor_only(pool_pr2_subjob.get_output_ref("pooled"), paired_end)
 
-    common_args = { 'chrom_sizes':      chrom_sizes,
-                    'genomesize':       genomesize,
-                    'narrowpeak_as':    narrowpeak_as,
-                    'gappedpeak_as':    gappedpeak_as,
-                    'broadpeak_as':     broadpeak_as }
+    common_args = {
+        'chrom_sizes':      chrom_sizes,
+        'genomesize':       genomesize,
+        'narrowpeak_as':    narrowpeak_as,
+        'gappedpeak_as':    gappedpeak_as,
+        'broadpeak_as':     broadpeak_as
+        }
 
     common_args.update({'prefix': 'r1'})
     rep1_peaks_subjob      = macs2( rep1_ta,
