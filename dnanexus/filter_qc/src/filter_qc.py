@@ -186,7 +186,7 @@ def main(input_bam, paired_end, samtools_params, debug):
     else:
         final_bam_prefix = raw_bam_basename + ".filt.nodup.srt"
     final_bam_filename = final_bam_prefix + ".bam"  # To be stored
-    final_bam_index_filename = final_bam_prefix + ".bai"  # To be stored
+    final_bam_index_filename = final_bam_filename + ".bai"  # To be stored
     # QC file
     final_bam_file_mapstats_filename = final_bam_prefix + ".flagstat.qc"
 
