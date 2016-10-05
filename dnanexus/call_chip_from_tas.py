@@ -18,6 +18,11 @@ Examples:
 ASSEMBLY_METADATA = {
     'mm10': {
         'gsize': 'mm',
+        'csizes': "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes",
+        'blacklist': None
+    },
+    'mm10-minimal': {
+        'gsize': 'mm',
         'csizes': "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes",
         'blacklist': None
     },
