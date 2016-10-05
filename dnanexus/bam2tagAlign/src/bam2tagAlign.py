@@ -48,7 +48,7 @@ def main(input_bam, paired_end):
         "bamToBed -i %s" % (input_bam_filename),
         r"""awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}'""",
         "tee %s" % (intermediate_TA_filename),
-        "gzip -c"],
+        "gzip -cn"],
         outfile=final_TA_filename)
 
     subprocess.check_output('ls -l', shell=True)
@@ -68,7 +68,7 @@ def main(input_bam, paired_end):
         final_BEDPE_filename = input_bam_basename + ".bedpe.gz"
         out, err = common.run_pipe([
             "bamToBed -bedpe -mate1 -i %s" % (final_nmsrt_bam_filename),
-            "gzip -c"],
+            "gzip -cn"],
             outfile=final_BEDPE_filename)
 
     subprocess.check_output('ls -l', shell=True)

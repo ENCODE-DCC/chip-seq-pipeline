@@ -111,7 +111,8 @@ def compress(fname):
         logging.info(subprocess.check_output(shlex.split('cp %s tmp' %(fname))))
         logging.info(subprocess.check_output(shlex.split('ls -l %s' %(fname))))
         logging.info("Compressing %s" %(fname))
-        logging.info(subprocess.check_output(shlex.split('gzip %s' %(fname))))
+        # gzip -n is used in order to make output deterministic
+        logging.info(subprocess.check_output(shlex.split('gzip -n %s' %(fname))))
         new_fname = fname + '.gz'
         logging.info(subprocess.check_output(shlex.split('cp tmp %s' %(fname))))
         logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_fname))))

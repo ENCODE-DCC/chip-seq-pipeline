@@ -79,7 +79,7 @@ def main(input_tags):
         steps = ['cat %s' % (splits_prefix+index)]
         if paired_end:
             steps.extend([r"""awk 'BEGIN{OFS="\t"}{printf "%s\t%s\t%s\tN\t1000\t%s\n%s\t%s\t%s\tN\t1000\t%s\n",$1,$2,$3,$9,$4,$5,$6,$10}'"""])
-        steps.extend(['gzip -c'])
+        steps.extend(['gzip -cn'])
         out, err = common.run_pipe(steps, outfile=pr_ta_filenames[i])
 
     pseudoreplicate1_file = dxpy.upload_local_file(pr_ta_filenames[0])

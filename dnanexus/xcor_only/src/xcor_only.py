@@ -87,10 +87,10 @@ def main(input_tagAlign, paired_end):
         ".sample.%d.%s.tagAlign.gz" % (NREADS/1000000, end_infix)
     steps = [
         'grep -v "chrM" %s' % (uncompressed_TA_filename),
-        'shuf -n %d' % (NREADS)]
+        'shuf -n %d --random-source=%s' % (NREADS, uncompressed_TA_filename)]
     if paired_end:
         steps.extend([r"""awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}'"""])
-    steps.extend(['gzip -c'])
+    steps.extend(['gzip -cn'])
     out, err = common.run_pipe(steps, outfile=subsampled_TA_filename)
 
     # Calculate Cross-correlation QC scores

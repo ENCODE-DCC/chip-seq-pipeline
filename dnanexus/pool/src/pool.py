@@ -36,7 +36,7 @@ def main(inputs):
         '-'.join([splitext(splitext(fn)[0])[0] for fn in input_filenames]) + "_pooled%s.gz" % (extension)
     out, err = common.run_pipe([
         'gzip -dc %s' % (' '.join(input_filenames)),
-        'gzip -c'],
+        'gzip -cn'],
         outfile=pooled_filename)
 
     pooled = dxpy.upload_local_file(pooled_filename)

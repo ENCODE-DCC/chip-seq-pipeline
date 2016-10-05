@@ -88,7 +88,7 @@ def main(input_bam, paired_end):
         "bamToBed -i %s" % (input_bam_filename),
         r"""awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}'""",
         "tee %s" % (intermediate_TA_filename),
-        "gzip -c"],
+        "gzip -cn"],
         outfile=final_TA_filename)
 
     # ================
@@ -105,7 +105,7 @@ def main(input_bam, paired_end):
         subprocess.check_output(shlex.split(samtools_sort_command))
         out, err = common.run_pipe([
             "bamToBed -bedpe -mate1 -i %s" % (final_nmsrt_bam_filename),
-            "gzip -c"],
+            "gzip -cn"],
             outfile=final_BEDPE_filename)
 
     # =================================
@@ -121,10 +121,10 @@ def main(input_bam, paired_end):
         ".filt.nodup.sample.%d.%s.tagAlign.gz" % (NREADS/1000000, end_infix)
     steps = [
         'grep -v "chrM" %s' % (intermediate_TA_filename),
-        'shuf -n %d' % (NREADS)]
+        'shuf -n %d --random-source=%s' % (NREADS, intermediate_TA_filename)]
     if paired_end:
         steps.extend([r"""awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}'"""])
-    steps.extend(['gzip -c'])
+    steps.extend(['gzip -cn'])
     out, err = common.run_pipe(steps, outfile=subsampled_TA_filename)
 
     # Calculate Cross-correlation QC scores
