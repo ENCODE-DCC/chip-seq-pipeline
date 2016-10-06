@@ -159,7 +159,7 @@ def main(input_bam, paired_end, samtools_params, debug):
                 % (samtools_params, raw_bam_filename)
                 )
             logger.info(samtools_filter_command)
-            subprocess.check_output(
+            subprocess.check_call(
                 shlex.split(samtools_filter_command),
                 stdout=fh)
 
