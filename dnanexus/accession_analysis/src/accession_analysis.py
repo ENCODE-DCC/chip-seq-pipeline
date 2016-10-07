@@ -32,11 +32,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
 
-common_metadata = {
+COMMON_METADATA = {
     'lab': 'encode-processing-pipeline',
     'award': 'U41HG006992'
 }
-common_file_metadata = copy.copy(common_metadata)
 
 DEPRECATED = ['deleted', 'replaced', 'revoked']
 
@@ -284,7 +283,7 @@ def chipseq_filter_quality_metric(step_run, stages, files):
     # so we change that to the string "Infinity"
     if obj['PBC2'] == float('inf'):
         obj['PBC2'] = 'Infinity'
-    obj.update(common_metadata)
+    obj.update(COMMON_METADATA)
     return [obj]
 
 
@@ -376,7 +375,7 @@ def get_flagstat_obj(step_run, stage, file_accessions):
             'diff_chroms_qc_failed':
                 int(flagstat_qc['mate_mapped_different_chr_hiQ'][1])
         })
-    obj.update(common_metadata)
+    obj.update(COMMON_METADATA)
 
     return obj
 
@@ -484,78 +483,78 @@ def idr_quality_metric(step_run, stages, files):
     else:  # this is a serious enough error to block creation of the object
         logger.error('Unequal IDR cutoffs: %s' % (idr_cutoffs))
         return None
-    obj.update(common_metadata)
+    obj.update(COMMON_METADATA)
 
     return [obj]
 
 
-def get_rep_bams(experiment, assembly, keypair, server):
-    logger.debug('in get_rep_bams with experiment[accession] %s'
-                 % (experiment.get('accession')))
-    original_files = [common.encoded_get(
-        urlparse.urljoin(server, '%s' % (uri)), keypair)
-        for uri in experiment.get('original_files')]
+# def get_rep_bams(experiment, assembly, keypair, server):
+#     logger.debug('in get_rep_bams with experiment[accession] %s'
+#                  % (experiment.get('accession')))
+#     original_files = [common.encoded_get(
+#         urlparse.urljoin(server, '%s' % (uri)), keypair)
+#         for uri in experiment.get('original_files')]
 
-    # resolve the biorep_n for each fastq
-    for fastq in [f for f in original_files
-                  if f.get('file_format') in ['fastq', 'fasta']]:
-        replicate = common.encoded_get(
-            urlparse.urljoin(server, '%s' % (fastq.get('replicate'))), keypair)
-        fastq.update(
-            {'biorep_n': replicate.get('biological_replicate_number')})
+#     # resolve the biorep_n for each fastq
+#     for fastq in [f for f in original_files
+#                   if f.get('file_format') in ['fastq', 'fasta']]:
+#         replicate = common.encoded_get(
+#             urlparse.urljoin(server, '%s' % (fastq.get('replicate'))), keypair)
+#         fastq.update(
+#             {'biorep_n': replicate.get('biological_replicate_number')})
 
-    # resolve the biorep_n's from derived_from for each bam
-    for bam in [f for f in original_files
-                if f.get('file_format') == 'bam' and
-                f.get('assembly') == assembly]:
+#     # resolve the biorep_n's from derived_from for each bam
+#     for bam in [f for f in original_files
+#                 if f.get('file_format') == 'bam' and
+#                 f.get('assembly') == assembly]:
 
-        biorep_ns = set()
+#         biorep_ns = set()
 
-        for derived_from_uri in bam.get('derived_from'):
+#         for derived_from_uri in bam.get('derived_from'):
 
-            # this assumes frame=object
-            derived_from_accession = os.path.basename(
-                derived_from_uri.strip('/'))
+#             # this assumes frame=object
+#             derived_from_accession = os.path.basename(
+#                 derived_from_uri.strip('/'))
 
-            biorep_ns.add(next(
-                f.get('biorep_n')
-                for f in original_files
-                if f.get('accession') == derived_from_accession))
+#             biorep_ns.add(next(
+#                 f.get('biorep_n')
+#                 for f in original_files
+#                 if f.get('accession') == derived_from_accession))
 
-        if len(biorep_ns) != 1:
-            logger.error("%s %s expected 1 biorep_n, found %d, skipping."
-                         % (experiment.get('accession'), bam.get('accession')))
-            return
+#         if len(biorep_ns) != 1:
+#             logger.error("%s %s expected 1 biorep_n, found %d, skipping."
+#                          % (experiment.get('accession'), bam.get('accession')))
+#             return
 
-        else:
-            biorep_n = biorep_ns.pop()
-            bam.update({'biorep_n': biorep_n})
+#         else:
+#             biorep_n = biorep_ns.pop()
+#             bam.update({'biorep_n': biorep_n})
 
-    # remove any bams that are older than another bam
-    # resulting in only the most recent surviving
-    for bam in [f for f in original_files
-                if f.get('file_format') == 'bam' and
-                f.get('biorep_n') == biorep_n and
-                common.after(bam.get('date_created'), f.get('date_created'))]:
-        original_files.remove(bam)
+#     # remove any bams that are older than another bam
+#     # resulting in only the most recent surviving
+#     for bam in [f for f in original_files
+#                 if f.get('file_format') == 'bam' and
+#                 f.get('biorep_n') == biorep_n and
+#                 common.after(bam.get('date_created'), f.get('date_created'))]:
+#         original_files.remove(bam)
 
-    try:
-        rep1_bam = next(f for f in original_files
-                        if f.get('file_format') == 'bam' and
-                        f.get('biorep_n') == 1)
-    except StopIteration:
-        logger.error('%s has no rep1 bam.' % (experiment.get('accession')))
-        rep1_bam = None
-    try:
-        rep2_bam = next(f for f in original_files
-                        if f.get('file_format') == 'bam' and
-                        f.get('biorep_n') == 2)
-    except StopIteration:
-        logger.error('%s has no rep2 bam.' % (experiment.get('accession')))
-        rep2_bam = None
-    logger.debug('get_rep_bams returning %s, %s'
-                 % (rep1_bam.get('accession'), rep2_bam.get('accession')))
-    return rep1_bam, rep2_bam
+#     try:
+#         rep1_bam = next(f for f in original_files
+#                         if f.get('file_format') == 'bam' and
+#                         f.get('biorep_n') == 1)
+#     except StopIteration:
+#         logger.error('%s has no rep1 bam.' % (experiment.get('accession')))
+#         rep1_bam = None
+#     try:
+#         rep2_bam = next(f for f in original_files
+#                         if f.get('file_format') == 'bam' and
+#                         f.get('biorep_n') == 2)
+#     except StopIteration:
+#         logger.error('%s has no rep2 bam.' % (experiment.get('accession')))
+#         rep2_bam = None
+#     logger.debug('get_rep_bams returning %s, %s'
+#                  % (rep1_bam.get('accession'), rep2_bam.get('accession')))
+#     return rep1_bam, rep2_bam
 
 
 def get_rep_fastqs(experiment, keypair, server, repn):
@@ -798,17 +797,15 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     reference = common.encoded_get(
         urlparse.urljoin(server, 'files/%s' % (reference_alias)), keypair)
-
-    if reference:
-        logger.debug('found reference file %s' % (reference.get('accession')))
-    else:
-        logger.error('failed to find reference file %s' % (reference_alias))
+    assert reference, "Reference file %s not found on Portal" % (reference_alias) 
+    logger.debug('found reference file %s' % (reference.get('accession')))
 
     bam_metadata = common.merge_dicts({
         'file_format': 'bam',
         'output_type': 'unfiltered alignments',
+        'assembly': reference.get('assembly'),
         'mapped_read_length': mapped_read_length
-    }, common_file_metadata)
+    }, COMMON_METADATA)
 
     mapping_stages = {
         get_stage_name("Map ENCSR.*", analysis_stages): {
@@ -850,14 +847,20 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
 
 def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
-    logger.debug('in get_mapping_stages with mapping analysis %s and rep %s'
-                 % (mapping_analysis['id'], repn))
+    logger.debug(
+        'in get_mapping_stages with mapping analysis %s and rep %s'
+        % (mapping_analysis['id'], repn))
 
+    if not mapping_analysis:
+        logger.warning(
+            'get_mapping_stages got empty mapping_analysis, returning None')
+        return None
     experiment_accession = get_experiment_accession(mapping_analysis)
-
-    experiment = common.encoded_get(
-        urlparse.urljoin(
-            server, '/experiments/%s' % (experiment_accession)), keypair)
+    url = urlparse.urljoin(
+            server, '/experiments/%s' % (experiment_accession))
+    r = common.encoded_get(url, keypair, return_response=True)
+    r.raise_for_status()
+    experiment = r.json()
 
     # This encoded_repn is the biological_replicate_number at ENCODEd, which
     # needs to be puzzled out from the mapping analysis name or, better, by
@@ -968,17 +971,15 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     reference = common.encoded_get(
         urlparse.urljoin(server, 'files/%s' % (reference_alias)), keypair)
-
-    if reference:
-        logger.debug('found reference file %s' % (reference.get('accession')))
-    else:
-        logger.error('failed to find reference file %s' % (reference_alias))
+    assert reference, "Reference file %s not found on Portal" % (reference_alias) 
+    logger.debug('found reference file %s' % (reference.get('accession')))
 
     bam_metadata = common.merge_dicts({
         'file_format': 'bam',
         'output_type': 'alignments',
-        'mapped_read_length': mapped_read_length
-    }, common_file_metadata)
+        'mapped_read_length': mapped_read_length,
+        'assembly': reference.get('assembly')
+    }, COMMON_METADATA)
 
     mapping_stages = {
 
@@ -1065,11 +1066,10 @@ def get_control_mapping_stages(peaks_analysis, keypair, server,
             mapping_analyses[i], keypair, server, fqcheck, repn)
 
         if not mapping_stage:
-            logger.error('%s: failed to find mapping stages for rep%d'
-                         % (peaks_analysis['id'], repn))
-            return None
-        else:
-            mapping_stages.append(mapping_stage)
+            logger.warning(
+                '%s: failed to find mapping stages for rep%d'
+                % (peaks_analysis['id'], repn))
+        mapping_stages.append(mapping_stage)
 
     return mapping_stages
 
@@ -1193,6 +1193,17 @@ def pooled_controls(peaks_analysis, rep):
         return True
 
 
+def get_assembly(stage_output_tuple):
+    stages, output_key = stage_output_tuple
+    if not stages:
+        return None
+    for stage in stages.itervalues():
+        output_files = stage.get('output_files')
+        if output_files:
+            output_file_metadata = next(output_file.get('metadata') for output_file in output_files if output_file.get('name') == output_key)
+            return output_file_metadata.get('assembly')
+
+
 def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
                             experiment, keypair, server):
 
@@ -1201,6 +1212,36 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         % (peaks_analysis['id']) +
         'experiment %s and len(mapping_stages) %d len(control_stages) %d'
         % (experiment['accession'], len(mapping_stages), len(control_stages)))
+
+    rep1_bam, rep2_bam = \
+        [(mapping_stages[n], 'filtered_bam') for n in range(2)]
+
+    rep1_ctl_bam, rep2_ctl_bam = \
+        [(control_stages[n], 'filtered_bam') for n in range(2)]
+
+    assemblies = \
+        [get_assembly(bam)
+         for bam in [rep1_bam, rep2_bam, rep1_ctl_bam, rep2_ctl_bam]]
+    observed_assemblies = set(assemblies)
+    assert len(observed_assemblies) == 1, "Different bam assemblies for rep1,2 and control rep1,2 bams: %s" % (assemblies)
+    assembly = observed_assemblies.pop()
+
+    pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
+
+    if pooled_controls(peaks_analysis, rep=1):
+        rep1_ctl = pooled_ctl_bams
+    else:
+        rep1_ctl = [rep1_ctl_bam]
+    if pooled_controls(peaks_analysis, rep=2):
+        rep2_ctl = pooled_ctl_bams
+    else:
+        rep2_ctl = [rep2_ctl_bam]
+
+    analysis_stages = \
+        [stage['execution'] for stage in peaks_analysis.get('stages')]
+
+    common_file_metadata = copy.copy(COMMON_METADATA)
+    common_file_metadata.update({'assembly': assembly})
 
     narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
@@ -1239,26 +1280,6 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         'file_format': 'bigWig',
         'output_type': 'signal p-value'},
         common_file_metadata)
-
-    rep1_bam, rep2_bam = \
-        [(mapping_stages[n], 'filtered_bam') for n in range(2)]
-
-    rep1_ctl_bam, rep2_ctl_bam = \
-        [(control_stages[n], 'filtered_bam') for n in range(2)]
-
-    pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
-
-    if pooled_controls(peaks_analysis, rep=1):
-        rep1_ctl = pooled_ctl_bams
-    else:
-        rep1_ctl = [rep1_ctl_bam]
-    if pooled_controls(peaks_analysis, rep=2):
-        rep2_ctl = pooled_ctl_bams
-    else:
-        rep2_ctl = [rep2_ctl_bam]
-
-    analysis_stages = \
-        [stage['execution'] for stage in peaks_analysis.get('stages')]
 
     peak_stages = {
         # derived_from is by name here, will be patched into the file metadata
@@ -1361,6 +1382,38 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         'experiment %s and len(mapping_stages) %d len(control_stages) %d'
         % (experiment['accession'], len(mapping_stages), len(control_stages)))
 
+    rep1_bam, rep2_bam = \
+        [(mapping_stages[n], 'filtered_bam') for n in range(2)]
+
+    rep1_ctl_bam, rep2_ctl_bam = \
+        [(control_stages[n], 'filtered_bam') for n in range(2)]
+
+    assemblies = \
+        [get_assembly(bam)
+         for bam in [rep1_bam, rep2_bam, rep1_ctl_bam, rep2_ctl_bam]
+         if get_assembly(bam)]
+    observed_assemblies = set(assemblies)
+    assert len(observed_assemblies) == 1, "Different (or no) bam assemblies found for rep1,2 and control rep1,2 bams: %s" % (assemblies)
+    assembly = observed_assemblies.pop()
+
+    pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
+
+    if pooled_controls(peaks_analysis, rep=1):
+        rep1_ctl = pooled_ctl_bams
+    else:
+        rep1_ctl = [rep1_ctl_bam]
+
+    if pooled_controls(peaks_analysis, rep=2):
+        rep2_ctl = pooled_ctl_bams
+    else:
+        rep2_ctl = [rep2_ctl_bam]
+
+    analysis_stages = \
+        [stage['execution'] for stage in peaks_analysis.get('stages')]
+
+    common_file_metadata = copy.copy(COMMON_METADATA)
+    common_file_metadata.update({'assembly': assembly})
+
     narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
@@ -1412,27 +1465,6 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         {'file_format': 'bigWig',
          'output_type': 'signal p-value'},
         common_file_metadata)
-
-    rep1_bam, rep2_bam = \
-        [(mapping_stages[n], 'filtered_bam') for n in range(2)]
-
-    rep1_ctl_bam, rep2_ctl_bam = \
-        [(control_stages[n], 'filtered_bam') for n in range(2)]
-
-    pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
-
-    if pooled_controls(peaks_analysis, rep=1):
-        rep1_ctl = pooled_ctl_bams
-    else:
-        rep1_ctl = [rep1_ctl_bam]
-
-    if pooled_controls(peaks_analysis, rep=2):
-        rep2_ctl = pooled_ctl_bams
-    else:
-        rep2_ctl = [rep2_ctl_bam]
-
-    analysis_stages = \
-        [stage['execution'] for stage in peaks_analysis.get('stages')]
 
     peak_stages = {
         get_stage_name("ENCODE Peaks", analysis_stages): {
@@ -1578,7 +1610,9 @@ def resolve_name_to_accessions(stages, stage_file_name):
     logger.debug("in resolve_name_to_accessions with stage_file_name")
     logger.debug("%s" % (pprint.pformat(stage_file_name)))
     accessions = []
-    for stage_name in stages:
+    if not stages:
+        return [None]
+    for stage_name in [s for s in stages if s]:
         if stages[stage_name].get('input_files'):
             all_files = stages[stage_name].get('output_files') + stages[stage_name].get('input_files')
         else:
@@ -1643,17 +1677,62 @@ def post_file(payload, keypair, server, dryrun):
         else:
             new_file_object = r.json()['@graph'][0]
             logger.info("New accession: %s" %(new_file_object.get('accession')))
-    
+
     return new_file_object
+
+
+def add_tag(dx_fh, tag):
+    try:
+        dx_fh.add_tags([tag])
+    except dxpy.exceptions.ResourceNotFound as e:
+        logger.warning(
+            '%s adding tag to %s.  Will try in current project.'
+            % (e, dx_fh.name))
+        try:
+            current_project_fh = dxpy.DXFile(
+                dx_fh.get_id(), project=dxpy.PROJECT_CONTEXT_ID)
+            current_project_fh.add_tags([tag])
+        except dxpy.exceptions.ResourceNotFound as e2:
+            # give up
+            logger.warning('%s.  Skipping saving tag.' % (e2))
+            pass
+        except:
+            raise
+    except:
+        raise
+
+
+def set_property(dx_fh, prop):
+    try:
+        dx_fh.set_properties(prop)
+    except dxpy.exceptions.ResourceNotFound as e:
+        logger.warning(
+            '%s adding property to %s.  Will try in current project.'
+            % (e, dx_fh.name))
+        try:
+            current_project_fh = dxpy.DXFile(
+                dx_fh.get_id(), project=dxpy.PROJECT_CONTEXT_ID)
+            current_project_fh.set_properties(prop)
+        except dxpy.exceptions.ResourceNotFound as e2:
+            # give up
+            logger.warning('%s.  Skipping saving property.' % (e2))
+            pass
+        except:
+            raise
+    except:
+        raise
 
 
 def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
     # check for duplication
     # - if it has ENCFF or TSTFF number in it's tag, or
-    # - if there exists an accessioned file with the same submitted_file_name that is not deleted, replaced, revoked and has the same size
-    # - then there should be a file with the same md5.  If not, warn of a mismatch between what's at DNAnexus and ENCODEd.
-    # - If same md5, return the existing object.  
-    # - Next, check if there's already a file with the same md5.  If it's deleted, replaced, revoked, then remodel it if --force_patch=true,
+    # - if there exists an accessioned file with the same submitted_file_name
+    #   that is not deleted, replaced, revoked and has the same size
+    # - then there should be a file with the same md5.  If not, warn of a
+    #   mismatch between what's at DNAnexus and ENCODEd.
+    # - If same md5, return the existing object.
+    # - Next, check if there's already a file with the same md5.  If it's
+    #   deleted, replaced, revoked, then remodel it if --force_patch=true,
     # - Else warn and return None
     # download
     # calculate md5 and add to f.md5sum
@@ -1674,24 +1753,9 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         logger.info("Downloading %s" % (local_fname))
         dxpy.download_dxfile(dx_fh.get_id(), local_fname)
         md5sum = common.md5(local_fname)
-        try:
-            dx_fh.set_properties({'md5sum': md5sum})
-        except dxpy.exceptions.ResourceNotFound as e:
-            logger.warning('%s.  Will try in current project.' % (e))
-            try:
-                current_project_fh = dxpy.DXFile(
-                    dx_fh.get_id(), project=dxpy.PROJECT_CONTEXT_ID)
-                current_project_fh.set_properties({'md5sum': md5sum})
-            except dxpy.exceptions.ResourceNotFound as e2:
-                # give up
-                logger.warning('%s.  Skipping saving md5 property.' % (e2))
-                pass
-            except:
-                raise
-        except:
-            raise
-
+        set_property(dx_fh, {'md5sum': md5sum})
         f.update({'md5sum': md5sum})
+
     f['notes'] = json.dumps(f.get('notes'))
 
     # check to see if md5 already in the database
@@ -1728,7 +1792,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         else:
             accession_in_tag = False
 
-    #TODO check here if file is deprecated and, if so, warn
+    # TODO check here if file is deprecated and, if so, warn
     if md5_exists and not force_patch:
         logger.info("accession_file: Returning duplicate file unchanged")
         return md5_exists
@@ -1739,16 +1803,17 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         dxpy.download_dxfile(dx_fh.get_id(), local_fname)
 
     if md5_exists and (force_patch or force_upload):
-        logger.info("accession_file: MD5 exisits, but force_patch, so patching file metatdata")
+        logger.info(
+            "accession_file: MD5 exisits, but force_patch, so patching file metatdata")
         f['accession'] = md5_exists['accession']
         new_file_object = patch_file(f, keypair, server, dryrun)
         if force_upload:
-            logger.info("accession_file: MD5 exisits, but force_upload, so uploading and patching file metatdata")
+            logger.info(
+                "accession_file: MD5 exisits, but force_upload, so uploading and patching file metatdata")
             return_code = common.s3_cp(
                 f, local_fname, server, keypair)
-            dx_fh.add_tags([file_object.get('accession')])
-
             logger.debug('s3_cp returned %s' % (return_code))
+            add_tag(dx_fh, new_file_object.get('accession'))
     else:
         logger.info("accession_file: New MD5")
         logger.info('posting new file %s' % (f.get('submitted_file_name')))
@@ -1756,8 +1821,8 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         new_file_object = post_file(f, keypair, server, dryrun)
         return_code = common.s3_cp(
             new_file_object, local_fname, server, keypair)
-        dx_fh.add_tags([new_file_object.get('accession')])
         logger.debug('s3_cp returned %s' % (return_code))
+        add_tag(dx_fh, new_file_object.get('accession'))
     try:
         os.remove(local_fname)
     except:
@@ -1795,7 +1860,7 @@ def accession_outputs(stages, keypair, server, dryrun, force_patch, force_upload
     files = []
     for (stage_name, outputs) in stages.iteritems():
         stage_metadata = outputs['stage_metadata']
-        for i,file_metadata in enumerate(outputs['output_files']):
+        for i, file_metadata in enumerate(outputs['output_files']):
             project = stage_metadata['project']
             analysis = stage_metadata['parentAnalysis']
             dataset_accession = get_experiment_accession(analysis)
@@ -1816,6 +1881,7 @@ def accession_outputs(stages, keypair, server, dryrun, force_patch, force_upload
                 'notes': {
                     'dx-id': dx.get_id(),
                     'dx-createdBy': dx_desc.get('createdBy'),
+                    'dx-parentAnalysis': analysis,
                     'qc': notes_qc
                 },
                 #'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
@@ -1832,8 +1898,8 @@ def accession_outputs(stages, keypair, server, dryrun, force_patch, force_upload
 def patch_outputs(stages, keypair, server, dryrun):
     logger.debug('in patch_outputs')
     files = []
-    for stage_name in stages:
-        for n,file_metadata in enumerate(stages[stage_name]['output_files']):
+    for stage_name in [s for s in stages if s]:
+        for n, file_metadata in enumerate(stages[stage_name]['output_files']):
             if file_metadata.get('encode_object'):
                 logger.info('patch outputs stage_name %s n %s file_metadata[name] %s encode_object[accession] %s' %(stage_name, n, file_metadata['name'], file_metadata['encode_object'].get('accession')))
                 logger.debug("encode_object %s" %(pprint.pformat(file_metadata['encode_object']['@id'])))
@@ -1856,7 +1922,8 @@ def patch_outputs(stages, keypair, server, dryrun):
                     #May see the same accession twice.  If, for example, a single control is reused, there
                     #will be two paths back to it (one via rep1 one via rep2) and so it will come out of this loop twice.
                     for acc in resolve_name_to_accessions(stages_to_use, name_to_use):
-                        derived_from_accessions.add(acc)
+                        if acc:
+                            derived_from_accessions.add(acc)
                 logger.debug('derived_from_accessions = %s' %(pprint.pformat(derived_from_accessions)))
                 patch_metadata = {
                     'accession': accession,
@@ -1968,9 +2035,9 @@ def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force_pa
                 logger.warning('%s missing stage metadata (files or stage_name) ... skipping' % (analysis_step_version_name))
                 continue
             stage_name = step['stage_name']
-            print stage_name
-            print step.keys()
-            print step['stages'].keys()
+            logger.info(stage_name)
+            logger.debug(step.keys())
+            logger.debug(step['stages'].keys())
             jobid = step['stages'][stage_name]['stage_metadata']['id']
             analysis_step_version = \
                 'versionof:%s' % (analysis_step_version_name)
@@ -2025,8 +2092,8 @@ def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force_pa
 
 
 def accession_mapping_analysis_files(
-        mapping_analysis, keypair, server, dryrun, force_patch, force_upload, fqcheck,
-        accession_raw):
+        mapping_analysis, keypair, server, dryrun, force_patch, force_upload,
+        fqcheck, accession_raw):
 
     experiment_accession = get_experiment_accession(mapping_analysis)
     if not experiment_accession:
@@ -2047,9 +2114,9 @@ def accession_mapping_analysis_files(
     logger.info(
         "%s rep %d: accessioning mapping." % (experiment_accession, repn))
 
-    experiment = common.encoded_get(
-        urlparse.urljoin(
-            server, '/experiments/%s' % (experiment_accession)), keypair)
+    # experiment = common.encoded_get(
+    #     urlparse.urljoin(
+    #         server, '/experiments/%s' % (experiment_accession)), keypair)
 
     analysis_stages = \
         [stage['execution'] for stage in mapping_analysis.get('stages')]
@@ -2142,7 +2209,7 @@ def accession_raw_mapping_analysis_files(
 
     logger.info("%s rep %d: accessioning mapping." %(experiment_accession, repn))
 
-    experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
+    # experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
 
     analysis_stages = \
         [stage['execution'] for stage in mapping_analysis.get('stages')]
@@ -2155,22 +2222,22 @@ def accession_raw_mapping_analysis_files(
     files_with_derived = patch_outputs(raw_mapping_stages, keypair, server, dryrun)
 
     raw_mapping_analysis_step_versions = {
-        'bwa-indexing-step-v-1' : [
+        'bwa-indexing-step-v-1': [
             {
-                'stages' : "",
+                'stages': "",
                 'stage_name': "",
-                'file_names' : [],
-                'status' : 'finished',
+                'file_names': [],
+                'status': 'finished',
                 'qc_objects': []
             }
         ],
-        'bwa-raw-alignment-step-v-1' : [
+        'bwa-raw-alignment-step-v-1': [
             {
-                'stages' : raw_mapping_stages,
+                'stages': raw_mapping_stages,
                 'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
-                'file_names' : ['mapped_reads'],
-                'status' : 'finished',
-                'qc_objects' : [
+                'file_names': ['mapped_reads'],
+                'status': 'finished',
+                'qc_objects': [
                     {'samtools_flagstats_quality_metric': ['mapped_reads']}
                 ]
             }
@@ -2347,7 +2414,8 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
 
 
 def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
-                                force_patch, force_upload, fqcheck, signal_only):
+                                force_patch, force_upload, fqcheck,
+                                signal_only, skip_control):
 
     # m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
     # if m:
@@ -2375,11 +2443,15 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
 
     #returns a list with three elements: the mapping stages for the controls for [rep1, rep2, pooled]
     #the control stages for rep1 and rep2 might be the same as the pool if the experiment used pooled controls
-    control_stages = \
-        get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck)
-    if not control_stages:
-        logger.error("Failed to find control mapping stages")
-        return None
+    if skip_control:
+        control_stages = [None, None, None]
+        logger.info("skip_control, so ignoring control mapping stages")
+    else:
+        control_stages = \
+            get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck)
+        if not control_stages:
+            logger.error("Failed to find control mapping stages")
+            return None
 
     #returns the stages for peak calling
     peak_stages = get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages, experiment, keypair, server, signal_only)
@@ -2390,74 +2462,81 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
     #accession all the output files
     output_files = []
     for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
-        logger.info('accessioning output')
-        output_files.extend(accession_outputs(stages, keypair, server, dryrun,
-                                              force_patch, force_upload))
+        if stages:
+            logger.info('accessioning output')
+            output_files.extend(accession_outputs(stages, keypair, server, dryrun,
+                                                  force_patch, force_upload))
 
     #now that we have file accessions, loop again and patch derived_from
     files_with_derived = []
     for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
-        files_with_derived.extend(patch_outputs(stages, keypair, server, dryrun))
+        if stages:
+            files_with_derived.extend(patch_outputs(stages, keypair, server, dryrun))
+
+    alignment_substeps = [
+        {
+            'stages': mapping_stages[0],
+            'stage_name': next(stage_name for stage_name in mapping_stages[0].keys() if stage_name.startswith('Filter and QC')),
+            'file_names': ['filtered_bam'],
+            'status': 'finished',
+            'qc_objects': [
+                {'chipseq_filter_quality_metric': ['filtered_bam']},
+                {'samtools_flagstats_quality_metric': ['filtered_bam']}
+            ]
+        },
+        {
+            'stages': mapping_stages[1],
+            'stage_name': next(stage_name for stage_name in mapping_stages[1].keys() if stage_name.startswith('Filter and QC')),
+            'file_names': ['filtered_bam'],
+            'status': 'finished',
+            'qc_objects': [
+                {'chipseq_filter_quality_metric': ['filtered_bam']},
+                {'samtools_flagstats_quality_metric': ['filtered_bam']}
+            ]
+        }
+    ]
+    if not skip_control:
+        alignment_substeps.extend([
+            {
+                'stages': control_stages[0],
+                'stage_name': next(stage_name for stage_name in control_stages[0].keys() if stage_name.startswith('Filter and QC')),
+                'file_names': ['filtered_bam'],
+                'status': 'finished',
+                'qc_objects': [
+                    {'chipseq_filter_quality_metric': ['filtered_bam']},
+                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
+
+                ]
+            },
+            {
+                'stages': control_stages[1],
+                'stage_name': next(stage_name for stage_name in control_stages[1].keys() if stage_name.startswith('Filter and QC')),
+                'file_names': ['filtered_bam'],
+                'status': 'finished',
+                'qc_objects': [
+                    {'chipseq_filter_quality_metric': ['filtered_bam']},
+                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
+                ]
+            },
+        ])
 
     full_analysis_step_versions = {
-        'bwa-indexing-step-v-1' : [
+        'bwa-indexing-step-v-1': [
             {
-                'stages' : "",
+                'stages': "",
                 'stage_name': "",
-                'file_names' : [],
-                'status' : 'finished',
+                'file_names': [],
+                'status': 'finished',
                 'qc_objects': []
             }
         ],
-        'bwa-alignment-step-v-1' : [
+        'bwa-alignment-step-v-1': alignment_substeps,
+        'tf-macs2-signal-calling-step-v-1': [
             {
-                'stages' : control_stages[0],
-                'stage_name': next(stage_name for stage_name in control_stages[0].keys() if stage_name.startswith('Filter and QC')),
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-
-                ]
-            },
-            {
-                'stages' : control_stages[1],
-                'stage_name': next(stage_name for stage_name in control_stages[1].keys() if stage_name.startswith('Filter and QC')),
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-                ]
-            },
-            {
-                'stages' : mapping_stages[0],
-                'stage_name': next(stage_name for stage_name in mapping_stages[0].keys() if stage_name.startswith('Filter and QC')),
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-                ]
-            },
-            {
-                'stages' : mapping_stages[1],
-                'stage_name': next(stage_name for stage_name in mapping_stages[1].keys() if stage_name.startswith('Filter and QC')),
-                'file_names' : ['filtered_bam'],
-                'status' : 'finished',
-                'qc_objects' : [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-                ]
-            }
-        ],
-        'tf-macs2-signal-calling-step-v-1' : [
-            {
-                'stages' : peak_stages,
+                'stages': peak_stages,
                 'stage_name': 'ENCODE Peaks',
-                'file_names' : ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal', 'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal'],
-                'status' : 'finished',
+                'file_names': ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal', 'rep1_pvalue_signal', 'rep2_pvalue_signal', 'pooled_pvalue_signal'],
+                'status': 'finished',
                 'qc_objects': []
             }
         ],
@@ -2465,41 +2544,41 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
 
     if not signal_only:
         full_analysis_step_versions.update({
-            'tf-spp-peak-calling-step-v-1' : [
+            'tf-spp-peak-calling-step-v-1': [
                 {
-                    'stages' : peak_stages,
+                    'stages': peak_stages,
                     'stage_name': 'SPP Peaks',
-                    'file_names' : ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                    'status' : 'finished',
+                    'file_names': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                    'status': 'finished',
                     'qc_objects': []
                 }
             ],
-            'tf-idr-step-v-1' : [
+            'tf-idr-step-v-1': [
                 {
-                    'stages' : peak_stages,
+                    'stages': peak_stages,
                     'stage_name': 'Final IDR peak calls',
-                    'file_names' : ['conservative_set','optimal_set'],
-                    'status' : 'finished',
+                    'file_names': ['conservative_set','optimal_set'],
+                    'status': 'finished',
                     'qc_objects': [
                         {'idr_quality_metric': ['conservative_set','optimal_set']}
                     ]
                 }
             ],
-            'tf-peaks-to-bigbed-step-v-1' : [
+            'tf-peaks-to-bigbed-step-v-1': [
                 {
-                    'stages' : peak_stages,
+                    'stages': peak_stages,
                     'stage_name': 'SPP Peaks',
-                    'file_names' : ['rep1_peaks_bb', 'rep2_peaks_bb', 'pooled_peaks_bb'],
-                    'status' : 'virtual',
+                    'file_names': ['rep1_peaks_bb', 'rep2_peaks_bb', 'pooled_peaks_bb'],
+                    'status': 'virtual',
                     'qc_objects': []
                 }
             ],
-            'tf-idr-peaks-to-bigbed-step-v-1' : [
+            'tf-idr-peaks-to-bigbed-step-v-1': [
                 {
-                    'stages' : peak_stages,
+                    'stages': peak_stages,
                     'stage_name': 'Final IDR peak calls',
-                    'file_names' : ['conservative_set_bb','optimal_set_bb'],
-                    'status' : 'virtual',
+                    'file_names': ['conservative_set_bb','optimal_set_bb'],
+                    'status': 'virtual',
                     'qc_objects': [
                         {'idr_quality_metric': ['conservative_set_bb','optimal_set_bb']}
                     ]
@@ -2533,11 +2612,159 @@ def infer_pipeline(analysis):
         return None
 
 
+@dxpy.entry_point('accession_analysis_id')
+def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
+                          force_upload, fqcheck, analysis_id, pipeline,
+                          project, accession_raw, signal_only, skip_control):
+
+    if debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
+    logger.setLevel(logging.INFO)
+
+    authid, authpw, server = common.processkey(key, keyfile)
+    keypair = (authid, authpw)
+
+    logger.debug(analysis_id)
+    analysis = dxpy.describe(analysis_id.strip())
+    experiment = get_experiment_accession(analysis)
+
+    if not pipeline:
+        inferred_pipeline = infer_pipeline(analysis)
+    else:
+        inferred_pipeline = pipeline
+
+    output = {
+        'analysis': analysis_id,
+        'experiment': experiment,
+    }
+    logger.info(
+        'Accessioning %s name %s executableName %s'
+        % (analysis.get('id'),
+           analysis.get('name'),
+           analysis.get('executableName')))
+
+    try:
+        if inferred_pipeline == "histone":
+            logger.info('accession histone analysis started')
+            output.update(
+                {'dx_pipeline': 'histone_chip_seq'})
+            accessioned_files = \
+                accession_histone_analysis_files(
+                    analysis, keypair, server, dryrun, force_patch,
+                    force_upload, fqcheck)
+            logger.info('accession histone analysis completed')
+        elif inferred_pipeline == "mapping":
+            logger.info('accession mapping analysis started')
+            output.update(
+                {'dx_pipeline': 'ENCODE mapping pipeline'})
+            accessioned_files = \
+                accession_mapping_analysis_files(
+                    analysis, keypair, server, dryrun, force_patch,
+                    force_upload, fqcheck,
+                    accession_raw=accession_raw)
+            logger.info('accession mapping analysis completed')
+        elif inferred_pipeline == "tf":
+            logger.info('accession tf_chip_seq analysis started')
+            output.update(
+                {'dx_pipeline': 'tf_chip_seq'})
+            accessioned_files = \
+                accession_tf_analysis_files(
+                    analysis, keypair, server, dryrun, force_patch,
+                    force_upload, fqcheck, signal_only, skip_control)
+            logger.info('accession tf_chip_seq analysis completed')
+        elif inferred_pipeline == "raw":
+            logger.info('accession raw mapping analysis started')
+            output.update(
+                {'dx_pipeline': 'ENCODE raw mapping pipeline'})
+            accessioned_files = \
+                accession_raw_mapping_analysis_files(
+                    analysis, keypair, server, dryrun, force_patch,
+                    force_upload, fqcheck)
+            logger.info('accession raw mapping analysis completed')
+        else:
+            logger.error(
+                'unrecognized analysis pattern %s %s ... skipping.'
+                % (analysis.get('name'),
+                   analysis.get('executableName')))
+            output.update(
+                {'dx_pipeline': 'unrecognized'})
+            accessioned_files = None
+    except:
+        raise
+        # # if only accessioning one job, throw an error
+        # # otherwise print the traceback and try to accession the
+        # # other jobs
+        # if len(ids) == 1:
+        #     raise
+        # else:
+        #     traceback.print_exc()
+        #     accessioned_files = None
+        #     file_accessions = None
+
+    else:
+        file_accessions = \
+            [f.get('accession') for f in (accessioned_files or [])]
+        if file_accessions:
+            url = server+"/experiments/%s" % (experiment)
+            experiment_obj = common.encoded_get(
+                url, keypair=keypair, frame='page')
+            target = experiment_obj.get('target')
+            # mapping non-controls is not a complete pipeline run
+            if target and ('control' not in target['investigated_as']) and (inferred_pipeline in ['mapping', 'raw']):
+                internal_status = 'processing'
+            else:  # everything else is assumed to be complete
+                internal_status = 'pipeline completed'
+            r = common.encoded_patch(
+                url,
+                keypair,
+                {"internal_status": internal_status},
+                return_response=True)
+            try:
+                r.raise_for_status()
+            except:
+                logger.error(
+                    "Tried but failed to update experiment "
+                    "internal_status to pipeline completed")
+                logger.error(r.text)
+
+    logger.info("Accessioned: %s" % (file_accessions))
+    output.update({'files': file_accessions})
+    output_row = copy.copy(output)
+    output.update({'output_row': output_row})
+    return output
+
+
+@dxpy.entry_point('postprocess')
+def postprocess(outfn, output_rows):
+    with open(outfn, 'w') as fh:
+        fieldnames = [
+            'analysis',
+            'experiment',
+            'dx_pipeline',
+            'files',
+            'error'
+        ]
+        output_writer = csv.DictWriter(fh, fieldnames, delimiter='\t')
+        output_writer.writeheader()
+        for output_row in output_rows:
+            output_writer.writerow(output_row)
+
+    for line in open(outfn, 'r'):
+        print(line)
+
+    output = {"outfile": dxpy.upload_local_file(outfn)}
+
+    return output
+
+
 @dxpy.entry_point('main')
-def main(outfn, assembly, debug, key, keyfile, dryrun,
+def main(outfn, debug, key, keyfile, dryrun,
          force_patch, force_upload, fqcheck,
          pipeline=None, analysis_ids=None, infile=None, project=None,
-         accession_raw=False, signal_only=False):
+         accession_raw=False, signal_only=False, skip_control=False):
 
     if debug:
         logger.info('setting logger level to logging.DEBUG')
@@ -2557,135 +2784,46 @@ def main(outfn, assembly, debug, key, keyfile, dryrun,
             "Must supply one of --infile or a list of analysis-ids")
         return
 
-    authid, authpw, server = common.processkey(key, keyfile)
-    keypair = (authid, authpw)
+    accession_subjobs = []
+    for (i, analysis_id) in enumerate(ids):
 
-    common_file_metadata.update({'assembly': assembly})
+        accession_subjob_input = {
+            "debug": debug,
+            "key": key,
+            "keyfile": keyfile,
+            "dryrun": dryrun,
+            "force_patch": force_patch,
+            "force_upload": force_upload,
+            "fqcheck": fqcheck,
+            "pipeline": pipeline,
+            "analysis_id": analysis_id,
+            "project": project,
+            "accession_raw": accession_raw,
+            "signal_only": signal_only,
+            "skip_control": skip_control
+        }
 
-    with open(outfn, 'w') as fh:
-        if dryrun:
-            fh.write('---DRYRUN: No files have been modified---\n')
-        fieldnames = [
-            'analysis',
-            'experiment',
-            'assembly',
-            'dx_pipeline',
-            'files',
-            'error'
-        ]
-        output_writer = csv.DictWriter(fh, fieldnames, delimiter='\t')
-        output_writer.writeheader()
+        logger.info("Acession job input: %s" % (accession_subjob_input))
+        accession_subjobs.append(
+            dxpy.new_dxjob(
+                fn_input=accession_subjob_input,
+                fn_name="accession_analysis_id",
+                name="accession_%s" % (analysis_id),
+                properties={'id': analysis_id}))
 
-        for (i, analysis_id) in enumerate(ids):
-            logger.debug('debug %s' % (analysis_id))
-            analysis = dxpy.describe(analysis_id.strip())
-            experiment = get_experiment_accession(analysis)
-            output = {
-                'analysis': analysis_id,
-                'experiment': experiment,
-                'assembly': assembly
-            }
-            logger.info(
-                'Accessioning %s name %s executableName %s'
-                % (analysis.get('id'),
-                   analysis.get('name'),
-                   analysis.get('executableName')))
+    postprocess_subjob = dxpy.new_dxjob(
+        fn_input={
+            "outfn": outfn,
+            "output_rows":
+                [accession_subjob.get_output_ref("output_row")
+                 for accession_subjob in accession_subjobs]
+        },
+        fn_name="postprocess",
+        depends_on=accession_subjobs,
+        name="output report"
+    )
 
-            if not pipeline:
-                inferred_pipeline = infer_pipeline(analysis)
-            else:
-                inferred_pipeline = pipeline
-
-            try:
-                if inferred_pipeline == "histone":
-                    logger.info('accession histone analysis started')
-                    output.update(
-                        {'dx_pipeline': 'histone_chip_seq'})
-                    accessioned_files = \
-                        accession_histone_analysis_files(
-                            analysis, keypair, server, dryrun, force_patch, force_upload, fqcheck)
-                    logger.info('accession histone analysis completed')
-                elif inferred_pipeline == "mapping":
-                    logger.info('accession mapping analysis started')
-                    output.update(
-                        {'dx_pipeline': 'ENCODE mapping pipeline'})
-                    accessioned_files = \
-                        accession_mapping_analysis_files(
-                            analysis, keypair, server, dryrun, force_patch, force_upload, fqcheck,
-                            accession_raw=accession_raw)
-                    logger.info('accession mapping analysis completed')
-                elif inferred_pipeline == "tf":
-                    logger.info('accession tf_chip_seq analysis started')
-                    output.update(
-                        {'dx_pipeline': 'tf_chip_seq'})
-                    accessioned_files = \
-                        accession_tf_analysis_files(
-                            analysis, keypair, server, dryrun, force_patch,
-                            force_upload, fqcheck, signal_only)
-                    logger.info('accession tf_chip_seq analysis completed')
-                elif inferred_pipeline == "raw":
-                    logger.info('accession raw mapping analysis started')
-                    output.update(
-                        {'dx_pipeline': 'ENCODE raw mapping pipeline'})
-                    accessioned_files = \
-                        accession_raw_mapping_analysis_files(
-                            analysis, keypair, server, dryrun, force_patch, force_upload, fqcheck)
-                    logger.info('accession raw mapping analysis completed')
-                else:
-                    logger.error(
-                        'unrecognized analysis pattern %s %s ... skipping.'
-                        % (analysis.get('name'),
-                           analysis.get('executableName')))
-                    output.update(
-                        {'dx_pipeline': 'unrecognized'})
-                    accessioned_files = None
-            except:
-                # if only accessioning one job, throw an error
-                # otherwise print the traceback and try to accession the
-                # other jobs
-                if len(ids) == 1:
-                    raise
-                else:
-                    traceback.print_exc()
-                    accessioned_files = None
-                    file_accessions = None
-
-            else:
-                file_accessions = \
-                    [f.get('accession') for f in (accessioned_files or [])]
-                if file_accessions:
-                    url = server+"/experiments/%s" % (experiment)
-                    experiment_obj = common.encoded_get(
-                        url, keypair=keypair, frame='page')
-                    target = experiment_obj.get('target')
-                    # mapping non-controls is not a complete pipeline run
-                    if target and ('control' not in target['investigated_as']) and (inferred_pipeline in ['mapping', 'raw']):
-                        internal_status = 'processing'
-                    else:  # everything else is assumed to be complete
-                        internal_status = 'pipeline completed'
-                    r = common.encoded_patch(
-                        url,
-                        keypair,
-                        {"internal_status": internal_status},
-                        return_response=True)
-                    try:
-                        r.raise_for_status()
-                    except:
-                        logger.error(
-                            "Tried but failed to update experiment "
-                            "internal_status to pipeline completed")
-                        logger.error(r.text)
-
-            logger.info("Accessioned: %s" % (file_accessions))
-            output.update({'files': file_accessions})
-            output_writer.writerow(output)
-
-    common.touch(outfn)
-    outfile = dxpy.upload_local_file(outfn)
-
-    output = {}
-    output["outfile"] = dxpy.dxlink(outfile)
-
+    output = {"outfile": postprocess_subjob.get_output_ref("outfile")}
     return output
 
 dxpy.run()

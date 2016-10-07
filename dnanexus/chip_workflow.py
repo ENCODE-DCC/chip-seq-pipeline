@@ -113,34 +113,112 @@ def get_args():
         description=__doc__, epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('--target', help="ChIP target type (histone or tf)", required=True)
-    parser.add_argument('--debug',   help="Print debug messages and hold jobs for ssh",                 default=False, action='store_true')
-    parser.add_argument('--reference', help="Reference tar to map to")
-    parser.add_argument('--chrom_sizes', help="chrom.sizes file for bedToBigBed")
-    parser.add_argument('--genomesize', help="Genome size string for MACS2, e.g. mm or hs")
-    parser.add_argument('--narrowpeak_as', help=".as file for bed to bigbed", default='ENCODE Reference Files:narrowPeak.as')
-    parser.add_argument('--gappedpeak_as', help=".as file for bed to bigbed", default='ENCODE Reference Files:gappedPeak.as')
-    parser.add_argument('--broadpeak_as', help=".as file for bed to bigbed", default='ENCODE Reference Files:broadPeak.as')
-    parser.add_argument('--rep1',    help="Replicate 1 fastq or tagAlign",              default=None, nargs='*')
-    parser.add_argument('--rep2',    help="Replicate 2 fastq or tagAlign",              default=None, nargs='*')
-    parser.add_argument('--ctl1',    help="Control for replicate 1 fastq or tagAlign",  default=None, nargs='*')
-    parser.add_argument('--ctl2',    help="Control for replicate 2 fastq or tagAlign",  default=None, nargs='*')
-    parser.add_argument('--unary_control', help="Force one control for both reps", default=False, action='store_true')
-    parser.add_argument('--outp',    help="Output project name or ID",          default=DEFAULT_OUTPUT_PROJECT)
-    parser.add_argument('--outf',    help="Output folder name or ID",           default=DEFAULT_OUTPUT_FOLDER)
-    parser.add_argument('--name',    help="Name for new workflow")
-    parser.add_argument('--title',   help="Title for new workflow")
-    parser.add_argument('--description',   help="Description for new workflow")    
-    parser.add_argument('--applets', help="Name of project containing applets", default=DEFAULT_APPLET_PROJECT)
-    parser.add_argument('--nomap',   help='Given tagAligns, skip to peak calling', default=False, action='store_true')
-    parser.add_argument('--rep1pe', help='Specify if rep1 is PE (required only if --nomap)', type=bool, default=None)
-    parser.add_argument('--rep2pe', help='Specify if rep2 is PE (required only if --nomap)', type=bool, default=None)
-    parser.add_argument('--blacklist', help="Blacklist to filter IDR peaks")
-    parser.add_argument('--spp_version', help="Version of SPP to run", default="1.10.1")
+    def t_or_f(arg):
+        ua = str(arg).upper()
+        if ua == 'TRUE'[:len(ua)]:
+            return True
+        elif ua == 'FALSE'[:len(ua)]:
+            return False
+        else:
+            assert not (True or False), "Cannot parse %s to boolean" % (arg)
+
+    parser.add_argument(
+        '--target',
+        help="ChIP target type (histone or tf)",
+        required=True)
+    parser.add_argument(
+        '--debug',
+        help="Print debug messages and hold jobs for ssh",
+        default=False, action='store_true')
+    parser.add_argument(
+        '--reference',
+        help="Reference tar to map to")
+    parser.add_argument(
+        '--chrom_sizes',
+        help="chrom.sizes file for bedToBigBed")
+    parser.add_argument(
+        '--genomesize',
+        help="Genome size string for MACS2, e.g. mm or hs")
+    parser.add_argument(
+        '--narrowpeak_as',
+        help=".as file for bed to bigbed",
+        default='ENCODE Reference Files:narrowPeak.as')
+    parser.add_argument(
+        '--gappedpeak_as',
+        help=".as file for bed to bigbed",
+        default='ENCODE Reference Files:gappedPeak.as')
+    parser.add_argument(
+        '--broadpeak_as',
+        help=".as file for bed to bigbed",
+        default='ENCODE Reference Files:broadPeak.as')
+    parser.add_argument(
+        '--rep1',
+        help="Replicate 1 fastq or tagAlign",
+        default=None, nargs='*')
+    parser.add_argument(
+        '--rep2',
+        help="Replicate 2 fastq or tagAlign",
+        default=None, nargs='*')
+    parser.add_argument(
+        '--ctl1',
+        help="Control for replicate 1 fastq or tagAlign",
+        default=None, nargs='*')
+    parser.add_argument(
+        '--ctl2',
+        help="Control for replicate 2 fastq or tagAlign",
+        default=None,  nargs='*')
+    parser.add_argument(
+        '--unary_control',
+        help="Force one control for both reps",
+        default=False, action='store_true')
+    parser.add_argument(
+        '--outp',
+        help="Output project name or ID",
+        default=DEFAULT_OUTPUT_PROJECT)
+    parser.add_argument(
+        '--outf',
+        help="Output folder name or ID",
+        default=DEFAULT_OUTPUT_FOLDER)
+    parser.add_argument(
+        '--use_existing_folders',
+        help="Reuse existing folders even if results have already been saved there",
+        default=False, action='store_true')
+    parser.add_argument(
+        '--name',
+        help="Name for new workflow")
+    parser.add_argument(
+        '--title',
+        help="Title for new workflow")
+    parser.add_argument(
+        '--description',
+        help="Description for new workflow")
+    parser.add_argument(
+        '--applets',
+        help="Name of project containing applets",
+        default=DEFAULT_APPLET_PROJECT)
+    parser.add_argument(
+        '--nomap',
+        help='Given tagAligns, skip to peak calling',
+        default=False, action='store_true')
+    parser.add_argument(
+        '--rep1pe',
+        help='Specify if rep1 is PE (required only if --nomap)',
+        type=t_or_f, default=None)
+    parser.add_argument(
+        '--rep2pe',
+        help='Specify if rep2 is PE (required only if --nomap)',
+        type=t_or_f, default=None)
+    parser.add_argument(
+        '--blacklist',
+        help="Blacklist to filter IDR peaks")
+    parser.add_argument(
+        '--yes',
+        help='Run the workflow',
+        default=False, action='store_true')
+
     # parser.add_argument('--idr',     help='Report peaks with and without IDR analysis',                 default=False, action='store_true')
     # parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
     # parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default="2")
-    parser.add_argument('--yes',     help='Run the workflow',                   default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -201,24 +279,30 @@ def resolve_project(identifier, privs='r'):
     return project
 
 
+def create_folder(project, folder_name):
+    try:
+        project.new_folder(folder_name, parents=True)
+    except:
+        logging.error(
+            "Cannot create folder %s in project %s"
+            % (folder_name, project.name))
+        return None
+    else:
+        logging.info(
+            "New folder %s created in project %s"
+            % (folder_name, project.name))
+        return folder_name
+
+
 def resolve_folder(project, identifier):
     if not identifier.startswith('/'):
         identifier = '/' + identifier
     try:
-        project_id = project.list_folder(identifier)
+        project.list_folder(identifier)
     except:
-        try:
-            project_id = project.new_folder(identifier, parents=True)
-        except:
-            logging.error(
-                "Cannot create folder %s in project %s"
-                % (identifier, project.name))
-            raise ValueError('%s:%s' % (project.name, identifier))
-        else:
-            logging.info(
-                "New folder %s created in project %s"
-                % (identifier, project.name))
-    return identifier
+        return None
+    else:
+        return identifier
 
 
 def resolve_file(identifier):
@@ -332,10 +416,18 @@ def main():
 
     output_project = resolve_project(args.outp, 'w')
     logging.debug('Found output project %s' % (output_project.name))
-    output_folder = resolve_folder(output_project, args.outf)
-    logging.debug('Using output folder %s' % (output_folder))
     applet_project = resolve_project(args.applets, 'r')
-    logging.debug('Found applet project %s' % (applet_project.name))
+    logging.debug('Found applet project %s' % (applet_project.name))    
+
+    existing_folder = resolve_folder(output_project, args.outf)
+    if not existing_folder:
+        output_folder = create_folder(output_project, args.outf)
+    elif args.use_existing_folders:
+        output_folder = existing_folder
+    else:
+        assert (existing_folder and args.use_existing_folders), 'Output folder %s exists but --use_existing_folders is %s' % (existing_folder, args.use_existing_folders)
+
+    logging.debug('Using output folder %s' % (output_folder))
 
     workflow = dxpy.new_dxworkflow(
         name=args.name or WF[target_type]['wf_name'],
@@ -780,7 +872,7 @@ def main():
         if args.debug:
             job_id = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
         else:
-            job_id = workflow.run({}, folder=output_folder, priority='high')
+            job_id = workflow.run({}, folder=output_folder, priority='normal')
         logging.info("Running as job %s" %(job_id))
 
 if __name__ == '__main__':

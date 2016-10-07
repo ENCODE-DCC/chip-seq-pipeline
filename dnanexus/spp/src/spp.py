@@ -145,7 +145,7 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
 
     if not filecmp.cmp(peaks_filename,fix_coordinate_peaks_filename):
         logger.info("Returning peaks with fixed coordinates")
-        subprocess.check_call(shlex.split('gzip %s' % (fix_coordinate_peaks_filename)))
+        subprocess.check_call(shlex.split('gzip -n %s' % (fix_coordinate_peaks_filename)))
         final_peaks_filename = fix_coordinate_peaks_filename + '.gz'
 
     subprocess.check_call('ls -l', shell=True)

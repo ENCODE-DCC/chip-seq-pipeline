@@ -1,34 +1,45 @@
 {
-	"name": "shell",
-	"title": "Worker shell",
-	"summary": "Interactive worker shell",
-	"dxapi": "1.0.0",
-	"version": "0.0.1",
-	"categories": [],
-	"inputSpec": [
-		{
-			"name": "hours_to_live",
-			"label": "Hours for worker to remain open",
-			"class": "int",
-			"optional": false
-		}
-	],
-	"outputSpec": [],
-	"runSpec": {
-		"interpreter": "python2.7",
-		"file": "src/shell.py",
-		"bundledDepends": [
-		],
-		"execDepends": [
-			{"name": "awscli", "package_manager": "pip"},
-			{"name": "emacs", "package_manager": "apt"}
-		]
-	},
+    "name": "shell",
+    "title": "Worker shell",
+    "summary": "Interactive worker shell",
+    "dxapi": "1.0.0",
+    "version": "0.0.1",
+    "categories": [],
+    "inputSpec": [
+        {
+            "name": "hours_to_live",
+            "label": "Hours for worker to remain open",
+            "class": "int",
+            "optional": false
+        }
+    ],
+    "outputSpec": [],
+    "runSpec": {
+        "interpreter": "python2.7",
+        "file": "src/shell.py",
+        "bundledDepends": [
+        ],
+        "execDepends": [
+            {"name": "awscli", "package_manager": "pip"},
+            {"name": "emacs", "package_manager": "apt"},
+            {"name": "python3", "package_manager": "apt"},
+            {"name": "pyencoded-tools",
+             "package_manager": "git",
+             "url": "https://github.com/ENCODE-DCC/pyencoded-tools.git",
+             "build_commands": "cd .. && mv pyencoded-tools /home/dnanexus"
+            },
+            {"name": "encValData",
+             "package_manager": "git",
+             "url": "https://github.com/ENCODE-DCC/encValData.git",
+             "build_commands": "cd .. && mv encValData /home/dnanexus"
+            }
+        ]
+    },
 
-	"access": {
-	    "network": ["*"],
-	    "project": "CONTRIBUTE",
-	    "allProjects": "CONTRIBUTE"
-	},
-	"authorizedUsers": []
+    "access": {
+        "network": ["*"],
+        "project": "CONTRIBUTE",
+        "allProjects": "CONTRIBUTE"
+    },
+    "authorizedUsers": []
 }

@@ -16,7 +16,7 @@ logger.propagate = True
 
 
 def test():
-    print "In common.test"
+    print("In common.test")
 
 
 def flat(l):
@@ -35,9 +35,11 @@ def rstrips(string, substring):
     else:
         return string[:len(string)-len(substring)]
 
+
 def touch(fname, times=None):
     with open(fname, 'a'):
         os.utime(fname, times)
+
 
 def block_on(command):
     process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
@@ -46,73 +48,95 @@ def block_on(command):
     process.wait()
     return process.returncode
 
+
 def run_pipe(steps, outfile=None):
-    #break this out into a recursive function
-    #TODO:  capture stderr
+    # TODO:  capture stderr
     from subprocess import Popen, PIPE
     p = None
     p_next = None
     first_step_n = 1
     last_step_n = len(steps)
-    for n,step in enumerate(steps, start=first_step_n):
-        print "step %d: %s" %(n,step)
+    for n, step in enumerate(steps, start=first_step_n):
+        print("step %d: %s" % (n, step))
         if n == first_step_n:
-            if n == last_step_n and outfile: #one-step pipeline with outfile
+            if n == last_step_n and outfile:  # one-step pipeline with outfile
                 with open(outfile, 'w') as fh:
-                    print "one step shlex: %s to file: %s" %(shlex.split(step), outfile)
+                    print("one step shlex: %s to file: %s" % (shlex.split(step), outfile))
                     p = Popen(shlex.split(step), stdout=fh)
                 break
-            print "first step shlex to stdout: %s" %(shlex.split(step))
+            print("first step shlex to stdout: %s" % (shlex.split(step)))
             p = Popen(shlex.split(step), stdout=PIPE)
-            #need to close p.stdout here?
-        elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
+        elif n == last_step_n and outfile:  # only treat the last step specially if you're sending stdout to a file
             with open(outfile, 'w') as fh:
-                print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
+                print("last step shlex: %s to file: %s" % (shlex.split(step), outfile))
                 p_last = Popen(shlex.split(step), stdin=p.stdout, stdout=fh)
                 p.stdout.close()
                 p = p_last
-        else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
-            print "intermediate step %d shlex to stdout: %s" %(n,shlex.split(step))
+        else:  # handles intermediate steps and, in the case of a pipe to stdout, the last step
+            print("intermediate step %d shlex to stdout: %s" % (n, shlex.split(step)))
             p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
             p.stdout.close()
             p = p_next
-    out,err = p.communicate()
-    return out,err
+    out, err = p.communicate()
+    return out, err
+
 
 def uncompress(filename):
-    #leaves compressed file intact
-    m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename)
+    # leaves compressed file intact
+    m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))', filename)
     if m:
         basename = m.group(1)
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
-        logging.info("Decompressing %s" %(filename))
-        #logging.info(subprocess.check_output(shlex.split('gzip -dc %s' %(filename))))
-        out,err = run_pipe([
-            'gzip -dc %s' %(filename)],
+        logging.info("Decompressing %s" % (filename))
+        # logging.info(subprocess.check_output(shlex.split('gzip -dc %s' %(filename))))
+        out, err = run_pipe([
+            'gzip -dc %s' % (filename)],
             basename)
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(basename))))
         return basename
     else:
         return filename
 
-def compress(filename):
-    #leaves uncompressed file intact
-    if re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename):
-        return filename
+
+def compress(fname):
+    # leaves uncompressed file intact
+    from magic import from_file
+    compressed_mimetypes = [
+        "application/x-compress",
+        "application/x-bzip2",
+        "application/x-gzip"
+        ]
+    mime_type = from_file(fname, mime=True)
+    if mime_type in compressed_mimetypes:
+        return fname
     else:
-        logging.info(subprocess.check_output(shlex.split('cp %s tmp' %(filename))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
-        logging.info("Compressing %s" %(filename))
-        logging.info(subprocess.check_output(shlex.split('gzip %s' %(filename))))
-        new_filename = filename + '.gz'
-        logging.info(subprocess.check_output(shlex.split('cp tmp %s' %(filename))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
-        return new_filename
+        logging.info(subprocess.check_output(shlex.split('cp %s tmp' %(fname))))
+        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(fname))))
+        logging.info("Compressing %s" %(fname))
+        # gzip -n is used in order to make output deterministic
+        logging.info(subprocess.check_output(shlex.split('gzip -n %s' %(fname))))
+        new_fname = fname + '.gz'
+        logging.info(subprocess.check_output(shlex.split('cp tmp %s' %(fname))))
+        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_fname))))
+        return new_fname
+
 
 def count_lines(fname):
-    wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
-    lines = wc_output.split()[0]
-    return int(lines)
+    from magic import from_file
+    compressed_mimetypes = [
+        "application/x-compress",
+        "application/x-bzip2",
+        "application/x-gzip"
+        ]
+    mime_type = from_file(fname, mime=True)
+    if mime_type in compressed_mimetypes:
+        catcommand = 'gzip -dc'
+    else:
+        catcommand = 'cat'
+    out, err = run_pipe([
+        '%s %s' % (catcommand, fname),
+        'wc -l'
+        ])
+    return int(out)
+
 
 def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
     if bed_filename.endswith('.bed'):
@@ -330,7 +354,9 @@ def processkey(key=None, keyfile=None):
 
 
 def encoded_get(url, keypair=None, frame='object', return_response=False):
-    import urlparse, urllib, requests
+    import urlparse
+    import urllib
+    import requests
     #it is not strictly necessary to include both the accept header, and format=json, but we do
     #so as to get exactly the same URL as one would use in a web browser
 
@@ -367,7 +393,10 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
             continue
         except Exception as e:
             logging.error("%s" % (e))
-            return None
+            if return_response:
+                return response
+            else:
+                return None
         else:
             if response.status_code in RETRY_CODES:
                 logging.warning(
@@ -383,8 +412,11 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
                     return response.json()
                 except:
                     return response.text
-    logging.error("Max retried exhausted.")
-    return None
+    logging.error("Max retries exhausted.")
+    if return_response:
+        return response
+    else:
+        return None
 
 
 def encoded_update(method, url, keypair, payload, return_response):
@@ -433,8 +465,11 @@ def encoded_update(method, url, keypair, payload, return_response):
                     return response.json()
                 except:
                     return response.text
-    logging.error("Max retried exhausted.")
-    return None
+    logging.error("Max retries exhausted.")
+    if return_response:
+        return response
+    else:
+        return None
 
 def encoded_patch(url, keypair, payload, return_response=False):
     return encoded_update('patch', url, keypair, payload, return_response)

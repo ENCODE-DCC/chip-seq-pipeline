@@ -6,7 +6,8 @@ import logging
 import dxpy
 import common
 import re
-import pprint
+from pprint import pprint, pformat
+import sys
 
 EPILOG = '''Notes:
 
@@ -18,13 +19,18 @@ Examples:
 ASSEMBLY_METADATA = {
     'mm10': {
         'gsize': 'mm',
+        'csizes': "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes",
+        'blacklist': None
+    },
+    'mm10-minimal': {
+        'gsize': 'mm',
         'csizes': "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes",
         'blacklist': None
     },
     'GRCh38': {
         'gsize': 'hs',
         'csizes': "ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes",
-        'blacklist': "ENCODE Reference Files:/GRCh38/blacklists/hglft_genome_7399_3e01a0.bed.gz"
+        'blacklist': None
     },
     'hg19': {
         'gsize': 'hs',
@@ -107,29 +113,45 @@ def resolve_project(identifier, privs='r'):
 
 
 def get_all_tas(experiment, default_project, ta_folders):
+    logging.debug(
+        'get_all_tas: enter with experiment %s default_project %s and ta_folders %s'
+        % (experiment.get('accession'), default_project, ta_folders))
     exp_id = experiment['accession']
     possible_files = []
     for base_folder in ta_folders:
         if ':' in base_folder:
-            project_name, path = base_folder.split(':')
+            project_name, base_path = base_folder.split(':')
             project = resolve_project(project_name)
             project = project.get_id()
             project_name += ":"
         else:
             project = default_project
             project_name = ""
-            path = base_folder
-        if not path.startswith('/'):
-            path = '/' + path
-        print((project, project_name, path))
+            base_path = base_folder
+        if not base_path.startswith('/'):
+            base_path = '/' + base_path
+        if not base_path.endswith('/'):
+            base_path = base_path + '/'
+        path = base_path + exp_id + '/'
+        logging.debug(
+            "get_all_tas: find_data objects in project %s project_name %s path %s"
+            % (project, project_name, path))
         for dxfile in dxpy.find_data_objects(classname='file', state='closed', folder=path, describe=True, recurse=True, project=project):
             desc = dxfile.get('describe')
+            logging.debug(
+                "get_all_tas: checking object for match: folder %s name %s"
+                % (desc.get('folder'), desc.get('name')))
             if exp_id in desc.get('folder') and '/bams' in desc.get('folder') and desc.get('name').endswith(('tagAlign', 'tagAlign.gz')):
                 possible_files.append(desc)
+    logging.debug(
+        "get_all_tas: exit with possible_files %s" % (possible_files))
     return possible_files
 
 
 def get_rep_ta(experiment, repn, default_project, ta_folders):
+    logging.debug(
+        'in get_rep_ta with experiment %s repn %s default_project %s and ta_folders %s'
+        % (experiment.get('accession'), repn, default_project, ta_folders))
     exp_id = experiment['accession']
 
     possible_files = get_all_tas(experiment, default_project, ta_folders)
@@ -139,7 +161,7 @@ def get_rep_ta(experiment, repn, default_project, ta_folders):
     rep_folder = \
         [folder for folder in folders if folder.endswith('rep%d' % (repn))]
     if len(rep_folder) != 1:
-        logging.error("Could not find folder rep%d" % (repn))
+        logging.warning("Could not find folder rep%d" % (repn))
         return None
     rep_folder = rep_folder[0]
     rep_files = [f for f in possible_files if f.get('folder') == rep_folder]
@@ -157,14 +179,14 @@ def get_rep_ta(experiment, repn, default_project, ta_folders):
 
 def get_possible_ctl_ta(experiment, repn, server, keypair, default_project,
                         ta_folders, used_control_ids):
-    exp_id = experiment['accession']
 
     # Build a list of the possible_control experiments
     possible_control_experiments = []
     for uri in experiment.get('possible_controls'):
         possible_control_experiment = common.encoded_get(server+uri, keypair)
         target_uri = possible_control_experiment.get('target')
-        # For now only use controls with no target or target "Control" (i.e. not IgG)
+        # For now only use controls with no target or target "Control"
+        # (i.e. not IgG)
         if not target_uri or target_uri.split('/')[2].startswith('Control'):
             possible_control_experiments.append(possible_control_experiment)
         else:
@@ -173,7 +195,7 @@ def get_possible_ctl_ta(experiment, repn, server, keypair, default_project,
                     experiment.get('accession'),
                     possible_control_experiment.get('accession'),
                     target_uri))
-    logging.debug(pprint.pformat(possible_control_experiments))
+    logging.debug(pformat(possible_control_experiments))
     try:
         matching_ta = \
             next(ta for ta in [get_rep_ta(e, repn, default_project, ta_folders) for e in possible_control_experiments] if ta and ta['id'] not in used_control_ids)
@@ -185,14 +207,40 @@ def get_possible_ctl_ta(experiment, repn, server, keypair, default_project,
     else:
         return matching_ta
 
-    try:
-        any_ta = \
-            next(ta for ta in common.flat([get_all_tas(e, default_project, ta_folders) for e in possible_control_experiments]) if ta and ta['id'] not in used_control_ids)
-    except StopIteration:
-        logging.error('Failed to find any possible control')
-        return None
+    tas = []
+    for e in possible_control_experiments:
+        unused_tas = [ta for ta in get_all_tas(e, default_project, ta_folders) if ta and ta['id'] not in used_control_ids]
+        logging.debug(
+            'get_possible_ctl_ta: experiment %s unused_tas %s'
+            % (e.get('accession'), unused_tas))
+        if unused_tas:
+            tas.extend(unused_tas)
+    if len(tas) > 1:
+        logging.warning(
+            'Found multiple tas %s, returning first one'
+            % ([ta.get('project') + ':' + ta.get('folder') + '/' + ta.get('name') for ta in tas]))
+    if tas:
+        return tas[0]
     else:
-        return any_ta
+        logging.warning('Failed to find any possible controls that have not already been used')
+
+    tas = []
+    for e in possible_control_experiments:
+        all_tas = [ta for ta in get_all_tas(e, default_project, ta_folders) if ta]
+        logging.debug(
+            'get_possible_ctl_ta: experiment %s all_tas %s'
+            % (e.get('accession'), all_tas))
+        if all_tas:
+            tas.extend(all_tas)
+    if len(tas) > 1:
+        logging.warning(
+            'Found multiple tas %s, returning first one'
+            % ([ta.get('project') + ':' + ta.get('folder') + '/' + ta.get('name') for ta in tas]))
+    if tas:
+        return tas[0]
+    else:
+        logging.error('Failed to find any possible control_tas')
+        return None
 
 
 def get_encffs(s):
@@ -235,13 +283,14 @@ def get_ta_from_accessions(accessions, default_project, ta_folders):
             'Could not find tagAlign with accessions %s' % (accessions))
         return None
     elif len(matched_files) > 1:
-        logging.error(
+        logging.warning(
             'Found multiple tagAligns that matched accessions %s'
             % (accessions))
-        logging.error(
+        logging.warning(
             'Matched files %s'
             % ([(f['folder'], f['name']) for f in matched_files]))
-        return None
+        logging.warning('Using first one found')
+        return matched_files[0]
     else:
         return matched_files[0]
 
@@ -480,7 +529,7 @@ def main():
                 % (experiment['accession']))
             continue
 
-        pprint.pprint(tas)
+        pprint(tas)
         # sys.exit()
         # continue
 

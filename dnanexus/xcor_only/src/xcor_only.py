@@ -14,8 +14,8 @@
 import subprocess
 import shlex
 from multiprocessing import cpu_count
-import common
 import dxpy
+import common
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,52 +29,56 @@ SPP_VERSION_MAP = {
 }
 
 
+def xcor_parse(fname):
+    with open(fname, 'r') as xcor_file:
+        if not xcor_file:
+            return None
+
+        lines = xcor_file.read().splitlines()
+        line = lines[0].rstrip('\n')
+        # CC_SCORE FILE format:
+        #   Filename <tab>
+        #   numReads <tab>
+        #   estFragLen <tab>
+        #   corr_estFragLen <tab>
+        #   PhantomPeak <tab>
+        #   corr_phantomPeak <tab>
+        #   argmin_corr <tab>
+        #   min_corr <tab>
+        #   phantomPeakCoef <tab>
+        #   relPhantomPeakCoef <tab>
+        #   QualityTag
+
+        headers = ['Filename',
+                   'numReads',
+                   'estFragLen',
+                   'corr_estFragLen',
+                   'PhantomPeak',
+                   'corr_phantomPeak',
+                   'argmin_corr',
+                   'min_corr',
+                   'phantomPeakCoef',
+                   'relPhantomPeakCoef',
+                   'QualityTag']
+        metrics = line.split('\t')
+        headers.pop(0)
+        metrics.pop(0)
+
+        xcor_qc = dict(zip(headers, metrics))
+    return xcor_qc
+
+
 @dxpy.entry_point('main')
 def main(input_tagAlign, paired_end):
 
-    # The following line(s) initialize your data object inputs on the platform
-    # into dxpy.DXDataObject instances that you can start using immediately.
-
     input_tagAlign_file = dxpy.DXFile(input_tagAlign)
-
-    # # The following line(s) download your file inputs to the local file system
-    # # using variable names for the filenames.
 
     input_tagAlign_filename = input_tagAlign_file.name
     input_tagAlign_basename = input_tagAlign_file.name.rstrip('.gz')
     dxpy.download_dxfile(input_tagAlign_file.get_id(), input_tagAlign_filename)
 
     uncompressed_TA_filename = input_tagAlign_basename
-    out,err = common.run_pipe(['gzip -d %s' %(input_tagAlign_filename)])
-
-    # if paired_end:
-    #     end_infix = 'PE2SE'
-    # else:
-    #     end_infix = 'SE'
-    # final_TA_filename = input_bam_basename + '.' + end_infix + '.tagAlign.gz'
-
-    # # ===================
-    # # Create tagAlign file
-    # # ===================
-
-    # out,err = run_pipe([
-    #     "bamToBed -i %s" %(input_bam_filename),
-    #     r"""awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}'""",
-    #     "tee %s" %(intermediate_TA_filename),
-    #     "gzip -c"],
-    #     outfile=final_TA_filename)
-    # print subprocess.check_output('ls -l', shell=True)
-
-    # # ================
-    # # Create BEDPE file
-    # # ================
-    # if paired_end:
-    #     final_BEDPE_filename = input_bam_basename + ".bedpe.gz"
-    #     out,err = run_pipe([
-    #         "bamToBed -bedpe -mate1 -i %s" %(input_bam_filename),
-    #         "gzip -c"],
-    #         outfile=final_BEDPE_filename)
-    # print subprocess.check_output('ls -l', shell=True)
+    out, err = common.run_pipe(['gzip -d %s' % (input_tagAlign_filename)])
 
     # =================================
     # Subsample tagAlign file
@@ -84,57 +88,64 @@ def main(input_tagAlign, paired_end):
         end_infix = 'MATE1'
     else:
         end_infix = 'SE'
-    subsampled_TA_filename = input_tagAlign_basename + ".sample.%d.%s.tagAlign.gz" %(NREADS/1000000, end_infix)
+    subsampled_TA_filename = \
+        input_tagAlign_basename + \
+        ".sample.%d.%s.tagAlign.gz" % (NREADS/1000000, end_infix)
     steps = [
-        'grep -v "chrM" %s' %(uncompressed_TA_filename),
-        'shuf -n %d' %(NREADS)]
+        'grep -v "chrM" %s' % (uncompressed_TA_filename),
+        'shuf -n %d --random-source=%s' % (NREADS, uncompressed_TA_filename)]
     if paired_end:
         steps.extend([r"""awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}'"""])
-    steps.extend(['gzip -c'])
-    out,err = common.run_pipe(steps,outfile=subsampled_TA_filename)
-    subprocess.check_call('ls -l', shell=True)
+    steps.extend(['gzip -cn'])
+    out, err = common.run_pipe(steps, outfile=subsampled_TA_filename)
 
     # Calculate Cross-correlation QC scores
     CC_scores_filename = subsampled_TA_filename + ".cc.qc"
     CC_plot_filename = subsampled_TA_filename + ".cc.plot.pdf"
 
     # CC_SCORE FILE format
-    # Filename <tab> numReads <tab> estFragLen <tab> corr_estFragLen <tab> PhantomPeak <tab> corr_phantomPeak <tab> argmin_corr <tab> min_corr <tab> phantomPeakCoef <tab> relPhantomPeakCoef <tab> QualityTag
+    # Filename <tab>
+    # numReads <tab>
+    # estFragLen <tab>
+    # corr_estFragLen <tab>
+    # PhantomPeak <tab>
+    # corr_phantomPeak <tab>
+    # argmin_corr <tab>
+    # min_corr <tab>
+    # phantomPeakCoef <tab>
+    # relPhantomPeakCoef <tab>
+    # QualityTag
 
-    # run_spp_command = subprocess.check_output('which run_spp.R', shell=True)
     spp_tarball = '/phantompeakqualtools/spp_1.10.1.tar.gz'
-    run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
     # install spp
-    subprocess.check_call(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
-    subprocess.check_call('ls -l', shell=True)
-    out,err = common.run_pipe([
-        "Rscript %s -c=%s -p=%d -filtchr=chrM -savp=%s -out=%s" \
-            %(run_spp_command, subsampled_TA_filename, cpu_count(), CC_plot_filename, CC_scores_filename)])
-    subprocess.check_call('ls -l', shell=True)
-    #time.sleep(3600)
-    out,err = common.run_pipe([
-        r"""sed -r  's/,[^\t]+//g' %s""" %(CC_scores_filename)],
+    install_spp_command = 'R CMD INSTALL %s' % (spp_tarball)
+    logger.info(install_spp_command)
+    subprocess.check_output(shlex.split(install_spp_command))
+    # run spp
+    run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
+    out, err = common.run_pipe([
+        "Rscript %s -c=%s -p=%d -filtchr=chrM -savp=%s -out=%s"
+        % (run_spp_command, subsampled_TA_filename, cpu_count(),
+           CC_plot_filename, CC_scores_filename)])
+    out, err = common.run_pipe([
+        r"""sed -r  's/,[^\t]+//g' %s""" % (CC_scores_filename)],
         outfile="temp")
-    out,err = common.run_pipe([
-        "mv temp %s" %(CC_scores_filename)])
-
-    # tagAlign_file = dxpy.upload_local_file(final_TA_filename)
-    # if not paired_end:
-    #     final_BEDPE_filename = 'SE_so_no_BEDPE'
-    #     subprocess.check_call('touch %s' %(final_BEDPE_filename), shell=True)
-    # BEDPE_file = dxpy.upload_local_file(final_BEDPE_filename)
+    out, err = common.run_pipe([
+        "mv temp %s" % (CC_scores_filename)])
 
     CC_scores_file = dxpy.upload_local_file(CC_scores_filename)
     CC_plot_file = dxpy.upload_local_file(CC_plot_filename)
+    xcor_qc = xcor_parse(CC_scores_filename)
 
     # Return the outputs
-
-    output = {}
-    # output["tagAlign_file"] = dxpy.dxlink(tagAlign_file)
-    # output["BEDPE_file"] = dxpy.dxlink(BEDPE_file)
-    output["CC_scores_file"] = dxpy.dxlink(CC_scores_file)
-    output["CC_plot_file"] = dxpy.dxlink(CC_plot_file)
-    output["paired_end"] = paired_end
+    output = {
+        "CC_scores_file": dxpy.dxlink(CC_scores_file),
+        "CC_plot_file": dxpy.dxlink(CC_plot_file),
+        "paired_end": paired_end,
+        "RSC": float(xcor_qc.get('relPhantomPeakCoef')),
+        "NSC": float(xcor_qc.get('phantomPeakCoef')),
+        "est_frag_len": float(xcor_qc.get('estFragLen'))
+    }
 
     return output
 

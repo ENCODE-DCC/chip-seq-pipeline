@@ -1,4 +1,4 @@
-# bam2tagAlign Developer Readme
+# bam2tagalign Developer Readme
 
 <!--
 TODO: Please edit this Readme.developer.md file to include information
