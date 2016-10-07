@@ -113,6 +113,15 @@ def get_args():
         description=__doc__, epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    def t_or_f(arg):
+        ua = str(arg).upper()
+        if ua == 'TRUE'[:len(ua)]:
+            return True
+        elif ua == 'FALSE'[:len(ua)]:
+            return False
+        else:
+            assert not (True or False), "Cannot parse %s to boolean" % (arg)
+
     parser.add_argument(
         '--target',
         help="ChIP target type (histone or tf)",
@@ -194,11 +203,11 @@ def get_args():
     parser.add_argument(
         '--rep1pe',
         help='Specify if rep1 is PE (required only if --nomap)',
-        type=bool, default=None)
+        type=t_or_f, default=None)
     parser.add_argument(
         '--rep2pe',
         help='Specify if rep2 is PE (required only if --nomap)',
-        type=bool, default=None)
+        type=t_or_f, default=None)
     parser.add_argument(
         '--blacklist',
         help="Blacklist to filter IDR peaks")
