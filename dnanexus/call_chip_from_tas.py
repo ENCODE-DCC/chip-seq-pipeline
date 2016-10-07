@@ -6,7 +6,8 @@ import logging
 import dxpy
 import common
 import re
-import pprint
+from pprint import pprint, pformat
+import sys
 
 EPILOG = '''Notes:
 
@@ -29,7 +30,7 @@ ASSEMBLY_METADATA = {
     'GRCh38': {
         'gsize': 'hs',
         'csizes': "ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes",
-        'blacklist': "ENCODE Reference Files:/GRCh38/blacklists/hglft_genome_7399_3e01a0.bed.gz"
+        'blacklist': None
     },
     'hg19': {
         'gsize': 'hs',
@@ -194,7 +195,7 @@ def get_possible_ctl_ta(experiment, repn, server, keypair, default_project,
                     experiment.get('accession'),
                     possible_control_experiment.get('accession'),
                     target_uri))
-    logging.debug(pprint.pformat(possible_control_experiments))
+    logging.debug(pformat(possible_control_experiments))
     try:
         matching_ta = \
             next(ta for ta in [get_rep_ta(e, repn, default_project, ta_folders) for e in possible_control_experiments] if ta and ta['id'] not in used_control_ids)
@@ -528,7 +529,7 @@ def main():
                 % (experiment['accession']))
             continue
 
-        pprint.pprint(tas)
+        pprint(tas)
         # sys.exit()
         # continue
 

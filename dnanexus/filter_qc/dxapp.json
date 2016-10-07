@@ -11,14 +11,12 @@
     {
       "name": "input_bam",
       "label": "Raw, unfiltered, mapped reads.",
-      "class": "file",
-      "optional": true
+      "class": "file"
     },
     {
       "name": "paired_end",
       "label": "True if the bam was derived from paired-end reads.",
-      "class": "boolean",
-      "optional": true
+      "class": "boolean"
     },
     {
       "name": "samtools_params",
@@ -26,12 +24,6 @@
       "class": "string",
       "optional": true,
       "default": "-q 30"
-    },
-    {
-      "name": "input_JSON",
-      "label": "Input parameters as JSON",
-      "class": "hash",
-      "optional": true
     },
     {
       "name": "debug",
@@ -91,12 +83,6 @@
       "name": "duplicate_fraction",
       "label": "Picard MarkDuplicates fraction",
       "class": "string"
-    },
-    {
-      "name": "output_JSON",
-      "label": "Input parameters as JSON",
-      "class": "hash",
-      "optional": true
     }
   ],
   "runSpec": {

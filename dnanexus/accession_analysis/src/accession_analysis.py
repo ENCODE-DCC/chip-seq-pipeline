@@ -1881,6 +1881,7 @@ def accession_outputs(stages, keypair, server, dryrun, force_patch, force_upload
                 'notes': {
                     'dx-id': dx.get_id(),
                     'dx-createdBy': dx_desc.get('createdBy'),
+                    'dx-parentAnalysis': analysis,
                     'qc': notes_qc
                 },
                 #'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],

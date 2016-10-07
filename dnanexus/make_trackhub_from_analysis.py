@@ -395,7 +395,7 @@ def main():
             print "Invalid analysis ID %s. Skipping." % (analysis_id)
             continue
 
-        experiment_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks', analysis['name'])
+        experiment_m = re.match('^(ENCSR[0-9]{3}[A-Z]{3})', analysis['name'])
         if not experiment_m:
             print "No accession in %s, skipping." % (analysis['name'])
             continue
