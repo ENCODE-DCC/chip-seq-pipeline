@@ -11,13 +11,11 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os
 import subprocess
 import shlex
-import time
-from multiprocessing import Pool, cpu_count
-import common
+from multiprocessing import cpu_count
 import dxpy
+import common
 import logging
 
 logger = logging.getLogger(__name__)
@@ -78,9 +76,6 @@ def main(input_bam, paired_end, spp_version):
 
     input_bam_file = dxpy.DXFile(input_bam)
 
-    # The following line(s) download your file inputs to the local file system
-    # using variable names for the filenames.
-
     input_bam_filename = input_bam_file.name
     input_bam_basename = input_bam_file.name.rstrip('.bam')
     dxpy.download_dxfile(input_bam_file.get_id(), input_bam_filename)
@@ -96,53 +91,65 @@ def main(input_bam, paired_end, spp_version):
     # Create tagAlign file
     # ===================
 
-    out,err = common.run_pipe([
-        "bamToBed -i %s" %(input_bam_filename),
+    out, err = common.run_pipe([
+        "bamToBed -i %s" % (input_bam_filename),
         r"""awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}'""",
-        "tee %s" %(intermediate_TA_filename),
-        "gzip -c"],
+        "tee %s" % (intermediate_TA_filename),
+        "gzip -cn"],
         outfile=final_TA_filename)
-    subprocess.check_call('ls -l', shell=True)
 
     # ================
     # Create BEDPE file
     # ================
     if paired_end:
         final_BEDPE_filename = input_bam_basename + ".bedpe.gz"
-        #need namesorted bam to make BEDPE
+        # need namesorted bam to make BEDPE
         final_nmsrt_bam_prefix = input_bam_basename + ".nmsrt"
         final_nmsrt_bam_filename = final_nmsrt_bam_prefix + ".bam"
-        subprocess.check_call(shlex.split("samtools sort -n %s %s" %(input_bam_filename, final_nmsrt_bam_prefix)))
-        out,err = common.run_pipe([
-            "bamToBed -bedpe -mate1 -i %s" %(final_nmsrt_bam_filename),
-            "gzip -c"],
+        samtools_sort_command = \
+            "samtools sort -n %s %s" % (input_bam_filename, final_nmsrt_bam_prefix)
+        logger.info(samtools_sort_command)
+        subprocess.check_output(shlex.split(samtools_sort_command))
+        out, err = common.run_pipe([
+            "bamToBed -bedpe -mate1 -i %s" % (final_nmsrt_bam_filename),
+            "gzip -cn"],
             outfile=final_BEDPE_filename)
-        subprocess.check_call('ls -l', shell=True)
 
     # =================================
     # Subsample tagAlign file
     # ================================
-    NREADS=15000000
+    NREADS = 15000000
     if paired_end:
         end_infix = 'MATE1'
     else:
         end_infix = 'SE'
-    subsampled_TA_filename = input_bam_basename + ".filt.nodup.sample.%d.%s.tagAlign.gz" %(NREADS/1000000, end_infix)
+    subsampled_TA_filename = \
+        input_bam_basename + \
+        ".filt.nodup.sample.%d.%s.tagAlign.gz" % (NREADS/1000000, end_infix)
     steps = [
-        'grep -v "chrM" %s' %(intermediate_TA_filename),
-        'shuf -n %d' %(NREADS)]
+        'grep -v "chrM" %s' % (intermediate_TA_filename),
+        'shuf -n %d --random-source=%s' % (NREADS, intermediate_TA_filename)]
     if paired_end:
         steps.extend([r"""awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}'"""])
-    steps.extend(['gzip -c'])
-    out,err = common.run_pipe(steps,outfile=subsampled_TA_filename)
-    subprocess.check_call('ls -l', shell=True)
+    steps.extend(['gzip -cn'])
+    out, err = common.run_pipe(steps, outfile=subsampled_TA_filename)
 
     # Calculate Cross-correlation QC scores
     CC_scores_filename = subsampled_TA_filename + ".cc.qc"
     CC_plot_filename = subsampled_TA_filename + ".cc.plot.pdf"
 
     # CC_SCORE FILE format
-    # Filename <tab> numReads <tab> estFragLen <tab> corr_estFragLen <tab> PhantomPeak <tab> corr_phantomPeak <tab> argmin_corr <tab> min_corr <tab> phantomPeakCoef <tab> relPhantomPeakCoef <tab> QualityTag
+    # Filename <tab>
+    # numReads <tab>
+    # estFragLen <tab>
+    # corr_estFragLen <tab>
+    # PhantomPeak <tab>
+    # corr_phantomPeak <tab>
+    # argmin_corr <tab>
+    # min_corr <tab>
+    # phantomPeakCoef <tab>
+    # relPhantomPeakCoef <tab>
+    # QualityTag
 
     spp_tarball = SPP_VERSION_MAP.get(spp_version)
     assert spp_tarball, "spp version %s is not supported" % (spp_version)
@@ -156,13 +163,10 @@ def main(input_bam, paired_end, spp_version):
     out,err = common.run_pipe([
         r"""sed -r  's/,[^\t]+//g' %s""" %(CC_scores_filename)],
         outfile="temp")
-    out,err = common.run_pipe([
-        "mv temp %s" %(CC_scores_filename)])
+    out, err = common.run_pipe([
+        "mv temp %s" % (CC_scores_filename)])
 
     tagAlign_file = dxpy.upload_local_file(final_TA_filename)
-    # if not paired_end:
-    #     final_BEDPE_filename = 'SE_so_no_BEDPE'
-    #     subprocess.check_call('touch %s' %(final_BEDPE_filename), shell=True)
     if paired_end:
         BEDPE_file = dxpy.upload_local_file(final_BEDPE_filename)
 
