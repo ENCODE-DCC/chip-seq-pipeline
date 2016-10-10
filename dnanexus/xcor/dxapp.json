@@ -77,16 +77,15 @@
              "url": "https://github.com/samtools/samtools.git",
              "destdir": "/tmp",
              "tag": "0.1.19",
-             "build_commands": "make samtools && cp /tmp/samtools/samtools /usr/local/bin/samtools"},
-            {"name": "libboost1.46-dev"},
-            {"name": "libboost-dev"},
-            {"name": "caTools", "package_manager": "cran"},
-            {"name": "snow", "package_manager": "cran"}
+             "build_commands": "make samtools && cp /tmp/samtools/samtools /usr/local/bin/samtools"}
         ],
         "systemRequirements": {
             "main": {"instanceType": "mem3_hdd2_x2"}
         }
     },
+    "assetDepends": [
+      {"id": "record-BzxyK50066Xx0J9z9QV240Yk"}
+    ],
     "access": {
         "network": [
             "*"

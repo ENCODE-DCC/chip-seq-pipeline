@@ -89,8 +89,7 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
     else:
         run_spp = '/phantompeakqualtools/run_spp.R'
     # install spp
-    subprocess.check_call('ls -l', shell=True)
-    subprocess.check_call(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
+    subprocess.check_output(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
     spp_command = (
         "Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%d -savr=%s -savp=%s -rf -out=%s"
         % (run_spp, cpu_count(), experiment_filename, control_filename, npeaks,

@@ -35,7 +35,9 @@
             }
         ]
     },
-
+    "assetDepends": [
+      {"id": "record-BzxyK50066Xx0J9z9QV240Yk"}
+    ],
     "access": {
         "network": ["*"],
         "project": "CONTRIBUTE",

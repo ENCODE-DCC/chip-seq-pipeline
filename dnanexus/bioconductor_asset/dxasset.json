@@ -5,8 +5,5 @@
 	"version": "0.0.1",
 	"distribution": "Ubuntu",
 	"instanceType": "mem1_ssd1_x2",
-	"release": "12.04",
-	"execDepends": [
-		{"name": "biopython","package_manager": "pip"}
-	]
+	"release": "12.04"
 }

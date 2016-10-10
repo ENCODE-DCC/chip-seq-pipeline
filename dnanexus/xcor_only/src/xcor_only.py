@@ -69,7 +69,7 @@ def xcor_parse(fname):
 
 
 @dxpy.entry_point('main')
-def main(input_tagAlign, paired_end):
+def main(input_tagAlign, paired_end, spp_version):
 
     input_tagAlign_file = dxpy.DXFile(input_tagAlign)
 
@@ -116,11 +116,11 @@ def main(input_tagAlign, paired_end):
     # relPhantomPeakCoef <tab>
     # QualityTag
 
-    spp_tarball = '/phantompeakqualtools/spp_1.10.1.tar.gz'
-    # install spp
-    install_spp_command = 'R CMD INSTALL %s' % (spp_tarball)
-    logger.info(install_spp_command)
-    subprocess.check_output(shlex.split(install_spp_command))
+    spp_tarball = SPP_VERSION_MAP.get(spp_version)
+    assert spp_tarball, "spp version %s is not supported" % (spp_version)
+    run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
+    #install spp
+    subprocess.check_output(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
     # run spp
     run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
     out, err = common.run_pipe([

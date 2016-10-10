@@ -63,6 +63,7 @@ def get_args():
     # parser.add_argument('--idr', help="Run IDR. If not specified, run IDR for non-histone targets.", default=False, action='store_true')
     # parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default="2")
     parser.add_argument('--dryrun', help="Formulate the run command, but don't actually run", default=False, action='store_true')
+    parser.add_argument('--spp_version', help="spp version", default="1.14")
 
     args = parser.parse_args()
 
@@ -622,7 +623,8 @@ def main():
             '--rep2 %s' % (tas['rep2_ta'].get('file_id')),
             '--ctl1 %s' % (tas['rep1_ta'].get('control_id')),
             '--ctl2 %s' % (tas['rep2_ta'].get('control_id')),
-            '--genomesize %s --chrom_sizes "%s"' % (genomesize, chrom_sizes)]
+            '--genomesize %s --chrom_sizes "%s"' % (genomesize, chrom_sizes),
+            '--spp_version %s' % (args.spp_version)]
 
         if blacklist:
             command_strings.append('--blacklist "%s"' % (blacklist))

@@ -47,16 +47,13 @@
     "runSpec": {
         "interpreter": "python2.7",
         "file": "src/xcor_only.py",
-        "execDepends": [
-            {"name": "libboost1.46-dev"},
-            {"name": "libboost-dev"},
-            {"name": "caTools", "package_manager": "cran"},
-            {"name": "snow", "package_manager": "cran"}
-        ],
         "systemRequirements": {
             "main": {"instanceType": "mem3_hdd2_x2"}
         }
     },
+    "assetDepends": [
+      {"id": "record-BzxyK50066Xx0J9z9QV240Yk"}
+    ],
     "access": {
         "network": [
             "*"

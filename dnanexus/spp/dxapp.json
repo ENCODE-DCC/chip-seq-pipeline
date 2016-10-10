@@ -94,11 +94,8 @@
     "systemRequirements": {
       "main":     {"instanceType": "mem3_ssd1_x4"}
     },
-    "execDepends": [
-      {"name": "libboost1.46-dev"},
-      {"name": "libboost-dev"},
-      {"name": "caTools", "package_manager": "cran"},
-      {"name": "snow", "package_manager": "cran"}
+    "assetDepends": [
+      {"id": "record-BzxyK50066Xx0J9z9QV240Yk"}
     ]
   },
   "access": {

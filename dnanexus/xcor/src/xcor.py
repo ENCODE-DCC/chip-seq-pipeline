@@ -155,7 +155,7 @@ def main(input_bam, paired_end, spp_version):
     assert spp_tarball, "spp version %s is not supported" % (spp_version)
     run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
     #install spp
-    subprocess.check_call(shlex.split('R CMD INSTALL %s' %(spp_tarball)))
+    subprocess.check_output(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
     out,err = common.run_pipe([
         "Rscript %s -c=%s -p=%d -filtchr=chrM -savp=%s -out=%s" \
             %(run_spp_command, subsampled_TA_filename, cpu_count(), CC_plot_filename, CC_scores_filename)])
