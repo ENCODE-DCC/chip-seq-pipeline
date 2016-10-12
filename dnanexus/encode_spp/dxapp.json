@@ -162,32 +162,8 @@
             "optional": true
         },
         {
-            "name": "rep1pr1_xcor_plot",
-            "label": "Cross-correlation plot",
-            "class": "file",
-            "optional": true
-        },
-        {
-            "name": "rep1pr1_xcor_scores",
-            "label": "Cross-correlation scores",
-            "class": "file",
-            "optional": true
-        },
-        {
             "name": "rep1pr2_peaks",
             "label": "Narrowpeaks file",
-            "class": "file",
-            "optional": true
-        },
-        {
-            "name": "rep1pr2_xcor_plot",
-            "label": "Cross-correlation plot",
-            "class": "file",
-            "optional": true
-        },
-        {
-            "name": "rep1pr2_xcor_scores",
-            "label": "Cross-correlation scores",
             "class": "file",
             "optional": true
         },
@@ -198,32 +174,8 @@
             "optional": true
         },
         {
-            "name": "rep2pr1_xcor_plot",
-            "label": "Cross-correlation plot",
-            "class": "file",
-            "optional": true
-        },
-        {
-            "name": "rep2pr1_xcor_scores",
-            "label": "Cross-correlation scores",
-            "class": "file",
-            "optional": true
-        },
-        {
             "name": "rep2pr2_peaks",
             "label": "Narrowpeaks file",
-            "class": "file",
-            "optional": true
-        },
-        {
-            "name": "rep2pr2_xcor_plot",
-            "label": "Cross-correlation plot",
-            "class": "file",
-            "optional": true
-        },
-        {
-            "name": "rep2pr2_xcor_scores",
-            "label": "Cross-correlation scores",
             "class": "file",
             "optional": true
         },
@@ -234,32 +186,8 @@
             "optional": true
         },
         {
-            "name": "pooledpr1_xcor_plot",
-            "label": "Cross-correlation plot",
-            "class": "file",
-            "optional": true
-        },
-        {
-            "name": "pooledpr1_xcor_scores",
-            "label": "Cross-correlation scores",
-            "class": "file",
-            "optional": true
-        },
-        {
             "name": "pooledpr2_peaks",
             "label": "Narrowpeaks file",
-            "class": "file",
-            "optional": true
-        },
-        {
-            "name": "pooledpr2_xcor_plot",
-            "label": "Cross-correlation plot",
-            "class": "file",
-            "optional": true
-        },
-        {
-            "name": "pooledpr2_xcor_scores",
-            "label": "Cross-correlation scores",
             "class": "file",
             "optional": true
         }
