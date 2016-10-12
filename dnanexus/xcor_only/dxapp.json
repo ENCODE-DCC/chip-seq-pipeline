@@ -23,7 +23,8 @@
         {
           "name": "spp_version",
           "label": "The version of SPP to use",
-          "class": "string"
+          "class": "string",
+          "default": "1.14"
         }
     ],
     "outputSpec": [
@@ -41,19 +42,33 @@
             "name": "paired_end",
             "label": "True if the bam was derived from paired-end reads.",
             "class": "boolean"
+        },
+        {
+            "name": "RSC",
+            "label": "Relative strand cross-correlation",
+            "class": "float"
+        },
+        {
+            "name": "NSC",
+            "label": "Normalized strand cross-correlation",
+            "class": "float"
+        },
+        {
+            "name": "est_frag_len",
+            "label": "Estimated fragment length",
+            "class": "int"
         }
-
     ],
     "runSpec": {
         "interpreter": "python2.7",
         "file": "src/xcor_only.py",
         "systemRequirements": {
             "main": {"instanceType": "mem3_hdd2_x2"}
-        }
+        },
+        "assetDepends": [
+              {"id": "record-Bzyq5700Ykg8g3jb8Q4XxYJF"}
+            ]
     },
-    "assetDepends": [
-      {"id": "record-BzxyK50066Xx0J9z9QV240Yk"}
-    ],
     "access": {
         "network": [
             "*"
