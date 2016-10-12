@@ -33,11 +33,11 @@
              "url": "https://github.com/ENCODE-DCC/encValData.git",
              "build_commands": "cd .. && mv encValData /home/dnanexus"
             }
+        ],
+        "assetDepends": [
+          {"id": "record-Bzyq5700Ykg8g3jb8Q4XxYJF"}
         ]
     },
-    "assetDepends": [
-      {"id": "record-BzxyK50066Xx0J9z9QV240Yk"}
-    ],
     "access": {
         "network": ["*"],
         "project": "CONTRIBUTE",

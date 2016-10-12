@@ -7,4 +7,5 @@ all:
 	sudo pip install biopython
 	# install bioconductor and it's packages
 	#R -e "install.packages(c('ape', 'biom', 'optparse', 'RColorBrewer', 'randomForest', 'vegan'), repos='http://cran.rstudio.com/'); source('http://bioconductor.org/biocLite.R'); biocLite(); biocLite(c('DESeq2', 'metagenomeSeq'))"
-	R < installbioc.R --save
+	sudo R < installbioc.R --save
+	
