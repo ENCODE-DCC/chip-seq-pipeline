@@ -24,19 +24,17 @@ XCOR_APPLET_NAME = 'xcor'
 POOL_APPLET_NAME = 'pool'
 
 REFERENCES = [
-    {'assembly': 'GRCh38-minimal', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_XY.tar.gz'},
-    {'assembly': 'GRCh38-minimal', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GRCh38_minimal_X.tar.gz'},
+    {'assembly': 'GRCh38-minimal', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/Deprecated/GRCh38/GRCh38_minimal_XY.tar.gz'},
+    {'assembly': 'GRCh38-minimal', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/Deprecated/GRCh38/GRCh38_minimal_X.tar.gz'},
     #warning these are not sex-specific yet
-    {'assembly': 'GRCh38', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz'},
-    {'assembly': 'GRCh38', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz'},
+    {'assembly': 'GRCh38', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz'},
+    {'assembly': 'GRCh38', 'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz'},
     #warning these are not sex-specific yet
-    {'assembly': 'GRCh38-full', 'organism': 'human', 'sex': 'male',   'file': 'E3 ChIP-seq:/reference_files_local/GCA_000001405.15_GRCh38_full_analysis_set.bwa.tar.gz'},
-    {'assembly': 'GRCh38-full', 'organism': 'human', 'sex': 'female', 'file': 'E3 ChIP-seq:/reference_files_local/GCA_000001405.15_GRCh38_full_analysis_set.bwa.tar.gz'},
-    {'assembly': 'mm10-minimal',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/mm10/male.mm10.tar.gz'},
-    {'assembly': 'mm10-minimal',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/mm10/female.mm10.tar.gz'},
-    {'assembly': 'mm10',   'organism': 'mouse', 'sex': 'male', 'file': 'ENCODE Reference Files:/mm10/mm10_no_alt_analysis_set_ENCODE.tar.gz'},
-    {'assembly': 'hg19',   'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/male.hg19.tar.gz'},
-    {'assembly': 'hg19',   'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/female.hg19.tar.gz'}
+    {'assembly': 'mm10-minimal',   'organism': 'mouse', 'sex': 'male',   'file': 'ENCODE Reference Files:/Deprecated/mm10/ChIP-seq/male.mm10.tar.gz'},
+    {'assembly': 'mm10-minimal',   'organism': 'mouse', 'sex': 'female', 'file': 'ENCODE Reference Files:/Deprecated/mm10/ChIP-seq/female.mm10.tar.gz'},
+    {'assembly': 'mm10',   'organism': 'mouse', 'sex': 'male', 'file': 'ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz'},
+    {'assembly': 'hg19',   'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/hg19/ChIP-seq/male.hg19.tar.gz'},
+    {'assembly': 'hg19',   'organism': 'human', 'sex': 'female', 'file': 'ENCODE Reference Files:/hg19/ChIP-seq/female.hg19.tar.gz'}
     ]
 
 APPLETS = {}

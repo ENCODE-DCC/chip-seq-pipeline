@@ -618,12 +618,14 @@ chip_workflow.py \
 chip_workflow.py \
 --target tf \
 --name "ENCODE TF ChIP-seq (no reference)" \
---outf "/ChIP-seq/"
+--outf "/ChIP-seq/" \
+--use_existing_folders
 
 chip_workflow.py \
 --target histone \
 --name "ENCODE Histone ChIP-seq (no reference)" \
---outf "/ChIP-seq/"
+--outf "/ChIP-seq/" \
+--use_existing_folders
 
 chip_workflow.py \
 --target tf \
@@ -632,7 +634,8 @@ chip_workflow.py \
 --genomesize hs \
 --reference "ENCODE Reference Files:/hg19/male.hg19.tar.gz" \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
---outf "/ChIP-seq/"
+--outf "/ChIP-seq/" \
+--use_existing_folders
 
 chip_workflow.py \
 --target tf \
@@ -642,7 +645,8 @@ chip_workflow.py \
 --reference "ENCODE Reference Files:/hg19/male.hg19.tar.gz" \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
 --outf "/ChIP-seq/" \
---unary_control
+--unary_control \
+--use_existing_folders
 
 chip_workflow.py \
 --target histone \
@@ -650,7 +654,8 @@ chip_workflow.py \
 --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
 --genomesize mm \
 --reference "ENCODE Reference Files:/mm10/male.mm10.tar.gz" \
---outf "/ChIP-seq/"
+--outf "/ChIP-seq/" \
+--use_existing_folders
 
 chip_workflow.py \
 --target histone \
@@ -658,4 +663,5 @@ chip_workflow.py \
 --chrom_sizes "ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
 --genomesize hs \
 --reference "ENCODE Reference Files:/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" \
---outf "/ChIP-seq/"
+--outf "/ChIP-seq/" \
+--use_existing_folders
