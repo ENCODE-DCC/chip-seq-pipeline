@@ -78,7 +78,7 @@
           "name": "spp_version",
           "label": "The version of SPP to use",
           "class": "string",
-          "default": "1.10.1"
+          "default": "1.14"
         },
         {
             "name": "as_file",

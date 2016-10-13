@@ -62,7 +62,8 @@
     {
       "name": "spp_version",
       "label": "The version of SPP to use",
-      "class": "string"
+      "class": "string",
+      "default": "1.14"
     }
   ],
   "outputSpec": [

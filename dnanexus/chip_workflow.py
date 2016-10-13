@@ -217,7 +217,8 @@ def get_args():
         default=False, action='store_true')
     parser.add_argument(
         '--spp_version',
-        help="Version string for spp")
+        help="Version string for spp",
+        default="1.14")
 
     # parser.add_argument('--idr',     help='Report peaks with and without IDR analysis',                 default=False, action='store_true')
     # parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')

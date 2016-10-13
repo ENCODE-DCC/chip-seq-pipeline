@@ -142,7 +142,7 @@ def get_args():
     parser.add_argument(
         '--spp_version',
         help="Version of spp to use for the cross-correlation analysis",
-        default='1.10.1')
+        default='1.14')
 
     args = parser.parse_args()
 
