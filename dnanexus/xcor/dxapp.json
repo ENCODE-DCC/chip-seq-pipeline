@@ -1,91 +1,96 @@
 {
-	"name": "xcor",
-	"title": "ENCODE TF ChIP-seq Cross-Correlation Analysis",
-	"summary": "Take a bam file from SE or PE sequencing, create tagAlign file and generate cross-corelation scores and plot",
-	"dxapi": "1.0.0",
-	"version": "0.0.1",
-	"categories": [
-		"ENCODE Analysis Pipeline"
-	],
-	"inputSpec": [
-		{
-			"name": "input_bam",
-			"label": "Filtered BAM file",
-			"class": "file",
-			"optional": false
-		},
-		{
-			"name": "paired_end",
-			"class": "boolean",
-			"optional": false
-		}
-	],
-	"outputSpec": [
-		{
-			"name": "tagAlign_file",
-			"label": "Final tagAlign file.",
-			"class": "file"
-		},
-		{
-			"name": "BEDPE_file",
-			"label": "BEDPE file (read pairs on each line)",
-			"class": "file",
-			"optional": true
-		},
-		{
-			"name": "CC_scores_file",
-			"label": "Tab-delimited NSC/RSC results",
-			"class": "file"
-		},
-		{
-			"name": "CC_plot_file",
-			"label": "Cross-correlation plot",
-			"class": "file"
-		},
-		{
-			"name": "paired_end",
-			"label": "True if the bam was derived from paired-end reads.",
-			"class": "boolean"
-		},
-		{
-			"name": "RSC",
-			"label": "Relative strand cross-correlation",
-			"class": "float"
-		},
-		{
-			"name": "NSC",
-			"label": "Normalized strand cross-correlation",
-			"class": "float"
-		},
-		{
-			"name": "est_frag_len",
-			"label": "Estimated fragment length",
-			"class": "int"
-		}
-	],
-	"runSpec": {
-		"interpreter": "python2.7",
-		"file": "src/xcor.py",
-		"execDepends": [
-			{"name": "samtools",
-			 "package_manager": "git",
-			 "url": "https://github.com/samtools/samtools.git",
-			 "destdir": "/tmp",
-			 "tag": "0.1.19",
-			 "build_commands": "make samtools && cp /tmp/samtools/samtools /usr/local/bin/samtools"},
-			{"name": "libboost1.46-dev"},
-			{"name": "libboost-dev"},
-			{"name": "caTools", "package_manager": "cran"},
-			{"name": "snow", "package_manager": "cran"}
-		],
-		"systemRequirements": {
-			"main": {"instanceType": "mem3_hdd2_x2"}
-		}
-	},
-	"access": {
-		"network": [
-			"*"
-		]
-	},
-	"authorizedUsers": []
+    "name": "xcor",
+    "title": "ENCODE TF ChIP-seq Cross-Correlation Analysis",
+    "summary": "Take a bam file from SE or PE sequencing, create tagAlign file and generate cross-corelation scores and plot",
+    "dxapi": "1.0.0",
+    "version": "0.0.1",
+    "categories": [
+        "ENCODE Analysis Pipeline"
+    ],
+    "inputSpec": [
+        {
+            "name": "input_bam",
+            "label": "Filtered BAM file",
+            "class": "file",
+            "optional": false
+        },
+        {
+            "name": "paired_end",
+            "class": "boolean",
+            "optional": false
+        },
+        {
+          "name": "spp_version",
+          "label": "The version of SPP to use",
+          "class": "string",
+          "default": "1.14"
+        }
+    ],
+    "outputSpec": [
+        {
+            "name": "tagAlign_file",
+            "label": "Final tagAlign file.",
+            "class": "file"
+        },
+        {
+            "name": "BEDPE_file",
+            "label": "BEDPE file (read pairs on each line)",
+            "class": "file",
+            "optional": true
+        },
+        {
+            "name": "CC_scores_file",
+            "label": "Tab-delimited NSC/RSC results",
+            "class": "file"
+        },
+        {
+            "name": "CC_plot_file",
+            "label": "Cross-correlation plot",
+            "class": "file"
+        },
+        {
+            "name": "paired_end",
+            "label": "True if the bam was derived from paired-end reads.",
+            "class": "boolean"
+        },
+        {
+            "name": "RSC",
+            "label": "Relative strand cross-correlation",
+            "class": "float"
+        },
+        {
+            "name": "NSC",
+            "label": "Normalized strand cross-correlation",
+            "class": "float"
+        },
+        {
+            "name": "est_frag_len",
+            "label": "Estimated fragment length",
+            "class": "int"
+        }
+    ],
+    "runSpec": {
+        "interpreter": "python2.7",
+        "file": "src/xcor.py",
+        "execDepends": [
+            {"name": "samtools",
+             "package_manager": "git",
+             "url": "https://github.com/samtools/samtools.git",
+             "destdir": "/tmp",
+             "tag": "0.1.19",
+             "build_commands": "make samtools && cp /tmp/samtools/samtools /usr/local/bin/samtools"}
+        ],
+        "assetDepends": [
+          {"id": "record-Bzyq5700Ykg8g3jb8Q4XxYJF"}
+        ],
+        "systemRequirements": {
+            "main": {"instanceType": "mem3_hdd2_x2"}
+        }
+    },
+    "access": {
+        "network": [
+            "*"
+        ]
+    },
+    "authorizedUsers": []
 }

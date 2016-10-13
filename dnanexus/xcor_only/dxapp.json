@@ -1,75 +1,78 @@
 {
-	"name": "xcor_only",
-	"title": "ENCODE TF ChIP-seq Cross-Correlation Analysis",
-	"summary": "Take a tagAlign file from SE or PE sequencing, subsample and generate cross-corelation scores and plot",
-	"dxapi": "1.0.0",
-	"version": "0.0.1",
-	"categories": [
-		"ENCODE Analysis Pipeline"
-	],
-	"inputSpec": [
-		{
-			"name": "input_tagAlign",
-			"label": "Filtered tagAlign file",
-			"class": "file",
-			"optional": false
-		},
-		{
-			"name": "paired_end",
-			"class": "boolean",
-			"optional": true,
-			"default": true
-		}
-	],
-	"outputSpec": [
-		{
-			"name": "CC_scores_file",
-			"label": "Tab-delimited NSC/RSC results",
-			"class": "file"
-		},
-		{
-			"name": "CC_plot_file",
-			"label": "Cross-correlation plot",
-			"class": "file"
-		},
-		{
-			"name": "paired_end",
-			"label": "True if the bam was derived from paired-end reads.",
-			"class": "boolean"
-		},
-		{
-			"name": "RSC",
-			"label": "Relative strand cross-correlation",
-			"class": "float"
-		},
-		{
-			"name": "NSC",
-			"label": "Normalized strand cross-correlation",
-			"class": "float"
-		},
-		{
-			"name": "est_frag_len",
-			"label": "Estimated fragment length",
-			"class": "int"
-		}
-	],
-	"runSpec": {
-		"interpreter": "python2.7",
-		"file": "src/xcor_only.py",
-		"execDepends": [
-			{"name": "libboost1.46-dev"},
-			{"name": "libboost-dev"},
-			{"name": "caTools", "package_manager": "cran"},
-			{"name": "snow", "package_manager": "cran"}
-		],
-		"systemRequirements": {
-			"main": {"instanceType": "mem3_hdd2_x2"}
-		}
-	},
-	"access": {
-		"network": [
-			"*"
-		]
-	},
-	"authorizedUsers": []
+    "name": "xcor_only",
+    "title": "ENCODE TF ChIP-seq Cross-Correlation Analysis",
+    "summary": "Take a tagAlign file from SE or PE sequencing, subsample and generate cross-corelation scores and plot",
+    "dxapi": "1.0.0",
+    "version": "0.0.1",
+    "categories": [
+        "ENCODE Analysis Pipeline"
+    ],
+    "inputSpec": [
+        {
+            "name": "input_tagAlign",
+            "label": "Filtered tagAlign file",
+            "class": "file",
+            "optional": false
+        },
+        {
+            "name": "paired_end",
+            "class": "boolean",
+            "optional": true,
+            "default": true
+        },
+        {
+          "name": "spp_version",
+          "label": "The version of SPP to use",
+          "class": "string",
+          "default": "1.14"
+        }
+    ],
+    "outputSpec": [
+        {
+            "name": "CC_scores_file",
+            "label": "Tab-delimited NSC/RSC results",
+            "class": "file"
+        },
+        {
+            "name": "CC_plot_file",
+            "label": "Cross-correlation plot",
+            "class": "file"
+        },
+        {
+            "name": "paired_end",
+            "label": "True if the bam was derived from paired-end reads.",
+            "class": "boolean"
+        },
+        {
+            "name": "RSC",
+            "label": "Relative strand cross-correlation",
+            "class": "float"
+        },
+        {
+            "name": "NSC",
+            "label": "Normalized strand cross-correlation",
+            "class": "float"
+        },
+        {
+            "name": "est_frag_len",
+            "label": "Estimated fragment length",
+            "class": "int"
+        }
+    ],
+    "runSpec": {
+        "interpreter": "python2.7",
+        "file": "src/xcor_only.py",
+        "systemRequirements": {
+            "main": {"instanceType": "mem3_hdd2_x2"}
+        },
+        "assetDepends": [
+              {"id": "record-Bzyq5700Ykg8g3jb8Q4XxYJF"}
+            ]
+    },
+    "access": {
+        "network": [
+            "*"
+        ]
+    },
+    "authorizedUsers": []
 }

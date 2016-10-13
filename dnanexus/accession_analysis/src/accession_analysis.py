@@ -774,11 +774,22 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             'crop_length %s. Inferring mapped_read_length from fastqs'
             % (crop_length))
         native_lengths = set([fq.get('read_length') for fq in fastqs])
-        assert (len(native_lengths) == 1 and
-                all([isinstance(rl, int) for rl in native_lengths])), \
-               ('fastqs with different or non-integer read_lengths: %s'
-                % ([(fq.get('accession'), fq.get('read_length'))
-                    for fq in fastqs]))
+        try:
+            assert (len(native_lengths) == 1 and
+                    all([isinstance(rl, int) for rl in native_lengths])), \
+                   ('fastqs with different or non-integer read_lengths: %s'
+                    % ([(fq.get('accession'), fq.get('read_length'))
+                        for fq in fastqs]))
+        except AssertionError:
+            if fqcheck:
+                raise
+            else:
+                logger.warning(
+                    'fastqs with different or non-integer read_lengths: %s But fqcheck is False so ignoring'
+                    % ([(fq.get('accession'), fq.get('read_length'))
+                        for fq in fastqs]))
+        except:
+            raise
         mapped_read_length = int(next(l for l in native_lengths))
     else:
         mapped_read_length = int(crop_length)
@@ -948,11 +959,22 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             'crop_length %s. Inferring mapped_read_length from fastqs'
             % (crop_length))
         native_lengths = set([fq.get('read_length') for fq in fastqs])
-        assert (len(native_lengths) == 1 and
-                all([isinstance(rl, int) for rl in native_lengths])), \
-               ('fastqs with different or non-integer read_lengths: %s'
-                % ([(fq.get('accession'), fq.get('read_length'))
-                    for fq in fastqs]))
+        try:
+            assert (len(native_lengths) == 1 and
+                    all([isinstance(rl, int) for rl in native_lengths])), \
+                   ('fastqs with different or non-integer read_lengths: %s'
+                    % ([(fq.get('accession'), fq.get('read_length'))
+                        for fq in fastqs]))
+        except AssertionError:
+            if fqcheck:
+                raise
+            else:
+                logger.warning(
+                    'fastqs with different or non-integer read_lengths: %s But fqcheck is False so ignoring'
+                    % ([(fq.get('accession'), fq.get('read_length'))
+                        for fq in fastqs]))
+        except:
+            raise
         mapped_read_length = int(next(l for l in native_lengths))
     else:
         mapped_read_length = int(crop_length)

@@ -1,0 +1,9 @@
+{
+	"name": "bioconductorAsset",
+	"title": "Bioconductor",
+	"description": "R package bioconductor, required for SPP 1.14",
+	"version": "0.0.1",
+	"distribution": "Ubuntu",
+	"instanceType": "mem1_ssd1_x2",
+	"release": "12.04"
+}

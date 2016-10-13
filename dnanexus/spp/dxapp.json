@@ -58,6 +58,11 @@
       "label": ".as file for bedToBigBed",
       "class": "file",
       "optional": true
+    },
+    {
+      "name": "spp_version",
+      "label": "The version of SPP to use",
+      "class": "string"
     }
   ],
   "outputSpec": [
@@ -89,11 +94,8 @@
     "systemRequirements": {
       "main":     {"instanceType": "mem3_ssd1_x4"}
     },
-    "execDepends": [
-      {"name": "libboost1.46-dev"},
-      {"name": "libboost-dev"},
-      {"name": "caTools", "package_manager": "cran"},
-      {"name": "snow", "package_manager": "cran"}
+    "assetDepends": [
+      {"id": "record-Bzyq5700Ykg8g3jb8Q4XxYJF"}
     ]
   },
   "access": {
