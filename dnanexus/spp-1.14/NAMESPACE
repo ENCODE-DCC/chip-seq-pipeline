@@ -1,3 +1,0 @@
-useDynLib(spp)
-
-exportPattern("^[^\\.]")
