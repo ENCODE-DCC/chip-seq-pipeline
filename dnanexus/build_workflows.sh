@@ -7,27 +7,27 @@ chip_workflow.py \
 --target tf \
 --name "ENCODE TF ChIP-seq (no reference)" \
 --outf "/ChIP-seq/workflows/" \
---use_existing_folders &
+--use_existing_folders
 
 chip_workflow.py \
 --target tf \
 --name "ENCODE TF ChIP-seq Unary Control (no reference)" \
 --outf "/ChIP-seq/workflows/" \
 --unary_control \
---use_existing_folders &
+--use_existing_folders
 
 chip_workflow.py \
 --target histone \
 --name "ENCODE Histone ChIP-seq (no reference)" \
 --outf "/ChIP-seq/workflows/" \
---use_existing_folders &
+--use_existing_folders
 
 chip_workflow.py \
 --target histone \
 --name "ENCODE Histone ChIP-seq Unary Control (no reference)" \
 --outf "/ChIP-seq/workflows/" \
 --unary_control \
---use_existing_folders &
+--use_existing_folders
 
 ##hg19
 chip_workflow.py \
@@ -38,7 +38,7 @@ chip_workflow.py \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/male.hg19.chrom.sizes" \
 --genomesize hs \
 --reference "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/ChIP-seq/male.hg19.tar.gz" \
---blacklist "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" &
+--blacklist "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 chip_workflow.py \
 --target tf \
@@ -49,7 +49,7 @@ chip_workflow.py \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/male.hg19.chrom.sizes" \
 --genomesize hs \
 --reference "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/ChIP-seq/male.hg19.tar.gz" \
---blacklist "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" &
+--blacklist "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz"
 
 chip_workflow.py \
 --target histone \
@@ -58,7 +58,7 @@ chip_workflow.py \
 --use_existing_folders \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/male.hg19.chrom.sizes" \
 --genomesize hs \
---reference "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/ChIP-seq/male.hg19.tar.gz" &
+--reference "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/ChIP-seq/male.hg19.tar.gz"
 
 chip_workflow.py \
 --target histone \
@@ -68,7 +68,7 @@ chip_workflow.py \
 --use_existing_folders \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/male.hg19.chrom.sizes" \
 --genomesize hs \
---reference "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/ChIP-seq/male.hg19.tar.gz" &
+--reference "ENCODE Uniform Processing Pipelines:/Reference Files/hg19/ChIP-seq/male.hg19.tar.gz"
 
 ##GRCh38
 chip_workflow.py \
@@ -78,7 +78,7 @@ chip_workflow.py \
 --use_existing_folders \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/GRCh38_EBV.chrom.sizes" \
 --genomesize hs \
---reference "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" &
+--reference "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz"
 
 chip_workflow.py \
 --target tf \
@@ -88,7 +88,7 @@ chip_workflow.py \
 --use_existing_folders \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/GRCh38_EBV.chrom.sizes" \
 --genomesize hs \
---reference "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" &
+--reference "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz"
 
 chip_workflow.py \
 --target histone \
@@ -97,7 +97,7 @@ chip_workflow.py \
 --use_existing_folders \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/GRCh38_EBV.chrom.sizes" \
 --genomesize hs \
---reference "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" &
+--reference "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz"
 
 chip_workflow.py \
 --target histone \
@@ -107,7 +107,7 @@ chip_workflow.py \
 --use_existing_folders \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/GRCh38_EBV.chrom.sizes" \
 --genomesize hs \
---reference "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" &
+--reference "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz"
 
 ##mm10
 chip_workflow.py \
@@ -117,7 +117,7 @@ chip_workflow.py \
 --use_existing_folders \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/mm10_no_alt.chrom.sizes" \
 --genomesize mm \
---reference "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" &
+--reference "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz"
 
 chip_workflow.py \
 --target tf \
@@ -127,7 +127,7 @@ chip_workflow.py \
 --use_existing_folders \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/mm10_no_alt.chrom.sizes" \
 --genomesize mm \
---reference "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" &
+--reference "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz"
 
 chip_workflow.py \
 --target histone \
@@ -136,7 +136,7 @@ chip_workflow.py \
 --use_existing_folders \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/mm10_no_alt.chrom.sizes" \
 --genomesize mm \
---reference "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" &
+--reference "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz"
 
 chip_workflow.py \
 --target histone \
@@ -146,4 +146,4 @@ chip_workflow.py \
 --use_existing_folders \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/mm10_no_alt.chrom.sizes" \
 --genomesize mm \
---reference "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" &
+--reference "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz"
