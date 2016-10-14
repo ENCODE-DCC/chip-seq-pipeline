@@ -153,15 +153,16 @@ def main(input_bam, paired_end, spp_version):
 
     spp_tarball = SPP_VERSION_MAP.get(spp_version)
     assert spp_tarball, "spp version %s is not supported" % (spp_version)
-    run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
-    #install spp
+    # install spp
     subprocess.check_output(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
-    out,err = common.run_pipe([
-        "Rscript %s -c=%s -p=%d -filtchr=chrM -savp=%s -out=%s" \
-            %(run_spp_command, subsampled_TA_filename, cpu_count(), CC_plot_filename, CC_scores_filename)])
-    subprocess.check_acll('ls -l', shell=True)
-    out,err = common.run_pipe([
-        r"""sed -r  's/,[^\t]+//g' %s""" %(CC_scores_filename)],
+    # run spp
+    run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
+    out, err = common.run_pipe([
+        "Rscript %s -c=%s -p=%d -filtchr=chrM -savp=%s -out=%s"
+        % (run_spp_command, subsampled_TA_filename, cpu_count(),
+           CC_plot_filename, CC_scores_filename)])
+    out, err = common.run_pipe([
+        r"""sed -r  's/,[^\t]+//g' %s""" % (CC_scores_filename)],
         outfile="temp")
     out, err = common.run_pipe([
         "mv temp %s" % (CC_scores_filename)])

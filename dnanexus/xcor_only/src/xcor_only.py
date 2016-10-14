@@ -118,8 +118,7 @@ def main(input_tagAlign, paired_end, spp_version):
 
     spp_tarball = SPP_VERSION_MAP.get(spp_version)
     assert spp_tarball, "spp version %s is not supported" % (spp_version)
-    run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
-    #install spp
+    # install spp
     subprocess.check_output(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
     # run spp
     run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
