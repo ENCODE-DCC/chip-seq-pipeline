@@ -11,11 +11,13 @@
     {
       "name": "reads1",
       "label": "Forward reads (SE or PE)",
+      "patterns": ["*.fastq", "*.fastq.gz", "*.fq", "*.fq.gz"],
       "class": "file"
     },
     {
       "name": "reads2",
       "label": "Reverse reads (PE)",
+      "patterns": ["*.fastq", "*.fastq.gz", "*.fq", "*.fq.gz"],
       "class": "file",
       "optional": true
     },
@@ -29,6 +31,7 @@
     {
       "name": "reference_tar",
       "label": "Reference files for bwa",
+      "patterns": ["*.tar", "*.tar.gz", "*.tgz"],
       "class": "file"
     },
     {
