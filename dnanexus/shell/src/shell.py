@@ -11,25 +11,32 @@
 # DNAnexus Python Bindings (dxpy) documentation:
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
-import os, logging, subprocess, shlex
 import dxpy
+import logging
+
+logger = logging.getLogger(__name__)
+logger.addHandler(dxpy.DXLogHandler())
+logger.propagate = False
+logger.setLevel(logging.INFO)
+
 
 @dxpy.entry_point('main')
 def main(hours_to_live):
 
-	logger = logging.getLogger(__name__)
-	logger.setLevel(logging.INFO)
+    # logger = logging.getLogger(__name__)
+    # logger.setLevel(logging.INFO)
 
-	logger.info('myinfo')
-	logger.warning('mywarning')
-	logger.error('myerror')
+    logger.debug('mydebug')
+    logger.info('myinfo')
+    logger.warning('mywarning')
+    logger.error('myerror')
 
-	from time import sleep
+    from time import sleep
 
-	sleep(hours_to_live*60*60)
+    sleep(hours_to_live*60*60)
 
-	output = {}
+    output = {}
 
-	return output
+    return output
 
 dxpy.run()

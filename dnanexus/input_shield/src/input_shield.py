@@ -28,6 +28,7 @@ DATA_CACHE_PROJECT = None  # if specified, look in that project for ENCFF files
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
+logger.setLevel(logging.INFO)
 
 
 def s3_dxcp(accession, key=None):

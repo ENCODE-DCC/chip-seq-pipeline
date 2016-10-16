@@ -31,6 +31,7 @@ import common
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
+logger.setLevel(logging.INFO)
 
 COMMON_METADATA = {
     'lab': 'encode-processing-pipeline',

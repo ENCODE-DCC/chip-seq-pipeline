@@ -22,6 +22,7 @@ from pprint import pprint
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
+logger.setLevel(logging.INFO)
 
 
 def dup_parse(fname):

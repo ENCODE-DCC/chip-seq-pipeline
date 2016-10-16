@@ -19,6 +19,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
+logger.setLevel(logging.INFO)
 
 
 def macs2(experiment, control, xcor_scores, chrom_sizes,

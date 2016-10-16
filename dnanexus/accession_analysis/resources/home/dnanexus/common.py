@@ -13,6 +13,7 @@ from time import time, sleep
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 logger.propagate = True
+logger.setLevel(logging.INFO)
 
 
 def test():

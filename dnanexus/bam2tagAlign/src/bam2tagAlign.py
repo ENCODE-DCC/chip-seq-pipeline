@@ -21,6 +21,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
+logger.setLevel(logging.INFO)
 
 
 @dxpy.entry_point('main')

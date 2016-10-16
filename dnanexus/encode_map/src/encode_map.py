@@ -13,6 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
+logger.setLevel(logging.INFO)
 
 BWA_PATH = {
     "0.7.7": "/usr/local/bin/bwa0.7.7",
