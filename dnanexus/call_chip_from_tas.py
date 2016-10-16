@@ -20,17 +20,17 @@ ASSEMBLY_METADATA = {
     'mm10': {
         'gsize': 'mm',
         'csizes': "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes",
-        'blacklist': None
+        'blacklist': "ENCODE Reference Files:/mm10/blacklists/mm10.blacklist.bed.gz"
     },
     'mm10-minimal': {
         'gsize': 'mm',
         'csizes': "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes",
-        'blacklist': None
+        'blacklist': "ENCODE Reference Files:/mm10/blacklists/mm10.blacklist.bed.gz"
     },
     'GRCh38': {
         'gsize': 'hs',
         'csizes': "ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes",
-        'blacklist': None
+        'blacklist': "ENCODE Reference Files:/GRCh38/blacklists/GRCh38.blacklist.bed.gz"
     },
     'hg19': {
         'gsize': 'hs',

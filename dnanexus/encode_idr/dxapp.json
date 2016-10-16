@@ -162,6 +162,18 @@
 			"label": "Pooled replicates signal",
 			"class": "file",
 			"optional": true
+		},
+		{
+			"name": "pre_bl_conservative_set",
+			"label": "Non blacklist-filtered conservative peaks (only if blacklist is used)",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "pre_bl_optimal_set",
+			"label": "Non blacklist-filtered optimal peaks (only if blacklist is used)",
+			"class": "file",
+			"optional": true
 		}
 	],
 	"runSpec": {
