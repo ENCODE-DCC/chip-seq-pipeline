@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
 logger.setLevel(logging.INFO)
+logger.info('Logging from the applet is activated')
 
 COMMON_METADATA = {
     'lab': 'encode-processing-pipeline',
@@ -598,7 +599,7 @@ def get_stage_name(pattern, stages):
 
 def get_stage_metadata(analysis, stage_pattern):
     logger.debug('in get_stage_metadata with analysis %s and stage_pattern %s'
-                 % (analysis['id'], stage_pattern))
+                 % (analysis.get('name'), stage_pattern))
     # unfortunately, very early runs of the IDR pipeline mispelled
     # a stage.  We still need to go back to those runs to harvest QC or for
     # other reasons, so here we just special-case it then over-ride the
@@ -1617,6 +1618,37 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
                 'stage_metadata': {}  # initialized below
             }
         })
+
+        final_idr_stage_name = \
+            get_stage_name("Final IDR peak calls", analysis_stages)
+        final_idr_stage_metadata = \
+            get_stage_metadata(peaks_analysis, "Final IDR peak calls")
+        final_idr_stage_input = final_idr_stage_metadata.get('input')
+        blacklist = final_idr_stage_input.get('blacklist')
+        if blacklist:
+            blacklist_file = dxpy.describe(blacklist)
+            # and construct the alias to find the corresponding file at ENCODEd
+            blacklist_alias = "dnanexus:" + blacklist_file.get('id')
+            encoded_blacklist = common.encoded_get(
+                urlparse.urljoin(
+                    server, 'files/%s' % (blacklist_alias)), keypair)
+            assert encoded_blacklist, "Blacklist file %s not found on Portal" % (blacklist_alias)
+            logger.info(
+                'DNAnexus blacklist %s matched to ENCODE file %s'
+                % (blacklist_file.get('name'), encoded_blacklist.get('accession')))
+            peak_stages[final_idr_stage_name].update({
+                'input_files': [
+                    {'name': 'blacklist',
+                     'derived_from': None,
+                     'metadata': None,
+                     'encode_object': encoded_blacklist}
+                ]
+                })
+            for output_file in peak_stages[final_idr_stage_name]['output_files']:
+                if output_file['name'] in ['conservative_set', 'optimal_set']:
+                    output_file['derived_from'].append('blacklist')
+        else:
+            logger.info('No blacklist used in this analysis.')
 
     for stage_name in peak_stages:
         if not stage_name.startswith('_'):
@@ -2642,10 +2674,10 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
 
     if debug:
         logger.setLevel(logging.DEBUG)
+        logger.debug('In accession_anlysis_id with logging level DEBUG')
     else:
         logger.setLevel(logging.INFO)
-
-    logger.setLevel(logging.INFO)
+        logger.info('In accession_anlysis_id with logging level INFO')
 
     authid, authpw, server = common.processkey(key, keyfile)
     keypair = (authid, authpw)
@@ -2790,11 +2822,11 @@ def main(outfn, debug, key, keyfile, dryrun,
          accession_raw=False, signal_only=False, skip_control=False):
 
     if debug:
-        logger.info('setting logger level to logging.DEBUG')
         logger.setLevel(logging.DEBUG)
+        logger.debug('Set logger level to logging.DEBUG')
     else:
-        logger.info('setting logger level to logging.INFO')
         logger.setLevel(logging.INFO)
+        logger.info('Set logger level to logging.INFO')
 
     if infile is not None:
         infile = dxpy.DXFile(infile)
@@ -2826,7 +2858,7 @@ def main(outfn, debug, key, keyfile, dryrun,
             "skip_control": skip_control
         }
 
-        logger.info("Acession job input: %s" % (accession_subjob_input))
+        logger.info("Accession job input: %s" % (accession_subjob_input))
         accession_subjobs.append(
             dxpy.new_dxjob(
                 fn_input=accession_subjob_input,

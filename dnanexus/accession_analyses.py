@@ -69,8 +69,10 @@ def main():
     args = get_args()
     if args.debug:
         logger.setLevel(logging.DEBUG)
+        logger.debug("Logging level set to DEBUG")
     else:
         logger.setLevel(logging.INFO)
+        logger.info("Logging level set to INFO")
 
     if args.analysis_ids:
         ids = args.analysis_ids
