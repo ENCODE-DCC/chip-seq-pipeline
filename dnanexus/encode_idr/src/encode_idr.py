@@ -152,11 +152,11 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks,
 
     # These are optional outputs to see what's being removed by the blacklist
     if blacklist:
-        output.update(
-            {"pre_bl_conservative_set":
+        output.update({
+            "pre_bl_conservative_set":
                 dxpy.dxlink(dxpy.upload_local_file(common.compress(
-                    reps_peaks_filename)))},
-            {"pre_bl_optimal_set":
+                    reps_peaks_filename))),
+            "pre_bl_optimal_set":
                 dxpy.dxlink(dxpy.upload_local_file(common.compress(
                     peaks_to_filter_filename)))}
         )
