@@ -108,14 +108,16 @@ def compress(fname):
     if mime_type in compressed_mimetypes:
         return fname
     else:
-        logging.info(subprocess.check_output(shlex.split('cp %s tmp' %(fname))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(fname))))
-        logging.info("Compressing %s" %(fname))
+        # the gzip version shipped with Ubuntu 12 does not have --keep/-k so
+        # have to do this copy manually
+        from uuid import uuid4
+        logging.info("Compressing %s" % (fname))
+        tmpname = uuid4()
+        subprocess.check_output(shlex.split('cp %s %s' % (fname, tmpname)))
         # gzip -n is used in order to make output deterministic
-        logging.info(subprocess.check_output(shlex.split('gzip -n %s' %(fname))))
+        subprocess.check_output(shlex.split('gzip -f -n %s' % (fname)))
         new_fname = fname + '.gz'
-        logging.info(subprocess.check_output(shlex.split('cp tmp %s' %(fname))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_fname))))
+        subprocess.check_output(shlex.split('cp %s %s' % (tmpname, fname)))
         return new_fname
 
 
