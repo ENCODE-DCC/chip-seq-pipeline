@@ -13,7 +13,6 @@ from time import time, sleep
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 logger.propagate = True
-logger.setLevel(logging.INFO)
 
 
 def test():
@@ -109,14 +108,16 @@ def compress(fname):
     if mime_type in compressed_mimetypes:
         return fname
     else:
-        logging.info(subprocess.check_output(shlex.split('cp %s tmp' %(fname))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(fname))))
-        logging.info("Compressing %s" %(fname))
+        # the gzip version shipped with Ubuntu 12 does not have --keep/-k so
+        # have to do this copy manually
+        from uuid import uuid4
+        logging.info("Compressing %s" % (fname))
+        tmpname = uuid4()
+        subprocess.check_output(shlex.split('cp %s %s' % (fname, tmpname)))
         # gzip -n is used in order to make output deterministic
-        logging.info(subprocess.check_output(shlex.split('gzip -n %s' %(fname))))
+        subprocess.check_output(shlex.split('gzip -f -n %s' % (fname)))
         new_fname = fname + '.gz'
-        logging.info(subprocess.check_output(shlex.split('cp tmp %s' %(fname))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_fname))))
+        subprocess.check_output(shlex.split('cp %s %s' % (tmpname, fname)))
         return new_fname
 
 
@@ -218,6 +219,9 @@ def slop_clip(filename, chrom_sizes, bed_type='bed'):
     out, err = run_pipe(pipe)
     if bed_type == 'bed':
         return clipped_fn
+    # MACS2 sometimes generates blocks that span outside of the peak
+    # this causes bedtobigbed to exit with an error
+    # need to clip those back
     elif bed_type == 'gappedPeak':
         clipped_gappedPeaks_fn = '%s-gapclipped' % (clipped_fn)
         import csv
@@ -255,6 +259,8 @@ def slop_clip(filename, chrom_sizes, bed_type='bed'):
                     peak['thickStart'] = chromStart
                 if peak['thickEnd'] > chromEnd:
                     peak['thickEnd'] = chromEnd
+                # build blocks in absolute chromosome coordinates
+                # the peak's blockStarts are zero-based
                 blocks = [
                     dict(zip(
                         ['start', 'end'],
@@ -262,23 +268,32 @@ def slop_clip(filename, chrom_sizes, bed_type='bed'):
                     for i in range(peak['blockCount'])]
                 newblocks = []
                 for block in blocks:
-                    if block['start'] < chromStart and block['end'] < chromStart:
+                    # drop blocks that are entirely outside the peak
+                    if \
+                        ((block['start'] < chromStart and block['end'] < chromstart) or
+                         (block['start'] > chromEnd and block['end'] > chromEnd)):
                         continue
-                    elif block['start'] > chromEnd and block['end'] > chromEnd:
-                        continue
-                    elif block['end'] > chromEnd:
+                    # clip the end of blocks that extend past the peak
+                    if block['end'] > chromEnd:
                         block['end'] = chromEnd
-                    elif block['start'] < block['start']:
+                    # clip the start of blocks that start before the peak
+                    if block['start'] < chromStart:
                         block['start'] = chromStart
+                    # drop zero-length blocks
+                    if block['start'] == block['end']:
+                        continue
                     newblocks.append(block)
-                if not [b for b in blocks if b['start'] == chromStart]:
+                # bed2bigbed requires a block at the beginning
+                if not [b for b in newblocks if b['start'] == chromStart]:
                     newblocks.insert(
                         0,
                         {'start': chromStart, 'end': chromStart+1})
-                if not [b for b in blocks if b['end'] == chromEnd]:
+                # bed2bigbed requires a block at the end
+                if not [b for b in newblocks if b['end'] == chromEnd]:
                     newblocks.append(
                         {'start': chromEnd-1, 'end': chromEnd})
-
+                # chromStart + chromStarts[last] + blockSizes[last] must equal chromEnd
+                # rewrite the new blocks into the peak
                 peak['blockCount'] = len(newblocks)
                 peak['blockSizes'] = \
                     [(block['end']-block['start']) for block in newblocks]

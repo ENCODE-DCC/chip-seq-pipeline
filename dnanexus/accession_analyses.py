@@ -9,6 +9,7 @@ import shlex
 ACCESSION_ANALYSIS_APPLET = '/applets/accession_analysis'
 
 logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
 
 EPILOG = '''Notes:
 
@@ -72,7 +73,6 @@ def main():
         logger.debug("Logging level set to DEBUG")
     else:
         logger.setLevel(logging.INFO)
-        logger.info("Logging level set to INFO")
 
     if args.analysis_ids:
         ids = args.analysis_ids

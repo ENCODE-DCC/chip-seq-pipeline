@@ -41,6 +41,53 @@ COMMON_METADATA = {
 
 DEPRECATED = ['deleted', 'replaced', 'revoked']
 
+# This is a mapping from pipeline version to step version names and
+# ENCODEd analysis_step_version aliases
+STEP_VERSION_ALIASES = {
+    'default': {
+        'bwa-alignment-step':                      'bwa-alignment-step-v-1',
+        'bwa-indexing-step':                       'bwa-indexing-step-v-1',
+        'bwa-raw-alignment-step':                  'bwa-raw-alignment-step-v-1',
+        'histone-peak-calling-step':               'histone-peak-calling-step-v-1',
+        'histone-overlap-peaks-step':              'histone-overlap-peaks-step-v-1',
+        'histone-peaks-to-bigbed-step':            'histone-peaks-to-bigbed-step-v-1',
+        'histone-replicated-peaks-to-bigbed-step': 'histone-replicated-peaks-to-bigbed-step-v-1',
+        'tf-macs2-signal-calling-step':            'tf-macs2-signal-calling-step-v-1',
+        'tf-spp-peak-calling-step':                'tf-spp-peak-calling-step-v-1',
+        'tf-idr-step':                             'tf-idr-step-v-1',
+        'tf-peaks-to-bigbed-step':                 'tf-peaks-to-bigbed-step-v-1',
+        'tf-idr-peaks-to-bigbed-step':             'tf-idr-peaks-to-bigbed-step-v-1'
+    },
+    '1': {
+        'bwa-alignment-step':                      'bwa-alignment-step-v-1',
+        'bwa-indexing-step':                       'bwa-indexing-step-v-1',
+        'bwa-raw-alignment-step':                  'bwa-raw-alignment-step-v-1',
+        'histone-peak-calling-step':               'histone-peak-calling-step-v-1',
+        'histone-overlap-peaks-step':              'histone-overlap-peaks-step-v-1',
+        'histone-peaks-to-bigbed-step':            'histone-peaks-to-bigbed-step-v-1',
+        'histone-replicated-peaks-to-bigbed-step': 'histone-replicated-peaks-to-bigbed-step-v-1',
+        'tf-macs2-signal-calling-step':            'tf-macs2-signal-calling-step-v-1',
+        'tf-spp-peak-calling-step':                'tf-spp-peak-calling-step-v-1',
+        'tf-idr-step':                             'tf-idr-step-v-1',
+        'tf-peaks-to-bigbed-step':                 'tf-peaks-to-bigbed-step-v-1',
+        'tf-idr-peaks-to-bigbed-step':             'tf-idr-peaks-to-bigbed-step-v-1'
+    },
+    '1.2': {
+        'bwa-alignment-step':                      'bwa-alignment-step-v-1.2',
+        'bwa-indexing-step':                       'bwa-indexing-step-v-1',
+        'bwa-raw-alignment-step':                  'bwa-raw-alignment-step-v-1.2',
+        'histone-peak-calling-step':               'histone-peak-calling-step-v-1.2',
+        'histone-overlap-peaks-step':              'histone-overlap-peaks-step-v-1.2',
+        'histone-peaks-to-bigbed-step':            'histone-peaks-to-bigbed-step-v-1',
+        'histone-replicated-peaks-to-bigbed-step': 'histone-replicated-peaks-to-bigbed-step-v-1',
+        'tf-macs2-signal-calling-step':            'tf-macs2-signal-calling-step-v-1.2',
+        'tf-spp-peak-calling-step':                'tf-spp-peak-calling-step-v-1.2',
+        'tf-idr-step':                             'tf-idr-step-v-1',
+        'tf-peaks-to-bigbed-step':                 'tf-peaks-to-bigbed-step-v-1',
+        'tf-idr-peaks-to-bigbed-step':             'tf-idr-peaks-to-bigbed-step-v-1'
+    }
+}
+
 
 def flat(l):
     result = []
@@ -2148,7 +2195,7 @@ def accession_pipeline(analysis_step_versions, keypair, server, dryrun, force_pa
 
 def accession_mapping_analysis_files(
         mapping_analysis, keypair, server, dryrun, force_patch, force_upload,
-        fqcheck, accession_raw):
+        fqcheck, accession_raw, pipeline_version):
 
     experiment_accession = get_experiment_accession(mapping_analysis)
     if not experiment_accession:
@@ -2206,7 +2253,7 @@ def accession_mapping_analysis_files(
                 'in accession_mapping_analysis_files, patch_outputs for derived from failed')
 
     mapping_analysis_step_versions = {
-        'bwa-indexing-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
             {
                 'stages': "",
                 'stage_name': "",
@@ -2215,7 +2262,7 @@ def accession_mapping_analysis_files(
                 'qc_objects': []
             }
         ],
-        'bwa-alignment-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['bwa-alignment-step']: [
             {
                 'stages': mapping_stages,
                 'stage_name': get_stage_name('Filter and QC.*', analysis_stages),
@@ -2230,7 +2277,7 @@ def accession_mapping_analysis_files(
     }
 
     if accession_raw:
-        mapping_analysis_step_versions['bwa-alignment-step-v-1'].append(
+        mapping_analysis_step_versions[STEP_VERSION_ALIASES[pipeline_version]['bwa-alignment-step']].append(
             {
                 'stages': raw_mapping_stages,
                 'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
@@ -2248,7 +2295,8 @@ def accession_mapping_analysis_files(
 
 
 def accession_raw_mapping_analysis_files(
-        mapping_analysis, keypair, server, dryrun, force_patch, force_upload, fqcheck):
+        mapping_analysis, keypair, server, dryrun, force_patch, force_upload,
+        fqcheck, pipeline_version):
 
     experiment_accession = get_experiment_accession(mapping_analysis)
     if not experiment_accession:
@@ -2277,7 +2325,7 @@ def accession_raw_mapping_analysis_files(
     files_with_derived = patch_outputs(raw_mapping_stages, keypair, server, dryrun)
 
     raw_mapping_analysis_step_versions = {
-        'bwa-indexing-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
             {
                 'stages': "",
                 'stage_name': "",
@@ -2286,7 +2334,7 @@ def accession_raw_mapping_analysis_files(
                 'qc_objects': []
             }
         ],
-        'bwa-raw-alignment-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['bwa-raw-alignment-step']: [
             {
                 'stages': raw_mapping_stages,
                 'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
@@ -2304,7 +2352,8 @@ def accession_raw_mapping_analysis_files(
 
 
 def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
-                                     force_patch, force_upload, fqcheck):
+                                     force_patch, force_upload, fqcheck,
+                                     pipeline_version):
 
     experiment_accession = get_experiment_accession(peaks_analysis)
 
@@ -2367,7 +2416,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
             patch_outputs(stages, keypair, server, dryrun))
 
     full_analysis_step_versions = {
-        'bwa-indexing-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
             {
                 'stages': "",
                 'stage_name': "",
@@ -2376,7 +2425,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'qc_objects': []
             }
         ],
-        'bwa-alignment-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['bwa-alignment-step']: [
             {
                 'stages': control_stages[0],
                 'stage_name': next(stage_name for stage_name in control_stages[0].keys() if stage_name.startswith('Filter and QC')),
@@ -2419,7 +2468,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                 ]
             }
         ],
-        'histone-peak-calling-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['histone-peak-calling-step']: [
             {
                 'stages': peak_stages,
                 'stage_name': 'ENCODE Peaks',
@@ -2432,7 +2481,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'qc_objects': []
             }
         ],
-        'histone-overlap-peaks-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['histone-overlap-peaks-step']: [
             {
                 'stages': peak_stages,
                 'stage_name': next(stage_name for stage_name in peak_stages.keys() if re.match('(Overlap|Final) narrowpeaks', stage_name)),
@@ -2441,7 +2490,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'qc_objects': []
             }
         ],
-        'histone-peaks-to-bigbed-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['histone-peaks-to-bigbed-step']: [
             {
                 'stages': peak_stages,
                 'stage_name': 'ENCODE Peaks',
@@ -2452,7 +2501,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'qc_objects': []
             }
         ],
-        'histone-replicated-peaks-to-bigbed-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['histone-replicated-peaks-to-bigbed-step']: [
             {
                 'stages': peak_stages,
                 'stage_name': next(stage_name for stage_name in peak_stages.keys() if re.match('(Overlap|Final) narrowpeaks', stage_name)),
@@ -2470,7 +2519,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
 
 def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                                 force_patch, force_upload, fqcheck,
-                                signal_only, skip_control):
+                                signal_only, skip_control, pipeline_version):
 
     # m = re.match('^(ENCSR[0-9]{3}[A-Z]{3}) Peaks',peaks_analysis['executableName'])
     # if m:
@@ -2576,7 +2625,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
         ])
 
     full_analysis_step_versions = {
-        'bwa-indexing-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
             {
                 'stages': "",
                 'stage_name': "",
@@ -2585,8 +2634,9 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'qc_objects': []
             }
         ],
-        'bwa-alignment-step-v-1': alignment_substeps,
-        'tf-macs2-signal-calling-step-v-1': [
+        STEP_VERSION_ALIASES[pipeline_version]['bwa-alignment-step']:
+            alignment_substeps,
+        STEP_VERSION_ALIASES[pipeline_version]['tf-macs2-signal-calling-step']: [
             {
                 'stages': peak_stages,
                 'stage_name': 'ENCODE Peaks',
@@ -2599,7 +2649,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
 
     if not signal_only:
         full_analysis_step_versions.update({
-            'tf-spp-peak-calling-step-v-1': [
+            STEP_VERSION_ALIASES[pipeline_version]['tf-spp-peak-calling-step']: [
                 {
                     'stages': peak_stages,
                     'stage_name': 'SPP Peaks',
@@ -2608,7 +2658,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                     'qc_objects': []
                 }
             ],
-            'tf-idr-step-v-1': [
+            STEP_VERSION_ALIASES[pipeline_version]['tf-idr-step']: [
                 {
                     'stages': peak_stages,
                     'stage_name': 'Final IDR peak calls',
@@ -2619,7 +2669,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                     ]
                 }
             ],
-            'tf-peaks-to-bigbed-step-v-1': [
+            STEP_VERSION_ALIASES[pipeline_version]['tf-peaks-to-bigbed-step']: [
                 {
                     'stages': peak_stages,
                     'stage_name': 'SPP Peaks',
@@ -2628,7 +2678,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                     'qc_objects': []
                 }
             ],
-            'tf-idr-peaks-to-bigbed-step-v-1': [
+            STEP_VERSION_ALIASES[pipeline_version]['tf-idr-peaks-to-bigbed-step']: [
                 {
                     'stages': peak_stages,
                     'stage_name': 'Final IDR peak calls',
@@ -2667,6 +2717,11 @@ def infer_pipeline(analysis):
         return None
 
 
+def infer_pipeline_version(analysis):
+    workflow = dxpy.describe(analysis['workflow']['id'], fields={'properties': True})
+    return workflow['properties'].get('pipeline_version') or 'default'
+
+
 @dxpy.entry_point('accession_analysis_id')
 def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
                           force_upload, fqcheck, analysis_id, pipeline,
@@ -2691,6 +2746,9 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
     else:
         inferred_pipeline = pipeline
 
+    pipeline_version = infer_pipeline_version(analysis)
+    logger.info("Accessioning as pipeline version %s" % (pipeline_version))
+
     output = {
         'analysis': analysis_id,
         'experiment': experiment,
@@ -2709,7 +2767,7 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
             accessioned_files = \
                 accession_histone_analysis_files(
                     analysis, keypair, server, dryrun, force_patch,
-                    force_upload, fqcheck)
+                    force_upload, fqcheck, pipeline_version)
             logger.info('accession histone analysis completed')
         elif inferred_pipeline == "mapping":
             logger.info('accession mapping analysis started')
@@ -2718,8 +2776,7 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
             accessioned_files = \
                 accession_mapping_analysis_files(
                     analysis, keypair, server, dryrun, force_patch,
-                    force_upload, fqcheck,
-                    accession_raw=accession_raw)
+                    force_upload, fqcheck, accession_raw, pipeline_version)
             logger.info('accession mapping analysis completed')
         elif inferred_pipeline == "tf":
             logger.info('accession tf_chip_seq analysis started')
@@ -2728,7 +2785,8 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
             accessioned_files = \
                 accession_tf_analysis_files(
                     analysis, keypair, server, dryrun, force_patch,
-                    force_upload, fqcheck, signal_only, skip_control)
+                    force_upload, fqcheck, signal_only, skip_control,
+                    pipeline_version)
             logger.info('accession tf_chip_seq analysis completed')
         elif inferred_pipeline == "raw":
             logger.info('accession raw mapping analysis started')
@@ -2737,7 +2795,7 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
             accessioned_files = \
                 accession_raw_mapping_analysis_files(
                     analysis, keypair, server, dryrun, force_patch,
-                    force_upload, fqcheck)
+                    force_upload, fqcheck, pipeline_version)
             logger.info('accession raw mapping analysis completed')
         else:
             logger.error(

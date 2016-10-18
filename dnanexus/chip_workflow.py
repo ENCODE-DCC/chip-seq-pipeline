@@ -219,6 +219,10 @@ def get_args():
         '--spp_version',
         help="Version string for spp",
         default="1.14")
+    parser.add_argument(
+        '--pipeline_version',
+        help="Version string for ENCODE pipeline",
+        default="1.2")
 
     # parser.add_argument('--idr',     help='Report peaks with and without IDR analysis',                 default=False, action='store_true')
     # parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
@@ -438,7 +442,8 @@ def main():
         title=args.title or WF[target_type]['wf_title'],
         description=args.description or WF[target_type]['wf_description'],
         project=output_project.get_id(),
-        folder=output_folder)
+        folder=output_folder,
+        properties={'pipeline_version': str(args.pipeline_version)})
 
 
     unary_control = args.unary_control or (args.rep1 and args.rep2 and args.ctl1 and not args.ctl2)
