@@ -5,26 +5,26 @@
 ## no reference pre-loaded
 chip_workflow.py \
 --target tf \
---name "ENCODE TF ChIP-seq (no reference)" \
+--name "ENCODE TF ChIP-seq (specify reference)" \
 --outf "/ChIP-seq/workflows/" \
 --use_existing_folders
 
 chip_workflow.py \
 --target tf \
---name "ENCODE TF ChIP-seq Unary Control (no reference)" \
+--name "ENCODE TF ChIP-seq Unary Control (specify reference)" \
 --outf "/ChIP-seq/workflows/" \
 --unary_control \
 --use_existing_folders
 
 chip_workflow.py \
 --target histone \
---name "ENCODE Histone ChIP-seq (no reference)" \
+--name "ENCODE Histone ChIP-seq (specify reference)" \
 --outf "/ChIP-seq/workflows/" \
 --use_existing_folders
 
 chip_workflow.py \
 --target histone \
---name "ENCODE Histone ChIP-seq Unary Control (no reference)" \
+--name "ENCODE Histone ChIP-seq Unary Control (specify reference)" \
 --outf "/ChIP-seq/workflows/" \
 --unary_control \
 --use_existing_folders
