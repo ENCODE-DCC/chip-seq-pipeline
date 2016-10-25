@@ -64,6 +64,7 @@ def get_args():
     # parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default="2")
     parser.add_argument('--dryrun', help="Formulate the run command, but don't actually run", default=False, action='store_true')
     parser.add_argument('--spp_version', help="spp version", default="1.14")
+    parser.add_argument('--control', help="Use specified control tagAlign rather than infer one.", default=None)
 
     args = parser.parse_args()
 
@@ -301,7 +302,7 @@ def is_paired_end(tagAlign_file):
     return job['output']['paired_end']
 
 
-def get_tas(experiment, server, keypair, default_project, ta_folders):
+def get_tas(experiment, server, keypair, default_project, ta_folders, control_dxhandler):
     # tas = {
     #   'rep1_ta': {
     #       'file_id': "",
@@ -383,44 +384,49 @@ def get_tas(experiment, server, keypair, default_project, ta_folders):
     tas = {}
     used_controls = []
     for i, repn in enumerate(repns):
-        encode_files = \
-            [common.encoded_get(server+'/files/%s/' % (f), keypair) for f in get_encffs(possible_files[i].get('name'))]
-        controlled_by = \
-            common.flat([f.get('controlled_by') for f in encode_files])
-        if any(controlled_by):
-            controlled_by_accessions = \
-                list(set([uri.split('/')[2] for uri in controlled_by if uri]))
-            controlled_by_ta = \
-                get_ta_from_accessions(
-                    controlled_by_accessions, default_project, ta_folders)
-            if controlled_by_ta:
-                controlled_by_ta_name = controlled_by_ta.get('name')
-                controlled_by_ta_id = controlled_by_ta.get('id')
-            else:
-                logging.error(
-                    "%s: Could not find controlled_by_ta for accessions %s"
-                    % (experiment.get('accession'), controlled_by_accessions))
-                controlled_by_ta_name = None
-                controlled_by_ta_id = None
-        else:
-            # evaluate possible controls
+        if control_dxhandler:
+            controlled_by_ta_name = control_dxhandler.name
+            controlled_by_ta_id = control_dxhandler.get_id()
             controlled_by_accessions = None
-            possible_controls = experiment.get('possible_controls')
-            logging.warning(
-                '%s: No controlled_by for rep%d, attempting to infer from possible_controls %s'
-                % (experiment.get('accession'), repn, possible_controls))
-            if not possible_controls or not any(possible_controls):
-                logging.error(
-                    '%s: Could not find controlled_by or resolve possible_controls for rep%d'
-                    % (experiment.get('accession'), repn))
-                controlled_by_ta_name = None
-                controlled_by_ta_id = None
+        else:
+            encode_files = \
+                [common.encoded_get(server+'/files/%s/' % (f), keypair) for f in get_encffs(possible_files[i].get('name'))]
+            controlled_by = \
+                common.flat([f.get('controlled_by') for f in encode_files])
+            if any(controlled_by):
+                controlled_by_accessions = \
+                    list(set([uri.split('/')[2] for uri in controlled_by if uri]))
+                controlled_by_ta = \
+                    get_ta_from_accessions(
+                        controlled_by_accessions, default_project, ta_folders)
+                if controlled_by_ta:
+                    controlled_by_ta_name = controlled_by_ta.get('name')
+                    controlled_by_ta_id = controlled_by_ta.get('id')
+                else:
+                    logging.error(
+                        "%s: Could not find controlled_by_ta for accessions %s"
+                        % (experiment.get('accession'), controlled_by_accessions))
+                    controlled_by_ta_name = None
+                    controlled_by_ta_id = None
             else:
-                control_ta = get_possible_ctl_ta(
-                    experiment, repn, server, keypair, default_project,
-                    ta_folders, used_controls)
-                controlled_by_ta_name = control_ta.get('name')
-                controlled_by_ta_id = control_ta.get('id')
+                # evaluate possible controls
+                controlled_by_accessions = None
+                possible_controls = experiment.get('possible_controls')
+                logging.warning(
+                    '%s: No controlled_by for rep%d, attempting to infer from possible_controls %s'
+                    % (experiment.get('accession'), repn, possible_controls))
+                if not possible_controls or not any(possible_controls):
+                    logging.error(
+                        '%s: Could not find controlled_by or resolve possible_controls for rep%d'
+                        % (experiment.get('accession'), repn))
+                    controlled_by_ta_name = None
+                    controlled_by_ta_id = None
+                else:
+                    control_ta = get_possible_ctl_ta(
+                        experiment, repn, server, keypair, default_project,
+                        ta_folders, used_controls)
+                    controlled_by_ta_name = control_ta.get('name')
+                    controlled_by_ta_id = control_ta.get('id')
         if not (controlled_by_ta_name and controlled_by_ta_id):
             logging.error(
                 '%s: Failed to find controls' % (experiment.get('accession')))
@@ -492,6 +498,26 @@ def get_tas(experiment, server, keypair, default_project, ta_folders):
     #find the 
 
 
+def resolve_dx_file(identifier):
+    try:
+        handler = dxpy.get_handler(identifier)
+    except dxpy.DXError:
+        try:
+            handler = dxpy.find_one_data_object(
+                classname='file',
+                name=identifier,
+                return_handler=True,
+                zero_ok=False,
+                more_ok=False)
+        except dxpy.DXSearchError:
+            logging.error('Failed to resolve control %s to unique dx object.  ID or name does not exist or multiple files of that name were found.' % (str(identifier)))
+            return None
+        else:
+            return handler
+    else:
+        return handler
+
+
 def main():
     args = get_args()
     authid, authpw, server = common.processkey(args.key, args.keyfile)
@@ -503,6 +529,11 @@ def main():
     if args.infile:
         with open(args.infile, 'r') as fh:
             experiments.extend([e for e in fh])
+
+    if args.control:
+        control_dxhandler = resolve_dx_file(args.control)
+    else:
+        control_dxhandler = None
 
     for exp_id in experiments:
         if exp_id.startswith('#'):
@@ -523,7 +554,7 @@ def main():
             % (experiment['accession'], target.get('investigated_as'),
                experiment.get('description')))
 
-        tas = get_tas(experiment, server, keypair, args.project, args.inf)
+        tas = get_tas(experiment, server, keypair, args.project, args.inf, control_dxhandler)
         if not tas:
             logging.error(
                 'Failed to resolve all tagaligns for %s'
