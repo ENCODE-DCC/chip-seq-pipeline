@@ -103,6 +103,9 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
     # this changes any such coodinates to decimal notation
     # this assumes 10-column output and that the 2nd and 3rd columns are
     # coordinates
+    # the ($2>0)?$2:0) is needed because spp sometimes calls peaks with a
+    # negative start coordinate (particularly chrM) and will cause slopBed
+    # to halt at that line, truncating the output of the pipe
     # slopBed adjusts feature end coordinates that go off the end of the
     # chromosome
     # bedClip removes any features that are still not within the boundaries of
@@ -114,7 +117,7 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
     out, err = common.run_pipe([
         "gzip -dc %s" % (final_peaks_filename),
         "tee %s" % (peaks_filename),
-        r"""awk 'BEGIN{OFS="\t"}{print $1,sprintf("%i",$2),sprintf("%i",$3),$4,$5,$6,$7,$8,$9,$10}'""",
+        r"""awk 'BEGIN{OFS="\t"}{print $1,sprintf("%i",($2>0)?$2:0),sprintf("%i",$3),$4,$5,$6,$7,$8,$9,$10}'""",
         'slopBed -i stdin -g %s -b 0' % (chrom_sizes_filename),
         'bedClip stdin %s %s' % (chrom_sizes_filename, fix_coordinate_peaks_filename)
     ])
