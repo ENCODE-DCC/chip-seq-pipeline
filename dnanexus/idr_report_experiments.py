@@ -32,13 +32,9 @@ def get_args():
     parser.add_argument('--created_after', help="String to search for analyses (instead of looking in --infile or arguments) in the DNAnexus form like -5d", default=None)
     parser.add_argument('--state',      help="One or more analysis states to report on (only with --created_after)", nargs='*', default=["done"])
     parser.add_argument('--lab',        help="One or more labs to limit the reporting to", nargs='*', default=[])
+    parser.add_argument('--assembly',   help="Genome assembly to report on (e.g. hg19 or GRCg38", required=True)
 
     args = parser.parse_args()
-
-    if args.debug:
-        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-    else: #use the defaulf logging level
-        logging.basicConfig(format='%(levelname)s:%(message)s')
 
     return args
 
@@ -66,9 +62,12 @@ def get_experiment_accession(analysis):
 def main():
 
     args = get_args()
+
     if args.debug:
+        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
         logger.setLevel(logging.DEBUG)
-    else:
+    else:  # use the defaulf logging level
+        logging.basicConfig(format='%(levelname)s:%(message)s')
         logger.setLevel(logging.INFO)
 
     authid, authpw, server = common.processkey(args.key, args.keyfile)
@@ -103,6 +102,7 @@ def main():
 
     idr_query = \
         "/search/?type=File" + \
+        "&assembly=%s" % (args.assembly) + \
         "&file_format=bed" + \
         "&output_type=optimal+idr+thresholded+peaks" + \
         "&output_type=conservative+idr+thresholded+peaks" + \
@@ -119,10 +119,10 @@ def main():
         idr_files = \
             [f for f in all_idr_files if f['dataset'] == experiment_uri]
         idr_step_runs = set([f.get('step_run') for f in idr_files])
-        if not len(idr_step_runs) == 1:
+        if not len(idr_step_runs):
             if not args.all:
                 logger.warning(
-                    "%s: Expected one IDR step run. Found %d.  Skipping"
+                    "%s: Found %d IDR step runs.  Skipping"
                     % (experiment_id, len(idr_step_runs)))
             continue
 
@@ -198,7 +198,7 @@ def main():
         try:
             idr_stage = next(s['execution'] for s in desc['stages'] if s['execution']['name'] == "Final IDR peak calls")
         except:
-            logging.error('Failed to find final IDR stage in %s' %(analysis_id))
+            logger.error('Failed to find final IDR stage in %s' %(analysis_id))
         else:
             if idr_stage['state'] != 'done': #Final IDR peak calls stage not done, so loop through intermediate IDR stages to find errors
                 Np = N1 = N2 = Nt = rescue_ratio = self_consistency_ratio = reproducibility_test = None
