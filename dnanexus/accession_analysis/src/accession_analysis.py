@@ -12,6 +12,7 @@
 #   http://autodoc.dnanexus.com/bindings/python/current/
 
 import os
+import sys
 import subprocess
 import logging
 import traceback
@@ -44,6 +45,14 @@ DEPRECATED = ['deleted', 'replaced', 'revoked']
 
 # This is a mapping from pipeline version to step version names and
 # ENCODEd analysis_step_version aliases
+# Version dates are only used to infer the pipeline version if it cannot be
+# inferred directly from the workflow (for instance if the workflow has been
+# deleted)
+# As seconds from the epoch
+VERSION_TIMES = {
+    '1': 0,
+    '1.2': 1471460400  # "Wed Aug 17 12:00:00 2016"
+}
 STEP_VERSION_ALIASES = {
     'default': {
         'bwa-alignment-step':                      'bwa-alignment-step-v-1',
@@ -2726,8 +2735,23 @@ def infer_pipeline(analysis):
 
 
 def infer_pipeline_version(analysis):
-    workflow = dxpy.describe(analysis['workflow']['id'], fields={'properties': True})
-    return workflow['properties'].get('pipeline_version') or 'default'
+    try:
+        workflow = dxpy.describe(
+            analysis['workflow']['id'], fields={'properties': True})
+    except dxpy.exceptions.ResourceNotFound:
+        analysis_date = analysis.get('created')
+        # get the largest version number that was activated on a date before
+        # this analysis was created
+        pipeline_version = str(max([
+            float(version) for version in VERSION_TIMES
+            if VERSION_TIMES[version] < analysis_date])) or None
+        logger.warning(
+            "Workflow for %s is missing.  Inferred version %s"
+            % (analysis.get('id'), pipeline_version))
+    else:
+        pipeline_version = workflow['properties'].get('pipeline_version')
+
+    return pipeline_version or 'default'
 
 
 @dxpy.entry_point('accession_analysis_id')
