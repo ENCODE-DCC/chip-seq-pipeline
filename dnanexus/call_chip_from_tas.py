@@ -191,6 +191,14 @@ def get_possible_ctl_ta(experiment, repn, server, keypair, default_project,
         # (i.e. not IgG)
         if not target_uri or target_uri.split('/')[2].startswith('Control'):
             possible_control_experiments.append(possible_control_experiment)
+        elif 'control' in target_uri.split('/')[2]:
+            logging.warning(
+                '%s: possible control %s has target %s.  Such controls are allowed but deprecated.' % (
+                    experiment.get('accession'),
+                    possible_control_experiment.get('accession'),
+                    target_uri))
+            possible_control_experiments.append(possible_control_experiment)
+
         else:
             logging.warning(
                 '%s: possible control %s has target %s, not "Control". Skipping.' % (
