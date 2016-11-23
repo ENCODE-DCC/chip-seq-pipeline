@@ -27,6 +27,7 @@ from base64 import b64encode
 import dxpy
 import common
 
+logging.basicConfig()
 # logging.getLogger("requests").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
@@ -1895,7 +1896,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
             accession_in_tag = False
 
     # TODO check here if file is deprecated and, if so, warn
-    if md5_exists and not force_patch:
+    if md5_exists and not (force_patch or force_upload):
         logger.info("accession_file: Returning duplicate file unchanged")
         return md5_exists
 
@@ -1910,12 +1911,18 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         f['accession'] = md5_exists['accession']
         new_file_object = patch_file(f, keypair, server, dryrun)
         if force_upload:
-            logger.info(
-                "accession_file: MD5 exisits, but force_upload, so uploading and patching file metatdata")
-            return_code = common.s3_cp(
-                f, local_fname, server, keypair)
-            logger.debug('s3_cp returned %s' % (return_code))
-            add_tag(dx_fh, new_file_object.get('accession'))
+            if new_file_object['status'] != "uploading":
+                logger.warning(
+                    '%s: status is %s, not uploading so force_upload is not allowed. Skipping.'
+                    % (new_file_object.get('accession'), new_file_object.get('status')))
+            else:
+                logger.info(
+                    "accession_file: MD5 exisits, but force_upload, so uploading and patching file metatdata")
+                return_code = common.s3_cp(
+                    new_file_object, local_fname, server, keypair)
+                logger.debug('s3_cp returned %s' % (return_code))
+                assert not return_code, '%s: s3_cp failed. Returned non-zero return code %s' % (new_file_object.get('accession'), return_code)
+                add_tag(dx_fh, new_file_object.get('accession'))
     else:
         logger.info("accession_file: New MD5")
         logger.info('posting new file %s' % (f.get('submitted_file_name')))
@@ -1924,6 +1931,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         return_code = common.s3_cp(
             new_file_object, local_fname, server, keypair)
         logger.debug('s3_cp returned %s' % (return_code))
+        assert not return_code, '%s: s3_cp failed. Returned non-zero return code %s' % (new_file_object.get('accession'), return_code)
         add_tag(dx_fh, new_file_object.get('accession'))
     try:
         os.remove(local_fname)

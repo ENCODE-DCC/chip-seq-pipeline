@@ -8,10 +8,14 @@ import logging
 import re
 import urlparse
 import dateutil.parser
-from time import time, sleep
+import time
+import pprint
+import dxpy
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+#logger.setLevel(logging.DEBUG)
+#logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = True
 
 
@@ -86,8 +90,8 @@ def uncompress(filename):
     m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))', filename)
     if m:
         basename = m.group(1)
-        logging.info("Decompressing %s" % (filename))
-        # logging.info(subprocess.check_output(shlex.split('gzip -dc %s' %(filename))))
+        logger.info("Decompressing %s" % (filename))
+        # logger.info(subprocess.check_output(shlex.split('gzip -dc %s' %(filename))))
         out, err = run_pipe([
             'gzip -dc %s' % (filename)],
             basename)
@@ -111,7 +115,7 @@ def compress(fname):
         # the gzip version shipped with Ubuntu 12 does not have --keep/-k so
         # have to do this copy manually
         from uuid import uuid4
-        logging.info("Compressing %s" % (fname))
+        logger.info("Compressing %s" % (fname))
         tmpname = uuid4()
         subprocess.check_output(shlex.split('cp %s %s' % (fname, tmpname)))
         # gzip -n is used in order to make output deterministic
@@ -147,7 +151,7 @@ def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
         bb_filename = bed_filename + '.bb'
     bed_filename_sorted = bed_filename + ".sorted"
 
-    logging.debug("In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file))
+    logger.debug("In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file))
 
     print "Sorting"
     print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
@@ -311,6 +315,13 @@ def slop_clip(filename, chrom_sizes, bed_type='bed'):
 
 def processkey(key=None, keyfile=None):
 
+    # these are just for logger testing
+    # logger.debug('processkey DEBGU')
+    # logger.info('processkey INFO')
+    # logger.warning('processkey WARNING')
+    # logger.error('processkey ERROR')
+    # logger.critical('processkey CRITICAL')
+
     import json
 
     if not (key or keyfile) and os.getenv('ENCODE_AUTHID',None) and os.getenv('ENCODE_AUTHPW',None) and os.getenv('ENCODE_SERVER',None):
@@ -324,14 +335,14 @@ def processkey(key=None, keyfile=None):
             elif os.path.isfile(os.path.expanduser('~/keypairs.json')):
                 keyfile = os.path.expanduser('~/keypairs.json')
             else:
-                logging.error("Keyfile must be specified, in ~/keypairs.json or in global KEYFILE.")
+                logger.error("Keyfile must be specified, in ~/keypairs.json or in global KEYFILE.")
                 return None
         if key:
             try:
                 keysf = open(keyfile,'r')
             except IOError as e:
-                logging.error("Failed to open keyfile %s" %(keyfile))
-                logging.error("e.")
+                logger.error("Failed to open keyfile %s" %(keyfile))
+                logger.error("e.")
                 return None
             except:
                 raise
@@ -340,16 +351,16 @@ def processkey(key=None, keyfile=None):
             try:
                 keys = json.loads(keys_json_string)
             except ValueError as e:
-                logging.error(e.message)
-                logging.error("Keyfile %s not in parseable JSON" %(keyfile))
+                logger.error(e.message)
+                logger.error("Keyfile %s not in parseable JSON" %(keyfile))
                 return None
             except:
                 raise
             try:
                 key_dict = keys[key]
             except ValueError:
-                logging.error(e.message)
-                logging.error("Keyfile %s has no key named %s" %(keyfile,key))
+                logger.error(e.message)
+                logger.error("Keyfile %s has no key named %s" %(keyfile,key))
                 return None
             except:
                 raise
@@ -392,7 +403,7 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
     if new_url_list[3].startswith('&'):
         new_url_list[3] = new_url_list[3].replace('&','',1)
     get_url = urlparse.urlunsplit(new_url_list)
-    logging.debug('encoded_get: %s' %(get_url))
+    logger.debug('encoded_get: %s' %(get_url))
     max_retries = 10
     max_sleep = 10
     while max_retries:
@@ -402,23 +413,23 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
             else:
                 response = requests.get(get_url, headers=HEADERS)
         except RETRY_EXCEPTIONS as e:
-            logging.warning(
+            logger.warning(
                 "%s ... %d retries left." % (e, max_retries))
-            sleep(max_sleep - max_retries)
+            time.sleep(max_sleep - max_retries)
             max_retries -= 1
             continue
         except Exception as e:
-            logging.error("%s" % (e))
+            logger.error("%s" % (e))
             if return_response:
                 return response
             else:
                 return None
         else:
             if response.status_code in RETRY_CODES:
-                logging.warning(
+                logger.warning(
                     "%d %s ... %d retries left."
                     % (response.status_code, response.text, max_retries))
-                sleep(max_sleep - max_retries)
+                time.sleep(max_sleep - max_retries)
                 max_retries -= 1
                 continue
             if return_response:
@@ -428,7 +439,7 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
                     return response.json()
                 except:
                     return response.text
-    logging.error("Max retries exhausted.")
+    logger.error("Max retries exhausted.")
     if return_response:
         return response
     else:
@@ -444,7 +455,7 @@ def encoded_update(method, url, keypair, payload, return_response):
     elif method == 'put':
         request_method = requests.put
     else:
-        logging.error('Invalid HTTP method: %s' %(method))
+        logger.error('Invalid HTTP method: %s' %(method))
         return
 
     RETRY_CODES = [500]
@@ -458,20 +469,20 @@ def encoded_update(method, url, keypair, payload, return_response):
             response = request_method(
                 url, auth=keypair, headers=HEADERS, data=json.dumps(payload))
         except RETRY_EXCEPTIONS as e:
-            logging.warning(
+            logger.warning(
                 "%s ... %d retries left." % (e, max_retries))
-            sleep(max_sleep - max_retries)
+            time.sleep(max_sleep - max_retries)
             max_retries -= 1
             continue
         except Exception as e:
-            logging.error("%s" % (e))
+            logger.error("%s" % (e))
             return None
         else:
             if response.status_code in RETRY_CODES:
-                logging.warning(
+                logger.warning(
                     "%d %s ... %d retries left."
                     % (response.status_code, response.text, max_retries))
-                sleep(max_sleep - max_retries)
+                time.sleep(max_sleep - max_retries)
                 max_retries -= 1
                 continue
             if return_response:
@@ -481,7 +492,7 @@ def encoded_update(method, url, keypair, payload, return_response):
                     return response.json()
                 except:
                     return response.text
-    logging.error("Max retries exhausted.")
+    logger.error("Max retries exhausted.")
     if return_response:
         return response
     else:
@@ -527,6 +538,7 @@ def md5(fn):
 
     md5_output = subprocess.check_output(' '.join([md5_command, fn]), shell=True)
     return md5_output.partition(' ')[0].rstrip()
+
 
 def after(date1, date2):
     try:
@@ -603,16 +615,37 @@ def derived_from_references(f, server, keypair):
     return [n for n in set(derived_from_references_generator(f, server, keypair)) if n is not None]
 
 
+def expired(credentials):
+    if after(time.asctime(), credentials.get('expiration')):
+        return True
+    else:
+        return False
+
+
+def new_creds(file_object, server, keypair):
+    url = server + '/files/%s/upload/' % (file_object['accession'])
+    response = encoded_post(url, keypair, {}, return_response=True)
+    result = response.json()
+    logger.debug('POST to %s returned %s' % (url, pprint.pformat(result)))
+    response.raise_for_status()
+    new_file_object = result['@graph'][0]
+    return new_file_object.get('upload_credentials')
+
+
 def s3_cp(file_object, local_fname, server, keypair, overwrite=False):
     # TODO check overwrite and regenerate credential if necessary
-    if 'upload_credentials' not in file_object:
+    logger.debug('in s3_cp with file_object:')
+    logger.debug(pprint.pformat(file_object))
+    creds = file_object.get('upload_credentials')
+    if not creds:
         url = server + '/files/%s/upload/' % (file_object['accession'])
         response_json = encoded_get(url, keypair)
         logger.debug('s3_cp: Got %s response_json %s' % (url, response_json))
         creds = response_json['@graph'][0]['upload_credentials']
-    else:
-        creds = file_object['upload_credentials']
     logger.debug('s3_cp: Got creds %s' % (creds))
+    if expired(creds):
+        creds = new_creds(file_object, server, keypair)
+        logger.debug('s3_cp: Got new creds %s' % (creds))
     env = os.environ.copy()
     env.update({
         'AWS_ACCESS_KEY_ID': creds['access_key'],
@@ -620,7 +653,7 @@ def s3_cp(file_object, local_fname, server, keypair, overwrite=False):
         'AWS_SECURITY_TOKEN': creds['session_token'],
     })
     logger.info("Uploading file.")
-    start = time()
+    start = time.time()
     logger.debug('accession_file local_fname %s' % (local_fname))
     logger.debug('accession_file upload_url %s' % (creds['upload_url']))
     try:
@@ -632,7 +665,7 @@ def s3_cp(file_object, local_fname, server, keypair, overwrite=False):
         logger.error("Upload failed with exit code %d" % e.returncode)
         return e.returncode
     else:
-        end = time()
+        end = time.time()
         duration = end - start
         logger.info("Uploaded in %.2f seconds" % duration)
         return return_code

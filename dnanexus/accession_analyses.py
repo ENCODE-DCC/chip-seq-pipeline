@@ -8,6 +8,7 @@ import shlex
 
 ACCESSION_ANALYSIS_APPLET = '/applets/accession_analysis'
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 
@@ -56,6 +57,7 @@ def get_args():
     parser.add_argument('--debug', help="Print debug messages", type=t_or_f, default=None)
     parser.add_argument('--dryrun', help="Set up runs but don't change anything.", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
+    parser.add_argument('--force_upload', help="Force re-uploading for existing files. Files not in status uploading are skipped", type=t_or_f, default=None)
     parser.add_argument('--fqcheck', help="Check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--accession_raw', help="Accession unfiltered bams", type=t_or_f, default=None)
     parser.add_argument('--signal_only', help="Accession through signal generation only", type=t_or_f, default=None)
@@ -105,6 +107,8 @@ def main():
         tokens.append('-i "dryrun=%s"' % (args.dryrun))
     if args.force_patch is not None:
         tokens.append('-i "force_patch=%s"' % (args.force_patch))
+    if args.force_upload is not None:
+        tokens.append('-i "force_upload=%s"' % (args.force_upload))
     if args.fqcheck is not None:
         tokens.append('-i "fqcheck=%s"' % (args.fqcheck))
     if args.accession_raw is not None:
