@@ -1929,6 +1929,8 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
                     "accession_file: MD5 exisits, but force_upload, so uploading and patching file metatdata")
                 return_code = common.s3_cp(
                     new_file_object, local_fname, server, keypair)
+                if not return_code:
+                    logger.info('Upload succeeded')
                 logger.debug('s3_cp returned %s' % (return_code))
                 assert not return_code, '%s: s3_cp failed. Returned non-zero return code %s' % (new_file_object.get('accession'), return_code)
                 add_tag(dx_fh, new_file_object.get('accession'))
