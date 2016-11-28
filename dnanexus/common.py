@@ -225,7 +225,7 @@ def rescale_scores(fn, scores_col, new_min=10, new_max=1000):
             r"""awk 'BEGIN{OFS="\t"}{n=$%d;a=%d;b=%d;x=%d;y=%d}"""
             % (scores_col, a, b, x, y) +
             r"""{$%d=int(%s) ; print $0}'"""
-            % (n, rescale_formula)
+            % (scores_col, rescale_formula)
         ],
         rescaled_fn)
     return rescaled_fn
