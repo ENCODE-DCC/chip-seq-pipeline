@@ -216,15 +216,15 @@ def rescale_scores(fn, scores_col, new_min=10, new_max=1000):
     x = new_min
     y = new_max
     if min_score == max_score:  # give all peaks new_min
-        rescale_formula = "int(x)"
+        rescale_formula = "x"
     else:  # n is the unscaled score from scores_col
-        rescale_formula = "int(((n-a)*(y-x)/(b-a))+x)"
+        rescale_formula = "((n-a)*(y-x)/(b-a))+x"
     out, err = run_pipe(
         [
             'cat %s' % (sorted_fn),
             r"""awk 'BEGIN{OFS="\t"}{n=$%d;a=%d;b=%d;x=%d;y=%d}"""
             % (scores_col, a, b, x, y) +
-            r"""{$%d=%s ; print $0}'"""
+            r"""{$%d=int(%s) ; print $0}'"""
             % (n, rescale_formula)
         ],
         rescaled_fn)
