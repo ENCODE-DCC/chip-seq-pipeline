@@ -2907,6 +2907,28 @@ def postprocess(outfn, output_rows):
     return output
 
 
+def encode_indexing(server):
+    url = server + "/_indexer"
+    try:
+        indexing_report = common.encoded_get(url)
+    except:
+        logger.error(
+            'Could not get indexing report from %s' % (url))
+        return None
+    indexing_status = indexing_report.get('status')
+    logger.debug('encode_indexing: found status %s' % (indexing_status))
+    if not indexing_status:
+        logger.error(
+            'Could not get indexing status from %s' % (indexing_report))
+        return None
+    elif indexing_status == 'waiting':
+        return False
+    elif indexing_status == 'indexing':
+        return True
+    else:
+        return None
+
+
 @dxpy.entry_point('main')
 def main(outfn, debug, key, keyfile, dryrun,
          force_patch, force_upload, fqcheck,
@@ -2931,6 +2953,9 @@ def main(outfn, debug, key, keyfile, dryrun,
             "Must supply one of --infile or a list of analysis-ids")
         return
 
+    authid, authpw, server = common.processkey(key, keyfile)
+    keypair = (authid, authpw)
+
     accession_subjobs = []
     for (i, analysis_id) in enumerate(ids):
 
@@ -2951,6 +2976,9 @@ def main(outfn, debug, key, keyfile, dryrun,
         }
 
         logger.info("Accession job input: %s" % (accession_subjob_input))
+        while encode_indexing(server):
+            logger.info('ENCODE server is indexing.  Checking again in 60s.')
+            time.sleep(60)
         accession_subjobs.append(
             dxpy.new_dxjob(
                 fn_input=accession_subjob_input,
