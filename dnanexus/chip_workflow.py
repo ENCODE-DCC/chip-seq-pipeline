@@ -592,6 +592,24 @@ def main():
             exp_rep2_ta = dxpy.dxlink(resolve_file(args.rep2[0]).get_id())
             ctl_rep1_ta = dxpy.dxlink(resolve_file(args.ctl1[0]).get_id())
             ctl_rep2_ta = dxpy.dxlink(resolve_file(args.ctl2[0]).get_id())
+            exp_rep1_ta_desc = dxpy.describe(exp_rep1_ta)
+            exp_rep2_ta_desc = dxpy.describe(exp_rep2_ta)
+            exp_rep1_mapping_analysis_id = dxpy.describe(exp_rep1_ta_desc['createdBy']['job'])['analysis']
+            exp_rep2_mapping_analysis_id = dxpy.describe(exp_rep2_ta_desc['createdBy']['job'])['analysis']
+            exp_rep1_mapping_analysis = dxpy.describe(exp_rep1_mapping_analysis_id)
+            exp_rep2_mapping_analysis = dxpy.describe(exp_rep2_mapping_analysis_id)
+
+
+            exp_rep1_cc = next(
+                stage['execution']['output']['CC_scores_file']
+                for stage in exp_rep1_mapping_analysis.get('stages')
+                if stage['execution']['executableName'] == 'xcor')
+
+            exp_rep2_cc = next(
+                stage['execution']['output']['CC_scores_file']
+                for stage in exp_rep2_mapping_analysis.get('stages')
+                if stage['execution']['executableName'] == 'xcor')
+
         else:
             exp_rep1_ta = None
             exp_rep2_ta = None
@@ -601,42 +619,42 @@ def main():
         rep1_paired_end = args.rep1pe
         rep2_paired_end = args.rep2pe
 
-        #here we need to calculate the cc scores files, because we're only being supplied tagAligns
-        #if we had mapped everything above we'd already have a handle to the cc file
-        xcor_only_applet = find_applet_by_name(XCOR_ONLY_APPLET_NAME, applet_project.get_id())
-        # xcor_output_folder = resolve_folder(output_project, output_folder + '/' + xcor_only_applet.name)
-        xcor_output_folder = xcor_only_applet.name
-        xcor_only_stages = []
+        # #here we need to calculate the cc scores files, because we're only being supplied tagAligns
+        # #if we had mapped everything above we'd already have a handle to the cc file
+        # xcor_only_applet = find_applet_by_name(XCOR_ONLY_APPLET_NAME, applet_project.get_id())
+        # # xcor_output_folder = resolve_folder(output_project, output_folder + '/' + xcor_only_applet.name)
+        # xcor_output_folder = xcor_only_applet.name
+        # xcor_only_stages = []
 
-        exp_rep1_cc_stage_id = workflow.add_stage(
-            xcor_only_applet,
-            name="Rep1 cross-correlation",
-            folder=xcor_output_folder,
-            stage_input={
-                'input_tagAlign': exp_rep1_ta,
-                'paired_end': rep1_paired_end,
-                'spp_version': args.spp_version
-            }
-        )
-        xcor_only_stages.append({'xcor_only_rep1_id': exp_rep1_cc_stage_id})
-        exp_rep1_cc = dxpy.dxlink(
-                    {'stage': exp_rep1_cc_stage_id,
-                     'outputField': 'CC_scores_file'})
+        # exp_rep1_cc_stage_id = workflow.add_stage(
+        #     xcor_only_applet,
+        #     name="Rep1 cross-correlation",
+        #     folder=xcor_output_folder,
+        #     stage_input={
+        #         'input_tagAlign': exp_rep1_ta,
+        #         'paired_end': rep1_paired_end,
+        #         'spp_version': args.spp_version
+        #     }
+        # )
+        # xcor_only_stages.append({'xcor_only_rep1_id': exp_rep1_cc_stage_id})
+        # exp_rep1_cc = dxpy.dxlink(
+        #             {'stage': exp_rep1_cc_stage_id,
+        #              'outputField': 'CC_scores_file'})
 
-        exp_rep2_cc_stage_id = workflow.add_stage(
-            xcor_only_applet,
-            name="Rep2 cross-correlation",
-            folder=xcor_output_folder,
-            stage_input={
-                'input_tagAlign': exp_rep2_ta,
-                'paired_end': rep2_paired_end,
-                'spp_version': args.spp_version
-            }
-        )
-        xcor_only_stages.append({'xcor_only_rep2_id': exp_rep2_cc_stage_id})
-        exp_rep2_cc = dxpy.dxlink(
-                    {'stage': exp_rep2_cc_stage_id,
-                     'outputField': 'CC_scores_file'})
+        # exp_rep2_cc_stage_id = workflow.add_stage(
+        #     xcor_only_applet,
+        #     name="Rep2 cross-correlation",
+        #     folder=xcor_output_folder,
+        #     stage_input={
+        #         'input_tagAlign': exp_rep2_ta,
+        #         'paired_end': rep2_paired_end,
+        #         'spp_version': args.spp_version
+        #     }
+        # )
+        # xcor_only_stages.append({'xcor_only_rep2_id': exp_rep2_cc_stage_id})
+        # exp_rep2_cc = dxpy.dxlink(
+        #             {'stage': exp_rep2_cc_stage_id,
+        #              'outputField': 'CC_scores_file'})
 
     encode_macs2_applet = find_applet_by_name(ENCODE_MACS2_APPLET_NAME, applet_project.get_id())
     encode_macs2_stages = []

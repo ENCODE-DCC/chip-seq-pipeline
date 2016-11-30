@@ -1,0 +1,24 @@
+// File accessioning loop
+For each of 2 rep mapping analyses and (2 control mapping analyses if not --skip_control) and one peaks analysis
+	For each file
+		If not already posted
+			POST new file object (minimal metadata, no pipeline objects)
+		if new file or --force_upload
+			UPLOAD file to S3
+		If new file or --force_patch
+			PATCH derived_from
+
+// Pipeline accessioning loop
+For each analysis_step_version (essentially each node in the file graph)
+	If analysis_step_run object does not exist
+		POST analysis_step_run object
+	For each qc object for this step
+		If qc object already exists
+			If qc object is obsolete
+				DELETE it
+			else
+				PUT new contents
+		else
+			POST new qc object
+	For each file in this step
+		PATCH with the analysis_step_run
