@@ -79,7 +79,7 @@ chip_workflow.py \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/GRCh38_EBV.chrom.sizes" \
 --genomesize hs \
 --reference "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" \
---blacklist "ENCODE Reference Files:/GRCh38/blacklists/GRCh38.blacklist.bed.gz"
+--blacklist "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/blacklists/GRCh38.blacklist.bed.gz"
 
 chip_workflow.py \
 --target tf \
@@ -90,7 +90,7 @@ chip_workflow.py \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/GRCh38_EBV.chrom.sizes" \
 --genomesize hs \
 --reference "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/ChIP-seq/GCA_000001405.15_GRCh38_no_alt_analysis_set.bwa.tar.gz" \
---blacklist "ENCODE Reference Files:/GRCh38/blacklists/GRCh38.blacklist.bed.gz"
+--blacklist "ENCODE Uniform Processing Pipelines:/Reference Files/GRCh38/blacklists/GRCh38.blacklist.bed.gz"
 
 chip_workflow.py \
 --target histone \
@@ -120,7 +120,7 @@ chip_workflow.py \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/mm10_no_alt.chrom.sizes" \
 --genomesize mm \
 --reference "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
---blacklist "ENCODE Reference Files:/mm10/blacklists/mm10.blacklist.bed.gz"
+--blacklist "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/blacklists/mm10.blacklist.bed.gz"
 
 chip_workflow.py \
 --target tf \
@@ -131,7 +131,7 @@ chip_workflow.py \
 --chrom_sizes "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/mm10_no_alt.chrom.sizes" \
 --genomesize mm \
 --reference "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
---blacklist "ENCODE Reference Files:/mm10/blacklists/mm10.blacklist.bed.gz"
+--blacklist "ENCODE Uniform Processing Pipelines:/Reference Files/mm10/blacklists/mm10.blacklist.bed.gz"
 
 chip_workflow.py \
 --target histone \
