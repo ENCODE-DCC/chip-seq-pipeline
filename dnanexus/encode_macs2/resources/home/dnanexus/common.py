@@ -14,7 +14,7 @@ import dxpy
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
 #logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = True
 
