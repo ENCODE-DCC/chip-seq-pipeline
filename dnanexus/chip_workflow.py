@@ -172,6 +172,10 @@ def get_args():
         help="Force one control for both reps",
         default=False, action='store_true')
     parser.add_argument(
+        '--simplicate_experiment',
+        help="Force single replicate (rep1)",
+        default=False, action='store_true')
+    parser.add_argument(
         '--outp',
         help="Output project name or ID",
         default=DEFAULT_OUTPUT_PROJECT)
@@ -410,9 +414,11 @@ def main():
 
     blank_workflow = not (args.rep1 or args.rep2 or args.ctl1 or args.ctl2)
 
-    if args.nomap and (args.rep1pe is None or args.rep2pe is None) and not blank_workflow:
-        logging.error("With --nomap, endedness of replicates must be specified with --rep1pe and --rep2pe")
-        raise ValueError
+    if not blank_workflow:
+        assert args.rep1, "Reads are required for rep1"
+        assert args.ctl1, "Reads are required for ctl1"
+        assert not args.nomap or args.rep1pe, "With --nomap, endedness of rep1 must be specified witn --rep1pe"
+        assert not args.nomap or (not args.rep2 or args.rep2pe), "With --nomap, endedness of rep2 must be specified with --rep2pe"
 
     if not args.target:
         target_type = 'default'  # default
@@ -445,8 +451,8 @@ def main():
         folder=output_folder,
         properties={'pipeline_version': str(args.pipeline_version)})
 
-
     unary_control = args.unary_control or (args.rep1 and args.rep2 and args.ctl1 and not args.ctl2)
+    simplicate_experiment = args.simplicate_experiment or (args.rep1 and not args.rep2)
 
     if not args.genomesize:
         genomesize = None
@@ -472,10 +478,13 @@ def main():
         # that are separate
         # stages here.
         mapping_superstages = [  # the order of this list is important in that
-            {'name': 'Rep1', 'input_args': args.rep1},
-            {'name': 'Rep2', 'input_args': args.rep2},
-            {'name': 'Ctl1', 'input_args': args.ctl1}
+            {'name': 'Rep1', 'input_args': args.rep1}
         ]
+        if not simplicate_experiment:
+            mapping_superstages.append(
+                {'name': 'Rep2', 'input_args': args.rep2})
+        mapping_superstages.append(
+            {'name': 'Ctl1', 'input_args': args.ctl1})
         if not unary_control:
             mapping_superstages.append(
                 {'name': 'Ctl2', 'input_args': args.ctl2})
@@ -565,51 +574,63 @@ def main():
         exp_rep1_cc = dxpy.dxlink(
                     {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep1'),
                      'outputField': 'CC_scores_file'})
-        exp_rep2_ta = dxpy.dxlink(
-                    {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
-                     'outputField': 'tagAlign_file'})
-        exp_rep2_cc = dxpy.dxlink(
-                    {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
-                     'outputField': 'CC_scores_file'})
-        ctl_rep1_ta = dxpy.dxlink(
-                    {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl1'),
-                     'outputField': 'tagAlign_file'})
-        if unary_control:
-            ctl_rep2_ta = ctl_rep1_ta
-        else:
-            ctl_rep2_ta = dxpy.dxlink(
-                        {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl2'),
-                         'outputField': 'tagAlign_file'})
         rep1_paired_end = dxpy.dxlink(
                         {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep1'),
                          'outputField': 'paired_end'})
-        rep2_paired_end = dxpy.dxlink(
+        if not simplicate_experiment:
+            exp_rep2_ta = dxpy.dxlink(
                         {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
-                         'outputField': 'paired_end'})
-    else: #skipped the mapping, so just bring in the inputs from arguments
+                         'outputField': 'tagAlign_file'})
+            exp_rep2_cc = dxpy.dxlink(
+                        {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
+                         'outputField': 'CC_scores_file'})
+            rep2_paired_end = dxpy.dxlink(
+                            {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Rep2'),
+                             'outputField': 'paired_end'})
+        else:
+            exp_rep2_ta = None
+            exp_rep2_cc = None
+            rep2_paired_end = None
+
+        ctl_rep1_ta = dxpy.dxlink(
+                    {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl1'),
+                     'outputField': 'tagAlign_file'})
+        if not unary_control:
+            ctl_rep2_ta = dxpy.dxlink(
+                        {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl2'),
+                         'outputField': 'tagAlign_file'})
+        else:
+            ctl_rep2_ta = None
+
+    else:  # skipped the mapping, so just bring in the inputs from arguments
         if not blank_workflow:
             exp_rep1_ta = dxpy.dxlink(resolve_file(args.rep1[0]).get_id())
-            exp_rep2_ta = dxpy.dxlink(resolve_file(args.rep2[0]).get_id())
-            ctl_rep1_ta = dxpy.dxlink(resolve_file(args.ctl1[0]).get_id())
-            ctl_rep2_ta = dxpy.dxlink(resolve_file(args.ctl2[0]).get_id())
             exp_rep1_ta_desc = dxpy.describe(exp_rep1_ta)
-            exp_rep2_ta_desc = dxpy.describe(exp_rep2_ta)
             exp_rep1_mapping_analysis_id = dxpy.describe(exp_rep1_ta_desc['createdBy']['job'])['analysis']
-            exp_rep2_mapping_analysis_id = dxpy.describe(exp_rep2_ta_desc['createdBy']['job'])['analysis']
             exp_rep1_mapping_analysis = dxpy.describe(exp_rep1_mapping_analysis_id)
-            exp_rep2_mapping_analysis = dxpy.describe(exp_rep2_mapping_analysis_id)
-
-
             exp_rep1_cc = next(
                 stage['execution']['output']['CC_scores_file']
                 for stage in exp_rep1_mapping_analysis.get('stages')
                 if stage['execution']['executableName'] == 'xcor')
 
-            exp_rep2_cc = next(
-                stage['execution']['output']['CC_scores_file']
-                for stage in exp_rep2_mapping_analysis.get('stages')
-                if stage['execution']['executableName'] == 'xcor')
+            if not simplicate_experiment:
+                exp_rep2_ta = dxpy.dxlink(resolve_file(args.rep2[0]).get_id())
+                exp_rep2_ta_desc = dxpy.describe(exp_rep2_ta)
+                exp_rep2_mapping_analysis_id = dxpy.describe(exp_rep2_ta_desc['createdBy']['job'])['analysis']
+                exp_rep2_mapping_analysis = dxpy.describe(exp_rep2_mapping_analysis_id)
+                exp_rep2_cc = next(
+                    stage['execution']['output']['CC_scores_file']
+                    for stage in exp_rep2_mapping_analysis.get('stages')
+                    if stage['execution']['executableName'] == 'xcor')
+            else:
+                exp_rep2_ta = None
+                exp_rep2_cc = None
 
+            ctl_rep1_ta = dxpy.dxlink(resolve_file(args.ctl1[0]).get_id())
+            if not unary_control:
+                ctl_rep2_ta = dxpy.dxlink(resolve_file(args.ctl2[0]).get_id())
+            else:
+                ctl_rep2_ta = None
         else:
             exp_rep1_ta = None
             exp_rep2_ta = None
@@ -661,6 +682,8 @@ def main():
     # peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_macs2_applet.name)
     peaks_output_folder = encode_macs2_applet.name
 
+    # for simplicate experiments and/or unary controls, some of the ta inputs
+    # will have the value None
     macs2_stage_input = {
             'rep1_ta' : exp_rep1_ta,
             'rep2_ta' : exp_rep2_ta,
@@ -692,6 +715,8 @@ def main():
         # idr_peaks_output_folder = resolve_folder(output_project, output_folder + '/' + encode_spp_applet.name)
         idr_peaks_output_folder = encode_spp_applet.name
         PEAKS_STAGE_NAME = 'SPP Peaks'
+        # for simplicate experiments and/or unary controls, some of the ta inputs
+        # will have the value None
         peaks_stage_input = {
                     'rep1_ta' : exp_rep1_ta,
                     'rep2_ta' : exp_rep2_ta,
@@ -718,6 +743,7 @@ def main():
             )
         encode_spp_stages.append({'name': PEAKS_STAGE_NAME, 'stage_id': encode_spp_stage_id})
 
+TODO here I think we should abstract out all the IDR to one step like the two peak-calling steps
         idr_applet = find_applet_by_name(IDR2_APPLET_NAME, applet_project.get_id())
         encode_idr_applet = find_applet_by_name(ENCODE_IDR_APPLET_NAME, applet_project.get_id())
         idr_stages = []
