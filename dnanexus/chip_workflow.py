@@ -103,6 +103,7 @@ ENCODE_MACS2_APPLET_NAME = 'encode_macs2'
 IDR2_APPLET_NAME = 'idr2'
 ENCODE_IDR_APPLET_NAME = 'encode_idr'
 OVERLAP_PEAKS_APPLET_NAME = 'overlap_peaks'
+ACCESSION_ANALYSIS_APPLET_NAME = 'accession_analysis'
 
 APPLETS = {}
 
@@ -896,6 +897,19 @@ def main():
             overlap_peaks_stages.append({'name': 'Final %s' %(peaktype), 'stage_id': overlap_peaks_stage_id})
 
     if args.yes:
+        if args.accession:
+            accession_analysis_applet = find_applet_by_name(ACCESSION_ANALYSIS_APPLET_NAME, applet_project.get_id())
+            accession_output_folder = accession_analysis_applet.name
+            accession_stage_input = {
+                'analysis_ids': ['self'],
+                'force_patch': True
+            }
+            accession_stage_id = workflow.add_stage(
+                accession_analysis_applet,
+                name='Accession results',
+                folder=accession_output_folder,
+                stage_input=accession_stage_input
+            )
         if args.debug:
             job_id = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
         else:

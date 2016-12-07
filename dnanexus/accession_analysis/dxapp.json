@@ -43,8 +43,7 @@
     {
       "name": "key",
       "class": "string",
-      "optional": true,
-      "default": "default"
+      "optional": true
     },
     {
       "name": "keyfile",
