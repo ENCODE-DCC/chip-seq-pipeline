@@ -923,7 +923,6 @@ def main():
                     )
 
         assert accession_stage_input['wait_on_files'], "ERROR: workflow has no wait_on_files defined, so --accession is not supported."
-        pprint.pprint(accession_stage_input)
         accession_stage_id = workflow.add_stage(
             accession_analysis_applet,
             name='Accession results',
