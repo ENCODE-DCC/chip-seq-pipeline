@@ -2864,7 +2864,12 @@ def encode_indexing(server):
 def main(outfn, debug, keyfile, dryrun,
          force_patch, force_upload, fqcheck,
          key=None, pipeline=None, analysis_ids=None, infile=None, project=None,
-         accession_raw=False, signal_only=False, skip_control=False):
+         accession_raw=False, signal_only=False, skip_control=False,
+         wait_on_files=None):
+
+    # wait_on_files is never used here, it is just a place-holder input field
+    # to block the platform from running accession_analysis until all the
+    # previous stages are complete
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -2898,7 +2903,7 @@ def main(outfn, debug, keyfile, dryrun,
     for (i, analysis_id) in enumerate(ids):
 
         if analysis_id == 'self':
-            self_analysis_id = dxpy.describe(dxpy.DX_JOB_ID)['analysis']
+            self_analysis_id = dxpy.describe(dxpy.JOB_ID)['analysis']
             analysis_id = self_analysis_id
 
         accession_subjob_input = {

@@ -65,6 +65,7 @@ def get_args():
     parser.add_argument('--dryrun', help="Formulate the run command, but don't actually run", default=False, action='store_true')
     parser.add_argument('--spp_version', help="spp version", default="1.14")
     parser.add_argument('--control', help="Use specified control tagAlign rather than infer one.", default=None)
+    parser.add_argument('--accession', help="Accession the results to the ENCODE Portal", default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -663,13 +664,15 @@ def main():
             '--ctl1 %s' % (tas['rep1_ta'].get('control_id')),
             '--ctl2 %s' % (tas['rep2_ta'].get('control_id')),
             '--genomesize %s --chrom_sizes "%s"' % (genomesize, chrom_sizes),
-            '--spp_version %s' % (args.spp_version)]
+            '--spp_version %s' % (args.spp_version)
+        ]
 
         if blacklist:
             command_strings.append('--blacklist "%s"' % (blacklist))
         if args.debug:
             command_strings.append('--debug')
-
+        if args.accession:
+            command_strings.append('--accession')
         run_command = ' '.join(command_strings)
         print(run_command)
 

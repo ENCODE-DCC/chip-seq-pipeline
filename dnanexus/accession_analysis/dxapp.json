@@ -92,6 +92,11 @@
       "class": "boolean",
       "optional": true,
       "default": false
+    },
+    {
+      "name": "wait_on_file",
+      "class": "file",
+      "optional": true
     }
   ],
   "outputSpec": [
