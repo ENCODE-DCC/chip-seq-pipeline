@@ -916,11 +916,10 @@ def main():
                         dxpy.dxlink({'stage': stage.get('stage_id'), 'outputField': output_field})
                     )
         elif run_idr:
-            for stage in [final_idr_stage_id]:
-                for output_field in ['conservative_set', 'conservative_set_bb', 'optimal_set', 'optimal_set_bb']:
-                    accession_stage_input['wait_on_files'].append(
-                        dxpy.dxlink({'stage': stage.get('stage_id'), 'outputField': output_field})
-                    )
+            for output_field in ['conservative_set', 'conservative_set_bb', 'optimal_set', 'optimal_set_bb']:
+                accession_stage_input['wait_on_files'].append(
+                    dxpy.dxlink({'stage': final_idr_stage_id, 'outputField': output_field})
+                )
 
         assert accession_stage_input['wait_on_files'], "ERROR: workflow has no wait_on_files defined, so --accession is not supported."
         accession_stage_id = workflow.add_stage(
