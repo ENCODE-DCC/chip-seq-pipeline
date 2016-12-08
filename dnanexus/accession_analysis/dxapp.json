@@ -94,8 +94,8 @@
       "default": false
     },
     {
-      "name": "wait_on_file",
-      "class": "file",
+      "name": "wait_on_files",
+      "class": "array:file",
       "optional": true
     }
   ],
