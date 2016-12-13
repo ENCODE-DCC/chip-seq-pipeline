@@ -64,6 +64,12 @@
       "label": "The version of SPP to use",
       "class": "string",
       "default": "1.14"
+    },
+    {
+      "name": "prefix",
+      "label": "Basename for output files",
+      "class": "string",
+      "optional": true
     }
   ],
   "outputSpec": [

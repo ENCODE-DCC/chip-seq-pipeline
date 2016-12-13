@@ -13,6 +13,12 @@
       "label": "File of mapped reads from which to sample",
       "class": "file",
       "optional": false
+    },
+    {
+      "name": "prefix",
+      "label": "Basename for output files",
+      "class": "string",
+      "optional": true
     }
   ],
   "outputSpec": [
