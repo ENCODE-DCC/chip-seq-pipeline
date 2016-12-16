@@ -242,7 +242,12 @@ def main():
                 self_consistency_ratio = idr_stage['output'].get('self_consistency_ratio')
                 reproducibility_test = idr_stage['output'].get('reproducibility_test')
                 notes = "IDR Complete"
-                done_time = next(transition['setAt'] for transition in desc['stateTransitions'] if transition['newState'] == "done")
+                try:
+                    done_time = next(transition['setAt'] for transition in desc['stateTransitions'] if transition['newState'] == "done")
+                except StopIteration:
+                    done_time = None
+                except:
+                    raise
 
         if done_time:
             date = time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(done_time/1000))
