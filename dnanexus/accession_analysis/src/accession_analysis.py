@@ -1750,8 +1750,8 @@ def set_property(dx_fh, prop):
         dx_fh.set_properties(prop)
     except dxpy.exceptions.ResourceNotFound as e:
         logger.warning(
-            '%s adding property to %s.  Will try in current project.'
-            % (e, dx_fh.name))
+            '%s adding property %s to %s.  Will try in current project.'
+            % (e, prop, dx_fh.name))
         try:
             current_project_fh = dxpy.DXFile(
                 dx_fh.get_id(), project=dxpy.PROJECT_CONTEXT_ID)
@@ -1762,6 +1762,11 @@ def set_property(dx_fh, prop):
             pass
         except:
             raise
+    except dxpy.exceptions.PermissionDenied as e:
+        logger.warning(
+            '%s adding property %s to %s.'
+            % (e, prop, dx_fh.name))
+        raise
     except:
         raise
 
@@ -1796,7 +1801,11 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         logger.info("Downloading %s" % (local_fname))
         dxpy.download_dxfile(dx_fh.get_id(), local_fname)
         md5sum = common.md5(local_fname)
-        set_property(dx_fh, {'md5sum': md5sum})
+        try:
+            set_property(dx_fh, {'md5sum': md5sum})
+        except Exception as e:
+            logger.warning(
+                '%s: skipping adding md5sum property to %s.' % (e, dx_fh.name))
         f.update({'md5sum': md5sum})
 
     f['notes'] = json.dumps(f.get('notes'))
