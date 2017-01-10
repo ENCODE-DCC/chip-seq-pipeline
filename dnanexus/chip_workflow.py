@@ -743,30 +743,31 @@ def main():
             )
         encode_spp_stages.append({'name': PEAKS_STAGE_NAME, 'stage_id': encode_spp_stage_id})
 
-TODO here I think we should abstract out all the IDR to one step like the two peak-calling steps
+        # TODO here I think we should abstract out all the IDR to one step like the two peak-calling steps
         idr_applet = find_applet_by_name(IDR2_APPLET_NAME, applet_project.get_id())
         encode_idr_applet = find_applet_by_name(ENCODE_IDR_APPLET_NAME, applet_project.get_id())
         idr_stages = []
         # idr_output_folder = resolve_folder(output_project, output_folder + '/' + idr_applet.name)
         idr_output_folder = idr_applet.name
-        if (args.rep1 and args.ctl1 and args.rep2) or blank_workflow:
-            idr_stage_id = workflow.add_stage(
-                idr_applet,
-                name='IDR True Replicates',
-                folder=idr_output_folder,
-                stage_input={
-                    'rep1_peaks' : dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-                         'outputField': 'rep1_peaks'}),
-                    'rep2_peaks' : dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-                         'outputField': 'rep2_peaks'}),
-                    'pooled_peaks': dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-                         'outputField': 'pooled_peaks'})
-                }
-            )
-            idr_stages.append({'name': 'IDR True Replicates', 'stage_id': idr_stage_id})
+        if (args.rep1 and args.ctl1 and args.rep2) or blank_workflow or simplicate_experiment:
+            if not simplicate_experiment:
+                idr_stage_id = workflow.add_stage(
+                    idr_applet,
+                    name='IDR True Replicates',
+                    folder=idr_output_folder,
+                    stage_input={
+                        'rep1_peaks' : dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
+                             'outputField': 'rep1_peaks'}),
+                        'rep2_peaks' : dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
+                             'outputField': 'rep2_peaks'}),
+                        'pooled_peaks': dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
+                             'outputField': 'pooled_peaks'})
+                    }
+                )
+                idr_stages.append({'name': 'IDR True Replicates', 'stage_id': idr_stage_id})
 
             idr_stage_id = workflow.add_stage(
                 idr_applet,
@@ -786,66 +787,71 @@ TODO here I think we should abstract out all the IDR to one step like the two pe
             )
             idr_stages.append({'name': 'IDR Rep 1 Self-pseudoreplicates', 'stage_id': idr_stage_id})
 
-            idr_stage_id = workflow.add_stage(
-                idr_applet,
-                name='IDR Rep 2 Self-pseudoreplicates',
-                folder=idr_output_folder,
-                stage_input={
-                    'rep1_peaks' : dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-                         'outputField': 'rep2pr1_peaks'}),
-                    'rep2_peaks' : dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-                         'outputField': 'rep2pr2_peaks'}),
-                    'pooled_peaks': dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-                         'outputField': 'rep2_peaks'})
-                }
-            )
-            idr_stages.append({'name': 'IDR Rep 2 Self-pseudoreplicates', 'stage_id': idr_stage_id})
+            if not simplicate_experiment:
+                idr_stage_id = workflow.add_stage(
+                    idr_applet,
+                    name='IDR Rep 2 Self-pseudoreplicates',
+                    folder=idr_output_folder,
+                    stage_input={
+                        'rep1_peaks' : dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
+                             'outputField': 'rep2pr1_peaks'}),
+                        'rep2_peaks' : dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
+                             'outputField': 'rep2pr2_peaks'}),
+                        'pooled_peaks': dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
+                             'outputField': 'rep2_peaks'})
+                    }
+                )
+                idr_stages.append({'name': 'IDR Rep 2 Self-pseudoreplicates', 'stage_id': idr_stage_id})
 
-            idr_stage_id = workflow.add_stage(
-                idr_applet,
-                name='IDR Pooled Pseudoreplicates',
-                folder=idr_output_folder,
-                stage_input={
-                    'rep1_peaks' : dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-                         'outputField': 'pooledpr1_peaks'}),
-                    'rep2_peaks' : dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-                         'outputField': 'pooledpr2_peaks'}),
-                    'pooled_peaks': dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
-                         'outputField': 'pooled_peaks'})
-                }
-            )
-            idr_stages.append({'name': 'IDR Pooled Pseudoreplicates', 'stage_id': idr_stage_id})
+                idr_stage_id = workflow.add_stage(
+                    idr_applet,
+                    name='IDR Pooled Pseudoreplicates',
+                    folder=idr_output_folder,
+                    stage_input={
+                        'rep1_peaks' : dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
+                             'outputField': 'pooledpr1_peaks'}),
+                        'rep2_peaks' : dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
+                             'outputField': 'pooledpr2_peaks'}),
+                        'pooled_peaks': dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_spp_stages if ss['name'] == PEAKS_STAGE_NAME),
+                             'outputField': 'pooled_peaks'})
+                    }
+                )
+                idr_stages.append({'name': 'IDR Pooled Pseudoreplicates', 'stage_id': idr_stage_id})
 
             final_idr_stage_input = {
-                    'reps_peaks' : dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR True Replicates'),
-                         'outputField': 'IDR_peaks'}),
                     'r1pr_peaks' : dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Rep 1 Self-pseudoreplicates'),
-                         'outputField': 'IDR_peaks'}),
-                    'r2pr_peaks' : dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Rep 2 Self-pseudoreplicates'),
-                         'outputField': 'IDR_peaks'}),
-                    'pooledpr_peaks': dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Pooled Pseudoreplicates'),
                          'outputField': 'IDR_peaks'}),
                     'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
                     'rep1_signal': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
-                         'outputField': 'rep1_fc_signal'}),
-                    'rep2_signal': dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
-                         'outputField': 'rep2_fc_signal'}),
-                    'pooled_signal': dxpy.dxlink(
-                        {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
-                         'outputField': 'pooled_fc_signal'})
+                         'outputField': 'rep1_fc_signal'})
                 }
+            if not simplicate_experiment:
+                final_idr_stage_input.update({
+                        'reps_peaks' : dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR True Replicates'),
+                             'outputField': 'IDR_peaks'}),
+                        'r2pr_peaks' : dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Rep 2 Self-pseudoreplicates'),
+                             'outputField': 'IDR_peaks'}),
+                        'pooledpr_peaks': dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Pooled Pseudoreplicates'),
+                             'outputField': 'IDR_peaks'}),
+                        'rep2_signal': dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+                             'outputField': 'rep2_fc_signal'}),
+                        'pooled_signal': dxpy.dxlink(
+                            {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
+                             'outputField': 'pooled_fc_signal'})
+                    })
+
             if blacklist:
                 final_idr_stage_input.update({'blacklist': blacklist})
             if chrom_sizes:
