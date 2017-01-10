@@ -43,8 +43,7 @@
     {
       "name": "key",
       "class": "string",
-      "optional": true,
-      "default": "default"
+      "optional": true
     },
     {
       "name": "keyfile",
@@ -93,6 +92,11 @@
       "class": "boolean",
       "optional": true,
       "default": false
+    },
+    {
+      "name": "wait_on_files",
+      "class": "array:file",
+      "optional": true
     }
   ],
   "outputSpec": [

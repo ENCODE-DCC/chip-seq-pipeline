@@ -5,6 +5,7 @@ import sys
 import logging
 import re
 import dxpy
+import pprint
 
 EPILOG = '''Notes:
 
@@ -103,6 +104,7 @@ ENCODE_MACS2_APPLET_NAME = 'encode_macs2'
 IDR2_APPLET_NAME = 'idr2'
 ENCODE_IDR_APPLET_NAME = 'encode_idr'
 OVERLAP_PEAKS_APPLET_NAME = 'overlap_peaks'
+ACCESSION_ANALYSIS_APPLET_NAME = 'accession_analysis'
 
 APPLETS = {}
 
@@ -227,6 +229,10 @@ def get_args():
         '--pipeline_version',
         help="Version string for ENCODE pipeline",
         default="1.2")
+    parser.add_argument(
+        '--accession',
+        help='Automatically accession the results to the ENCODE Portal',
+        default=False, action='store_true')
 
     # parser.add_argument('--idr',     help='Report peaks with and without IDR analysis',                 default=False, action='store_true')
     # parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
@@ -859,14 +865,14 @@ def main():
             else:
                 final_idr_stage_input.update({'chrom_sizes': dxpy.dxlink({'stage': encode_spp_stage_id, 'inputField': 'chrom_sizes'})})
 
-            idr_stage_id = workflow.add_stage(
+            final_idr_stage_id = workflow.add_stage(
                 encode_idr_applet,
                 name='Final IDR peak calls',
                 folder=idr_output_folder,
                 stage_input=final_idr_stage_input,
 
             )
-            idr_stages.append({'name': 'Final IDR peak calls', 'stage_id': idr_stage_id})
+            idr_stages.append({'name': 'Final IDR peak calls', 'stage_id': final_idr_stage_id})
 
     if target_type == 'histone':
         overlap_peaks_applet = find_applet_by_name(OVERLAP_PEAKS_APPLET_NAME, applet_project.get_id())
@@ -926,6 +932,34 @@ def main():
                 stage_input=overlap_peaks_stage_input
             )
             overlap_peaks_stages.append({'name': 'Final %s' %(peaktype), 'stage_id': overlap_peaks_stage_id})
+
+    if args.accession:
+        accession_analysis_applet = find_applet_by_name(ACCESSION_ANALYSIS_APPLET_NAME, applet_project.get_id())
+        accession_output_folder = accession_analysis_applet.name
+        accession_stage_input = {
+            'analysis_ids': ['self'],
+            'force_patch': True,
+            'wait_on_files': []
+        }
+        if target_type == 'histone':
+            for stage in overlap_peaks_stages:
+                for output_field in ['overlapping_peaks', 'overlapping_peaks_bb']:
+                    accession_stage_input['wait_on_files'].append(
+                        dxpy.dxlink({'stage': stage.get('stage_id'), 'outputField': output_field})
+                    )
+        elif run_idr:
+            for output_field in ['conservative_set', 'conservative_set_bb', 'optimal_set', 'optimal_set_bb']:
+                accession_stage_input['wait_on_files'].append(
+                    dxpy.dxlink({'stage': final_idr_stage_id, 'outputField': output_field})
+                )
+
+        assert accession_stage_input['wait_on_files'], "ERROR: workflow has no wait_on_files defined, so --accession is not supported."
+        accession_stage_id = workflow.add_stage(
+            accession_analysis_applet,
+            name='Accession results',
+            folder=accession_output_folder,
+            stage_input=accession_stage_input
+        )
 
     if args.yes:
         if args.debug:

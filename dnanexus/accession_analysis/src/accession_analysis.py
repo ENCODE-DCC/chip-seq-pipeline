@@ -547,75 +547,6 @@ def idr_quality_metric(step_run, stages, files):
     return [obj]
 
 
-# def get_rep_bams(experiment, assembly, keypair, server):
-#     logger.debug('in get_rep_bams with experiment[accession] %s'
-#                  % (experiment.get('accession')))
-#     original_files = [common.encoded_get(
-#         urlparse.urljoin(server, '%s' % (uri)), keypair)
-#         for uri in experiment.get('original_files')]
-
-#     # resolve the biorep_n for each fastq
-#     for fastq in [f for f in original_files
-#                   if f.get('file_format') in ['fastq', 'fasta']]:
-#         replicate = common.encoded_get(
-#             urlparse.urljoin(server, '%s' % (fastq.get('replicate'))), keypair)
-#         fastq.update(
-#             {'biorep_n': replicate.get('biological_replicate_number')})
-
-#     # resolve the biorep_n's from derived_from for each bam
-#     for bam in [f for f in original_files
-#                 if f.get('file_format') == 'bam' and
-#                 f.get('assembly') == assembly]:
-
-#         biorep_ns = set()
-
-#         for derived_from_uri in bam.get('derived_from'):
-
-#             # this assumes frame=object
-#             derived_from_accession = os.path.basename(
-#                 derived_from_uri.strip('/'))
-
-#             biorep_ns.add(next(
-#                 f.get('biorep_n')
-#                 for f in original_files
-#                 if f.get('accession') == derived_from_accession))
-
-#         if len(biorep_ns) != 1:
-#             logger.error("%s %s expected 1 biorep_n, found %d, skipping."
-#                          % (experiment.get('accession'), bam.get('accession')))
-#             return
-
-#         else:
-#             biorep_n = biorep_ns.pop()
-#             bam.update({'biorep_n': biorep_n})
-
-#     # remove any bams that are older than another bam
-#     # resulting in only the most recent surviving
-#     for bam in [f for f in original_files
-#                 if f.get('file_format') == 'bam' and
-#                 f.get('biorep_n') == biorep_n and
-#                 common.after(bam.get('date_created'), f.get('date_created'))]:
-#         original_files.remove(bam)
-
-#     try:
-#         rep1_bam = next(f for f in original_files
-#                         if f.get('file_format') == 'bam' and
-#                         f.get('biorep_n') == 1)
-#     except StopIteration:
-#         logger.error('%s has no rep1 bam.' % (experiment.get('accession')))
-#         rep1_bam = None
-#     try:
-#         rep2_bam = next(f for f in original_files
-#                         if f.get('file_format') == 'bam' and
-#                         f.get('biorep_n') == 2)
-#     except StopIteration:
-#         logger.error('%s has no rep2 bam.' % (experiment.get('accession')))
-#         rep2_bam = None
-#     logger.debug('get_rep_bams returning %s, %s'
-#                  % (rep1_bam.get('accession'), rep2_bam.get('accession')))
-#     return rep1_bam, rep2_bam
-
-
 def get_rep_fastqs(experiment, keypair, server, repn):
     fastq_valid_status = ['released', 'in progress', 'uploaded']
     logger.debug('in get_rep_fastqs with experiment[accession] %s rep %d'
@@ -2930,10 +2861,15 @@ def encode_indexing(server):
 
 
 @dxpy.entry_point('main')
-def main(outfn, debug, key, keyfile, dryrun,
+def main(outfn, debug, keyfile, dryrun,
          force_patch, force_upload, fqcheck,
-         pipeline=None, analysis_ids=None, infile=None, project=None,
-         accession_raw=False, signal_only=False, skip_control=False):
+         key=None, pipeline=None, analysis_ids=None, infile=None, project=None,
+         accession_raw=False, signal_only=False, skip_control=False,
+         wait_on_files=None):
+
+    # wait_on_files is never used here, it is just a place-holder input field
+    # to block the platform from running accession_analysis until all the
+    # previous stages are complete
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -2953,11 +2889,22 @@ def main(outfn, debug, key, keyfile, dryrun,
             "Must supply one of --infile or a list of analysis-ids")
         return
 
-    authid, authpw, server = common.processkey(key, keyfile)
+    if not key or key in ['www', 'submit', 'production']:
+        key = dxpy.api.system_whoami()['id']
+    elif key == 'test':
+        key = dxpy.api.system_whoami()['id'] + "-test"
+
+    key_tuple = common.processkey(key, keyfile)
+    assert key_tuple, "ERROR: Key %s is not found in the keyfile %s" % (key, keyfile)
+    authid, authpw, server = key_tuple
     keypair = (authid, authpw)
 
     accession_subjobs = []
     for (i, analysis_id) in enumerate(ids):
+
+        if analysis_id == 'self':
+            self_analysis_id = dxpy.describe(dxpy.JOB_ID)['analysis']
+            analysis_id = self_analysis_id
 
         accession_subjob_input = {
             "debug": debug,

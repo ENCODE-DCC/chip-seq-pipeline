@@ -13,6 +13,12 @@
       "label": "List of files to concatenate.",
       "class": "array:file",
       "optional": false
+    },
+    {
+      "name": "prefix",
+      "label": "Basename for output files",
+      "class": "string",
+      "optional": true
     }
   ],
   "outputSpec": [

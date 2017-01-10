@@ -112,7 +112,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
                 return_handler=True)
         pool_replicates_subjob = \
             pool_applet.run(
-                {"inputs": [rep1_ta, rep2_ta]},
+                {"inputs": [rep1_ta, rep2_ta],
+                 "prefix": 'pooled_reps'},
                 name='Pool replicates')
         pooled_replicates = pool_replicates_subjob.get_output_ref("pooled")
         pooled_replicates_xcor_subjob = \
@@ -134,7 +135,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
         else:
             pool_controls_subjob = \
                 pool_applet.run(
-                    {"inputs": [ctl1_ta, ctl2_ta]},
+                    {"inputs": [ctl1_ta, ctl2_ta],
+                     "prefix": 'pooled_ctls'},
                     name='Pool controls')
             pooled_controls = pool_controls_subjob.get_output_ref("pooled")
             # always use the pooled controls for the pool
@@ -177,7 +179,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
             spp_version,
             bigbed=True,
             as_file=as_file,
-            name='Rep1 peaks vs %s' % (rep1_ctl_msg))
+            name='Rep1 peaks vs %s' % (rep1_ctl_msg),
+            prefix='R1')
 
         rep2_peaks_subjob = spp(
             rep2_ta,
@@ -187,7 +190,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
             spp_version,
             bigbed=True,
             as_file=as_file,
-            name='Rep2 peaks vs %s' % (rep2_ctl_msg))
+            name='Rep2 peaks vs %s' % (rep2_ctl_msg),
+            prefix='R2')
 
         pooled_peaks_subjob = spp(
             pooled_replicates,
@@ -197,7 +201,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
             spp_version,
             bigbed=True,
             as_file=as_file,
-            name='Pooled peaks vs %s' % (pool_ctl_msg))
+            name='Pooled peaks vs %s' % (pool_ctl_msg),
+            prefix='PL')
 
         output = {
             'rep1_peaks':       rep1_peaks_subjob.get_output_ref("peaks"),
@@ -228,21 +233,27 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
 
             rep1_pr_subjob = \
                 pseudoreplicator_applet.run(
-                    {"input_tags": rep1_ta},
+                    {"input_tags": rep1_ta,
+                     "prefix": 'R1PR'},
                     name='Pseudoreplicate rep1 -> R1PR1,2')
             rep2_pr_subjob = \
                 pseudoreplicator_applet.run(
-                    {"input_tags": rep2_ta},
+                    {"input_tags": rep2_ta,
+                     "prefix": 'R2PR'},
                     name='Pseudoreplicate rep2 -> R2PR1,2')
 
-            pool_pr1_subjob = pool_applet.run({"inputs": [
-                rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
-                rep2_pr_subjob.get_output_ref("pseudoreplicate1")]},
+            pool_pr1_subjob = pool_applet.run({
+                "inputs": [
+                    rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
+                    rep2_pr_subjob.get_output_ref("pseudoreplicate1")],
+                "prefix": 'PPR1'},
                 name='Pool R1PR1+R2PR1 -> PPR1')
 
-            pool_pr2_subjob = pool_applet.run({"inputs": [
-                rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
-                rep2_pr_subjob.get_output_ref("pseudoreplicate2")]},
+            pool_pr2_subjob = pool_applet.run({
+                "inputs": [
+                    rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
+                    rep2_pr_subjob.get_output_ref("pseudoreplicate2")],
+                "prefix": 'PPR2'},
                 name='Pool R1PR2+R2PR2 -> PPR2')
 
             # rep1_pr1_xcor_subjob = \
@@ -289,7 +300,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
                 chrom_sizes,
                 spp_version,
                 bigbed=False,
-                name='R1PR1 peaks vs %s' % (rep1_ctl_msg))
+                name='R1PR1 peaks vs %s' % (rep1_ctl_msg),
+                prefix='R1PR1')
 
             rep1pr2_peaks_subjob = spp(
                 rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
@@ -298,7 +310,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
                 chrom_sizes,
                 spp_version,
                 bigbed=False,
-                name='R1PR2 peaks vs %s' % (rep1_ctl_msg))
+                name='R1PR2 peaks vs %s' % (rep1_ctl_msg),
+                prefix='R1PR2')
 
             rep2pr1_peaks_subjob = spp(
                 rep2_pr_subjob.get_output_ref("pseudoreplicate1"),
@@ -307,7 +320,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
                 chrom_sizes,
                 spp_version,
                 bigbed=False,
-                name='R2PR1 peaks vs %s' % (rep2_ctl_msg))
+                name='R2PR1 peaks vs %s' % (rep2_ctl_msg),
+                prefix='R2PR1')
 
             rep2pr2_peaks_subjob = spp(
                 rep2_pr_subjob.get_output_ref("pseudoreplicate2"),
@@ -316,7 +330,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
                 chrom_sizes,
                 spp_version,
                 bigbed=False,
-                name='R2PR2 peaks vs %s' % (rep2_ctl_msg))
+                name='R2PR2 peaks vs %s' % (rep2_ctl_msg),
+                prefix='R2PR2')
 
             pooledpr1_peaks_subjob = spp(
                 pool_pr1_subjob.get_output_ref("pooled"),
@@ -325,7 +340,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
                 chrom_sizes,
                 spp_version,
                 bigbed=False,
-                name='PPR1 peaks vs %s' % (pool_ctl_msg))
+                name='PPR1 peaks vs %s' % (pool_ctl_msg),
+                prefix='PPR1')
 
             pooledpr2_peaks_subjob = spp(
                 pool_pr2_subjob.get_output_ref("pooled"),
@@ -334,7 +350,8 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
                 chrom_sizes,
                 spp_version,
                 bigbed=False,
-                name='PPR2 peaks vs %s' % (pool_ctl_msg))
+                name='PPR2 peaks vs %s' % (pool_ctl_msg),
+                prefix='PPR2')
 
             output.update({
                 'rep1pr1_peaks':         rep1pr1_peaks_subjob.get_output_ref("peaks"),

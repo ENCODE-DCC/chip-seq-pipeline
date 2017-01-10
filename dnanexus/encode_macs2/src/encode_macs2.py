@@ -111,7 +111,9 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
         zero_ok=False,
         more_ok=False,
         return_handler=True)
-    pool_replicates_subjob = pool_applet.run({"inputs": [rep1_ta, rep2_ta]})
+    pool_replicates_subjob = pool_applet.run({
+        "inputs": [rep1_ta, rep2_ta],
+        "prefix": "PL_reps"})
     pooled_replicates = pool_replicates_subjob.get_output_ref("pooled")
 
     rep1_control = ctl1_ta  # default.  May be changed later.
@@ -121,7 +123,9 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
         logger.info("Only one control supplied.  Using it for both replicate 1 and 2 and for the pool.")
         control_for_pool = rep1_control
     else:
-        pool_controls_subjob = pool_applet.run({"inputs": [ctl1_ta, ctl2_ta]})
+        pool_controls_subjob = pool_applet.run({
+            "inputs": [ctl1_ta, ctl2_ta],
+            "prefix": "PL_ctls"})
         pooled_controls = pool_controls_subjob.get_output_ref("pooled")
         # always use the pooled controls for the pool
         control_for_pool = pooled_controls
@@ -160,10 +164,12 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
 
     pool_pr1_subjob = pool_applet.run(
         {"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
-                    rep2_pr_subjob.get_output_ref("pseudoreplicate1")]})
+                    rep2_pr_subjob.get_output_ref("pseudoreplicate1")],
+         "prefix": 'PPR1'})
     pool_pr2_subjob = pool_applet.run(
         {"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
-                    rep2_pr_subjob.get_output_ref("pseudoreplicate2")]})
+                    rep2_pr_subjob.get_output_ref("pseudoreplicate2")],
+         "prefix": 'PPR2'})
     pooled_replicates_xcor_subjob = xcor_only(pooled_replicates, paired_end)
 
     # no longer calculated - now we take the cross-correlation metrics for the

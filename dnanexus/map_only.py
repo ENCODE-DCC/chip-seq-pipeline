@@ -22,6 +22,7 @@ MAPPING_APPLET_NAME = 'encode_map'
 FILTER_QC_APPLET_NAME = 'filter_qc'
 XCOR_APPLET_NAME = 'xcor'
 POOL_APPLET_NAME = 'pool'
+ACCESSION_ANALYSIS_APPLET_NAME = 'accession_analysis'
 
 REFERENCES = [
     {'assembly': 'GRCh38-minimal', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/Deprecated/GRCh38/GRCh38_minimal_XY.tar.gz'},
@@ -141,6 +142,8 @@ def get_args():
         '--spp_version',
         help="Version of spp to use for the cross-correlation analysis",
         default='1.14')
+
+    parser.add_argument('--accession', help="Accession the results to the ENCODE Portal", default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -287,7 +290,7 @@ def choose_reference(experiment, biorep_n, server, keypair, sex_specific):
     return reference
 
 
-def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
+def build_workflow(experiment, biorep_n, input_shield_stage_input, key, accession):
 
     output_project = resolve_project(args.outp, 'w')
     logging.debug('Found output project %s' % (output_project.name))
@@ -399,6 +402,26 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
             }
         )
 
+        if accession:
+            accession_analysis_applet = find_applet_by_name(ACCESSION_ANALYSIS_APPLET_NAME, applet_project.get_id())
+            accession_output_folder = accession_analysis_applet.name
+            accession_stage_input = {
+                'analysis_ids': ['self'],
+                'force_patch': True,
+                'wait_on_files': []
+            }
+            stages = [stage.get('execution') for stage in workflow.describe()['stages']]
+            accession_stage_input['wait_on_files'] = [
+                dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'filtered_bam'}),
+                dxpy.dxlink({'stage': xcor_stage_id, 'outputField': 'tagAlign_file'})
+            ]
+
+            accession_stage_id = workflow.add_stage(
+                accession_analysis_applet,
+                name='Accession results',
+                folder=accession_output_folder,
+                stage_input=accession_stage_input
+            )
 
     ''' This should all be done in the shield's postprocess entrypoint
     if args.accession_outputs:
@@ -428,7 +451,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key):
 
 
 def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
-             crop_length):
+             crop_length, accession):
 
     if not files:
         logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
@@ -452,7 +475,7 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
 
     if all(isinstance(f, dict) for f in files): #single end
         input_shield_stage_input.update({'reads1': [f.get('accession') for f in files]})
-        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key))
+        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key, accession))
     elif all(isinstance(f, tuple) for f in files): #paired-end
         #launches separate mapping jobs for each readpair
         #TODO: upadte input_shield to take an array of read1/read2 PE pairs then pass that array from here
@@ -464,7 +487,7 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
             except StopIteration:
                 logging.error('%s rep %s: Unmatched read pairs' %(experiment.get('accession'),biorep_n))
                 return []
-        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key))
+        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key, accession))
     else:
         logging.error('%s: List of files to map appears to be mixed single-end and paired-end: %s' %(experiment.get('accession'), files))
 
@@ -472,6 +495,7 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
     if args.yes:
         for workflow in [wf for wf in workflows if wf]:
             if args.debug:
+
                 jobs.append(workflow.run(
                     {},
                     priority='high',
@@ -555,13 +579,13 @@ def main():
                     pe_jobs = \
                         map_only(experiment, biorep_n, paired_files,
                                  args.key, server, keypair, args.sex_specific,
-                                 args.crop_length)
+                                 args.crop_length, args.accession)
                     in_process = True
                 if unpaired_files:
                     se_jobs = \
                         map_only(experiment, biorep_n, unpaired_files,
                                  args.key, server, keypair, args.sex_specific,
-                                 args.crop_length)
+                                 args.crop_length, args.accession)
                     in_process = True
                 if paired_files and pe_jobs:
                     outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))

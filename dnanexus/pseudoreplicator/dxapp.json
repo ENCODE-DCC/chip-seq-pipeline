@@ -13,6 +13,12 @@
       "label": "File of mapped reads from which to sample",
       "class": "file",
       "optional": false
+    },
+    {
+      "name": "prefix",
+      "label": "Basename for output files",
+      "class": "string",
+      "optional": true
     }
   ],
   "outputSpec": [
@@ -29,7 +35,10 @@
   ],
   "runSpec": {
     "interpreter": "python2.7",
-    "file": "src/pseudoreplicator.py"
+    "file": "src/pseudoreplicator.py",
+    "systemRequirements": {
+      "main":     {"instanceType": "mem3_hdd2_x8"}
+    }
   },
   "access": {
     "network": [

@@ -25,7 +25,7 @@ logger.setLevel(logging.INFO)
 
 
 @dxpy.entry_point('main')
-def main(input_tags):
+def main(input_tags, prefix=None):
 
     input_tags_file = dxpy.DXFile(input_tags)
 
@@ -44,12 +44,12 @@ def main(input_tags):
     pe_cols = 10
     if re.match('^(\S+[\t\n]){%d}$' % (se_cols), firstline):
         paired_end = False
-        input_tags_basename = input_tags_filename.rstrip('.tagAlign.gz')
+        input_tags_basename = prefix or input_tags_filename.rstrip('.tagAlign.gz')
         filename_infix = 'SE'
         logger.info("Detected single-end data")
     elif re.match('^(\S+[\t\n]){%d}$' % (pe_cols), firstline):
         paired_end = True
-        input_tags_basename = input_tags_filename.rstrip('.bedpe.gz')
+        input_tags_basename = prefix or input_tags_filename.rstrip('.bedpe.gz')
         filename_infix = 'PE2SE'
         logger.info("Detected paired-end data")
     else:

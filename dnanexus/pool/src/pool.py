@@ -23,7 +23,7 @@ logger.setLevel(logging.INFO)
 
 
 @dxpy.entry_point('main')
-def main(inputs):
+def main(inputs, prefix=None):
 
     input_filenames = []
     for input_file in inputs:
@@ -33,8 +33,11 @@ def main(inputs):
 
     # uses last extension - presumably they are all the same
     extension = splitext(splitext(input_filenames[-1])[0])[1]
-    pooled_filename = \
-        '-'.join([splitext(splitext(fn)[0])[0] for fn in input_filenames]) + "_pooled%s.gz" % (extension)
+    if prefix:
+        pooled_filename = prefix + "_pooled%s.gz" % (extension)
+    else:
+        pooled_filename = \
+            '-'.join([splitext(splitext(fn)[0])[0] for fn in input_filenames]) + "_pooled%s.gz" % (extension)
     out, err = common.run_pipe([
         'gzip -dc %s' % (' '.join(input_filenames)),
         'gzip -cn'],
