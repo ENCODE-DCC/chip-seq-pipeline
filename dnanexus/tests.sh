@@ -220,6 +220,66 @@ chip_workflow.py --target histone --debug --title ENCSR678FIT-ta-OL --outf /ENCS
 
 ## single applets
 
+# encode_macs2 simplicate
+dx run \
+--input "rep1_ta=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "ctl1_ta=/test_data/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "rep1_xcor=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "rep1_paired_end=false" \
+--input "chrom_sizes=ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--input "genomesize=mm" \
+--input "narrowpeak_as=ENCODE Reference Files:/narrowPeak.as" \
+--input "gappedpeak_as=ENCODE Reference Files:/gappedPeak.as" \
+--input "broadpeak_as=ENCODE Reference Files:/broadPeak.as" \
+--input "prefix=test" \
+--verbose \
+--destination /encode_macs2_test/test_simplicate_$(date +"%Y%m%d%H%M") \
+--name encode_macs2_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/encode_macs2
+
+# encode_macs2 replicate
+dx run \
+--input "rep1_ta=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "rep2_ta=/test_data/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "ctl1_ta=/test_data/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "ctl2_ta=/test_data/ENCFF482JNU-ENCFF249RWY-ENCFF118FEW_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "rep1_xcor=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "rep2_xcor=/test_data/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "rep1_paired_end=false" \
+--input "rep2_paired_end=false" \
+--input "chrom_sizes=ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--input "genomesize=mm" \
+--input "narrowpeak_as=ENCODE Reference Files:/narrowPeak.as" \
+--input "gappedpeak_as=ENCODE Reference Files:/gappedPeak.as" \
+--input "broadpeak_as=ENCODE Reference Files:/broadPeak.as" \
+--input "prefix=test" \
+--verbose \
+--destination /encode_macs2_test/test_replicate_$(date +"%Y%m%d%H%M") \
+--name encode_macs2_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/encode_macs2
+
+# encode_spp simplicate
+dx run \
+--input "rep1_ta=/test_data/ENCFF000XUL-chr21.tagAlign.gz" \
+--input "ctl1_ta=/test_data/ENCFF000XTF-chr21.tagAlign.gz" \
+--input "rep1_xcor=/test_data/ENCFF000XUL-chr21.tagAlign.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "chrom_sizes=ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input "idr_peaks=true" \
+--verbose \
+--destination /encode_spp_test/test_simplicate_$(date +"%Y%m%d%H%M") \
+--name encode_spp_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/encode_spp
+
 # Run ENCODE_map on 36 bp SE chr21 extract
 dx run \
 --input "reads1=ENCODE Uniform Processing Pipelines:/ChIP-seq/test_data/ENCSR000EEB-hMAFK/R1-ENCFF000XTT.chr21.fq.gz" \

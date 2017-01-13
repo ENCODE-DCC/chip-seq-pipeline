@@ -2847,26 +2847,30 @@ def postprocess(outfn, output_rows):
     return output
 
 
-def encode_indexing(server):
+def encode_unready(server):
     url = server + "/_indexer"
     try:
         indexing_report = common.encoded_get(url)
-    except:
+    except Exception as e:
         logger.error(
-            'Could not get indexing report from %s' % (url))
-        return None
-    indexing_status = indexing_report.get('status')
+            '%s: Could not get indexing report from %s' % (e, url))
+        return True
+    try:
+        indexing_status = indexing_report.get('status')
+    except:
+        logger.error('Could not interpret _indexer report: %s' % (indexing_report))
+        return True
     logger.debug('encode_indexing: found status %s' % (indexing_status))
     if not indexing_status:
         logger.error(
             'Could not get indexing status from %s' % (indexing_report))
-        return None
+        return True
     elif indexing_status == 'waiting':
         return False
     elif indexing_status == 'indexing':
         return True
     else:
-        return None
+        return True
 
 
 @dxpy.entry_point('main')
@@ -2932,8 +2936,8 @@ def main(outfn, debug, keyfile, dryrun,
         }
 
         logger.info("Accession job input: %s" % (accession_subjob_input))
-        while encode_indexing(server):
-            logger.info('ENCODE server is indexing.  Checking again in 60s.')
+        while encode_unready(server):
+            logger.info('ENCODE server is not ready.  Checking again in 60s.')
             time.sleep(60)
         accession_subjobs.append(
             dxpy.new_dxjob(
