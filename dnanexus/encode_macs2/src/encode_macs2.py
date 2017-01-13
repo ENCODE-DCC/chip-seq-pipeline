@@ -23,7 +23,8 @@ logger.setLevel(logging.INFO)
 
 
 def macs2(experiment, control, xcor_scores, chrom_sizes,
-          narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize, prefix=None):
+          narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize,
+          name="MACS2", prefix=None):
         macs2_applet = dxpy.find_one_data_object(
                 classname='applet',
                 name='macs2',
@@ -43,92 +44,114 @@ def macs2(experiment, control, xcor_scores, chrom_sizes,
             }
         if prefix:
             macs2_input.update({'prefix': prefix})
-        return macs2_applet.run(macs2_input)
+        return macs2_applet.run(macs2_input, name=name)
 
 
-def xcor_only(tags, paired_end):
-        xcor_only_applet = dxpy.find_one_data_object(
+def xcor_only(tags, paired_end, name='xcor_only'):
+        xcor_only_applet = \
+            dxpy.find_one_data_object(
                 classname='applet',
                 name='xcor_only',
+                project=dxpy.PROJECT_CONTEXT_ID,
                 zero_ok=False,
                 more_ok=False,
                 return_handler=True)
-        return xcor_only_applet.run({
-            "input_tagAlign": tags,
-            "paired_end": paired_end
-            })
+        return xcor_only_applet.run(
+            {"input_tagAlign": tags,
+             "paired_end": paired_end},
+            name=name)
 
 
 @dxpy.entry_point('main')
-def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
-         rep1_paired_end, rep2_paired_end, chrom_sizes, genomesize,
-         narrowpeak_as, gappedpeak_as, broadpeak_as):
-
-    assert rep1_paired_end == rep2_paired_end, 'Mixed PE/SE not supported'
-    paired_end = rep1_paired_end
+def main(rep1_ta, ctl1_ta, rep1_xcor, rep1_paired_end, chrom_sizes, genomesize,
+         narrowpeak_as, gappedpeak_as, broadpeak_as, prefix,
+         rep2_ta=None, ctl2_ta=None, rep2_xcor=None, rep2_paired_end=None):
 
     rep1_ta_file = dxpy.DXFile(rep1_ta)
-    rep2_ta_file = dxpy.DXFile(rep2_ta)
-    unary_control = ctl1_ta == ctl2_ta
-    ctl1_ta_file = dxpy.DXFile(ctl1_ta)
-    ctl2_ta_file = dxpy.DXFile(ctl2_ta)
-    # not necessary to actually download these - just pass through
-    # rep1_xcor_file = dxpy.DXFile(rep1_xcor)
-    # rep2_xcor_file = dxpy.DXFile(rep2_xcor)
-
     dxpy.download_dxfile(rep1_ta_file.get_id(), rep1_ta_file.name)
-    dxpy.download_dxfile(rep2_ta_file.get_id(), rep2_ta_file.name)
-    dxpy.download_dxfile(ctl1_ta_file.get_id(), ctl1_ta_file.name)
-    dxpy.download_dxfile(ctl2_ta_file.get_id(), ctl2_ta_file.name)
-    # not necessary to actually download these - just pass through
-    # dxpy.download_dxfile(rep1_xcor_file.get_id(), rep1_xcor_file.name)
-    # dxpy.download_dxfile(rep2_xcor_file.get_id(), rep2_xcor_file.name)
-
     rep1_ta_filename = rep1_ta_file.name
-    rep2_ta_filename = rep2_ta_file.name
-    ctl1_ta_filename = ctl1_ta_file.name
-    ctl2_ta_filename = ctl2_ta_file.name
-    # not necessary to actually download these - just pass through
-    # rep1_xcor_filename = rep1_xcor_file.name
-    # rep2_xcor_filename = rep2_xcor_file.name
-
     ntags_rep1 = common.count_lines(rep1_ta_filename)
-    ntags_rep2 = common.count_lines(rep2_ta_filename)
+
+    simplicate_experiment = rep1_ta and not rep2_ta
+    if simplicate_experiment:
+        logger.info("No rep2 tags specified so processing as a simplicate experiment.")
+    else:
+        logger.info("Rep1 and rep2 tags specified so processing as a replicated experiment.")
+
+    if not simplicate_experiment:
+        assert rep1_paired_end == rep2_paired_end, 'Mixed PE/SE not supported'
+        rep2_ta_file = dxpy.DXFile(rep2_ta)
+        dxpy.download_dxfile(rep2_ta_file.get_id(), rep2_ta_file.name)
+        rep2_ta_filename = rep2_ta_file.name
+        ntags_rep2 = common.count_lines(rep2_ta_filename)
+    paired_end = rep1_paired_end
+
+    unary_control = (ctl1_ta == ctl2_ta) or not ctl2_ta
+    ctl1_ta_file = dxpy.DXFile(ctl1_ta)
+    dxpy.download_dxfile(ctl1_ta_file.get_id(), ctl1_ta_file.name)
+    ctl1_ta_filename = ctl1_ta_file.name
+
+    if not unary_control:
+        ctl2_ta_file = dxpy.DXFile(ctl2_ta)
+        dxpy.download_dxfile(ctl2_ta_file.get_id(), ctl2_ta_file.name)
+        ctl2_ta_filename = ctl2_ta_file.name
+    else:
+        ctl2_ta_file = ctl1_ta_file
+        ctl2_ta_filename = ctl1_ta_file.name
+
     ntags_ctl1 = common.count_lines(ctl1_ta_filename)
     ntags_ctl2 = common.count_lines(ctl2_ta_filename)
+    rep1_control = ctl1_ta  # default.  May be changed later.
+    rep1_ctl_msg = "control rep1"
+    rep2_control = ctl2_ta  # default.  May be changed later.
+    rep2_ctl_msg = "control rep2"
 
-    for n, name, filename in [(ntags_rep1, 'replicate 1', rep1_ta_filename),
-                              (ntags_rep2, 'replicate 2', rep2_ta_filename),
-                              (ntags_ctl1, 'control 1', ctl1_ta_filename),
-                              (ntags_ctl2, 'control 2', ctl2_ta_filename)]:
+    rep_info = [(ntags_rep1, 'replicate 1', rep1_ta_filename)]
+    if not simplicate_experiment:
+        rep_info.append((ntags_rep2, 'replicate 2', rep2_ta_filename))
+    rep_info.extend(
+        [(ntags_ctl1, 'control 1', ctl1_ta_filename),
+         (ntags_ctl2, 'control 2', ctl2_ta_filename)])
+    for n, name, filename in rep_info:
         logger.info("Found %d tags in %s file %s" % (n, name, filename))
 
     subprocess.check_output('ls -l', shell=True, stderr=subprocess.STDOUT)
 
-    pool_applet = dxpy.find_one_data_object(
-        classname='applet',
-        name='pool',
-        zero_ok=False,
-        more_ok=False,
-        return_handler=True)
-    pool_replicates_subjob = pool_applet.run({
-        "inputs": [rep1_ta, rep2_ta],
-        "prefix": "PL_reps"})
-    pooled_replicates = pool_replicates_subjob.get_output_ref("pooled")
-
-    rep1_control = ctl1_ta  # default.  May be changed later.
-    rep2_control = ctl2_ta  # default.  May be changed later.
+    if not simplicate_experiment:
+        pool_applet = dxpy.find_one_data_object(
+                classname='applet',
+                name='pool',
+                project=dxpy.PROJECT_CONTEXT_ID,
+                zero_ok=False,
+                more_ok=False,
+                return_handler=True)
+        pool_replicates_subjob = \
+            pool_applet.run(
+                {"inputs": [rep1_ta, rep2_ta],
+                 "prefix": 'pooled_reps'},
+                name='Pool replicates')
+        pooled_replicates = pool_replicates_subjob.get_output_ref("pooled")
+        pooled_replicates_xcor_subjob = \
+            xcor_only(
+                pooled_replicates,
+                paired_end,
+                name='Pool cross-correlation')
 
     if unary_control:
-        logger.info("Only one control supplied.  Using it for both replicate 1 and 2 and for the pool.")
+        logger.info("Only one control supplied.")
+        if not simplicate_experiment:
+            logger.info("Using one control for both replicate 1 and 2 and for the pool.")
         control_for_pool = rep1_control
+        pool_ctl_msg = "one control"
     else:
-        pool_controls_subjob = pool_applet.run({
-            "inputs": [ctl1_ta, ctl2_ta],
-            "prefix": "PL_ctls"})
+        pool_controls_subjob = pool_applet.run(
+            {"inputs": [ctl1_ta, ctl2_ta],
+             "prefix": "PL_ctls"},
+            name='Pool controls')
         pooled_controls = pool_controls_subjob.get_output_ref("pooled")
         # always use the pooled controls for the pool
         control_for_pool = pooled_controls
+        pool_ctl_msg = "pooled controls"
 
         # use the pooled controls for the reps depending on the ratio of rep to
         # control reads
@@ -146,12 +169,18 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
                 if ntags_ctl1 < ntags_rep1:
                         logger.info("Fewer reads in control replicate 1 than experiment replicate 1.  Using pooled controls for replicate 1.")
                         rep1_control = pooled_controls
-                elif ntags_ctl2 < ntags_rep2:
+                        rep1_ctl_msg = "pooled controls"
+                elif not simplicate_experiment and ntags_ctl2 < ntags_rep2:
                         logger.info("Fewer reads in control replicate 2 than experiment replicate 2.  Using pooled controls for replicate 2.")
                         rep2_control = pooled_controls
+                        rep2_ctl_msg = "pooled controls"
                 else:
                     logger.info(
                         "Using distinct controls for replicate 1 and 2.")
+                    rep1_control = ctl1_ta  # default.  May be changed later.
+                    rep2_control = ctl2_ta  # default.  May be changed later.
+                    rep1_ctl_msg = "control rep1"
+                    rep2_ctl_msg = "control rep2"
 
     pseudoreplicator_applet = dxpy.find_one_data_object(
         classname='applet',
@@ -160,32 +189,17 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
         more_ok=False,
         return_handler=True)
     rep1_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep1_ta})
-    rep2_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep2_ta})
+    if not simplicate_experiment:
+        rep2_pr_subjob = pseudoreplicator_applet.run({"input_tags": rep2_ta})
 
-    pool_pr1_subjob = pool_applet.run(
-        {"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
-                    rep2_pr_subjob.get_output_ref("pseudoreplicate1")],
-         "prefix": 'PPR1'})
-    pool_pr2_subjob = pool_applet.run(
-        {"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
-                    rep2_pr_subjob.get_output_ref("pseudoreplicate2")],
-         "prefix": 'PPR2'})
-    pooled_replicates_xcor_subjob = xcor_only(pooled_replicates, paired_end)
-
-    # no longer calculated - now we take the cross-correlation metrics for the
-    # pseudoreplicates as those from the true reps
-    # rep1_pr1_xcor_subjob = \
-    #     xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
-    # rep1_pr2_xcor_subjob = \
-    #     xcor_only(rep1_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
-    # rep2_pr1_xcor_subjob = \
-    #     xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate1"), paired_end)
-    # rep2_pr2_xcor_subjob = \
-    #     xcor_only(rep2_pr_subjob.get_output_ref("pseudoreplicate2"), paired_end)
-    # pool_pr1_xcor_subjob = \
-    #     xcor_only(pool_pr1_subjob.get_output_ref("pooled"), paired_end)
-    # pool_pr2_xcor_subjob = \
-    #     xcor_only(pool_pr2_subjob.get_output_ref("pooled"), paired_end)
+        pool_pr1_subjob = pool_applet.run(
+            {"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
+                        rep2_pr_subjob.get_output_ref("pseudoreplicate1")],
+             "prefix": 'PPR1'})
+        pool_pr2_subjob = pool_applet.run(
+            {"inputs": [rep1_pr_subjob.get_output_ref("pseudoreplicate2"),
+                        rep2_pr_subjob.get_output_ref("pseudoreplicate2")],
+             "prefix": 'PPR2'})
 
     common_args = {
         'chrom_sizes':      chrom_sizes,
@@ -200,16 +214,6 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
                                     rep1_control,
                                     rep1_xcor, **common_args)
 
-    common_args.update({'prefix': 'r2'})
-    rep2_peaks_subjob      = macs2( rep2_ta,
-                                    rep2_control,
-                                    rep2_xcor, **common_args)
-
-    common_args.update({'prefix': 'pool'})
-    pooled_peaks_subjob    = macs2( pooled_replicates,
-                                    control_for_pool,   
-                                    pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
-
     common_args.update({'prefix': 'r1pr1'})
     rep1pr1_peaks_subjob   = macs2( rep1_pr_subjob.get_output_ref("pseudoreplicate1"),
                                     rep1_control,
@@ -220,25 +224,36 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
                                     rep1_control,
                                     rep1_xcor, **common_args)
 
-    common_args.update({'prefix': 'r2pr1'})
-    rep2pr1_peaks_subjob   = macs2( rep2_pr_subjob.get_output_ref("pseudoreplicate1"),
-                                    rep2_control,
-                                    rep2_xcor, **common_args)
+    if not simplicate_experiment:
+        common_args.update({'prefix': 'r2'})
+        rep2_peaks_subjob      = macs2( rep2_ta,
+                                        rep2_control,
+                                        rep2_xcor, **common_args)
 
-    common_args.update({'prefix': 'r2pr2'})
-    rep2pr2_peaks_subjob   = macs2( rep2_pr_subjob.get_output_ref("pseudoreplicate2"),
-                                    rep2_control,
-                                    rep2_xcor, **common_args)
+        common_args.update({'prefix': 'r2pr1'})
+        rep2pr1_peaks_subjob   = macs2( rep2_pr_subjob.get_output_ref("pseudoreplicate1"),
+                                        rep2_control,
+                                        rep2_xcor, **common_args)
 
-    common_args.update({'prefix': 'ppr1'})
-    pooledpr1_peaks_subjob = macs2( pool_pr1_subjob.get_output_ref("pooled"),
-                                    control_for_pool,
-                                    pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
+        common_args.update({'prefix': 'r2pr2'})
+        rep2pr2_peaks_subjob   = macs2( rep2_pr_subjob.get_output_ref("pseudoreplicate2"),
+                                        rep2_control,
+                                        rep2_xcor, **common_args)
 
-    common_args.update({'prefix': 'ppr2'})
-    pooledpr2_peaks_subjob = macs2( pool_pr2_subjob.get_output_ref("pooled"),
-                                    control_for_pool,
-                                    pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
+        common_args.update({'prefix': 'pool'})
+        pooled_peaks_subjob    = macs2( pooled_replicates,
+                                        control_for_pool,   
+                                        pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
+
+        common_args.update({'prefix': 'ppr1'})
+        pooledpr1_peaks_subjob = macs2( pool_pr1_subjob.get_output_ref("pooled"),
+                                        control_for_pool,
+                                        pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
+
+        common_args.update({'prefix': 'ppr2'})
+        pooledpr2_peaks_subjob = macs2( pool_pr2_subjob.get_output_ref("pooled"),
+                                        control_for_pool,
+                                        pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file"), **common_args)
 
     output = {
         'rep1_narrowpeaks':         rep1_peaks_subjob.get_output_ref("narrowpeaks"),
@@ -250,24 +265,6 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
         'rep1_fc_signal':           rep1_peaks_subjob.get_output_ref("fc_signal"),
         'rep1_pvalue_signal':       rep1_peaks_subjob.get_output_ref("pvalue_signal"),
 
-        'rep2_narrowpeaks':         rep2_peaks_subjob.get_output_ref("narrowpeaks"),
-        'rep2_gappedpeaks':         rep2_peaks_subjob.get_output_ref("gappedpeaks"),
-        'rep2_broadpeaks':          rep2_peaks_subjob.get_output_ref("broadpeaks"),
-        'rep2_narrowpeaks_bb':      rep2_peaks_subjob.get_output_ref("narrowpeaks_bb"),
-        'rep2_gappedpeaks_bb':      rep2_peaks_subjob.get_output_ref("gappedpeaks_bb"),
-        'rep2_broadpeaks_bb':       rep2_peaks_subjob.get_output_ref("broadpeaks_bb"),
-        'rep2_fc_signal':           rep2_peaks_subjob.get_output_ref("fc_signal"),
-        'rep2_pvalue_signal':       rep2_peaks_subjob.get_output_ref("pvalue_signal"),
-
-        'pooled_narrowpeaks':       pooled_peaks_subjob.get_output_ref("narrowpeaks"),
-        'pooled_gappedpeaks':       pooled_peaks_subjob.get_output_ref("gappedpeaks"),
-        'pooled_broadpeaks':        pooled_peaks_subjob.get_output_ref("broadpeaks"),
-        'pooled_narrowpeaks_bb':    pooled_peaks_subjob.get_output_ref("narrowpeaks_bb"),
-        'pooled_gappedpeaks_bb':    pooled_peaks_subjob.get_output_ref("gappedpeaks_bb"),
-        'pooled_broadpeaks_bb':     pooled_peaks_subjob.get_output_ref("broadpeaks_bb"),
-        'pooled_fc_signal':         pooled_peaks_subjob.get_output_ref("fc_signal"),
-        'pooled_pvalue_signal':     pooled_peaks_subjob.get_output_ref("pvalue_signal"),
-
         'rep1pr1_narrowpeaks':      rep1pr1_peaks_subjob.get_output_ref("narrowpeaks"),
         'rep1pr1_gappedpeaks':      rep1pr1_peaks_subjob.get_output_ref("gappedpeaks"),
         'rep1pr1_broadpeaks':       rep1pr1_peaks_subjob.get_output_ref("broadpeaks"),
@@ -278,32 +275,53 @@ def main(rep1_ta, rep2_ta, ctl1_ta, ctl2_ta, rep1_xcor, rep2_xcor,
         'rep1pr2_gappedpeaks':      rep1pr2_peaks_subjob.get_output_ref("gappedpeaks"),
         'rep1pr2_broadpeaks':       rep1pr2_peaks_subjob.get_output_ref("broadpeaks"),
         'rep1pr2_fc_signal':        rep1pr2_peaks_subjob.get_output_ref("fc_signal"),
-        'rep1pr2_pvalue_signal':    rep1pr2_peaks_subjob.get_output_ref("pvalue_signal"),
-
-        'rep2pr1_narrowpeaks':      rep2pr1_peaks_subjob.get_output_ref("narrowpeaks"),
-        'rep2pr1_gappedpeaks':      rep2pr1_peaks_subjob.get_output_ref("gappedpeaks"),
-        'rep2pr1_broadpeaks':       rep2pr1_peaks_subjob.get_output_ref("broadpeaks"),
-        'rep2pr1_fc_signal':        rep2pr1_peaks_subjob.get_output_ref("fc_signal"),
-        'rep2pr1_pvalue_signal':    rep2pr1_peaks_subjob.get_output_ref("pvalue_signal"),
-
-        'rep2pr2_narrowpeaks':      rep2pr2_peaks_subjob.get_output_ref("narrowpeaks"),
-        'rep2pr2_gappedpeaks':      rep2pr2_peaks_subjob.get_output_ref("gappedpeaks"),
-        'rep2pr2_broadpeaks':       rep2pr2_peaks_subjob.get_output_ref("broadpeaks"),
-        'rep2pr2_fc_signal':        rep2pr2_peaks_subjob.get_output_ref("fc_signal"),
-        'rep2pr2_pvalue_signal':    rep2pr2_peaks_subjob.get_output_ref("pvalue_signal"),
-
-        'pooledpr1_narrowpeaks':    pooledpr1_peaks_subjob.get_output_ref("narrowpeaks"),
-        'pooledpr1_gappedpeaks':    pooledpr1_peaks_subjob.get_output_ref("gappedpeaks"),
-        'pooledpr1_broadpeaks':     pooledpr1_peaks_subjob.get_output_ref("broadpeaks"),
-        'pooledpr1_fc_signal':      pooledpr1_peaks_subjob.get_output_ref("fc_signal"),
-        'pooledpr1_pvalue_signal':  pooledpr1_peaks_subjob.get_output_ref("pvalue_signal"),
-
-        'pooledpr2_narrowpeaks':    pooledpr2_peaks_subjob.get_output_ref("narrowpeaks"),
-        'pooledpr2_gappedpeaks':    pooledpr2_peaks_subjob.get_output_ref("gappedpeaks"),
-        'pooledpr2_broadpeaks':     pooledpr2_peaks_subjob.get_output_ref("broadpeaks"),
-        'pooledpr2_fc_signal':      pooledpr2_peaks_subjob.get_output_ref("fc_signal"),
-        'pooledpr2_pvalue_signal':  pooledpr2_peaks_subjob.get_output_ref("pvalue_signal")
+        'rep1pr2_pvalue_signal':    rep1pr2_peaks_subjob.get_output_ref("pvalue_signal")
     }
+
+    if not simplicate_experiment:
+        output.update({
+            'rep2_narrowpeaks':         rep2_peaks_subjob.get_output_ref("narrowpeaks"),
+            'rep2_gappedpeaks':         rep2_peaks_subjob.get_output_ref("gappedpeaks"),
+            'rep2_broadpeaks':          rep2_peaks_subjob.get_output_ref("broadpeaks"),
+            'rep2_narrowpeaks_bb':      rep2_peaks_subjob.get_output_ref("narrowpeaks_bb"),
+            'rep2_gappedpeaks_bb':      rep2_peaks_subjob.get_output_ref("gappedpeaks_bb"),
+            'rep2_broadpeaks_bb':       rep2_peaks_subjob.get_output_ref("broadpeaks_bb"),
+            'rep2_fc_signal':           rep2_peaks_subjob.get_output_ref("fc_signal"),
+            'rep2_pvalue_signal':       rep2_peaks_subjob.get_output_ref("pvalue_signal"),
+
+            'rep2pr1_narrowpeaks':      rep2pr1_peaks_subjob.get_output_ref("narrowpeaks"),
+            'rep2pr1_gappedpeaks':      rep2pr1_peaks_subjob.get_output_ref("gappedpeaks"),
+            'rep2pr1_broadpeaks':       rep2pr1_peaks_subjob.get_output_ref("broadpeaks"),
+            'rep2pr1_fc_signal':        rep2pr1_peaks_subjob.get_output_ref("fc_signal"),
+            'rep2pr1_pvalue_signal':    rep2pr1_peaks_subjob.get_output_ref("pvalue_signal"),
+
+            'rep2pr2_narrowpeaks':      rep2pr2_peaks_subjob.get_output_ref("narrowpeaks"),
+            'rep2pr2_gappedpeaks':      rep2pr2_peaks_subjob.get_output_ref("gappedpeaks"),
+            'rep2pr2_broadpeaks':       rep2pr2_peaks_subjob.get_output_ref("broadpeaks"),
+            'rep2pr2_fc_signal':        rep2pr2_peaks_subjob.get_output_ref("fc_signal"),
+            'rep2pr2_pvalue_signal':    rep2pr2_peaks_subjob.get_output_ref("pvalue_signal"),
+
+            'pooled_narrowpeaks':       pooled_peaks_subjob.get_output_ref("narrowpeaks"),
+            'pooled_gappedpeaks':       pooled_peaks_subjob.get_output_ref("gappedpeaks"),
+            'pooled_broadpeaks':        pooled_peaks_subjob.get_output_ref("broadpeaks"),
+            'pooled_narrowpeaks_bb':    pooled_peaks_subjob.get_output_ref("narrowpeaks_bb"),
+            'pooled_gappedpeaks_bb':    pooled_peaks_subjob.get_output_ref("gappedpeaks_bb"),
+            'pooled_broadpeaks_bb':     pooled_peaks_subjob.get_output_ref("broadpeaks_bb"),
+            'pooled_fc_signal':         pooled_peaks_subjob.get_output_ref("fc_signal"),
+            'pooled_pvalue_signal':     pooled_peaks_subjob.get_output_ref("pvalue_signal"),
+
+            'pooledpr1_narrowpeaks':    pooledpr1_peaks_subjob.get_output_ref("narrowpeaks"),
+            'pooledpr1_gappedpeaks':    pooledpr1_peaks_subjob.get_output_ref("gappedpeaks"),
+            'pooledpr1_broadpeaks':     pooledpr1_peaks_subjob.get_output_ref("broadpeaks"),
+            'pooledpr1_fc_signal':      pooledpr1_peaks_subjob.get_output_ref("fc_signal"),
+            'pooledpr1_pvalue_signal':  pooledpr1_peaks_subjob.get_output_ref("pvalue_signal"),
+
+            'pooledpr2_narrowpeaks':    pooledpr2_peaks_subjob.get_output_ref("narrowpeaks"),
+            'pooledpr2_gappedpeaks':    pooledpr2_peaks_subjob.get_output_ref("gappedpeaks"),
+            'pooledpr2_broadpeaks':     pooledpr2_peaks_subjob.get_output_ref("broadpeaks"),
+            'pooledpr2_fc_signal':      pooledpr2_peaks_subjob.get_output_ref("fc_signal"),
+            'pooledpr2_pvalue_signal':  pooledpr2_peaks_subjob.get_output_ref("pvalue_signal")
+        })
 
     return output
 
