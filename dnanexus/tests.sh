@@ -269,11 +269,34 @@ dx run \
 --input "rep1_ta=/test_data/ENCFF000XUL-chr21.tagAlign.gz" \
 --input "ctl1_ta=/test_data/ENCFF000XTF-chr21.tagAlign.gz" \
 --input "rep1_xcor=/test_data/ENCFF000XUL-chr21.tagAlign.sample.15.SE.tagAlign.gz.cc.qc" \
+
+--input "rep1_paired_end=false" \
 --input "chrom_sizes=ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
 --input "as_file=ENCODE Reference Files:/narrowPeak.as" \
 --input "idr_peaks=true" \
 --verbose \
 --destination /encode_spp_test/test_simplicate_$(date +"%Y%m%d%H%M") \
+--name encode_spp_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/encode_spp
+
+# encode_spp replicate
+dx run \
+--input "rep1_ta=/test_data/ENCFF000XUL-chr21.tagAlign.gz" \
+--input "rep2_ta=/test_data/ENCFF000XUK-chr21.tagAlign.gz" \
+--input "ctl1_ta=/test_data/ENCFF000XTF-chr21.tagAlign.gz" \
+--input "ctl2_ta=/test_data/ENCFF000XTF-chr21.tagAlign.gz" \
+--input "rep1_xcor=/test_data/ENCFF000XUL-chr21.tagAlign.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "rep2_xcor=/test_data/ENCFF000XUK.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "rep1_paired_end=false" \
+--input "rep2_paired_end=false" \
+--input "chrom_sizes=ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input "idr_peaks=true" \
+--verbose \
+--destination /encode_spp_test/test_replicate_$(date +"%Y%m%d%H%M") \
 --name encode_spp_test \
 --delay-workspace-destruction \
 --priority high \
