@@ -103,7 +103,8 @@
         {
             "name": "rep1_peaks_bb",
             "label": "Bigbed file",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "rep1_xcor_plot",
@@ -118,42 +119,50 @@
         {
             "name": "rep2_peaks",
             "label": "Narrowpeaks file",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "rep2_peaks_bb",
             "label": "Bigbed file",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "rep2_xcor_plot",
             "label": "Cross-correlation plot",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "rep2_xcor_scores",
             "label": "Cross-correlation scores",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "pooled_peaks",
             "label": "Narrowpeaks file",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "pooled_peaks_bb",
             "label": "Bigbed file",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "pooled_xcor_plot",
             "label": "Cross-correlation plot",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "pooled_xcor_scores",
             "label": "Cross-correlation scores",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "rep1pr1_peaks",
