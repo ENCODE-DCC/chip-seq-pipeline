@@ -303,6 +303,50 @@ dx run \
 --yes \
 applets/encode_spp
 
+# idr2 replicate
+dx run \
+--input "rep1_peaks=/test_data/ENCFF000XUL-chr21.regionPeak.gz" \
+--input "rep2_peaks=/test_data/ENCFF000XUK-chr21.regionPeak.gz" \
+--input "pooled_peaks=/test_data/ENCFF000XUL-chr21-ENCFF000XUK-chr21_pooled.regionPeak.gz" \
+--verbose \
+--destination /IDRv2_test_replicate/test_$(date +"%Y%m%d%H%M") \
+--name IDRv2_test_replicate \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/idr2
+
+# idr2 simplicate
+dx run \
+--input "rep1_peaks=/test_data/simplicate/ENCFF000XUL-chr21_PR1.regionPeak.gz" \
+--input "rep2_peaks=/test_data/simplicate/ENCFF000XUL-chr21_PR2.regionPeak.gz" \
+--input "pooled_peaks=/test_data/simplicate/ENCFF000XUL-chr21.regionPeak.gz" \
+--verbose \
+--destination /IDRv2_test_simplicate/test_$(date +"%Y%m%d%H%M") \
+--name IDRv2_test_simplicate \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/idr2
+
+# encode_idr replicate
+
+# encode_idr simplicate
+dx run \
+--input "experiment=smplct_exp" \
+--input "r1pr_peaks=/test_data/simplicate/ENCFF000XULvENCFF000XUL.IDRv2.IDR0.05.narrowPeak.gz" \
+--input "rep1_signal=/test_data/simplicate/r1.pvalue_signal.bw" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input "blacklist=ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
+--input "chrom_sizes=ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--verbose \
+--destination /encode_idr_test_simplicate/test_$(date +"%Y%m%d%H%M") \
+--name encode_idr_test_simplicate \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/encode_idr
+
 # Run ENCODE_map on 36 bp SE chr21 extract
 dx run \
 --input "reads1=ENCODE Uniform Processing Pipelines:/ChIP-seq/test_data/ENCSR000EEB-hMAFK/R1-ENCFF000XTT.chr21.fq.gz" \
