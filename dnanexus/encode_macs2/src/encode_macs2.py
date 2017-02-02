@@ -64,7 +64,7 @@ def xcor_only(tags, paired_end, name='xcor_only'):
 
 @dxpy.entry_point('main')
 def main(rep1_ta, ctl1_ta, rep1_xcor, rep1_paired_end, chrom_sizes, genomesize,
-         narrowpeak_as, gappedpeak_as, broadpeak_as, prefix,
+         narrowpeak_as, gappedpeak_as, broadpeak_as, 
          rep2_ta=None, ctl2_ta=None, rep2_xcor=None, rep2_paired_end=None):
 
     rep1_ta_file = dxpy.DXFile(rep1_ta)

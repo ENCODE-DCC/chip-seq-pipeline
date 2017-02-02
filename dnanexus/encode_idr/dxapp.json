@@ -114,6 +114,12 @@
 			"optional": true
 		},
 		{
+			"name": "Ns",
+			"label": "Number of stable peaks from internal pseudoreplication",
+			"class": "int",
+			"optional": true
+		},
+		{
 			"name": "conservative_set",
 			"label": "Final peak calls - conservative set",
 			"class": "file",
@@ -140,6 +146,12 @@
 		{
 			"name": "optimal_set_bb",
 			"label": "Final peak calls - optimal set bigBed",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "stable_set_bb",
+			"label": "Final peak calls - stable set bigBed",
 			"class": "file",
 			"optional": true
 		},

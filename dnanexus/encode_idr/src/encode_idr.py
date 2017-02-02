@@ -276,8 +276,9 @@ def replicated_IDR(experiment,
 
 
 @dxpy.entry_point("main")
-def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks,
+def main(experiment, r1pr_peaks,
          chrom_sizes, as_file, blacklist=None,
+         reps_peaks=None, r2pr_peaks=None, pooledpr_peaks=None,
          rep1_signal=None, rep2_signal=None, pooled_signal=None):
 
     simplicate_experiment = not reps_peaks

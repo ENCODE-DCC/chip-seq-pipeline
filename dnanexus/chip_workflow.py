@@ -298,6 +298,8 @@ def resolve_project(identifier, privs='r'):
 
 
 def create_folder(project, folder_name):
+    if not folder_name.startswith('/'):
+        folder_name = '/' + folder_name
     try:
         project.new_folder(folder_name, parents=True)
     except:
@@ -423,8 +425,8 @@ def main():
     if not blank_workflow:
         assert args.rep1, "Reads are required for rep1"
         assert args.ctl1, "Reads are required for ctl1"
-        assert not args.nomap or args.rep1pe, "With --nomap, endedness of rep1 must be specified witn --rep1pe"
-        assert not args.nomap or (not args.rep2 or args.rep2pe), "With --nomap, endedness of rep2 must be specified with --rep2pe"
+        assert not args.nomap or args.rep1pe is not None, "With --nomap, endedness of rep1 must be specified witn --rep1pe"
+        assert not args.nomap or (not args.rep2 or args.rep2pe is not None), "With --nomap, endedness of rep2 must be specified with --rep2pe"
 
     if not args.target:
         target_type = 'default'  # default
@@ -491,7 +493,7 @@ def main():
                 {'name': 'Rep2', 'input_args': args.rep2})
         mapping_superstages.append(
             {'name': 'Ctl1', 'input_args': args.ctl1})
-        if not unary_control:
+        if not unary_control and not simplicate_experiment:
             mapping_superstages.append(
                 {'name': 'Ctl2', 'input_args': args.ctl2})
 
@@ -549,6 +551,8 @@ def main():
                 #     stage_input=mapping_stage_input
                 # )
                 # mapping_superstage.update({'map_stage_id': mapped_stage_id})
+                print("Mapping stage input")
+                print(mapping_stage_input)
                 workflow.update_stage(superstage_id, stage_input=mapping_stage_input)
 
                 filter_qc_stage_id = workflow.add_stage(
@@ -601,7 +605,7 @@ def main():
         ctl_rep1_ta = dxpy.dxlink(
                     {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl1'),
                      'outputField': 'tagAlign_file'})
-        if not unary_control:
+        if not unary_control and not simplicate_experiment:
             ctl_rep2_ta = dxpy.dxlink(
                         {'stage': next(ss.get('xcor_stage_id') for ss in mapping_superstages if ss['name'] == 'Ctl2'),
                          'outputField': 'tagAlign_file'})
@@ -633,7 +637,7 @@ def main():
                 exp_rep2_cc = None
 
             ctl_rep1_ta = dxpy.dxlink(resolve_file(args.ctl1[0]).get_id())
-            if not unary_control:
+            if not unary_control and not simplicate_experiment:
                 ctl_rep2_ta = dxpy.dxlink(resolve_file(args.ctl2[0]).get_id())
             else:
                 ctl_rep2_ta = None
@@ -690,7 +694,7 @@ def main():
 
     # for simplicate experiments and/or unary controls, some of the ta inputs
     # will have the value None
-    macs2_stage_input = {
+    macs2_stage_input_mapping = {
             'rep1_ta' : exp_rep1_ta,
             'rep2_ta' : exp_rep2_ta,
             'ctl1_ta': ctl_rep1_ta,
@@ -701,12 +705,16 @@ def main():
             'rep2_paired_end': rep2_paired_end,
             'narrowpeak_as': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
             'gappedpeak_as': dxpy.dxlink(resolve_file(args.gappedpeak_as)),
-            'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as))
+            'broadpeak_as':  dxpy.dxlink(resolve_file(args.broadpeak_as)),
+            'genomesize': genomesize,
+            'chrom_sizes': chrom_sizes
         }
-    if genomesize:
-        macs2_stage_input.update({'genomesize': genomesize})
-    if chrom_sizes:
-        macs2_stage_input.update({'chrom_sizes': chrom_sizes})
+    print(macs2_stage_input_mapping)
+    # have to prune out any arguments with value None because DX will error
+    # with arguments with null values
+    macs2_stage_input = dict([(k,v) for k,v in macs2_stage_input_mapping.iteritems() if v is not None])
+    print(macs2_stage_input)
+
     encode_macs2_stage_id = workflow.add_stage(
         encode_macs2_applet,
         name='ENCODE Peaks',
@@ -723,7 +731,7 @@ def main():
         PEAKS_STAGE_NAME = 'SPP Peaks'
         # for simplicate experiments and/or unary controls, some of the ta inputs
         # will have the value None
-        peaks_stage_input = {
+        peaks_stage_input_mapping = {
                     'rep1_ta' : exp_rep1_ta,
                     'rep2_ta' : exp_rep2_ta,
                     'ctl1_ta': ctl_rep1_ta,
@@ -737,9 +745,12 @@ def main():
                     'spp_version': args.spp_version
                     }
         if chrom_sizes:
-            peaks_stage_input.update({'chrom_sizes': chrom_sizes})
+            peaks_stage_input_mapping.update({'chrom_sizes': chrom_sizes})
         else:
-            peaks_stage_input.update({'chrom_sizes': dxpy.dxlink({'stage': encode_macs2_stage_id, 'inputField': 'chrom_sizes'})})
+            peaks_stage_input_mapping.update({'chrom_sizes': dxpy.dxlink({'stage': encode_macs2_stage_id, 'inputField': 'chrom_sizes'})})
+        # have to prune out any arguments with value None because DX will error
+        # with arguments with null values
+        peaks_stage_input = dict([(k,v) for k,v in peaks_stage_input_mapping.iteritems() if v is not None])
 
         encode_spp_stage_id = workflow.add_stage(
             encode_spp_applet,
