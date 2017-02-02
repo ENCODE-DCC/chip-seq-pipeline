@@ -324,7 +324,7 @@ def chipseq_filter_quality_metric(step_run, stages, files):
     xcor_qc = xcor_parse(xcor_stage['output']['CC_scores_file'])
 
     obj = {
-        'assay_term_id': 'OBI:0000716',
+        # 'assay_term_id': 'OBI:0000716',
         'assay_term_name': 'ChIP-seq',
         'step_run': step_run,
         'quality_metric_of': file_accessions,
@@ -364,7 +364,7 @@ def get_flagstat_obj(step_run, stage, file_accessions):
         return None
 
     obj = {
-        'assay_term_id': 'OBI:0000716',
+        # 'assay_term_id': 'OBI:0000716',
         'assay_term_name': 'ChIP-seq',
         'step_run': step_run,
         'quality_metric_of': file_accessions,
@@ -497,7 +497,7 @@ def idr_quality_metric(step_run, stages, files):
             stages[stage_name]['stage_metadata']['originalInput']['idr_threshold'])
 
     obj = {
-        'assay_term_id':     'OBI:0000716',
+        # 'assay_term_id':     'OBI:0000716',
         'assay_term_name':   'ChIP-seq',
         'step_run':          step_run,
         'quality_metric_of': file_accessions,
