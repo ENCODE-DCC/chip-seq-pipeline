@@ -5,7 +5,6 @@ import sys
 import logging
 import re
 import dxpy
-import pprint
 
 EPILOG = '''Notes:
 
@@ -551,8 +550,6 @@ def main():
                 #     stage_input=mapping_stage_input
                 # )
                 # mapping_superstage.update({'map_stage_id': mapped_stage_id})
-                print("Mapping stage input")
-                print(mapping_stage_input)
                 workflow.update_stage(superstage_id, stage_input=mapping_stage_input)
 
                 filter_qc_stage_id = workflow.add_stage(
@@ -709,11 +706,9 @@ def main():
             'genomesize': genomesize,
             'chrom_sizes': chrom_sizes
         }
-    print(macs2_stage_input_mapping)
     # have to prune out any arguments with value None because DX will error
     # with arguments with null values
     macs2_stage_input = dict([(k,v) for k,v in macs2_stage_input_mapping.iteritems() if v is not None])
-    print(macs2_stage_input)
 
     encode_macs2_stage_id = workflow.add_stage(
         encode_macs2_applet,
