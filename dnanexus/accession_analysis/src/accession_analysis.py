@@ -2932,8 +2932,11 @@ def main(outfn, debug, keyfile, dryrun,
         }
 
         logger.info("Accession job input: %s" % (accession_subjob_input))
-        if encoded_check:
-            while encode_indexing(server):
+        while encode_indexing(server):
+            if not encoded_check:
+                logger.info('ENCODE server is indexing but encoded_check=False so continuing.')
+                break
+            else:
                 logger.info('ENCODE server is indexing.  Checking again in 60s.')
                 time.sleep(60)
         accession_subjobs.append(
