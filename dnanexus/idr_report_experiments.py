@@ -243,7 +243,8 @@ def main():
                 reproducibility_test = idr_stage['output'].get('reproducibility_test')
                 notes = "IDR Complete"
                 try:
-                    done_time = next(transition['setAt'] for transition in desc['stateTransitions'] if transition['newState'] == "done")
+                    # done_time = next(transition['setAt'] for transition in desc['stateTransitions'] if transition['newState'] == "done")
+                    done_time = next(transition['setAt'] for transition in idr_stage['stateTransitions'] if transition['newState'] == "done")
                 except StopIteration:
                     done_time = None
                 except:

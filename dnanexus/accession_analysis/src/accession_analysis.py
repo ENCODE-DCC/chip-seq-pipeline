@@ -324,7 +324,7 @@ def chipseq_filter_quality_metric(step_run, stages, files):
     xcor_qc = xcor_parse(xcor_stage['output']['CC_scores_file'])
 
     obj = {
-        'assay_term_id': 'OBI:0000716',
+        # 'assay_term_id': 'OBI:0000716',
         'assay_term_name': 'ChIP-seq',
         'step_run': step_run,
         'quality_metric_of': file_accessions,
@@ -364,7 +364,7 @@ def get_flagstat_obj(step_run, stage, file_accessions):
         return None
 
     obj = {
-        'assay_term_id': 'OBI:0000716',
+        # 'assay_term_id': 'OBI:0000716',
         'assay_term_name': 'ChIP-seq',
         'step_run': step_run,
         'quality_metric_of': file_accessions,
@@ -497,7 +497,7 @@ def idr_quality_metric(step_run, stages, files):
             stages[stage_name]['stage_metadata']['originalInput']['idr_threshold'])
 
     obj = {
-        'assay_term_id':     'OBI:0000716',
+        # 'assay_term_id':     'OBI:0000716',
         'assay_term_name':   'ChIP-seq',
         'step_run':          step_run,
         'quality_metric_of': file_accessions,
@@ -2890,7 +2890,7 @@ def main(outfn, debug, keyfile, dryrun,
          force_patch, force_upload, fqcheck,
          key=None, pipeline=None, analysis_ids=None, infile=None, project=None,
          accession_raw=False, signal_only=False, skip_control=False,
-         wait_on_files=None):
+         wait_on_files=None, encoded_check=True):
 
     # wait_on_files is never used here, it is just a place-holder input field
     # to block the platform from running accession_analysis until all the
@@ -2949,8 +2949,12 @@ def main(outfn, debug, keyfile, dryrun,
 
         logger.info("Accession job input: %s" % (accession_subjob_input))
         while encode_unready(server):
-            logger.info('ENCODE server is not ready.  Checking again in 60s.')
-            time.sleep(60)
+            if not encoded_check:
+                logger.info('ENCODE server is not ready but encoded_check=False so continuing.')
+                break
+            else:
+                logger.info('ENCODE server is not ready.  Checking again in 60s.')
+                time.sleep(60)
         accession_subjobs.append(
             dxpy.new_dxjob(
                 fn_input=accession_subjob_input,
