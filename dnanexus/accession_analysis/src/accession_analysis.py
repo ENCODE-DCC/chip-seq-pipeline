@@ -669,6 +669,14 @@ def get_encoded_repn(mapping_analysis):
         return encoded_repn
 
 
+def is_simplicate_analysis(analysis):
+    return analysis.describe()['properties'].get('simplicate_experiment') in ['True', 'true']
+
+
+def is_unary_control(analysis):
+    return analysis.describe()['properties'].get('unary_control') in ['True', 'true']
+
+
 def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     logger.debug(
         'in get_raw_mapping_stages with mapping analysis %s and rep %s'
@@ -1045,12 +1053,11 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     return mapping_stages
 
 
-def get_control_mapping_stages(peaks_analysis, keypair, server,
-                               fqcheck, reps=[1, 2]):
+def get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck):
     # Find the control inputs
     logger.debug(
-        'in get_control_mapping_stages with peaks_analysis %s reps %s'
-        % (peaks_analysis['id'], reps))
+        'in get_control_mapping_stages with peaks_analysis %s'
+        % (peaks_analysis['id']))
 
     peaks_stages = \
         [stage['execution'] for stage in peaks_analysis.get('stages')]
@@ -1063,6 +1070,10 @@ def get_control_mapping_stages(peaks_analysis, keypair, server,
     # these are not the ENCODEd biological_replicate_numbers, which are
     # only known to the analysis via its name, or by going back to ENCODEd and
     # figuring out where the fastqs came from
+    reps = sorted([
+        re.match("ctl(\d+)_ta", input_key).group(1)
+        for input_key in peaks_stage['input'].keys()])
+
     tas = [dxpy.describe(peaks_stage['input']['ctl%s_ta' % (n)])
            for n in reps]
 
@@ -1087,25 +1098,21 @@ def get_control_mapping_stages(peaks_analysis, keypair, server,
 
 
 def get_peak_mapping_stages(peaks_analysis, keypair, server,
-                            fqcheck, reps=[1, 2]):
+                            fqcheck):
 
     # Find the tagaligns actually used as inputs into the analysis
     # Find the mapping analyses that produced those tagaligns
     # Find the filtered bams from those analyses
     # Build the stage dict and return it
 
-    if not peaks_analysis:
-        logger.debug(
-            'in get_peak_mapping_stages: peaks_analysis is %s'
-            % (peaks_analysis))
-    elif not reps:
-        logger.debug(
-            'in get_peak_maping_stages: reps is %s'
-            % (reps))
+    logger.debug(
+        'in get_peak_mapping_stages: peaks_analysis is %s'
+        % (peaks_analysis))
+
+    if is_simplicate_analysis(peaks_analysis):
+        reps = [1]
     else:
-        logger.debug(
-            'in get_peak_mapping_stages with peaks_analysis %s reps %s'
-            % (peaks_analysis['id'], reps))
+        reps = [1, 2]
 
     peaks_stages = \
         [stage['execution'] for stage in peaks_analysis.get('stages')]
@@ -2495,6 +2502,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
     #returns the experiment object
     experiment = common.encoded_get(urlparse.urljoin(server,'/experiments/%s' %(experiment_accession)), keypair)
     logger.debug('got experiment %s' %(experiment.get('accession')))
+    unary_control = is_unary_control(peaks_analysis)
     #returns a list with two elements:  the mapping stages for [rep1,rep2]
     #in this context rep1,rep2 are the first and second replicates in the pipeline.  They may have been accessioned
     #on the portal with any arbitrary biological_replicate_numbers.
@@ -2524,7 +2532,8 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
 
     #accession all the output files
     output_files = []
-    for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
+    # for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
+    for stages in control_stages + mapping_stages + [peak_stages]:
         if stages:
             logger.info('accessioning output')
             output_files.extend(accession_outputs(stages, keypair, server, dryrun,
