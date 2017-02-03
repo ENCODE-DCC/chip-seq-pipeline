@@ -2533,6 +2533,9 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
     #accession all the output files
     output_files = []
     # for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
+    print("old: %s" % ([control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]))
+    print("new: %s" % (control_stages + mapping_stages + [peak_stages]))
+    sys.exit(0)
     for stages in control_stages + mapping_stages + [peak_stages]:
         if stages:
             logger.info('accessioning output')
