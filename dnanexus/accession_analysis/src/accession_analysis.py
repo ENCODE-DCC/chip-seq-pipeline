@@ -1072,7 +1072,8 @@ def get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck):
     # figuring out where the fastqs came from
     reps = sorted([
         re.match("ctl(\d+)_ta", input_key).group(1)
-        for input_key in peaks_stage['input'].keys()])
+        for input_key in peaks_stage['input'].keys()
+        if re.match("ctl(\d+)_ta", input_key)])
 
     tas = [dxpy.describe(peaks_stage['input']['ctl%s_ta' % (n)])
            for n in reps]
@@ -2533,9 +2534,6 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
     #accession all the output files
     output_files = []
     # for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
-    print("old: %s" % ([control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]))
-    print("new: %s" % (control_stages + mapping_stages + [peak_stages]))
-    sys.exit(0)
     for stages in control_stages + mapping_stages + [peak_stages]:
         if stages:
             logger.info('accessioning output')
