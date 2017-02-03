@@ -670,11 +670,11 @@ def get_encoded_repn(mapping_analysis):
 
 
 def is_simplicate_analysis(analysis):
-    return analysis.describe()['properties'].get('simplicate_experiment') in ['True', 'true']
+    return analysis['properties'].get('simplicate_experiment') in ['True', 'true']
 
 
 def is_unary_control(analysis):
-    return analysis.describe()['properties'].get('unary_control') in ['True', 'true']
+    return analysis['properties'].get('unary_control') in ['True', 'true']
 
 
 def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
