@@ -2874,7 +2874,7 @@ def main(outfn, debug, keyfile, dryrun,
          force_patch, force_upload, fqcheck,
          key=None, pipeline=None, analysis_ids=None, infile=None, project=None,
          accession_raw=False, signal_only=False, skip_control=False,
-         wait_on_files=None):
+         wait_on_files=None, encoded_check=True):
 
     # wait_on_files is never used here, it is just a place-holder input field
     # to block the platform from running accession_analysis until all the
@@ -2932,9 +2932,10 @@ def main(outfn, debug, keyfile, dryrun,
         }
 
         logger.info("Accession job input: %s" % (accession_subjob_input))
-        while encode_indexing(server):
-            logger.info('ENCODE server is indexing.  Checking again in 60s.')
-            time.sleep(60)
+        if encoded_check:
+            while encode_indexing(server):
+                logger.info('ENCODE server is indexing.  Checking again in 60s.')
+                time.sleep(60)
         accession_subjobs.append(
             dxpy.new_dxjob(
                 fn_input=accession_subjob_input,

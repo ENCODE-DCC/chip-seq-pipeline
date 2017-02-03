@@ -97,6 +97,12 @@
       "name": "wait_on_files",
       "class": "array:file",
       "optional": true
+    },
+    {
+      "name": "encoded_check",
+      "class": "boolean",
+      "optional": true,
+      "default": true
     }
   ],
   "outputSpec": [
