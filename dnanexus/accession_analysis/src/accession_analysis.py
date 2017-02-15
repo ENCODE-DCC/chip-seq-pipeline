@@ -98,6 +98,12 @@ STEP_VERSION_ALIASES = {
     }
 }
 
+class AccessioningError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
 
 def flat(l):
     result = []
@@ -1844,27 +1850,41 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         else:
             accession_in_tag = False
 
-    # TODO check here if file is deprecated and, if so, warn
-    if md5_exists and not (force_patch or force_upload):
-        logger.info("accession_file: Returning duplicate file unchanged")
-        return md5_exists
+    # if the same file has been revoked or replaced that requires wrangler intervention
+    if md5_exists:
+        existing_file_status = md5_exists['status']
+        if existing_file_status in ['revoked', 'replaced']:
+            raise AccessioningError(
+                "File %s with matching MD5 %s exists but has status %s"
+                % (md5_exists.get('accession'), md5_exists.get('md5sum'), md5_exists.get('status')))
 
-    if not local_fname:
-        local_fname = dx_fh.name
-        logger.info("Downloading %s" % (local_fname))
-        dxpy.download_dxfile(dx_fh.get_id(), local_fname)
+        if not (force_patch or force_upload):
+            logger.info("accession_file: Returning duplicate file unchanged")
+            return md5_exists
 
-    if md5_exists and (force_patch or force_upload):
-        logger.info(
-            "accession_file: MD5 exisits, but force_patch, so patching file metatdata")
-        f['accession'] = md5_exists['accession']
-        new_file_object = patch_file(f, keypair, server, dryrun)
+        if force_patch or force_upload:
+            logger.info(
+                "accession_file: MD5 exisits, but force_patch, so patching file metatdata")
+            f['accession'] = md5_exists['accession']
+            # if the same file has been deleted then we "undelete" it by resetting its status to uploading
+            if existing_file_status in ['deleted']:
+                logger.info(
+                    "File %s with matching MD5 %s has status deleted and will be reset to status uploading"
+                    % (md5_exists.get('accession'), md5_exists.get('md5sum')))
+                f['status'] = 'uploading'
+            new_file_object = patch_file(f, keypair, server, dryrun)
+
         if force_upload:
             if new_file_object['status'] != "uploading":
                 logger.warning(
                     '%s: status is %s, not uploading so force_upload is not allowed. Skipping.'
                     % (new_file_object.get('accession'), new_file_object.get('status')))
             else:
+                if not local_fname:
+                    local_fname = dx_fh.name
+                    logger.info("Downloading %s" % (local_fname))
+                    dxpy.download_dxfile(dx_fh.get_id(), local_fname)
+
                 logger.info(
                     "accession_file: MD5 exisits, but force_upload, so uploading and patching file metatdata")
                 return_code = common.s3_cp(
@@ -1875,6 +1895,10 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
                 assert not return_code, '%s: s3_cp failed. Returned non-zero return code %s' % (new_file_object.get('accession'), return_code)
                 add_tag(dx_fh, new_file_object.get('accession'))
     else:
+        if not local_fname:
+            local_fname = dx_fh.name
+            logger.info("Downloading %s" % (local_fname))
+            dxpy.download_dxfile(dx_fh.get_id(), local_fname)
         logger.info("accession_file: New MD5")
         logger.info('posting new file %s' % (f.get('submitted_file_name')))
         logger.debug('%s' % (f))
