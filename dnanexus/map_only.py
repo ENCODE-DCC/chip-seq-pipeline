@@ -3,6 +3,7 @@
 import os.path, sys, subprocess, logging, re, json, urlparse, requests, csv, StringIO
 import common
 import dxpy
+import time
 
 EPILOG = '''Notes:
 
@@ -46,6 +47,15 @@ def get_args():
     parser = argparse.ArgumentParser(
         description=__doc__, epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    def t_or_f(arg):
+        ua = str(arg).upper()
+        if ua == 'TRUE'[:len(ua)]:
+            return True
+        elif ua == 'FALSE'[:len(ua)]:
+            return False
+        else:
+            assert not (True or False), "Cannot parse %s to boolean" % (arg)
 
     parser.add_argument(
         'experiments',
@@ -144,6 +154,8 @@ def get_args():
         default='1.14')
 
     parser.add_argument('--accession', help="Accession the results to the ENCODE Portal", default=False, action='store_true')
+    parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
+    parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
 
     args = parser.parse_args()
 
@@ -402,26 +414,6 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key, accessio
             }
         )
 
-        if accession:
-            accession_analysis_applet = find_applet_by_name(ACCESSION_ANALYSIS_APPLET_NAME, applet_project.get_id())
-            accession_output_folder = accession_analysis_applet.name
-            accession_stage_input = {
-                'analysis_ids': ['self'],
-                'force_patch': True,
-                'wait_on_files': []
-            }
-            stages = [stage.get('execution') for stage in workflow.describe()['stages']]
-            accession_stage_input['wait_on_files'] = [
-                dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'filtered_bam'}),
-                dxpy.dxlink({'stage': xcor_stage_id, 'outputField': 'tagAlign_file'})
-            ]
-
-            accession_stage_id = workflow.add_stage(
-                accession_analysis_applet,
-                name='Accession results',
-                folder=accession_output_folder,
-                stage_input=accession_stage_input
-            )
 
     ''' This should all be done in the shield's postprocess entrypoint
     if args.accession_outputs:
@@ -451,7 +443,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key, accessio
 
 
 def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
-             crop_length, accession):
+             crop_length, accession, fqcheck, force_patch):
 
     if not files:
         logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
@@ -491,22 +483,57 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
     else:
         logging.error('%s: List of files to map appears to be mixed single-end and paired-end: %s' %(experiment.get('accession'), files))
 
-    jobs = []
+    analyses = []
     if args.yes:
         for workflow in [wf for wf in workflows if wf]:
             if args.debug:
-
-                jobs.append(workflow.run(
+                analysis = workflow.run(
                     {},
                     priority='high',
                     debug={'debugOn': ['AppInternalError', 'AppError']},
                     delay_workspace_destruction=True,
-                    allow_ssh=['*']))
+                    allow_ssh=['*'])
+                analyses.append(analysis)
             else:
-                jobs.append(workflow.run(
+                analysis = workflow.run(
                     {},
-                    priority='normal'))
-    return jobs
+                    priority='normal')
+                analyses.append(analysis)
+            if accession:
+                applet_project = resolve_project(args.applets, 'r')
+                accession_analysis_applet = find_applet_by_name(ACCESSION_ANALYSIS_APPLET_NAME, applet_project.get_id())
+                accession_output_folder = '/' + accession_analysis_applet.name
+                accession_job_input = {
+                    'analysis_ids': [analysis.get_id()],
+                    'wait_on_files': []
+                }
+                if fqcheck is not None:
+                    accession_job_input.update({'fqcheck' : fqcheck})
+                if force_patch is not None:
+                    accession_job_input.update({'force_patch': force_patch})
+                time.sleep(5)
+                max_retries = 10
+                retries = max_retries
+                while retries:
+                    try:
+                        accession_job = accession_analysis_applet.run(
+                            accession_job_input,
+                            name='Accession %s' % (analysis.name),
+                            folder=accession_output_folder,
+                            depends_on=analysis.describe()['dependsOn']
+                        )
+                    except Exception as e:
+                        logging.error("%s launching auto-accession ... %d retries left" % (e, retries))
+                        time.sleep(5)
+                        retries -= 1
+                        continue
+                    else:
+                        logging.info("Auto-accession will run as %s %s" % (accession_job.name, accession_job.get_id()))
+                        break
+                else:
+                    logging.error("Auto-accession failed with %s" % ())
+
+    return analyses
 
 
 def main():
@@ -579,13 +606,13 @@ def main():
                     pe_jobs = \
                         map_only(experiment, biorep_n, paired_files,
                                  args.key, server, keypair, args.sex_specific,
-                                 args.crop_length, args.accession)
+                                 args.crop_length, args.accession, args.fqcheck, args.force_patch)
                     in_process = True
                 if unpaired_files:
                     se_jobs = \
                         map_only(experiment, biorep_n, unpaired_files,
                                  args.key, server, keypair, args.sex_specific,
-                                 args.crop_length, args.accession)
+                                 args.crop_length, args.accession, args.fqcheck, args.force_patch)
                     in_process = True
                 if paired_files and pe_jobs:
                     outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))

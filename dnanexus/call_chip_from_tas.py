@@ -46,6 +46,15 @@ def get_args():
         description=__doc__, epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    def t_or_f(arg):
+        ua = str(arg).upper()
+        if ua == 'TRUE'[:len(ua)]:
+            return True
+        elif ua == 'FALSE'[:len(ua)]:
+            return False
+        else:
+            assert not (True or False), "Cannot parse %s to boolean" % (arg)
+
     parser.add_argument('experiments', help="Experiment accessions", nargs="*")
     parser.add_argument('--infile', help="File with experiment accessions")
     parser.add_argument('--debug', help="Print debug messages", default=False, action='store_true')
@@ -66,6 +75,9 @@ def get_args():
     parser.add_argument('--spp_version', help="spp version", default="1.14")
     parser.add_argument('--control', help="Use specified control tagAlign rather than infer one.", default=None)
     parser.add_argument('--accession', help="Accession the results to the ENCODE Portal", default=False, action='store_true')
+    parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
+    parser.add_argument('--skip_control', help="If --accession, accession no control files or metadata", type=t_or_f, default=None)
+    parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
 
     args = parser.parse_args()
 
@@ -673,6 +685,12 @@ def main():
             command_strings.append('--debug')
         if args.accession:
             command_strings.append('--accession')
+            if args.fqcheck is not None:
+                command_strings.append('--fqcheck=%s' % (args.fqcheck))
+            if args.skip_control is not None:
+                command_strings.append('--skip_control=%s' % (args.skip_control))
+            if args.force_patch is not None:
+                command_strings.append('--force_patch=%s' % (args.force_patch))
         run_command = ' '.join(command_strings)
         print(run_command)
 

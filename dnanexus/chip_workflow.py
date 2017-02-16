@@ -6,6 +6,7 @@ import logging
 import re
 import dxpy
 import pprint
+import time
 
 EPILOG = '''Notes:
 
@@ -229,6 +230,9 @@ def get_args():
         '--accession',
         help='Automatically accession the results to the ENCODE Portal',
         default=False, action='store_true')
+    parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
+    parser.add_argument('--skip_control', help="If --accession, accession no control files or metadata", type=t_or_f, default=None)
+    parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
 
     # parser.add_argument('--idr',     help='Report peaks with and without IDR analysis',                 default=False, action='store_true')
     # parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
@@ -244,7 +248,9 @@ def get_args():
             level=logging.DEBUG)
         logging.debug("Debug logging ON")
     else:  # use the defaulf logging level
-        logging.basicConfig(format='%(levelname)s:%(message)s')
+        logging.basicConfig(
+            format='%(levelname)s:%(message)s',
+            level=logging.INFO)
 
     logging.debug("rep1 is: %s" % (args.rep1))
 
@@ -901,40 +907,49 @@ def main():
             )
             overlap_peaks_stages.append({'name': 'Final %s' %(peaktype), 'stage_id': overlap_peaks_stage_id})
 
-    if args.accession:
-        accession_analysis_applet = find_applet_by_name(ACCESSION_ANALYSIS_APPLET_NAME, applet_project.get_id())
-        accession_output_folder = accession_analysis_applet.name
-        accession_stage_input = {
-            'analysis_ids': ['self'],
-            'force_patch': True,
-            'wait_on_files': []
-        }
-        if target_type == 'histone':
-            for stage in overlap_peaks_stages:
-                for output_field in ['overlapping_peaks', 'overlapping_peaks_bb']:
-                    accession_stage_input['wait_on_files'].append(
-                        dxpy.dxlink({'stage': stage.get('stage_id'), 'outputField': output_field})
-                    )
-        elif run_idr:
-            for output_field in ['conservative_set', 'conservative_set_bb', 'optimal_set', 'optimal_set_bb']:
-                accession_stage_input['wait_on_files'].append(
-                    dxpy.dxlink({'stage': final_idr_stage_id, 'outputField': output_field})
-                )
-
-        assert accession_stage_input['wait_on_files'], "ERROR: workflow has no wait_on_files defined, so --accession is not supported."
-        accession_stage_id = workflow.add_stage(
-            accession_analysis_applet,
-            name='Accession results',
-            folder=accession_output_folder,
-            stage_input=accession_stage_input
-        )
 
     if args.yes:
         if args.debug:
-            job_id = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
+            analysis = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
         else:
-            job_id = workflow.run({}, folder=output_folder, priority='normal')
-        logging.info("Running as job %s" %(job_id))
+            analysis = workflow.run({}, folder=output_folder, priority='normal')
+        logging.info("Running as %s %s" % (analysis.name, analysis.get_id()))
+
+        if args.accession:
+            accession_analysis_applet = find_applet_by_name(ACCESSION_ANALYSIS_APPLET_NAME, applet_project.get_id())
+            accession_output_folder = '/' + accession_analysis_applet.name
+            accession_job_input = {
+                'analysis_ids': [analysis.get_id()],
+                'wait_on_files': []
+            }
+            if args.fqcheck is not None:
+                accession_job_input.update({'fqcheck' : args.fqcheck})
+            if args.skip_control is not None:
+                accession_job_input.update({'skip_control' : args.skip_control})
+            if args.force_patch is not None:
+                accession_job_input.update({'force_patch': args.force_patch})
+            # assert accession_stage_input['wait_on_files'], "ERROR: workflow has no wait_on_files defined, so --accession is not supported."
+            time.sleep(5)
+            max_retries = 10
+            retries = max_retries
+            while retries:
+                try:
+                    accession_job = accession_analysis_applet.run(
+                        accession_job_input,
+                        name='Accession %s' % (analysis.name),
+                        folder=accession_output_folder,
+                        depends_on=analysis.describe()['dependsOn']
+                    )
+                except Exception as e:
+                    logging.error("%s launching auto-accession ... %d retries left" % (e, retries))
+                    time.sleep(5)
+                    retries -= 1
+                    continue
+                else:
+                    logging.info("Auto-accession will run as %s %s" % (accession_job.name, accession_job.get_id()))
+                    break
+            else:
+                logging.error("Auto-accession failed with %s" % ())
 
 if __name__ == '__main__':
     main()
