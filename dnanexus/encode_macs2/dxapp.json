@@ -18,7 +18,7 @@
 			"name": "rep2_ta",
 			"label": "Rep 2 tagAlign",
 			"class": "file",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "ctl1_ta",
@@ -30,7 +30,7 @@
 			"name": "ctl2_ta",
 			"label": "Control 2 tagAlign",
 			"class": "file",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "rep1_xcor",
@@ -42,7 +42,7 @@
 			"name": "rep2_xcor",
 			"label": "Rep 2 cross-correlation scores",
 			"class": "file",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "rep1_paired_end",
@@ -52,7 +52,7 @@
 		{
 			"name": "rep2_paired_end",
 			"class": "boolean",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "chrom_sizes",
@@ -81,13 +81,8 @@
 		{
 			"name": "genomesize",
 			"label": "string for MACS2, hs for human, mm for mouse",
-			"class": "string"
-		},
-		{
-			"name": "prefix",
-			"label": "Filename prefix",
 			"class": "string",
-			"optional": true
+			"optional": false
 		}
 	],
 	"outputSpec": [
@@ -134,82 +129,98 @@
 		{
 			"name": "rep2_narrowpeaks",
 			"label": "Narrowpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2_narrowpeaks_bb",
 			"label": "Bigbed file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2_gappedpeaks",
 			"label": "Gappedpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2_gappedpeaks_bb",
 			"label": "Bigbed file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2_broadpeaks",
 			"label": "Broadpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2_broadpeaks_bb",
 			"label": "Bigbed file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2_fc_signal",
 			"label": "Signal track fold-enrichment over control",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2_pvalue_signal",
 			"label": "Signal track p-value",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooled_narrowpeaks",
 			"label": "Narrowpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooled_narrowpeaks_bb",
 			"label": "Bigbed file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooled_gappedpeaks",
 			"label": "Gappedpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooled_gappedpeaks_bb",
 			"label": "Bigbed file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooled_broadpeaks",
 			"label": "Broadpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooled_broadpeaks_bb",
 			"label": "Bigbed file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooled_fc_signal",
 			"label": "Signal track fold-enrichment over control",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooled_pvalue_signal",
 			"label": "Signal track p-value",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep1pr1_narrowpeaks",
@@ -264,102 +275,122 @@
 		{
 			"name": "rep2pr1_narrowpeaks",
 			"label": "Narrowpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2pr1_gappedpeaks",
 			"label": "Gappedpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2pr1_broadpeaks",
 			"label": "Broadpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2pr1_fc_signal",
 			"label": "Signal track fold-enrichment over control",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2pr1_pvalue_signal",
 			"label": "Signal track p-value",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2pr2_narrowpeaks",
 			"label": "Narrowpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2pr2_gappedpeaks",
 			"label": "Gappedpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2pr2_broadpeaks",
 			"label": "Broadpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2pr2_fc_signal",
 			"label": "Signal track fold-enrichment over control",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "rep2pr2_pvalue_signal",
 			"label": "Signal track p-value",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooledpr1_narrowpeaks",
 			"label": "Narrowpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooledpr1_gappedpeaks",
 			"label": "Gappedpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooledpr1_broadpeaks",
 			"label": "Broadpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooledpr1_fc_signal",
 			"label": "Signal track fold-enrichment over control",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooledpr1_pvalue_signal",
 			"label": "Signal track p-value",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooledpr2_narrowpeaks",
 			"label": "Narrowpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooledpr2_gappedpeaks",
 			"label": "Gappedpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooledpr2_broadpeaks",
 			"label": "Broadpeaks file",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooledpr2_fc_signal",
 			"label": "Signal track fold-enrichment over control",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "pooledpr2_pvalue_signal",
 			"label": "Signal track p-value",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		}
 	],
 	"runSpec": {

@@ -19,7 +19,7 @@
 			"name": "reps_peaks",
 			"label": "IDR peaks from true replicates",
 			"class": "file",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "r1pr_peaks",
@@ -31,13 +31,13 @@
 			"name": "r2pr_peaks",
 			"label": "IDR peaks from replicate 2 self-pseudoreplicates",
 			"class": "file",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "pooledpr_peaks",
 			"label": "IDR peaks from pooled self-pseudoreplicates",
 			"class": "file",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "chrom_sizes",
@@ -81,7 +81,8 @@
 		{
 			"name": "Nt",
 			"label": "Number of peaks from true replicates",
-			"class": "int"
+			"class": "int",
+			"optional": true
 		},
 		{
 			"name": "N1",
@@ -91,32 +92,50 @@
 		{
 			"name": "N2",
 			"label": "Number of peaks from replicate 2 self-pseudoreplicates",
-			"class": "int"
+			"class": "int",
+			"optional": true
 		},
 		{
 			"name": "Np",
 			"label": "Number of peaks from pooled pseudoreplicates",
-			"class": "int"
+			"class": "int",
+			"optional": true
 		},
 		{
 			"name": "Nc",
 			"label": "Number of peaks in the conservative set",
-			"class": "int"
+			"class": "int",
+			"optional": true
 		},
 		{
 			"name": "No",
 			"label": "Number of peaks in the optimal set",
-			"class": "int"
+			"class": "int",
+			"optional": true
+		},
+		{
+			"name": "Ns",
+			"label": "Number of stable peaks from internal pseudoreplication",
+			"class": "int",
+			"optional": true
 		},
 		{
 			"name": "conservative_set",
 			"label": "Final peak calls - conservative set",
-			"class": "file"
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "optimal_set",
 			"label": "Final peak calls - optimal set",
-			"class": "file"
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "stable_set",
+			"label": "Final peak calls - stable set",
+			"class": "file",
+			"optional": true
 		},
 		{
 			"name": "conservative_set_bb",
@@ -131,19 +150,28 @@
 			"optional": true
 		},
 		{
+			"name": "stable_set_bb",
+			"label": "Final peak calls - stable set bigBed",
+			"class": "file",
+			"optional": true
+		},
+		{
 			"name": "rescue_ratio",
 			"label": "Rescue ratio",
-			"class": "float"
+			"class": "float",
+			"optional": true
 		},
 		{
 			"name": "self_consistency_ratio",
 			"label": "Self-consistency ratio",
-			"class": "float"
+			"class": "float",
+			"optional": true
 		},
 		{
 			"name": "reproducibility_test",
 			"label": "Result of the reproducibility test",
-			"class": "string"
+			"class": "string",
+			"optional": true
 		},
 		{
 			"name": "rep1_signal",
@@ -172,6 +200,12 @@
 		{
 			"name": "pre_bl_optimal_set",
 			"label": "Non blacklist-filtered optimal peaks (only if blacklist is used)",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "pre_bl_stable_set",
+			"label": "Non blacklist-filtered stable peaks (only if blacklist is used)",
 			"class": "file",
 			"optional": true
 		}

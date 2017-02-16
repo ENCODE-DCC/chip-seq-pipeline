@@ -50,10 +50,81 @@ def blacklist_filter(input_fname, output_fname, input_blacklist_fname):
         ], output_fname)
 
 
-@dxpy.entry_point("main")
-def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks,
-         chrom_sizes, as_file, blacklist=None,
-         rep1_signal=None, rep2_signal=None, pooled_signal=None):
+def internal_pseudoreplicate_IDR(experiment, r1pr_peaks,
+                                 chrom_sizes, as_file, blacklist, rep1_signal):
+
+    r1pr_peaks_file = dxpy.DXFile(r1pr_peaks)
+    chrom_sizes_file = dxpy.DXFile(chrom_sizes)
+    as_file_file = dxpy.DXFile(as_file)
+    if blacklist is not None:
+        blacklist_file = dxpy.DXFile(blacklist)
+        blacklist_filename = 'blacklist_%s' % (blacklist_file.name)
+        dxpy.download_dxfile(blacklist_file.get_id(), blacklist_filename)
+        blacklist_filename = common.uncompress(blacklist_filename)
+    # Need to prepend something to ensure the local filenames will be unique
+    r1pr_peaks_filename = 'r1pr_%s' % (r1pr_peaks_file.name)
+    chrom_sizes_filename = chrom_sizes_file.name
+    as_file_filename = as_file_file.name
+    dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_filename)
+    dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
+    dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
+
+    subprocess.check_output('set -x; ls -l', shell=True)
+
+    r1pr_peaks_filename = common.uncompress(r1pr_peaks_filename)
+    N1 = common.count_lines(r1pr_peaks_filename)
+    logger.info("%d peaks from rep1 self-pseudoreplicates (N1)" % (N1))
+    stable_set_filename = "%s_stable.narrowPeak" % (experiment)
+    if blacklist is not None:
+        blacklist_filter(r1pr_peaks_filename, stable_set_filename,
+                         blacklist_filename)
+        Nsb = common.count_lines(stable_set_filename)
+        logger.info(
+            "%d peaks blacklisted from the stable set" % (N1-Nsb))
+    else:
+        subprocess.check_output(shlex.split(
+            'cp %s %s' % (r1pr_peaks_filename, stable_set_filename)))
+        Nsb = N1
+        logger.info("No blacklist filter applied to the stable set")
+
+    output = {}
+
+    # These are optional outputs to see what's being removed by the blacklist
+    if blacklist:
+        output.update({
+            "pre_bl_stable_set":
+                dxpy.dxlink(dxpy.upload_local_file(common.compress(
+                    r1pr_peaks_filename)))}
+        )
+
+    # bedtobigbed often fails, so skip creating the bb if it does
+    stable_set_bb_filename = \
+        common.bed2bb(stable_set_filename, chrom_sizes_filename,
+                      as_file_filename)
+    if stable_set_bb_filename:
+        stable_set_bb_output = \
+            dxpy.upload_local_file(stable_set_bb_filename)
+        output.update(
+            {"stable_set_bb": dxpy.dxlink(stable_set_bb_output)})
+
+    output.update({
+        "N1": N1,
+        "stable_set": dxpy.dxlink(dxpy.upload_local_file(common.compress(stable_set_filename))),
+        "Ns": Nsb
+    })
+
+    # These are just passed through for convenience so that signals and tracks
+    # are available in one place.  Both input and output are optional.
+    if rep1_signal:
+        output.update({"rep1_signal": rep1_signal})
+
+    return output
+
+
+def replicated_IDR(experiment,
+                   reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks,
+                   chrom_sizes, as_file, blacklist,
+                   rep1_signal, rep2_signal, pooled_signal):
 
     # TODO for now just taking the peak files.  This applet should actually
     # call IDR instead of putting that in the workflow populator script
@@ -200,6 +271,25 @@ def main(experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks,
         output.update({"rep2_signal": rep2_signal})
     if pooled_signal:
         output.update({"pooled_signal": pooled_signal})
+
+    return output
+
+
+@dxpy.entry_point("main")
+def main(experiment, r1pr_peaks,
+         chrom_sizes, as_file, blacklist=None,
+         reps_peaks=None, r2pr_peaks=None, pooledpr_peaks=None,
+         rep1_signal=None, rep2_signal=None, pooled_signal=None):
+
+    simplicate_experiment = not reps_peaks
+    if simplicate_experiment:
+        output = internal_pseudoreplicate_IDR(
+            experiment, r1pr_peaks, chrom_sizes, as_file, blacklist, rep1_signal)
+    else:
+        output = replicated_IDR(
+            experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks,
+            chrom_sizes, as_file, blacklist,
+            rep1_signal, rep2_signal, pooled_signal)
 
     logging.info("Exiting with output: %s", output)
     return output
