@@ -249,8 +249,7 @@ def get_args():
         logging.debug("Debug logging ON")
     else:  # use the defaulf logging level
         logging.basicConfig(
-            format='%(levelname)s:%(message)s',
-            level=logging.INFO)
+            format='%(levelname)s:%(message)s')
 
     logging.debug("rep1 is: %s" % (args.rep1))
 
