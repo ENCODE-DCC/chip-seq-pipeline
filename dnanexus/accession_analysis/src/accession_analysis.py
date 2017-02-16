@@ -502,7 +502,6 @@ def idr_quality_metric(step_run, stages, files):
         return float(
             stages[stage_name]['stage_metadata']['originalInput']['idr_threshold'])
 
-    # this is just a cheap way to detect simplicate experiment
     obj = {
         # 'assay_term_id':     'OBI:0000716',
         'assay_term_name':   'ChIP-seq',
@@ -510,6 +509,7 @@ def idr_quality_metric(step_run, stages, files):
         'quality_metric_of': file_accessions,
     }
 
+    # this is just a cheap way to detect replicated vs simplicate experiment
     if final_idr_stage_output.get('rescue_ratio'):
         obj.update({
             'Nt': int(final_idr_stage_output['Nt']),

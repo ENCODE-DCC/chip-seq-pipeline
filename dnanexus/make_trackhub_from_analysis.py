@@ -189,21 +189,32 @@ def signal_stanza(accession, url, name, n, tracktype='bigWig'):
         "\t\tmaxHeightPixels 127:64:2\n" + \
         "\t\tpriority %d\n\n" %(n))
 
+
 def tf(args, analysis, experiment_accession, first_analysis):
     authid, authpw, server = processkey(args.key)
-    keypair = (authid,authpw)
+    keypair = (authid, authpw)
 
     stages = analysis.get('stages')
-    peaks_stage =   next(stage for stage in stages if stage['execution']['name'] == "SPP Peaks")['execution']
-    signals_stage = next(stage for stage in stages if stage['execution']['name'] == "ENCODE Peaks")['execution']
-    idr_stage =     next(stage for stage in stages if stage['execution']['name'] == "Final IDR peak calls")['execution']
+    peaks_stage =     next(stage for stage in stages if stage['execution']['name'] == "SPP Peaks")['execution']
+    signals_stage =   next(stage for stage in stages if stage['execution']['name'] == "ENCODE Peaks")['execution']
+    final_idr_stage = next(stage for stage in stages if stage['execution']['name'] == "Final IDR peak calls")['execution']
+
+    # this is just a cheap way of determining singlicate or replicate analysis
+    # singlicate analyses have no rescue_ratio
+    singlicate_analysis = final_idr_stage['output'].get('rescue_ratio') is None
 
     peaks_output_names = [
+        'rep1_peaks_bb'
+    ] if singlicate_analysis else [
         'rep1_peaks_bb',
         'rep2_peaks_bb',
         'pooled_peaks_bb'
     ]
+
     signals_output_names = [
+        'rep1_pvalue_signal',
+        'rep1_fc_signal'
+    ] if singlicate_analysis else [
         'rep1_pvalue_signal',
         'rep2_pvalue_signal',
         'pooled_pvalue_signal',
@@ -212,6 +223,8 @@ def tf(args, analysis, experiment_accession, first_analysis):
         'pooled_fc_signal'
     ]
     idr_output_names = [
+        'stable_set_bb'
+    ] if singlicate_analysis else [
         'conservative_set_bb',
         'optimal_set_bb'
     ]
@@ -220,7 +233,7 @@ def tf(args, analysis, experiment_accession, first_analysis):
     outputs = {}
     outputs.update(dict(zip(peaks_output_names,[{'dx': dxpy.DXFile(peaks_stage['output'][output_name])} for output_name in peaks_output_names])))
     outputs.update(dict(zip(signals_output_names,[{'dx': dxpy.DXFile(signals_stage['output'][output_name])} for output_name in signals_output_names])))
-    outputs.update(dict(zip(idr_output_names,[{'dx': dxpy.DXFile(idr_stage['output'][output_name])} for output_name in idr_output_names])))
+    outputs.update(dict(zip(idr_output_names,[{'dx': dxpy.DXFile(final_idr_stage['output'][output_name])} for output_name in idr_output_names])))
 
     track_directory = os.path.join(args.ddir, experiment_accession)
     url_base = urlparse.urljoin(args.turl, experiment_accession+'/')
