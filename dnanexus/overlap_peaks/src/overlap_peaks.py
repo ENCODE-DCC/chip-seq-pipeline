@@ -71,7 +71,7 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks,
     dxpy.download_dxfile(rep1_peaks.get_id(), rep1_peaks_fn)
     dxpy.download_dxfile(rep2_peaks.get_id(), rep2_peaks_fn)
     dxpy.download_dxfile(pooled_peaks.get_id(), pooled_peaks_fn)
-    if simplicate_analysis:
+    if not simplicate_analysis:
         dxpy.download_dxfile(pooledpr1_peaks.get_id(), pooledpr1_peaks_fn)
         dxpy.download_dxfile(pooledpr2_peaks.get_id(), pooledpr2_peaks_fn)
     dxpy.download_dxfile(chrom_sizes.get_id(), chrom_sizes_fn)
