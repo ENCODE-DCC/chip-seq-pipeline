@@ -134,7 +134,7 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks,
             'sort -u'
             ], overlapping_peaks_fn)
         print(
-            "%d peaks overlap with true replicates or with pooled pseudorepliates"
+            "%d peaks overlap with true replicates or with pooled pseudoreplicates"
             % (common.count_lines(overlapping_peaks_fn)))
     else:  # this is a simplicate analysis
         # overlapping peaks are just based on pseudoreps of the one pool
