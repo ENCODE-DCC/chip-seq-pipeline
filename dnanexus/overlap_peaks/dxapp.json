@@ -30,13 +30,13 @@
 			"name": "pooledpr1_peaks",
 			"label": "Pooled pseudoreplicate 1 peaks",
 			"class": "file",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "pooledpr2_peaks",
 			"label": "Pooled pseudoreplicate 2 peaks",
 			"class": "file",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "chrom_sizes",
