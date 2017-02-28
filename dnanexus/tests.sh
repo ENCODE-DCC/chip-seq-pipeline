@@ -739,17 +739,68 @@ chip_workflow.py \
 --yes
 
 
-# Build full histone pipeline on ENCSR087PLZ chr21 extracts:
+# Build full histone pipeline on ENCSR087PLZ chr19 extracts:
 chip_workflow.py \
 --target histone \
---chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
+--chrom_sizes "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
 --genomesize mm \
---reference "ENCODE Reference Files:/mm10/male.mm10.tar.gz" \
+--reference "ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
 --outf "ENCSR087PLZ-mH3K9ac-chr19-$(date +"%Y%m%d%H%M")" \
 --title "ENCSR087PLZ-mH3K9ac-chr19-$(date +"%Y%m%d%H%M")" \
---rep1 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/R1-ENCFF560GLI.chr19.fq.gz" \
---rep2 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/R2-ENCFF891NNX.chr19.fq.gz" \
---ctl1 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/C1-ENCFF069WCH.chr19.fq.gz" \
---ctl2 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/C2-ENCFF101KOM.chr19.fq.gz" \
+--rep1 "/test_data/histone_demo/ENCSR087PLZ-rep1-mm-chr19.bam.fq.gz" \
+--ctl1 "/test_data/histone_demo/ENCSR087PLZ-ctl1-mm-chr19.bam.fq.gz" \
+--rep2 "/test_data/histone_demo/ENCSR087PLZ-rep2-mm-chr19.bam.fq.gz" \
+--ctl2 "/test_data/histone_demo/ENCSR087PLZ-ctl2-mm-chr19.bam.fq.gz" \
 --yes
 
+# Build full histone pipeline on ENCSR087PLZ chr19 extracts as simplicate:
+chip_workflow.py \
+--target histone \
+--chrom_sizes "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--genomesize mm \
+--reference "ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
+--outf "ENCSR087PLZ-mH3K9ac-chr19-simplicate-$(date +"%Y%m%d%H%M")" \
+--title "ENCSR087PLZ-mH3K9ac-chr19-simpliate-$(date +"%Y%m%d%H%M")" \
+--rep1 "/test_data/histone_demo/ENCSR087PLZ-rep1-mm-chr19.bam.fq.gz" \
+--ctl1 "/test_data/histone_demo/ENCSR087PLZ-ctl1-mm-chr19.bam.fq.gz" \
+--yes
+
+# Build full histone pipeline on ENCSR238SGC:
+chip_workflow.py \
+--target histone \
+--chrom_sizes "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--genomesize mm \
+--reference "ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
+--outf "ENCSR238SGC-H3K4me1-$(date +"%Y%m%d%H%M")" \
+--title "ENCSR238SGC-H3K4me1-$(date +"%Y%m%d%H%M")" \
+--rep1 "/test_data/histone_chip/ENCFF833BLU.fastq.gz" \
+--rep2 "/test_data/histone_chip/ENCFF646LXU.fastq.gz" \
+--ctl1 "/test_data/histone_chip/ENCFF524CAC.fastq.gz" \
+--ctl2 "/test_data/histone_chip/ENCFF163AJI.fastq.gz" \
+--yes
+
+# Build full histone pipeline on ENCSR238SGC chr19 extracts:
+chip_workflow.py \
+--target histone \
+--chrom_sizes "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--genomesize mm \
+--reference "ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
+--outf "ENCSR238SGC-H3K4me1-chr19-$(date +"%Y%m%d%H%M")" \
+--title "ENCSR238SGC-H3K4me1-chr19-$(date +"%Y%m%d%H%M")" \
+--rep1 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF833BLU-chr19.fq.gz" \
+--rep2 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF646LXU-chr19.fq.gz" \
+--ctl1 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF524CAC-chr19.fq.gz" \
+--ctl2 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF163AJI-chr19.fq.gz" \
+--yes
+
+# Build full histone pipeline on ENCSR238SGC chr19 using rep1 as simplicate:
+chip_workflow.py \
+--target histone \
+--chrom_sizes "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--genomesize mm \
+--reference "ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
+--outf "ENCSR238SGC-H3K4me1-simplicate-chr19-$(date +"%Y%m%d%H%M")" \
+--title "ENCSR238SGC-H3K4me1-simplicate-chr19-$(date +"%Y%m%d%H%M")" \
+--rep1 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF833BLU-chr19.fq.gz" \
+--ctl1 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF524CAC-chr19.fq.gz" \
+--yes

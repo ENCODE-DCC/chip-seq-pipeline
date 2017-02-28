@@ -305,7 +305,16 @@ def histone(args, analysis, experiment_accession, first_analysis):
     peaks_stage = next(stage for stage in stages if stage['execution']['name'] == "ENCODE Peaks")['execution']
     replicated_stages = [stage['execution'] for stage in stages if 'Final' in stage['execution']['name']]
 
+    # this is just a cheap way of determining singlicate or replicate analysis
+    # singlicate analyses have no rescue_ratio
+    singlicate_analysis = all(stage['output'].get('rep2_signal') is None for stage in replicated_stages)
+
     output_names = [
+        'rep1_narrowpeaks_bb',
+        'rep1_gappedpeaks_bb',
+        'rep1_pvalue_signal',
+        'rep1_fc_signal',
+    ] if singlicate_analysis else [
         'rep1_narrowpeaks_bb',
         'rep2_narrowpeaks_bb',
         'pooled_narrowpeaks_bb',
@@ -317,7 +326,8 @@ def histone(args, analysis, experiment_accession, first_analysis):
         'pooled_pvalue_signal',
         'rep1_fc_signal',
         'rep2_fc_signal',
-        'pooled_fc_signal']
+        'pooled_fc_signal'
+    ]
 
     outputs = dict(zip(output_names,[{'dx': dxpy.DXFile(peaks_stage['output'][output_name])} for output_name in output_names]))
 
