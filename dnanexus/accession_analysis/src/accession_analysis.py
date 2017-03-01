@@ -2493,7 +2493,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
     # for [rep1, rep2, pooled], the control stages for rep1 and rep2 might be
     # the same as the pool if the experiment used pooled controls
     if skip_control:
-        control_stages = [None, None, None]
+        control_stages = []
         logger.info("skip_control, so ignoring control mapping stages")
     else:
         control_stages = get_control_mapping_stages(
@@ -2640,7 +2640,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
     # for [rep1, rep2, pooled], the control stages for rep1 and rep2 might be
     # the same as the pool if the experiment used pooled controls
     if skip_control:
-        control_stages = [None, None, None]
+        control_stages = []
         logger.info("skip_control, so ignoring control mapping stages")
     else:
         control_stages = get_control_mapping_stages(
