@@ -1685,7 +1685,7 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
                 'stage_metadata': {}  # initialized below
             },
 
-            get_stage_name("IDR Pooled Pseudoreplicates", analysis_stages): {
+            get_stage_name("IDR Pooled Pseudor?eplicates", analysis_stages): {
                 'output_files': [],
                 'qc': [],
                 'stage_metadata': {}  # initialized below
