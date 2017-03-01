@@ -768,7 +768,7 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
                sorted(flat(input_fastq_accessions))):
             fastqs_match = False
             assert fastqs_match, (
-                '%s rep%d: Accessioned experiment fastqs differ from analysis.'
+                '%s rep%s: Accessioned experiment fastqs differ from analysis.'
                 % (experiment_accession, repn) +
                 'Suppress with fqcheck=False')
             return None
@@ -951,7 +951,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
                sorted(flat(input_fastq_accessions))):
             fastqs_match = False
             assert fastqs_match, (
-                '%s rep%d: Accessioned experiment fastqs differ from analysis.'
+                '%s rep%s: Accessioned experiment fastqs differ from analysis.'
                 % (experiment_accession, repn) +
                 'Suppress with fqcheck=False')
             return None
@@ -1250,30 +1250,36 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         % (peaks_analysis['id']) +
         'experiment %s and len(mapping_stages) %d len(control_stages) %d'
         % (experiment['accession'], len(mapping_stages), len(control_stages)))
+    simplicate_analysis = is_simplicate_analysis(peaks_analysis)
 
-    rep1_bam, rep2_bam = \
-        [(mapping_stages[n], 'filtered_bam') for n in range(2)]
+    # rep1_bam, rep2_bam = \
+    #     [(mapping_stages[n], 'filtered_bam') for n in range(2)]
+    bams = \
+        [(mapping_stage, 'filtered_bam') for mapping_stage in mapping_stages]
 
-    rep1_ctl_bam, rep2_ctl_bam = \
-        [(control_stages[n], 'filtered_bam') for n in range(2)]
+    # rep1_ctl_bam, rep2_ctl_bam = \
+    #     [(control_stages[n], 'filtered_bam') for n in range(2)]
+    ctl_bams = \
+        [(control_stage, 'filtered_bam') for control_stage in control_stages]
 
     assemblies = \
         [get_assembly(bam)
-         for bam in [rep1_bam, rep2_bam, rep1_ctl_bam, rep2_ctl_bam]]
+         for bam in bams + ctl_bams
+         if get_assembly(bam)]
     observed_assemblies = set(assemblies)
     assert len(observed_assemblies) == 1, "Different bam assemblies for rep1,2 and control rep1,2 bams: %s" % (assemblies)
     assembly = observed_assemblies.pop()
 
-    pooled_ctl_bams = [rep1_ctl_bam, rep2_ctl_bam]
-
     if pooled_controls(peaks_analysis, rep=1):
-        rep1_ctl = pooled_ctl_bams
+        rep1_ctl = ctl_bams
     else:
-        rep1_ctl = [rep1_ctl_bam]
-    if pooled_controls(peaks_analysis, rep=2):
-        rep2_ctl = pooled_ctl_bams
-    else:
-        rep2_ctl = [rep2_ctl_bam]
+        rep1_ctl = [ctl_bams[0]]
+
+    if not simplicate_analysis:
+        if pooled_controls(peaks_analysis, rep=2):
+            rep2_ctl = ctl_bams
+        else:
+            rep2_ctl = [ctl_bams[1]]
 
     analysis_stages = \
         [stage['execution'] for stage in peaks_analysis.get('stages')]
@@ -1319,6 +1325,13 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         'output_type': 'signal p-value'},
         common_file_metadata)
 
+    # This is lame because the repns are hard-wired.  Needs to be made more general
+    rep1_bam = bams[0]
+    if not simplicate_analysis:
+        rep2_bam = bams[1]
+    # This is lame because it assumes pooled controls is all the controls
+    # Needs to be made to get the controls that were actually pooled
+    pooled_ctl_bams = ctl_bams
     peak_stages = {
         # derived_from is by name here, will be patched into the file metadata
         # after all files are accessioned
@@ -1326,6 +1339,23 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         # files outside of this set of stages
         get_stage_name("ENCODE Peaks", analysis_stages): {
             'output_files': [
+                {'name': 'rep1_narrowpeaks',
+                 'derived_from': [rep1_bam] + rep1_ctl,
+                 'metadata': narrowpeak_metadata},
+
+                {'name': 'rep1_narrowpeaks_bb',
+                 'derived_from': ['rep1_narrowpeaks'],
+                 'metadata': narrowpeak_bb_metadata},
+
+                {'name': 'rep1_pvalue_signal',
+                 'derived_from': [rep1_bam] + rep1_ctl,
+                 'metadata': pvalue_signal_metadata},
+
+                {'name': 'rep1_fc_signal',
+                 'derived_from': [rep1_bam] + rep1_ctl,
+                 'metadata': fc_signal_metadata}
+
+            ] if simplicate_analysis else [
 
                 {'name': 'rep1_narrowpeaks',
                  'derived_from': [rep1_bam] + rep1_ctl,
@@ -1394,9 +1424,19 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
                 {'name': 'overlapping_peaks_bb',
                  'derived_from': ['overlapping_peaks'],
                  'metadata': replicated_narrowpeak_bb_metadata}
+            ] if not simplicate_analysis else [
+                {'name': 'overlapping_peaks',
+                 'derived_from': ['rep1_narrowpeaks'],
+                 'metadata': replicated_narrowpeak_metadata},
+
+                {'name': 'overlapping_peaks_bb',
+                 'derived_from': ['overlapping_peaks'],
+                 'metadata': replicated_narrowpeak_bb_metadata}
             ],
 
-            'qc': ['npeaks_in', 'npeaks_out', 'npeaks_rejected'],
+            'qc': [
+                'npeaks_in', 'npeaks_out', 'npeaks_rejected'
+            ],
 
             'stage_metadata': {}  # initialized below
         }
@@ -1408,7 +1448,7 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
                 {'stage_metadata': get_stage_metadata(
                     peaks_analysis, stage_name)})
 
-    return peak_stages
+    return [peak_stages]
 
 
 def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
@@ -2423,10 +2463,9 @@ def accession_raw_mapping_analysis_files(
 
 def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                                      force_patch, force_upload, fqcheck,
-                                     pipeline_version):
+                                     skip_control, pipeline_version):
 
     experiment_accession = get_experiment_accession(peaks_analysis)
-
     if experiment_accession:
         logger.info('%s: accession histone peaks' % (experiment_accession))
     else:
@@ -2434,11 +2473,11 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
             "No experiment accession in %s, skipping."
             % (peaks_analysis['executableName']))
         return None
-
-    # returns the experiment object
     experiment = common.encoded_get(
-        urlparse.urljoin(
-            server, '/experiments/%s' % (experiment_accession)), keypair)
+        urlparse.urljoin(server, '/experiments/%s' % (experiment_accession)),
+        keypair)
+    logger.debug('got experiment %s' % (experiment.get('accession')))
+    simplicate_analysis = is_simplicate_analysis(peaks_analysis)
 
     # returns a list with two elements:  the mapping stages for [rep1,rep2]
     # in this context rep1,rep2 are the first and second replicates in the
@@ -2451,14 +2490,17 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
         return None
 
     # returns a list with three elements: the mapping stages for the controls
-    # for [rep1, rep2, pooled]
-    # the control stages for rep1 and rep2 might be the same as the pool if the
-    #  experiment used pooled controls
-    control_stages = \
-        get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck)
-    if not control_stages:
-        logger.error("Failed to find control mapping stages")
-        return None
+    # for [rep1, rep2, pooled], the control stages for rep1 and rep2 might be
+    # the same as the pool if the experiment used pooled controls
+    if skip_control:
+        control_stages = [None, None, None]
+        logger.info("skip_control, so ignoring control mapping stages")
+    else:
+        control_stages = get_control_mapping_stages(
+            peaks_analysis, keypair, server, fqcheck)
+        if not control_stages:
+            logger.error("Failed to find control mapping stages")
+            return None
 
     # returns the stages for peak calling
     peak_stages = get_histone_peak_stages(
@@ -2474,16 +2516,17 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
 
     # accession all the output files
     output_files = []
-    for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
+    for stages in control_stages + mapping_stages + peak_stages:
         logger.info('accessioning output')
         output_files.extend(accession_outputs(stages, keypair, server, dryrun,
                             force_patch, force_upload))
 
     # now that we have file accessions, loop again and patch derived_from
     files_with_derived = []
-    for stages in [control_stages[0], control_stages[1], mapping_stages[0], mapping_stages[1], peak_stages]:
-        files_with_derived.extend(
-            patch_outputs(stages, keypair, server, dryrun))
+    for stages in control_stages + mapping_stages + peak_stages:
+        if stages:
+            files_with_derived.extend(
+                patch_outputs(stages, keypair, server, dryrun))
 
     full_analysis_step_versions = {
         STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
@@ -2497,88 +2540,66 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
         ],
         STEP_VERSION_ALIASES[pipeline_version]['bwa-alignment-step']: [
             {
-                'stages': control_stages[0],
-                'stage_name': next(stage_name for stage_name in control_stages[0].keys() if stage_name.startswith('Filter and QC')),
+                'stages': mapping_stage,
+                'stage_name':
+                    next(stage_name
+                         for stage_name in mapping_stage.keys()
+                         if stage_name.startswith('Filter and QC')),
                 'file_names': ['filtered_bam'],
                 'status': 'finished',
                 'qc_objects': [
                     {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-
-                ]
-            },
-            {
-                'stages': control_stages[1],
-                'stage_name': next(stage_name for stage_name in control_stages[1].keys() if stage_name.startswith('Filter and QC')),
-                'file_names': ['filtered_bam'],
-                'status': 'finished',
-                'qc_objects': [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-                ]
-            },
-            {
-                'stages': mapping_stages[0],
-                'stage_name': next(stage_name for stage_name in mapping_stages[0].keys() if stage_name.startswith('Filter and QC')),
-                'file_names': ['filtered_bam'],
-                'status': 'finished',
-                'qc_objects': [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-                ]
-            },
-            {
-                'stages': mapping_stages[1],
-                'stage_name': next(stage_name for stage_name in mapping_stages[1].keys() if stage_name.startswith('Filter and QC')),
-                'file_names': ['filtered_bam'],
-                'status': 'finished',
-                'qc_objects': [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
-                ]
-            }
+                    {'samtools_flagstats_quality_metric': ['filtered_bam']}]
+            } for mapping_stage in (mapping_stages if skip_control else
+                                    mapping_stages + control_stages)
         ],
         STEP_VERSION_ALIASES[pipeline_version]['histone-peak-calling-step']: [
             {
-                'stages': peak_stages,
+                'stages': peak_stage,
                 'stage_name': 'ENCODE Peaks',
                 'file_names':
-                    ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal',
+                    [
+                     'rep1_fc_signal', 'rep1_pvalue_signal', 'rep1_narrowpeaks'
+                    ] if simplicate_analysis else [
+                     'rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal',
                      'rep1_pvalue_signal', 'rep2_pvalue_signal',
                      'pooled_pvalue_signal', 'rep1_narrowpeaks',
                      'rep2_narrowpeaks', 'pooled_narrowpeaks'],
                 'status': 'finished',
                 'qc_objects': []
-            }
+            } for peak_stage in peak_stages
         ],
         STEP_VERSION_ALIASES[pipeline_version]['histone-overlap-peaks-step']: [
             {
-                'stages': peak_stages,
-                'stage_name': next(stage_name for stage_name in peak_stages.keys() if re.match('(Overlap|Final) narrowpeaks', stage_name)),
+                'stages': peak_stage,
+                'stage_name': next(stage_name for stage_name in peak_stage.keys() if re.match('(Overlap|Final) narrowpeaks', stage_name)),
                 'file_names': ['overlapping_peaks'],
                 'status': 'finished',
                 'qc_objects': []
-            }
+            } for peak_stage in peak_stages
         ],
         STEP_VERSION_ALIASES[pipeline_version]['histone-peaks-to-bigbed-step']: [
             {
-                'stages': peak_stages,
+                'stages': peak_stage,
                 'stage_name': 'ENCODE Peaks',
                 'file_names':
-                    ['rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb',
+                    [
+                     'rep1_narrowpeaks_bb'
+                    ] if simplicate_analysis else [
+                     'rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb',
                      'pooled_narrowpeaks_bb'],
                 'status': 'virtual',
                 'qc_objects': []
-            }
+            } for peak_stage in peak_stages
         ],
         STEP_VERSION_ALIASES[pipeline_version]['histone-replicated-peaks-to-bigbed-step']: [
             {
-                'stages': peak_stages,
-                'stage_name': next(stage_name for stage_name in peak_stages.keys() if re.match('(Overlap|Final) narrowpeaks', stage_name)),
+                'stages': peak_stage,
+                'stage_name': next(stage_name for stage_name in peak_stage.keys() if re.match('(Overlap|Final) narrowpeaks', stage_name)),
                 'file_names': ['overlapping_peaks_bb'],
                 'status': 'virtual',
                 'qc_objects': []
-            }
+            } for peak_stage in peak_stages
         ]
     }
 
@@ -2840,7 +2861,7 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
             accessioned_files = \
                 accession_histone_analysis_files(
                     analysis, keypair, server, dryrun, force_patch,
-                    force_upload, fqcheck, pipeline_version)
+                    force_upload, fqcheck, skip_control, pipeline_version)
             logger.info('accession histone analysis completed')
         elif inferred_pipeline == "mapping":
             logger.info('accession mapping analysis started')
