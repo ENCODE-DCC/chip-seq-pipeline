@@ -295,10 +295,10 @@ def get_ta_from_accessions(accessions, default_project, ta_folders):
             project=project_id,
             describe=True,
             recurse=True,
+            name='*tagAlign.gz',
+            name_mode='glob'
         ):
-            desc = dxfile.get('describe')
-            if desc.get('name').endswith(('tagAlign', 'tagAlign.gz')):
-                possible_files.append(desc)
+            possible_files.append(dxfile.get('describe'))
     matched_files = \
         [f for f in possible_files if all([acc in f['name'] for acc in accessions])]
     if not matched_files:
