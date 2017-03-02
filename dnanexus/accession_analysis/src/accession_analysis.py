@@ -1912,7 +1912,7 @@ def qckiller(f, server, keypair):
 
     for object_type in QC_OBJECS_TO_KILL:
         url = \
-            server + '/search/?type=%s&quality_metric_of=%s' % (object_type, f.get('@id'))
+            server + '/search/?type=%s&quality_metric_of=%s&status!=deleted' % (object_type, f.get('@id'))
         objs = common.encoded_get(url, keypair)['@graph']
         for o in objs:
             url = server + o.get('@id')
