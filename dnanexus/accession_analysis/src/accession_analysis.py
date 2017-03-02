@@ -2020,9 +2020,10 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
             new_file_object = patch_file(f, keypair, server, dryrun)
 
         if force_upload:
-            if new_file_object['status'] != "uploading":
+            force_statuses = ["uploading", "upload failed"]
+            if new_file_object['status'] not in force_statuses:
                 logger.warning(
-                    '%s: status is %s, not uploading so force_upload is not allowed. Skipping.'
+                    '%s: status is %s, so force_upload is not allowed. Skipping.'
                     % (new_file_object.get('accession'), new_file_object.get('status')))
             else:
                 if not local_fname:
