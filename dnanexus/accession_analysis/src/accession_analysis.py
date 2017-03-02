@@ -1904,6 +1904,22 @@ def set_property(dx_fh, prop):
         raise
 
 
+def qckiller(f, server, keypair):
+    QC_OBJECS_TO_KILL = [
+        'chipseq_filter_quality_metric',
+        'samtools_flagstats_quality_metric',
+        'idr_quality_metric']
+
+    for object_type in QC_OBJECS_TO_KILL:
+        url = \
+            server + '/search/?type=%s&quality_metric_of=%s&status!=deleted' % (object_type, f.get('@id'))
+        objs = common.encoded_get(url, keypair)['@graph']
+        for o in objs:
+            url = server + o.get('@id')
+            logger.info("%s: Remove existing qc object %s by setting status:deleted" % (f.get('accession'), url))
+            common.encoded_patch(url, keypair, {'status': 'deleted'})
+
+
 def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
     # check for duplication
     # - if it has ENCFF or TSTFF number in it's tag, or
@@ -1999,6 +2015,8 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
                     "File %s with matching MD5 %s has status deleted and will be reset to status uploading"
                     % (md5_exists.get('accession'), md5_exists.get('md5sum')))
                 f['status'] = 'uploading'
+            # blow away existing qc metrics from the existing file object
+            qckiller(md5_exists, server, keypair)
             new_file_object = patch_file(f, keypair, server, dryrun)
 
         if force_upload:
