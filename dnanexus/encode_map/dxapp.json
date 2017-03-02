@@ -92,7 +92,7 @@
   ],
   "runSpec": {
     "interpreter": "python2.7",
-    "file": "src/ENCODE_map.py",
+    "file": "src/encode_map.py",
     "execDepends": [
       {"name": "openjdk-6-jdk"}
     ],

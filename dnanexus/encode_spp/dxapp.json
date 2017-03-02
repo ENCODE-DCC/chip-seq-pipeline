@@ -18,7 +18,7 @@
             "name": "rep2_ta",
             "label": "Rep 2 tagAlign",
             "class": "file",
-            "optional": false
+            "optional": true
         },
         {
             "name": "ctl1_ta",
@@ -30,7 +30,7 @@
             "name": "ctl2_ta",
             "label": "Control 2 tagAlign",
             "class": "file",
-            "optional": false
+            "optional": true
         },
         {
             "name": "rep1_xcor",
@@ -42,7 +42,7 @@
             "name": "rep2_xcor",
             "label": "Rep 2 cross-correlation scores",
             "class": "file",
-            "optional": false
+            "optional": true
         },
         {
             "name": "npeaks",
@@ -66,7 +66,7 @@
         {
             "name": "rep2_paired_end",
             "class": "boolean",
-            "optional": false
+            "optional": true
         },
         {
             "name": "chrom_sizes",
@@ -103,7 +103,8 @@
         {
             "name": "rep1_peaks_bb",
             "label": "Bigbed file",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "rep1_xcor_plot",
@@ -118,42 +119,50 @@
         {
             "name": "rep2_peaks",
             "label": "Narrowpeaks file",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "rep2_peaks_bb",
             "label": "Bigbed file",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "rep2_xcor_plot",
             "label": "Cross-correlation plot",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "rep2_xcor_scores",
             "label": "Cross-correlation scores",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "pooled_peaks",
             "label": "Narrowpeaks file",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "pooled_peaks_bb",
             "label": "Bigbed file",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "pooled_xcor_plot",
             "label": "Cross-correlation plot",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "pooled_xcor_scores",
             "label": "Cross-correlation scores",
-            "class": "file"
+            "class": "file",
+            "optional": true
         },
         {
             "name": "rep1pr1_peaks",

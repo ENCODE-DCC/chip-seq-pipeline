@@ -220,6 +220,133 @@ chip_workflow.py --target histone --debug --title ENCSR678FIT-ta-OL --outf /ENCS
 
 ## single applets
 
+# encode_macs2 simplicate
+dx run \
+--input "rep1_ta=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "ctl1_ta=/test_data/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "rep1_xcor=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "rep1_paired_end=false" \
+--input "chrom_sizes=ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--input "genomesize=mm" \
+--input "narrowpeak_as=ENCODE Reference Files:/narrowPeak.as" \
+--input "gappedpeak_as=ENCODE Reference Files:/gappedPeak.as" \
+--input "broadpeak_as=ENCODE Reference Files:/broadPeak.as" \
+--input "prefix=test" \
+--verbose \
+--destination /encode_macs2_test/test_simplicate_$(date +"%Y%m%d%H%M") \
+--name encode_macs2_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/encode_macs2
+
+# encode_macs2 replicate
+dx run \
+--input "rep1_ta=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "rep2_ta=/test_data/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "ctl1_ta=/test_data/ENCFF002BXW.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "ctl2_ta=/test_data/ENCFF482JNU-ENCFF249RWY-ENCFF118FEW_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz" \
+--input "rep1_xcor=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "rep2_xcor=/test_data/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "rep1_paired_end=false" \
+--input "rep2_paired_end=false" \
+--input "chrom_sizes=ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--input "genomesize=mm" \
+--input "narrowpeak_as=ENCODE Reference Files:/narrowPeak.as" \
+--input "gappedpeak_as=ENCODE Reference Files:/gappedPeak.as" \
+--input "broadpeak_as=ENCODE Reference Files:/broadPeak.as" \
+--input "prefix=test" \
+--verbose \
+--destination /encode_macs2_test/test_replicate_$(date +"%Y%m%d%H%M") \
+--name encode_macs2_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/encode_macs2
+
+# encode_spp simplicate
+dx run \
+--input "rep1_ta=/test_data/ENCFF000XUL-chr21.tagAlign.gz" \
+--input "ctl1_ta=/test_data/ENCFF000XTF-chr21.tagAlign.gz" \
+--input "rep1_xcor=/test_data/ENCFF000XUL-chr21.tagAlign.sample.15.SE.tagAlign.gz.cc.qc" \
+
+--input "rep1_paired_end=false" \
+--input "chrom_sizes=ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input "idr_peaks=true" \
+--verbose \
+--destination /encode_spp_test/test_simplicate_$(date +"%Y%m%d%H%M") \
+--name encode_spp_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/encode_spp
+
+# encode_spp replicate
+dx run \
+--input "rep1_ta=/test_data/ENCFF000XUL-chr21.tagAlign.gz" \
+--input "rep2_ta=/test_data/ENCFF000XUK-chr21.tagAlign.gz" \
+--input "ctl1_ta=/test_data/ENCFF000XTF-chr21.tagAlign.gz" \
+--input "ctl2_ta=/test_data/ENCFF000XTF-chr21.tagAlign.gz" \
+--input "rep1_xcor=/test_data/ENCFF000XUL-chr21.tagAlign.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "rep2_xcor=/test_data/ENCFF000XUK.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "rep1_paired_end=false" \
+--input "rep2_paired_end=false" \
+--input "chrom_sizes=ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input "idr_peaks=true" \
+--verbose \
+--destination /encode_spp_test/test_replicate_$(date +"%Y%m%d%H%M") \
+--name encode_spp_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/encode_spp
+
+# idr2 replicate
+dx run \
+--input "rep1_peaks=/test_data/ENCFF000XUL-chr21.regionPeak.gz" \
+--input "rep2_peaks=/test_data/ENCFF000XUK-chr21.regionPeak.gz" \
+--input "pooled_peaks=/test_data/ENCFF000XUL-chr21-ENCFF000XUK-chr21_pooled.regionPeak.gz" \
+--verbose \
+--destination /IDRv2_test_replicate/test_$(date +"%Y%m%d%H%M") \
+--name IDRv2_test_replicate \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/idr2
+
+# idr2 simplicate
+dx run \
+--input "rep1_peaks=/test_data/simplicate/ENCFF000XUL-chr21_PR1.regionPeak.gz" \
+--input "rep2_peaks=/test_data/simplicate/ENCFF000XUL-chr21_PR2.regionPeak.gz" \
+--input "pooled_peaks=/test_data/simplicate/ENCFF000XUL-chr21.regionPeak.gz" \
+--verbose \
+--destination /IDRv2_test_simplicate/test_$(date +"%Y%m%d%H%M") \
+--name IDRv2_test_simplicate \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/idr2
+
+# encode_idr replicate
+
+# encode_idr simplicate
+dx run \
+--input "experiment=smplct_exp" \
+--input "r1pr_peaks=/test_data/simplicate/ENCFF000XULvENCFF000XUL.IDRv2.IDR0.05.narrowPeak.gz" \
+--input "rep1_signal=/test_data/simplicate/r1.pvalue_signal.bw" \
+--input "as_file=ENCODE Reference Files:/narrowPeak.as" \
+--input "blacklist=ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
+--input "chrom_sizes=ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--verbose \
+--destination /encode_idr_test_simplicate/test_$(date +"%Y%m%d%H%M") \
+--name encode_idr_test_simplicate \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+applets/encode_idr
+
 # Run ENCODE_map on 36 bp SE chr21 extract
 dx run \
 --input "reads1=ENCODE Uniform Processing Pipelines:/ChIP-seq/test_data/ENCSR000EEB-hMAFK/R1-ENCFF000XTT.chr21.fq.gz" \
@@ -589,7 +716,7 @@ chip_workflow.py \
 --target tf \
 --chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
 --genomesize hs \
---reference "ENCODE Reference Files:/hg19/male.hg19.tar.gz" \
+--reference "ENCODE Reference Files:/hg19/ChIP-seq/male.hg19.tar.gz" \
 --blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
 --outf "ENCSR000EEB-hMAFK-chr21-$(date +"%Y%m%d%H%M")" \
 --title "ENCSR000EEB-hMAFK-chr21-$(date +"%Y%m%d%H%M")" \
@@ -598,17 +725,82 @@ chip_workflow.py \
 --ctl1 "/ChIP-seq/test_data/ENCSR000EEB-hMAFK/C1-ENCFF000XSJ.chr21.fq.gz" \
 --yes
 
-# Build full histone pipeline on ENCSR087PLZ chr21 extracts:
+# Build full TF pipeline on ENCSR000EEB chr21 extracts as simplicate:
 chip_workflow.py \
---target histone \
---chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
---genomesize mm \
---reference "ENCODE Reference Files:/mm10/male.mm10.tar.gz" \
---outf "ENCSR087PLZ-mH3K9ac-chr19-$(date +"%Y%m%d%H%M")" \
---title "ENCSR087PLZ-mH3K9ac-chr19-$(date +"%Y%m%d%H%M")" \
---rep1 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/R1-ENCFF560GLI.chr19.fq.gz" \
---rep2 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/R2-ENCFF891NNX.chr19.fq.gz" \
---ctl1 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/C1-ENCFF069WCH.chr19.fq.gz" \
---ctl2 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/C2-ENCFF101KOM.chr19.fq.gz" \
+--target tf \
+--chrom_sizes "ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
+--genomesize hs \
+--reference "ENCODE Reference Files:/hg19/ChIP-seq/male.hg19.tar.gz" \
+--blacklist "ENCODE Reference Files:/hg19/blacklists/wgEncodeDacMapabilityConsensusExcludable.bed.gz" \
+--outf "ENCSR000EEB-hMAFK-chr21-simplicate-$(date +"%Y%m%d%H%M")" \
+--title "ENCSR000EEB-hMAFK-chr21-simplicate-$(date +"%Y%m%d%H%M")" \
+--rep1 "/test_data/ENCFF000XUL.chr21.fq.gz" \
+--ctl1 "/test_data/ENCFF000XTF.chr21.fq.gz" \
 --yes
 
+
+# Build full histone pipeline on ENCSR087PLZ chr19 extracts:
+chip_workflow.py \
+--target histone \
+--chrom_sizes "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--genomesize mm \
+--reference "ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
+--outf "ENCSR087PLZ-mH3K9ac-chr19-$(date +"%Y%m%d%H%M")" \
+--title "ENCSR087PLZ-mH3K9ac-chr19-$(date +"%Y%m%d%H%M")" \
+--rep1 "/test_data/histone_demo/ENCSR087PLZ-rep1-mm-chr19.bam.fq.gz" \
+--ctl1 "/test_data/histone_demo/ENCSR087PLZ-ctl1-mm-chr19.bam.fq.gz" \
+--rep2 "/test_data/histone_demo/ENCSR087PLZ-rep2-mm-chr19.bam.fq.gz" \
+--ctl2 "/test_data/histone_demo/ENCSR087PLZ-ctl2-mm-chr19.bam.fq.gz" \
+--yes
+
+# Build full histone pipeline on ENCSR087PLZ chr19 extracts as simplicate:
+chip_workflow.py \
+--target histone \
+--chrom_sizes "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--genomesize mm \
+--reference "ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
+--outf "ENCSR087PLZ-mH3K9ac-chr19-simplicate-$(date +"%Y%m%d%H%M")" \
+--title "ENCSR087PLZ-mH3K9ac-chr19-simpliate-$(date +"%Y%m%d%H%M")" \
+--rep1 "/test_data/histone_demo/ENCSR087PLZ-rep1-mm-chr19.bam.fq.gz" \
+--ctl1 "/test_data/histone_demo/ENCSR087PLZ-ctl1-mm-chr19.bam.fq.gz" \
+--yes
+
+# Build full histone pipeline on ENCSR238SGC:
+chip_workflow.py \
+--target histone \
+--chrom_sizes "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--genomesize mm \
+--reference "ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
+--outf "ENCSR238SGC-H3K4me1-$(date +"%Y%m%d%H%M")" \
+--title "ENCSR238SGC-H3K4me1-$(date +"%Y%m%d%H%M")" \
+--rep1 "/test_data/histone_chip/ENCFF833BLU.fastq.gz" \
+--rep2 "/test_data/histone_chip/ENCFF646LXU.fastq.gz" \
+--ctl1 "/test_data/histone_chip/ENCFF524CAC.fastq.gz" \
+--ctl2 "/test_data/histone_chip/ENCFF163AJI.fastq.gz" \
+--yes
+
+# Build full histone pipeline on ENCSR238SGC chr19 extracts:
+chip_workflow.py \
+--target histone \
+--chrom_sizes "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--genomesize mm \
+--reference "ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
+--outf "ENCSR238SGC-H3K4me1-chr19-$(date +"%Y%m%d%H%M")" \
+--title "ENCSR238SGC-H3K4me1-chr19-$(date +"%Y%m%d%H%M")" \
+--rep1 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF833BLU-chr19.fq.gz" \
+--rep2 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF646LXU-chr19.fq.gz" \
+--ctl1 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF524CAC-chr19.fq.gz" \
+--ctl2 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF163AJI-chr19.fq.gz" \
+--yes
+
+# Build full histone pipeline on ENCSR238SGC chr19 using rep1 as simplicate:
+chip_workflow.py \
+--target histone \
+--chrom_sizes "ENCODE Reference Files:/mm10/mm10_no_alt.chrom.sizes" \
+--genomesize mm \
+--reference "ENCODE Reference Files:/mm10/ChIP-seq/mm10_no_alt_analysis_set_ENCODE.tar.gz" \
+--outf "ENCSR238SGC-H3K4me1-simplicate-chr19-$(date +"%Y%m%d%H%M")" \
+--title "ENCSR238SGC-H3K4me1-simplicate-chr19-$(date +"%Y%m%d%H%M")" \
+--rep1 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF833BLU-chr19.fq.gz" \
+--ctl1 "/test_data/histone_chip/ENCSR238SGC-H3K4me1/ENCFF524CAC-chr19.fq.gz" \
+--yes

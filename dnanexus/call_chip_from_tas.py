@@ -396,9 +396,9 @@ def get_tas(experiment, server, keypair, default_project, ta_folders, control_dx
     for f in files_to_ignore:
         possible_files.remove(f)
     logging.debug('Discovered repns %s' % (repns))
-    if len(repns) != 2:
+    if len(repns) not in [1, 2]:
         logging.error(
-            "Required to have exactly 2 reps for %s.  Found %d: %s"
+            "Required to have exactly 1 or 2 reps for %s.  Found %d: %s"
             % (exp_id, len(repns), repns))
         return None
 
@@ -581,7 +581,12 @@ def main():
                 'Failed to resolve all tagaligns for %s'
                 % (experiment['accession']))
             continue
-
+        if not tas.get('rep2_ta'):
+            simplicate_experiment = True
+            print("Simplicate experiment ta's:")
+        else:
+            simplicate_experiment = False
+            print("Replicated experiment ta's:")
         pprint(tas)
         # sys.exit()
         # continue
@@ -612,14 +617,23 @@ def main():
             print(investigated_as)
 
         rep1_pe = tas['rep1_ta']['paired_end']
-        rep2_pe = tas['rep2_ta']['paired_end']
+        if not simplicate_experiment:
+            rep2_pe = tas['rep2_ta']['paired_end']
+        else:
+            rep2_pe = None
 
-        if None in [rep1_pe, rep2_pe]:
+        if simplicate_experiment and rep1_pe is None:
+            logging.error(
+                "%s: Cannot determine paired end: rep1 PE = %s... skipping"
+                % (exp_id, rep1_pe))
+            continue
+        elif not simplicate_experiment and None in [rep1_pe, rep2_pe]:
             logging.error(
                 "%s: Cannot determine paired end: rep1 PE = %s, rep2 PE = %s ... skipping"
                 % (exp_id, rep1_pe, rep2_pe))
             continue
-        if rep1_pe != rep2_pe:
+
+        if not simplicate_experiment and rep1_pe != rep2_pe:
             logging.error(
                 "%s: rep1 PE %s differs from rep2 PE %s ... skipping"
                 % (exp_id, rep1_pe, rep2_pe))
@@ -670,14 +684,18 @@ def main():
             '--title "%s"' % (workflow_title),
             '--outf "%s"' % (outf),
             '--rep1pe %s' % (str(rep1_pe).lower()),
-            '--rep2pe %s' % (str(rep2_pe).lower()),
             '--rep1 %s' % (tas['rep1_ta'].get('file_id')),
-            '--rep2 %s' % (tas['rep2_ta'].get('file_id')),
             '--ctl1 %s' % (tas['rep1_ta'].get('control_id')),
-            '--ctl2 %s' % (tas['rep2_ta'].get('control_id')),
             '--genomesize %s --chrom_sizes "%s"' % (genomesize, chrom_sizes),
             '--spp_version %s' % (args.spp_version)
         ]
+
+        if not simplicate_experiment:
+            command_strings.extend([
+                '--rep2pe %s' % (str(rep2_pe).lower()),
+                '--rep2 %s' % (tas['rep2_ta'].get('file_id')),
+                '--ctl2 %s' % (tas['rep2_ta'].get('control_id')),
+            ])
 
         if blacklist:
             command_strings.append('--blacklist "%s"' % (blacklist))
