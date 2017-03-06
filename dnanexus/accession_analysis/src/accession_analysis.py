@@ -1270,16 +1270,20 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
     assert len(observed_assemblies) == 1, "Different bam assemblies for rep1,2 and control rep1,2 bams: %s" % (assemblies)
     assembly = observed_assemblies.pop()
 
-    if pooled_controls(peaks_analysis, rep=1):
-        rep1_ctl = ctl_bams
+    if not ctl_bams:
+        rep1_ctl = []
+        rep2_ctl = []
     else:
-        rep1_ctl = [ctl_bams[0]]
-
-    if not simplicate_analysis:
-        if pooled_controls(peaks_analysis, rep=2):
-            rep2_ctl = ctl_bams
+        if pooled_controls(peaks_analysis, rep=1):
+            rep1_ctl = ctl_bams
         else:
-            rep2_ctl = [ctl_bams[1]]
+            rep1_ctl = [ctl_bams[0]]
+
+        if not simplicate_analysis:
+            if pooled_controls(peaks_analysis, rep=2):
+                rep2_ctl = ctl_bams
+            else:
+                rep2_ctl = [ctl_bams[1]]
 
     analysis_stages = \
         [stage['execution'] for stage in peaks_analysis.get('stages')]
@@ -1479,16 +1483,20 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
     assert len(observed_assemblies) == 1, "Different (or no) bam assemblies found for rep1,2 and control rep1,2 bams: %s" % (assemblies)
     assembly = observed_assemblies.pop()
 
-    if pooled_controls(peaks_analysis, rep=1):
-        rep1_ctl = ctl_bams
+    if not ctl_bams:
+        rep1_ctl = []
+        rep2_ctl = []
     else:
-        rep1_ctl = [ctl_bams[0]]
-
-    if not simplicate_analysis:
-        if pooled_controls(peaks_analysis, rep=2):
-            rep2_ctl = ctl_bams
+        if pooled_controls(peaks_analysis, rep=1):
+            rep1_ctl = ctl_bams
         else:
-            rep2_ctl = [ctl_bams[1]]
+            rep1_ctl = [ctl_bams[0]]
+
+        if not simplicate_analysis:
+            if pooled_controls(peaks_analysis, rep=2):
+                rep2_ctl = ctl_bams
+            else:
+                rep2_ctl = [ctl_bams[1]]
 
     analysis_stages = \
         [stage['execution'] for stage in peaks_analysis.get('stages')]
