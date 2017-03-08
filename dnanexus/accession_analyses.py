@@ -98,8 +98,8 @@ def main():
         tokens.append('-i "project=%s"' % (args.project))
     if args.pipeline is not None:
         tokens.append('-i "pipeline=%s"' % (args.pipeline))
-    if args.key is not None:
-        tokens.append('-i "key=%s"' % (args.key))
+    # if args.key is not None:
+    #     tokens.append('-i "key=%s"' % (args.key))
     # if args.keyfile is not None:
     #     tokens.append('-i "keyfile=%s"' % (args.keyfile))
     if args.debug is not None:
