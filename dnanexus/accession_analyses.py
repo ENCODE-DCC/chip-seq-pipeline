@@ -52,8 +52,8 @@ def get_args():
     # Otherwise the string will be cast to boolean
     parser.add_argument('--project', help='DNAnexus project in which to run', default=None)
     parser.add_argument('--pipeline', help='Over-ride automatic pipeline determination', default=None)
-    parser.add_argument('--key', help="The keypair identifier from the keyfile.", default=None)
-    parser.add_argument('--keyfile', help="The keyfile.", default=None)
+    parser.add_argument('--key', help="The local keypair identifier from the keyfile.", default=None)
+    parser.add_argument('--keyfile', help="The local keyfile.", default=None)
     parser.add_argument('--debug', help="Print debug messages", type=t_or_f, default=None)
     parser.add_argument('--dryrun', help="Set up runs but don't change anything.", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
@@ -98,8 +98,8 @@ def main():
         tokens.append('-i "project=%s"' % (args.project))
     if args.pipeline is not None:
         tokens.append('-i "pipeline=%s"' % (args.pipeline))
-    # if args.key is not None:
-    #     tokens.append('-i "key=%s"' % (args.key))
+    if args.key is not None:
+        tokens.append('-i "key=%s"' % (args.key))
     # if args.keyfile is not None:
     #     tokens.append('-i "keyfile=%s"' % (args.keyfile))
     if args.debug is not None:

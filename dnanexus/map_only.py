@@ -100,12 +100,12 @@ def get_args():
 
     parser.add_argument(
         '--key',
-        help="The keypair identifier from the keyfile. Default is 'default'",
+        help="The local keypair identifier from the local keyfile. Default is 'default'",
         default='default')
 
     parser.add_argument(
         '--keyfile',
-        help="The keypair filename.",
+        help="The local keypair filename.",
         default=os.path.expanduser("~/keypairs.json"))
 
     parser.add_argument(
@@ -302,7 +302,7 @@ def choose_reference(experiment, biorep_n, server, keypair, sex_specific):
     return reference
 
 
-def build_workflow(experiment, biorep_n, input_shield_stage_input, key, accession):
+def build_workflow(experiment, biorep_n, input_shield_stage_input, accession):
 
     output_project = resolve_project(args.outp, 'w')
     logging.debug('Found output project %s' % (output_project.name))
@@ -442,7 +442,7 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key, accessio
     return workflow
 
 
-def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
+def map_only(experiment, biorep_n, files, server, keypair, sex_specific,
              crop_length, accession, fqcheck, force_patch):
 
     if not files:
@@ -461,13 +461,12 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
     input_shield_stage_input.update({
         'reference_tar': reference_tar,
         'debug': args.debug,
-        'key': key,
         'crop_length': crop_length
     })
 
     if all(isinstance(f, dict) for f in files): #single end
         input_shield_stage_input.update({'reads1': [f.get('accession') for f in files]})
-        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key, accession))
+        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, accession))
     elif all(isinstance(f, tuple) for f in files): #paired-end
         #launches separate mapping jobs for each readpair
         #TODO: upadte input_shield to take an array of read1/read2 PE pairs then pass that array from here
@@ -479,7 +478,7 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
             except StopIteration:
                 logging.error('%s rep %s: Unmatched read pairs' %(experiment.get('accession'),biorep_n))
                 return []
-        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key, accession))
+        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, accession))
     else:
         logging.error('%s: List of files to map appears to be mixed single-end and paired-end: %s' %(experiment.get('accession'), files))
 
@@ -605,13 +604,13 @@ def main():
                 if paired_files:
                     pe_jobs = \
                         map_only(experiment, biorep_n, paired_files,
-                                 args.key, server, keypair, args.sex_specific,
+                                 server, keypair, args.sex_specific,
                                  args.crop_length, args.accession, args.fqcheck, args.force_patch)
                     in_process = True
                 if unpaired_files:
                     se_jobs = \
                         map_only(experiment, biorep_n, unpaired_files,
-                                 args.key, server, keypair, args.sex_specific,
+                                 server, keypair, args.sex_specific,
                                  args.crop_length, args.accession, args.fqcheck, args.force_patch)
                     in_process = True
                 if paired_files and pe_jobs:

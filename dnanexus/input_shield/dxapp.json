@@ -58,10 +58,14 @@
     },
     {
       "name": "key",
-      "label": "ENCODEd key name",
+      "class": "string",
+      "optional": true
+    },
+    {
+      "name": "keyfile",
       "class": "string",
       "optional": true,
-      "default": "default"
+      "default": "keypairs.json"
     },
     {
       "name": "debug",
