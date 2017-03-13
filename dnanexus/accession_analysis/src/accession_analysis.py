@@ -86,15 +86,29 @@ STEP_VERSION_ALIASES = {
         'bwa-alignment-step':                      'bwa-alignment-step-v-1.2',
         'bwa-indexing-step':                       'bwa-indexing-step-v-1',
         'bwa-raw-alignment-step':                  'bwa-raw-alignment-step-v-1.2',
+
         'histone-peak-calling-step':               'histone-peak-calling-step-v-1.2',
         'histone-overlap-peaks-step':              'histone-overlap-peaks-step-v-1.2',
         'histone-peaks-to-bigbed-step':            'histone-peaks-to-bigbed-step-v-1',
         'histone-replicated-peaks-to-bigbed-step': 'histone-replicated-peaks-to-bigbed-step-v-1',
+
+        'histone-unreplicated-peak-calling-step':  'histone-unreplicated-peak-calling-step-v-1',
+        'histone-unreplicated-partition-concordance-step': 'histone-unreplicated-partition-concordance-step-v-1',
+        'histone-unreplicated-peaks-to-bigbed-step': 'histone-unreplicated-peaks-to-bigbed-step-v-1',
+        'histone-unreplicated-partition-concordance-peaks-to-bigbed-step': 'histone-unreplicated-partition-concordance-peaks-to-bigbed-step-v-1',
+
         'tf-macs2-signal-calling-step':            'tf-macs2-signal-calling-step-v-1.2',
         'tf-spp-peak-calling-step':                'tf-spp-peak-calling-step-v-1.2',
         'tf-idr-step':                             'tf-idr-step-v-1',
         'tf-peaks-to-bigbed-step':                 'tf-peaks-to-bigbed-step-v-1',
-        'tf-idr-peaks-to-bigbed-step':             'tf-idr-peaks-to-bigbed-step-v-1'
+        'tf-idr-peaks-to-bigbed-step':             'tf-idr-peaks-to-bigbed-step-v-1',
+
+        'tf-unreplicated-macs2-signal-calling-step': 'tf-unreplicated-macs2-signal-calling-step-v-1',
+        'tf-unreplicated-spp-peak-calling-step':     'tf-unreplicated-spp-peak-calling-step-v-1',
+        'tf-unreplicated-idr-step':                  'tf-unreplicated-idr-step-v-1',
+        'tf-unreplicated-peaks-to-bigbed-step':      'tf-unreplicated-peaks-to-bigbed-step-v-1',
+        'tf-unreplicated-idr-peaks-to-bigbed-step':  'tf-unreplicated-idr-peaks-to-bigbed-step-v-1'
+
     }
 }
 
@@ -2662,7 +2676,10 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
             } for mapping_stage in (mapping_stages if skip_control else
                                     mapping_stages + control_stages)
         ],
-        STEP_VERSION_ALIASES[pipeline_version]['histone-peak-calling-step']: [
+        STEP_VERSION_ALIASES[pipeline_version][
+            'histone-unreplicated-peak-calling-step'
+            if unreplicated_analysis else
+            'histone-peak-calling-step']: [
             {
                 'stages': peak_stage,
                 'stage_name': 'ENCODE Peaks',
@@ -2678,7 +2695,10 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
-        STEP_VERSION_ALIASES[pipeline_version]['histone-overlap-peaks-step']: [
+        STEP_VERSION_ALIASES[pipeline_version][
+            'histone-unreplicated-partition-concordance-step'
+            if unreplicated_analysis else
+            'histone-overlap-peaks-step']: [
             {
                 'stages': peak_stage,
                 'stage_name': next(
@@ -2690,7 +2710,10 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
-        STEP_VERSION_ALIASES[pipeline_version]['histone-peaks-to-bigbed-step']: [
+        STEP_VERSION_ALIASES[pipeline_version][
+            'histone-unreplicated-peaks-to-bigbed-step'
+            if unreplicated_analysis else
+            'histone-peaks-to-bigbed-step']: [
             {
                 'stages': peak_stage,
                 'stage_name': 'ENCODE Peaks',
@@ -2704,7 +2727,10 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
-        STEP_VERSION_ALIASES[pipeline_version]['histone-replicated-peaks-to-bigbed-step']: [
+        STEP_VERSION_ALIASES[pipeline_version][
+            'histone-unreplicated-partition-concordance-peaks-to-bigbed-step'
+            if unreplicated_analysis else
+            'histone-replicated-peaks-to-bigbed-step']: [
             {
                 'stages': peak_stage,
                 'stage_name': next(
@@ -2813,7 +2839,10 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
             } for mapping_stage in (mapping_stages if skip_control else
                                     mapping_stages + control_stages)
         ],
-        STEP_VERSION_ALIASES[pipeline_version]['tf-macs2-signal-calling-step']: [
+        STEP_VERSION_ALIASES[pipeline_version][
+            'tf-unreplicated-macs2-signal-calling-step'
+            if unreplicated_analysis else
+            'tf-macs2-signal-calling-step']: [
             {
                 'stages': peak_stage,
                 'stage_name': 'ENCODE Peaks',
@@ -2830,7 +2859,10 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
     }
 
     full_analysis_step_versions.update({
-        STEP_VERSION_ALIASES[pipeline_version]['tf-spp-peak-calling-step']: [
+        STEP_VERSION_ALIASES[pipeline_version][
+            'tf-unreplicated-spp-peak-calling-step'
+            if unreplicated_analysis else
+            'tf-spp-peak-calling-step']: [
             {
                 'stages': peak_stage,
                 'stage_name': 'SPP Peaks',
@@ -2841,7 +2873,10 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
-        STEP_VERSION_ALIASES[pipeline_version]['tf-idr-step']: [
+        STEP_VERSION_ALIASES[pipeline_version][
+            'tf-unreplicated-idr-step'
+            if unreplicated_analysis else
+            'tf-idr-step']: [
             {
                 'stages': peak_stage,
                 'stage_name': 'Final IDR peak calls',
@@ -2856,7 +2891,10 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                     ]
             } for peak_stage in peak_stages
         ],
-        STEP_VERSION_ALIASES[pipeline_version]['tf-peaks-to-bigbed-step']: [
+        STEP_VERSION_ALIASES[pipeline_version][
+            'tf-unreplicated-peaks-to-bigbed-step'
+            if unreplicated_analysis else
+            'tf-peaks-to-bigbed-step']: [
             {
                 'stages': peak_stage,
                 'stage_name': 'SPP Peaks',
@@ -2867,7 +2905,10 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
-        STEP_VERSION_ALIASES[pipeline_version]['tf-idr-peaks-to-bigbed-step']: [
+        STEP_VERSION_ALIASES[pipeline_version][
+            'tf-unreplicated-idr-peaks-to-bigbed-step'
+            if unreplicated_analysis else
+            'tf-idr-peaks-to-bigbed-step']: [
             {
                 'stages': peak_stage,
                 'stage_name': 'Final IDR peak calls',
