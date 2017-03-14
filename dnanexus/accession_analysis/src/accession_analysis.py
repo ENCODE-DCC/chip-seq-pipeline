@@ -2998,7 +2998,9 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
         inferred_pipeline = pipeline
 
     pipeline_version = infer_pipeline_version(analysis)
-    logger.info("Accessioning as pipeline version %s" % (pipeline_version))
+    logger.info(
+        "Accessioning as %s version %s"
+        % (inferred_pipeline, pipeline_version))
 
     output = {
         'analysis': analysis_id,
