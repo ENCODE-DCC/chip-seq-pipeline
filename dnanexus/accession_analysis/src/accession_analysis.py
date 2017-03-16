@@ -1319,13 +1319,6 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
          'output_type': 'peaks'},
         common_file_metadata)
 
-    replicated_narrowpeak_metadata = common.merge_dicts(
-        {'file_format': 'bed',
-         'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
-         'output_type': 'replicated peaks'},
-        common_file_metadata)
-
     narrowpeak_bb_metadata = common.merge_dicts({
         'file_format': 'bigBed',
         'file_format_type': 'narrowPeak',
@@ -1333,11 +1326,32 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         'output_type': 'peaks'},
         common_file_metadata)
 
+    replicated_narrowpeak_metadata = common.merge_dicts(
+        {'file_format': 'bed',
+         'file_format_type': 'narrowPeak',
+         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'output_type': 'replicated peaks'},
+        common_file_metadata)
+
     replicated_narrowpeak_bb_metadata = common.merge_dicts({
         'file_format': 'bigBed',
         'file_format_type': 'narrowPeak',
         'file_format_specifications': ['ENCODE:narrowPeak.as'],
         'output_type': 'replicated peaks'},
+        common_file_metadata)
+
+    stable_narrowpeak_metadata = common.merge_dicts(
+        {'file_format': 'bed',
+         'file_format_type': 'narrowPeak',
+         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'output_type': 'stable peaks'},
+        common_file_metadata)
+
+    stable_narrowpeak_bb_metadata = common.merge_dicts({
+        'file_format': 'bigBed',
+        'file_format_type': 'narrowPeak',
+        'file_format_specifications': ['ENCODE:narrowPeak.as'],
+        'output_type': 'stable peaks'},
         common_file_metadata)
 
     fc_signal_metadata = common.merge_dicts({
@@ -1453,11 +1467,11 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
             ] if not unreplicated_analysis else [
                 {'name': 'overlapping_peaks',
                  'derived_from': ['rep1_narrowpeaks'],
-                 'metadata': replicated_narrowpeak_metadata},
+                 'metadata': stable_narrowpeak_metadata},
 
                 {'name': 'overlapping_peaks_bb',
                  'derived_from': ['overlapping_peaks'],
-                 'metadata': replicated_narrowpeak_bb_metadata}
+                 'metadata': stable_narrowpeak_bb_metadata}
             ],
 
             'qc': [
