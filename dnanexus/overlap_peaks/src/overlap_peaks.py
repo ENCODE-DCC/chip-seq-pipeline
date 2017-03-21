@@ -14,6 +14,7 @@ logger.setLevel(logging.INFO)
 
 @dxpy.entry_point('main')
 def main(rep1_peaks, rep2_peaks, pooled_peaks,
+         pool_ta, pool_xcor,
          chrom_sizes, as_file, peak_type,
          pooledpr1_peaks=None, pooledpr2_peaks=None,
          prefix=None,
@@ -26,6 +27,8 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks,
     rep1_peaks      = dxpy.DXFile(rep1_peaks)
     rep2_peaks      = dxpy.DXFile(rep2_peaks)
     pooled_peaks    = dxpy.DXFile(pooled_peaks)
+    pool_ta         = dxpy.DXFile(pool_ta)
+    pool_xcor       = dxpy.DXFile(pool_xcor)
     if not simplicate_analysis:
         pooledpr1_peaks = dxpy.DXFile(pooledpr1_peaks)
         pooledpr2_peaks = dxpy.DXFile(pooledpr2_peaks)
@@ -38,6 +41,8 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks,
     rep1_peaks_fn      = 'rep1-%s' % (rep1_peaks.name)
     rep2_peaks_fn      = 'rep2-%s' % (rep2_peaks.name)
     pooled_peaks_fn    = 'pooled-%s' % (pooled_peaks.name)
+    pool_ta_fn         = 'pool-ta-%s' % (pool_ta.name)
+    pool_xcor_fn       = 'pool-xcor=%s' % (pool_xcor.name)
     if not simplicate_analysis:
         pooledpr1_peaks_fn = 'pooledpr1-%s' % (pooledpr1_peaks.name)
         pooledpr2_peaks_fn = 'pooledpr2-%s' % (pooledpr2_peaks.name)
@@ -71,6 +76,8 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks,
     dxpy.download_dxfile(rep1_peaks.get_id(), rep1_peaks_fn)
     dxpy.download_dxfile(rep2_peaks.get_id(), rep2_peaks_fn)
     dxpy.download_dxfile(pooled_peaks.get_id(), pooled_peaks_fn)
+    dxpy.download_dxfile(pool_ta.get_id(), pool_ta_fn)
+    dxpy.download_dxfile(pool_xcor.get_id(), pool_xcor_fn)
     if not simplicate_analysis:
         dxpy.download_dxfile(pooledpr1_peaks.get_id(), pooledpr1_peaks_fn)
         dxpy.download_dxfile(pooledpr2_peaks.get_id(), pooledpr2_peaks_fn)
@@ -152,9 +159,31 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks,
         ], rejected_peaks_fn)
     print("%d peaks were rejected" % (common.count_lines(rejected_peaks_fn)))
 
-    npeaks_in       = common.count_lines(common.uncompress(pooled_peaks_fn))
-    npeaks_out      = common.count_lines(overlapping_peaks_fn)
-    npeaks_rejected = common.count_lines(rejected_peaks_fn)
+    # calculate FRiP (Fraction of Reads in Peaks)
+
+    # Extract the fragment length estimate from column 3 of the
+    # cross-correlation scores file
+    with open(pool_xcor_fn, 'r') as fh:
+        firstline = fh.readline()
+        fraglen = firstline.split()[2]  # third column
+        print("Xcor fraglen %s" % (fraglen))
+    half_fraglen = int(fraglen)/2
+
+    reads_in_peaks_fn = 'reads_in_%s.ta' % (peak_type)
+    out, err = common.run_pipe([
+        'slopBed -i %s -g %s -s -l %s -r %s' % (
+            pool_ta_fn, chrom_sizes_fn, -half_fraglen, half_fraglen),
+        r"""awk '{if ($2>=0 && $3>=0 && $2<=$3) print $0}'""",
+        'intersectBed -a stdin -b %s -wa -u' % (overlapping_peaks_fn)
+        ], reads_in_peaks_fn)
+    n_reads          = common.count_lines(common.uncompress(pool_ta_fn))
+    n_reads_in_peaks = common.count_lines(reads_in_peaks_fn)
+    frip_score = float(n_reads_in_peaks)/float(n_reads)
+
+    # count peaks
+    npeaks_in        = common.count_lines(common.uncompress(pooled_peaks_fn))
+    npeaks_out       = common.count_lines(overlapping_peaks_fn)
+    npeaks_rejected  = common.count_lines(rejected_peaks_fn)
 
     # make bigBed files for visualization
     overlapping_peaks_bb_fn = common.bed2bb(
@@ -176,7 +205,10 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks,
         "rejected_peaks_bb"     : dxpy.dxlink(rejected_peaks_bb),
         "npeaks_in"             : npeaks_in,
         "npeaks_out"            : npeaks_out,
-        'npeaks_rejected'       : npeaks_rejected
+        "npeaks_rejected"       : npeaks_rejected,
+        "frip_nreads"           : n_reads,
+        "frip_nreads_in_peaks"  : n_reads_in_peaks,
+        "frip_score"            : frip_score
     }
 
     # These are just passed through for convenience so that signals and tracks

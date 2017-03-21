@@ -179,7 +179,7 @@ chip_workflow.py --target tf --debug --title ENCSR000EEB-fullIDRtachr21 --outf /
 
 ## histones
 
-# ENCSR678FIT chr19 IDRv2 from TA
+# ENCSR678FIT chr19  from TA
 chip_workflow.py --target histone --debug --title ENCSR678FIT-chr19-ta-IDR2 --outf /ENCSR678FIT-chr19-ta-IDR2-$(date +"%Y%m%d%H%M") --idr --idrversion 2 --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
@@ -188,7 +188,7 @@ chip_workflow.py --target histone --debug --title ENCSR678FIT-chr19-ta-IDR2 --ou
 --ctl2 /test_data/ENCFF482JNU-ENCFF249RWY-ENCFF118FEW_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
 --genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
 
-# ENCSR678FIT IDRv2 from TA
+# ENCSR678FIT  from TA
 chip_workflow.py --target histone --debug --title ENCSR678FIT-ta-IDR2 --outf /ENCSR678FIT-ta-IDR2-$(date +"%Y%m%d%H%M") --idr --idrversion 2 --nomap --yes \
 --rep1pe false --rep2pe false \
 --rep1 /mm10_mapping/e165_experiments/bams/ENCSR678FIT/rep1/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.tagAlign.gz \
@@ -198,7 +198,7 @@ chip_workflow.py --target histone --debug --title ENCSR678FIT-ta-IDR2 --outf /EN
 --genomesize mm --chrom_sizes "ENCODE Reference Files:/mm10/male.mm10.chrom.sizes"
 
 # ENCSR678FIT chr19 overlap only from TA
-chip_workflow.py --target histone --debug --title ENCSR678FIT-chr19-ta-OL --outf /ENCSR678FIT-chr19-ta-OL-$(date +"%Y%m%d%H%M") --nomap --yes \
+chip_workflow.py --target histone --debug --title ENCSR678FIT-chr19-ta-OL --outf /ENCSR678FIT-chr19-ta-OL-$(date +"%Y%m%d%H%M") --nomap \
 --rep1pe false --rep2pe false \
 --rep1 /test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
 --rep2 /test_data/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz \
@@ -627,24 +627,39 @@ dx run \
 --watch \
 macs2
 
+# Run xcor_only for ENCSR678FIT chr19 rep1_2 pool
+dx run \
+--input "input_tagAlign=/test_data/ENCSR678FIT-chr19_rep1_2_pooled.tagAlign.gz" \
+--input "paired_end=false" \
+--verbose \
+--destination /test_results/xcor_only_$(date +"%Y%m%d%H%M") \
+--name xcor_only_test \
+--delay-workspace-destruction \
+--priority high \
+--yes \
+--watch \
+/applets/xcor_only
+
 # Run peak overlap for ENCSR678FIT chr19
 dx run \
---input "rep1_peaks=/ENCSR678FIT-chr19-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.narrowPeak.gz" \
---input "rep2_peaks=/ENCSR678FIT-chr19-ta-IDR2-201505041839/encode_macs2/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.narrowPeak.gz" \
---input "pooled_peaks=/ENCSR678FIT-chr19-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19_pooled.tagAlign.narrowPeak.gz" \
---input "pooledpr1_peaks=/ENCSR678FIT-chr19-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.SE.pr1-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.SE.pr1_pooled.tagAlign.narrowPeak.gz" \
---input "pooledpr2_peaks=/ENCSR678FIT-chr19-ta-IDR2-201505041839/encode_macs2/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz.SE.pr2-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz.SE.pr2_pooled.tagAlign.narrowPeak.gz" \
+--input "rep1_peaks=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.narrowPeak.gz" \
+--input "rep2_peaks=/test_data/ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.narrowPeak.gz" \
+--input "pooled_peaks=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19_pooled.tagAlign.narrowPeak.gz" \
+--input "pooledpr1_peaks=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.SE.pr1-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.SE.pr1_pooled.tagAlign.narrowPeak.gz" \
+--input "pooledpr2_peaks=/test_data/ENCFF926URZ.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz.SE.pr2-ENCFF593LFI-ENCFF919IQP_pooled.raw.srt.filt.nodup.srt.SE.chr19.tagAlign.gz.SE.pr2_pooled.tagAlign.narrowPeak.gz" \
 --input "chrom_sizes=ENCODE Reference Files:/mm10/male.mm10.chrom.sizes" \
 --input "as_file=ENCODE Reference Files:/narrowPeak.as" \
 --input "peak_type=narrowPeak" \
+--input "pool_ta=/test_data/ENCSR678FIT-chr19_rep1_2_pooled.tagAlign.gz" \
+--input "pool_xcor=/test_data/ENCSR678FIT-chr19_rep1_2_pooled.tagAlign.sample.15.SE.tagAlign.gz.cc.qc" \
 --verbose \
---destination /overlap_peaks_test_np \
+--destination /test_results/overlap_peaks/$(date +"%Y%m%d%H%M") \
 --name overlap_peaks_test \
 --delay-workspace-destruction \
 --priority high \
 --yes \
 --watch \
-overlap_peaks
+/applets/overlap_peaks
 
 # Run peak overlap for ENCSR678FIT
 dx run \

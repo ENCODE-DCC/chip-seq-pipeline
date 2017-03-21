@@ -21,6 +21,18 @@
 			"optional": false
 		},
 		{
+			"name": "pool_ta",
+			"label": "Pooled tagAlign",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "pool_xcor",
+			"label": "Cross-correlation file for pooled reads",
+			"class": "file",
+			"optional": false
+		},
+		{
 			"name": "pooled_peaks",
 			"label": "Pooled replicates peak file",
 			"class": "file",
@@ -116,6 +128,21 @@
 			"name": "npeaks_rejected",
 			"label": "Number of peaks rejected",
 			"class": "int"
+		},
+		{
+			"name": "frip_nreads",
+			"label": "Number of reads in the pool",
+			"class": "int"
+		},
+		{
+			"name": "frip_nreads_in_peaks",
+			"label": "Number of pooled reads in peaks",
+			"class": "int"
+		},
+		{
+			"name": "frip_score",
+			"label": "FRiP score (fraction of reads in peaks)",
+			"class": "float"
 		},
 		{
 			"name": "rep1_signal",
