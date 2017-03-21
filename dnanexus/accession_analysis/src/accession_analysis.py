@@ -706,7 +706,9 @@ def get_encoded_repn(mapping_analysis):
 
 
 def is_unreplicated_analysis(analysis):
-    return analysis['properties'].get('unreplicated_experiment') in ['True', 'true']
+    return (
+        analysis['properties'].get('unreplicated_experiment') in ['True', 'true']
+        or analysis['properties'].get('simplicate_experiment') in ['True', 'true'])
 
 
 def is_unary_control(analysis):

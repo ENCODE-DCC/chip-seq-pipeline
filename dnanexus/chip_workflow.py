@@ -969,7 +969,7 @@ def main():
 
         analysis.set_properties({
             "target_type": target_type,
-            "simplicate_experiment": str(simplicate_experiment),
+            "unreplicated_experiment": str(simplicate_experiment),
             "unary_control": str(unary_control)
         })
         print("Running %s as %s" % (analysis.name, analysis.get_id()))
