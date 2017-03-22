@@ -144,6 +144,33 @@ def count_lines(fname):
     return int(out)
 
 
+def xcor_fraglen(filename):
+    # Extract the fragment length estimate from column 3 of the
+    # cross-correlation scores file
+    with open(filename, 'r') as fh:
+        firstline = fh.readline()
+        fraglen = firstline.split()[2]  # third column
+    return int(fraglen)
+
+
+def frip(reads_filename, xcor_filename, peaks_filename, chrom_sizes_filename):
+    # calculate FRiP
+    fraglen = xcor_fraglen(xcor_filename)
+    half_fraglen = int(fraglen)/2
+
+    reads_in_peaks_fn = 'reads_in_peaks.ta'
+    out, err = run_pipe([
+        'slopBed -i %s -g %s -s -l %s -r %s' % (
+            peaks_filename, chrom_sizes_filename, -half_fraglen, half_fraglen),
+        r"""awk '{if ($2>=0 && $3>=0 && $2<=$3) print $0}'""",
+        'intersectBed -a stdin -b %s -wa -u' % (peaks_filename)
+        ], reads_in_peaks_fn)
+    n_reads          = count_lines(uncompress(reads_filename))
+    n_reads_in_peaks = count_lines(reads_in_peaks_fn)
+    frip_score = float(n_reads_in_peaks)/float(n_reads)
+    return (n_reads, n_reads_in_peaks, frip_score)
+
+
 def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
     if bed_filename.endswith('.bed'):
         bb_filename = bed_filename[:-4] + '.bb'
