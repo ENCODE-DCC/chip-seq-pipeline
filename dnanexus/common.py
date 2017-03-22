@@ -61,7 +61,7 @@ def run_pipe(steps, outfile=None):
     first_step_n = 1
     last_step_n = len(steps)
     for n, step in enumerate(steps, start=first_step_n):
-        print("step %d: %s" % (n, step))
+        logger.debug("step %d: %s" % (n, step))
         if n == first_step_n:
             if n == last_step_n and outfile:  # one-step pipeline with outfile
                 with open(outfile, 'w') as fh:
@@ -161,7 +161,7 @@ def frip(reads_filename, xcor_filename, peaks_filename, chrom_sizes_filename):
     reads_in_peaks_fn = 'reads_in_peaks.ta'
     out, err = run_pipe([
         'slopBed -i %s -g %s -s -l %s -r %s' % (
-            peaks_filename, chrom_sizes_filename, -half_fraglen, half_fraglen),
+            reads_filename, chrom_sizes_filename, -half_fraglen, half_fraglen),
         r"""awk '{if ($2>=0 && $3>=0 && $2<=$3) print $0}'""",
         'intersectBed -a stdin -b %s -wa -u' % (peaks_filename)
         ], reads_in_peaks_fn)

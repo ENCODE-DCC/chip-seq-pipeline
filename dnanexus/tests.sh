@@ -331,20 +331,20 @@ applets/idr2
 
 # encode_idr replicate
 dx run \
---input "experiment=ENCSR218GSN" \
---input "r1pr_peaks=/test_data/ENCSR218GSN/idr2/R1PR1.fixcovR1PR2.fixco.IDRv2.IDR0.05.narrowPeak.gz" \
---input "rep1_ta=/test_data/ENCSR218GSN/bams/rep1/ENCFF664IIEENCFF292UBY.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz" \
---input "rep1_xcor=/test_data/ENCSR218GSN/bams/rep1/ENCFF664IIEENCFF292UBY.raw.srt.filt.srt.nodup.filt.nodup.sample.15.MATE1.tagAlign.gz.cc.qc" \
---input "rep1_signal=/test_data/ENCSR218GSN/encode_macs2/r1.pvalue_signal.bw" \
---input "r2pr_peaks=/test_data/ENCSR218GSN/idr2/R2PR1.fixcovR2PR2.fixco.IDRv2.IDR0.05.narrowPeak.gz" \
---input "rep2_ta=/test_data/ENCSR218GSN/bams/rep2/ENCFF340SRUENCFF108LDP.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz" \
---input "rep2_xcor=/test_data/ENCSR218GSN/bams/rep2/ENCFF340SRUENCFF108LDP.raw.srt.filt.srt.nodup.filt.nodup.sample.15.MATE1.tagAlign.gz.cc.qc" \
---input "rep2_signal=/test_data/ENCSR218GSN/encode_macs2/r2.pvalue_signal.bw" \
---input "reps_peaks=/test_data/ENCSR218GSN/idr2/R1.fixcoordvR2.fixcoord.IDRv2.IDR0.05.narrowPeak.gz" \
---input "pool_ta=/test_data/ENCSR218GSN/ENCFF664IIEENCFF292UBY.raw.srt.filt.srt.nodup.PE2SE-ENCFF340SRUENCFF108LDP.raw.srt.filt.srt.nodup.PE2SE_pooled.tagAlign.gz" \
---input "pool_xcor=/test_data/ENCSR218GSN/ENCFF664IIEENCFF292UBY.raw.srt.filt.srt.nodup.PE2SE-ENCFF340SRUENCFF108LDP.raw.srt.filt.srt.nodup.PE2SE_pooled.tagAlign.sample.15.MATE1.tagAlign.gz.cc.qc" \
---input "pooled_signal=/test_data/ENCSR218GSN/encode_macs2/pool.pvalue_signal.bw" \
---input "pooledpr_peaks=/test_data/ENCSR218GSN/idr2/PPR1.fixcoovPPR2.fixcoo.IDRv2.IDR0.05.narrowPeak.gz" \
+--input "experiment=ENCSR936XTK" \
+--input "r1pr_peaks=file-F09ZPy80xZ2gB29z41B97421" \
+--input "rep1_ta=/test_data/ENCSR936XTK/bams/rep2/ENCFF960TNPENCFF640CBP.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz" \
+--input "rep1_xcor=/test_data/ENCSR936XTK/bams/rep2/ENCFF960TNPENCFF640CBP.raw.srt.filt.srt.nodup.filt.nodup.sample.15.MATE1.tagAlign.gz.cc.qc" \
+--input "rep1_signal=/test_data/ENCSR936XTK/peaks/encode_macs2/r1.pvalue_signal.bw" \
+--input "r2pr_peaks=/test_data/ENCSR936XTK/peaks/idr2/ENCFF246DIPvENCFF246DIP.IDRv2.IDR0.05.narrowPeak.gz" \
+--input "rep2_ta=/test_data/ENCSR936XTK/bams/rep3/ENCFF246DIPENCFF616WSS.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz" \
+--input "rep2_xcor=/test_data/ENCSR936XTK/bams/rep3/ENCFF246DIPENCFF616WSS.raw.srt.filt.srt.nodup.filt.nodup.sample.15.MATE1.tagAlign.gz.cc.qc" \
+--input "rep2_signal=/test_data/ENCSR936XTK/peaks/encode_macs2/r2.pvalue_signal.bw" \
+--input "reps_peaks=/test_data/ENCSR936XTK/peaks/idr2/ENCFF960TNPvENCFF246DIP.IDRv2.IDR0.05.narrowPeak.gz" \
+--input "pool_ta=/test_data/ENCSR936XTK/ENCFF960TNPENCFF640CBP.raw.srt.filt.srt.nodup.PE2SE-ENCFF246DIPENCFF616WSS.raw.srt.filt.srt.nodup.PE2SE_pooled.tagAlign.gz" \
+--input "pool_xcor=/test_data/ENCSR936XTK/ENCFF960TNPENCFF640CBP.raw.srt.filt.srt.nodup.PE2SE-ENCFF246DIPENCFF616WSS.raw.srt.filt.srt.nodup.PE2SE_pooled.tagAlign.sample.15.MATE1.tagAlign.gz.cc.qc" \
+--input "pooled_signal=/test_data/ENCSR936XTK/peaks/encode_macs2/pool.pvalue_signal.bw" \
+--input "pooledpr_peaks=file-F09ZQGQ0vPXkpF9yx59g566V" \
 --input "as_file=ENCODE Reference Files:/narrowPeak.as" \
 --input "blacklist=ENCODE Reference Files:/GRCh38/blacklists/GRCh38.blacklist.bed.gz" \
 --input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \
@@ -654,10 +654,10 @@ dx run \
 --watch \
 macs2
 
-# Run pool for ENCSR218GSN rep1 and rep2 tas
+# Run pool for ENCSR936XTK rep1 and rep2 tas
 dx run \
---input "inputs=/test_data/ENCSR218GSN/bams/rep1/ENCFF664IIEENCFF292UBY.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz" \
---input "inputs=/test_data/ENCSR218GSN/bams/rep2/ENCFF340SRUENCFF108LDP.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz" \
+--input "inputs=/test_data/ENCSR936XTK/bams/rep2/ENCFF960TNPENCFF640CBP.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz" \
+--input "inputs=/test_data/ENCSR936XTK/bams/rep3/ENCFF246DIPENCFF616WSS.raw.srt.filt.srt.nodup.PE2SE.tagAlign.gz" \
 --verbose \
 --destination /test_results/pool/$(date +"%Y%m%d%H%M") \
 --name pool_test \
@@ -667,9 +667,9 @@ dx run \
 --watch \
 /applets/pool
 
-# Run xcor_only for ENCSR218GSN rep1_2 pool
+# Run xcor_only for ENCSR936XTK rep1_2 pool
 dx run \
---input "input_tagAlign=/test_data/ENCSR218GSN/ENCFF664IIEENCFF292UBY.raw.srt.filt.srt.nodup.PE2SE-ENCFF340SRUENCFF108LDP.raw.srt.filt.srt.nodup.PE2SE_pooled.tagAlign.gz" \
+--input "input_tagAlign=/test_data/ENCSR936XTK/ENCFF960TNPENCFF640CBP.raw.srt.filt.srt.nodup.PE2SE-ENCFF246DIPENCFF616WSS.raw.srt.filt.srt.nodup.PE2SE_pooled.tagAlign.gz" \
 --input "paired_end=true" \
 --verbose \
 --destination /test_results/xcor_only/$(date +"%Y%m%d%H%M") \
