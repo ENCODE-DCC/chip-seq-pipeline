@@ -343,6 +343,7 @@ dx run \
 --input "reps_peaks=/test_data/ENCSR936XTK/peaks/idr2/ENCFF960TNPvENCFF246DIP.IDRv2.IDR0.05.narrowPeak.gz" \
 --input "pooled_signal=/test_data/ENCSR936XTK/peaks/encode_macs2/pool.pvalue_signal.bw" \
 --input "pooledpr_peaks=file-F09ZQGQ0vPXkpF9yx59g566V" \
+--input "paired_end=true" \
 --input "as_file=ENCODE Reference Files:/narrowPeak.as" \
 --input "blacklist=ENCODE Reference Files:/GRCh38/blacklists/GRCh38.blacklist.bed.gz" \
 --input "chrom_sizes=ENCODE Reference Files:/GRCh38/GRCh38_EBV.chrom.sizes" \

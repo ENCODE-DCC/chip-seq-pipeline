@@ -68,7 +68,7 @@ def xcor_only(tags, paired_end, spp_version=None, name='xcor_only'):
     return xcor_only_applet.run(applet_input, name=name)
 
 
-def internal_pseudoreplicate_IDR(experiment, r1pr_peaks, rep1_ta, rep1_xcor,
+def internal_pseudoreplicate_IDR(experiment, r1pr_peaks, rep1_ta, rep1_xcor, paired_end,
                                  chrom_sizes, as_file, blacklist, rep1_signal):
 
     r1pr_peaks_file = dxpy.DXFile(r1pr_peaks)
@@ -222,13 +222,14 @@ def replicated_IDR(experiment,
             {"inputs": [rep1_ta, rep2_ta],
              "prefix": 'pooled_reps'},
             name='Pool replicates')
-    pool_ta = pool_replicates_subjob.get_output_ref("pooled")
     pooled_replicates_xcor_subjob = \
         xcor_only(
-            pool_ta,
+            pool_replicates_subjob.get_output_ref("pooled"),
             paired_end,
             spp_version=None,
             name='Pool cross-correlation')
+    pooled_replicates_xcor_subjob.wait_on_done()
+    pool_ta = pool_replicates_subjob.get_output_ref("pooled")
     pool_xcor = pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file")
 
     pool_ta_file = dxpy.DXFile(pool_ta)
@@ -379,7 +380,7 @@ def replicated_IDR(experiment,
 
 @dxpy.entry_point("main")
 def main(experiment, r1pr_peaks, rep1_ta, rep1_xcor,
-         chrom_sizes, as_file, blacklist=None,
+         paired_end, chrom_sizes, as_file, blacklist=None,
          r2pr_peaks=None, rep2_ta=None, rep2_xcor=None,
          reps_peaks=None, pooledpr_peaks=None,
          rep1_signal=None, rep2_signal=None, pooled_signal=None):
@@ -388,12 +389,12 @@ def main(experiment, r1pr_peaks, rep1_ta, rep1_xcor,
     if simplicate_experiment:
         output = internal_pseudoreplicate_IDR(
             experiment, r1pr_peaks, rep1_ta, rep1_xcor,
-            chrom_sizes, as_file, blacklist, rep1_signal)
+            paired_end, chrom_sizes, as_file, blacklist, rep1_signal)
     else:
         output = replicated_IDR(
             experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks,
             rep1_ta, rep1_xcor, rep2_ta, rep2_xcor,
-            chrom_sizes, as_file, blacklist,
+            paired_end, chrom_sizes, as_file, blacklist,
             rep1_signal, rep2_signal, pooled_signal)
 
     logging.info("Exiting with output: %s", output)

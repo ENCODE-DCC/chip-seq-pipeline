@@ -75,6 +75,11 @@
 			"class": "file",
 			"optional": true
 		},
+        {
+            "name": "paired_end",
+            "class": "boolean",
+            "optional": false
+        },
 		{
 			"name": "chrom_sizes",
 			"label": "chrom.sizes for bedToBigBed",

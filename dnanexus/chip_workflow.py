@@ -846,6 +846,7 @@ def main():
                          'outputField': 'IDR_peaks'}),
                     'rep1_ta': exp_rep1_ta,
                     'rep1_xcor': exp_rep1_cc,
+                    'paired_end': rep1_paired_end,  # applies to replicated experiments, too
                     'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
                     'rep1_signal': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
@@ -963,7 +964,6 @@ def main():
                 stage_input=overlap_peaks_stage_input
             )
             overlap_peaks_stages.append({'name': 'Final %s' %(peaktype), 'stage_id': overlap_peaks_stage_id})
-
 
     if args.yes:
         if args.debug:
