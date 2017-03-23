@@ -341,8 +341,6 @@ dx run \
 --input "rep2_xcor=/test_data/ENCSR936XTK/bams/rep3/ENCFF246DIPENCFF616WSS.raw.srt.filt.srt.nodup.filt.nodup.sample.15.MATE1.tagAlign.gz.cc.qc" \
 --input "rep2_signal=/test_data/ENCSR936XTK/peaks/encode_macs2/r2.pvalue_signal.bw" \
 --input "reps_peaks=/test_data/ENCSR936XTK/peaks/idr2/ENCFF960TNPvENCFF246DIP.IDRv2.IDR0.05.narrowPeak.gz" \
---input "pool_ta=/test_data/ENCSR936XTK/ENCFF960TNPENCFF640CBP.raw.srt.filt.srt.nodup.PE2SE-ENCFF246DIPENCFF616WSS.raw.srt.filt.srt.nodup.PE2SE_pooled.tagAlign.gz" \
---input "pool_xcor=/test_data/ENCSR936XTK/ENCFF960TNPENCFF640CBP.raw.srt.filt.srt.nodup.PE2SE-ENCFF246DIPENCFF616WSS.raw.srt.filt.srt.nodup.PE2SE_pooled.tagAlign.sample.15.MATE1.tagAlign.gz.cc.qc" \
 --input "pooled_signal=/test_data/ENCSR936XTK/peaks/encode_macs2/pool.pvalue_signal.bw" \
 --input "pooledpr_peaks=file-F09ZQGQ0vPXkpF9yx59g566V" \
 --input "as_file=ENCODE Reference Files:/narrowPeak.as" \
