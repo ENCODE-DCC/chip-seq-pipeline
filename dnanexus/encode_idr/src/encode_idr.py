@@ -203,8 +203,6 @@ def replicated_IDR(experiment,
     dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
     dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
 
-    logger.info(subprocess.check_output('set -x; ls -l', shell=True))
-
     reps_peaks_filename = common.uncompress(reps_peaks_filename)
     r1pr_peaks_filename = common.uncompress(r1pr_peaks_filename)
     r2pr_peaks_filename = common.uncompress(r2pr_peaks_filename)
@@ -229,15 +227,17 @@ def replicated_IDR(experiment,
             spp_version=None,
             name='Pool cross-correlation')
     pooled_replicates_xcor_subjob.wait_on_done()
-    pool_ta = pool_replicates_subjob.get_output_ref("pooled")
-    pool_xcor = pooled_replicates_xcor_subjob.get_output_ref("CC_scores_file")
 
-    pool_ta_file = dxpy.DXFile(pool_ta)
-    pool_xcor_file = dxpy.DXFile(pool_xcor)
+    pool_ta_link = pool_replicates_subjob.describe()['output'].get("pooled")
+    pool_xcor_link = pooled_replicates_xcor_subjob.describe()['output'].get("CC_scores_file")
+    pool_ta_file = dxpy.get_handler(pool_ta_link)
+    pool_xcor_file = dxpy.get_handler(pool_xcor_link)
     pool_ta_filename = 'poolta_%s' % (pool_ta_file.name)
     pool_xcor_filename = 'poolcc_%s' % (pool_xcor_file.name)
     dxpy.download_dxfile(pool_ta_file.get_id(), pool_ta_filename)
     dxpy.download_dxfile(pool_xcor_file.get_id(), pool_xcor_filename)
+
+    logger.info(subprocess.check_output('set -x; ls -l', shell=True))
 
     Nt = common.count_lines(reps_peaks_filename)
     logger.info("%d peaks from true replicates (Nt)" % (Nt))
