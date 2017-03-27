@@ -37,13 +37,13 @@
 			"name": "rep1_ta",
 			"label": "Mapped reads for rep1",
 			"class": "file",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "rep1_xcor",
 			"label": "Cross-correlation file for rep1",
 			"class": "file",
-			"optional": false
+			"optional": true
 		},
 		{
 			"name": "rep2_ta",
@@ -78,7 +78,7 @@
         {
             "name": "paired_end",
             "class": "boolean",
-            "optional": false
+            "optional": true
         },
 		{
 			"name": "chrom_sizes",
