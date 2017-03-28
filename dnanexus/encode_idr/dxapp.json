@@ -227,7 +227,7 @@
 			"optional": false
 		},
 		{
-			"name": "rep1_frip_score",
+			"name": "F1",
 			"label": "FRiP score rep1 (fraction of reads in peaks)",
 			"class": "float",
 			"optional": false
@@ -245,7 +245,7 @@
 			"optional": true
 		},
 		{
-			"name": "rep2_frip_score",
+			"name": "F2",
 			"label": "FRiP score rep2 (fraction of reads in peaks)",
 			"class": "float",
 			"optional": true
@@ -263,7 +263,7 @@
 			"optional": true
 		},
 		{
-			"name": "true_frip_score",
+			"name": "Ft",
 			"label": "FRiP score true reps (fraction of reads in peaks)",
 			"class": "float",
 			"optional": true
@@ -281,7 +281,7 @@
 			"optional": true
 		},
 		{
-			"name": "pr_frip_score",
+			"name": "Fp",
 			"label": "FRiP score pooled pseudo-reps (fraction of reads in peaks)",
 			"class": "float",
 			"optional": true
