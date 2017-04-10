@@ -256,6 +256,11 @@ def main():
             date = "Running"
         analysis_link = 'https://platform.dnanexus.com/projects/%s/monitor/analysis/%s' %(desc.get('project').split('-')[1], desc.get('id').split('-')[1])
         experiment_link = '%sexperiments/%s' %(server, experiment.get('accession'))
+        award = common.encoded_get(server+experiment.get('award'), keypair)
+        try:
+            rfa = award.get('rfa')
+        except:
+            rfa = ""
         row = {
             'date': date,
             'analysis':     analysis_link,
@@ -265,7 +270,7 @@ def main():
             'biosample_term_name':  experiment.get('biosample_term_name'),
             'biosample_type':   experiment.get('biosample_type'),
             'lab':          experiment['lab'].split('/')[2],
-            'rfa':          common.encoded_get(server+experiment.get('award'),keypair).get('rfa'),
+            'rfa':          rfa,
             'assembly':     assembly,
             'Np':           Np,
             'N1':           N1,
