@@ -55,59 +55,59 @@ VERSION_TIMES = {
 }
 STEP_VERSION_ALIASES = {
     'default': {
-        'bwa-alignment-step':                      'bwa-alignment-step-v-1',
-        'bwa-indexing-step':                       'bwa-indexing-step-v-1',
-        'bwa-raw-alignment-step':                  'bwa-raw-alignment-step-v-1',
-        'histone-peak-calling-step':               'histone-peak-calling-step-v-1',
-        'histone-overlap-peaks-step':              'histone-overlap-peaks-step-v-1',
-        'histone-peaks-to-bigbed-step':            'histone-peaks-to-bigbed-step-v-1',
-        'histone-replicated-peaks-to-bigbed-step': 'histone-replicated-peaks-to-bigbed-step-v-1',
-        'tf-macs2-signal-calling-step':            'tf-macs2-signal-calling-step-v-1',
-        'tf-spp-peak-calling-step':                'tf-spp-peak-calling-step-v-1',
-        'tf-idr-step':                             'tf-idr-step-v-1',
-        'tf-peaks-to-bigbed-step':                 'tf-peaks-to-bigbed-step-v-1',
-        'tf-idr-peaks-to-bigbed-step':             'tf-idr-peaks-to-bigbed-step-v-1'
+        'bwa-alignment-step':                      'ced7264f-9206-4838-99ea-3badb3fb124c',
+        'bwa-indexing-step':                       '58894736-6c6b-430a-ac19-4f86cede236a',
+        'bwa-raw-alignment-step':                  'b9e5856e-b6bb-4e5c-8564-3e6c79ec9b14',
+        'histone-peak-calling-step':               'ba41eaf0-db75-44b6-8045-11c0d84d2a5b',
+        'histone-overlap-peaks-step':              '5907a64c-1a1c-4662-a429-5aa6c1f77bea',
+        'histone-peaks-to-bigbed-step':            'a7d5cbf0-c9f8-446a-9db8-a50b443e6628',
+        'histone-replicated-peaks-to-bigbed-step': 'b67cd935-d665-4ba7-bf34-17273db5451e',
+        'tf-macs2-signal-calling-step':            'd2619376-aeb4-4fe4-9374-785133195864',
+        'tf-spp-peak-calling-step':                '8250c103-b2a7-4ac7-842c-65e2ef651fd6',
+        'tf-idr-step':                             'ad55c9a7-76f4-483d-9feb-ff47c067c523',
+        'tf-peaks-to-bigbed-step':                 '511ba3d7-4b15-49a8-901e-c7516f3312c5',
+        'tf-idr-peaks-to-bigbed-step':             '30b7cd3c-55fd-42c2-8175-19bc98d58752'
     },
     '1': {
-        'bwa-alignment-step':                      'bwa-alignment-step-v-1',
-        'bwa-indexing-step':                       'bwa-indexing-step-v-1',
-        'bwa-raw-alignment-step':                  'bwa-raw-alignment-step-v-1',
-        'histone-peak-calling-step':               'histone-peak-calling-step-v-1',
-        'histone-overlap-peaks-step':              'histone-overlap-peaks-step-v-1',
-        'histone-peaks-to-bigbed-step':            'histone-peaks-to-bigbed-step-v-1',
-        'histone-replicated-peaks-to-bigbed-step': 'histone-replicated-peaks-to-bigbed-step-v-1',
-        'tf-macs2-signal-calling-step':            'tf-macs2-signal-calling-step-v-1',
-        'tf-spp-peak-calling-step':                'tf-spp-peak-calling-step-v-1',
-        'tf-idr-step':                             'tf-idr-step-v-1',
-        'tf-peaks-to-bigbed-step':                 'tf-peaks-to-bigbed-step-v-1',
-        'tf-idr-peaks-to-bigbed-step':             'tf-idr-peaks-to-bigbed-step-v-1'
+        'bwa-alignment-step':                      'ced7264f-9206-4838-99ea-3badb3fb124c',
+        'bwa-indexing-step':                       '58894736-6c6b-430a-ac19-4f86cede236a',
+        'bwa-raw-alignment-step':                  'b9e5856e-b6bb-4e5c-8564-3e6c79ec9b14',
+        'histone-peak-calling-step':               'ba41eaf0-db75-44b6-8045-11c0d84d2a5b',
+        'histone-overlap-peaks-step':              '5907a64c-1a1c-4662-a429-5aa6c1f77bea',
+        'histone-peaks-to-bigbed-step':            'a7d5cbf0-c9f8-446a-9db8-a50b443e6628',
+        'histone-replicated-peaks-to-bigbed-step': 'b67cd935-d665-4ba7-bf34-17273db5451e',
+        'tf-macs2-signal-calling-step':            'd2619376-aeb4-4fe4-9374-785133195864',
+        'tf-spp-peak-calling-step':                '8250c103-b2a7-4ac7-842c-65e2ef651fd6',
+        'tf-idr-step':                             'ad55c9a7-76f4-483d-9feb-ff47c067c523',
+        'tf-peaks-to-bigbed-step':                 '511ba3d7-4b15-49a8-901e-c7516f3312c5',
+        'tf-idr-peaks-to-bigbed-step':             '30b7cd3c-55fd-42c2-8175-19bc98d58752'
     },
     '1.2': {
-        'bwa-alignment-step':                      'bwa-alignment-step-v-1.2',
-        'bwa-indexing-step':                       'bwa-indexing-step-v-1',
-        'bwa-raw-alignment-step':                  'bwa-raw-alignment-step-v-1.2',
+        'bwa-alignment-step':                      'dc6dac54-0a5f-4356-815c-975c4b052249',
+        'bwa-indexing-step':                       '58894736-6c6b-430a-ac19-4f86cede236a',
+        'bwa-raw-alignment-step':                  '353a6f3b-999c-4f01-84ce-5de9e83dab22',
 
-        'histone-peak-calling-step':               'histone-peak-calling-step-v-1.2',
-        'histone-overlap-peaks-step':              'histone-overlap-peaks-step-v-1.2',
-        'histone-peaks-to-bigbed-step':            'histone-peaks-to-bigbed-step-v-1',
-        'histone-replicated-peaks-to-bigbed-step': 'histone-replicated-peaks-to-bigbed-step-v-1',
+        'histone-peak-calling-step':               '6ef1d1f5-b075-4178-bad8-bc1b8319f680',
+        'histone-overlap-peaks-step':              '06a53965-b1b1-4d2c-999f-189c10716096',
+        'histone-peaks-to-bigbed-step':            'a7d5cbf0-c9f8-446a-9db8-a50b443e6628',
+        'histone-replicated-peaks-to-bigbed-step': 'b67cd935-d665-4ba7-bf34-17273db5451e',
 
-        'histone-unreplicated-peak-calling-step':  'histone-unreplicated-peak-calling-step-v-1',
-        'histone-unreplicated-partition-concordance-step': 'histone-unreplicated-partition-concordance-step-v-1',
-        'histone-unreplicated-peaks-to-bigbed-step': 'histone-unreplicated-peaks-to-bigbed-step-v-1',
-        'histone-unreplicated-partition-concordance-peaks-to-bigbed-step': 'histone-unreplicated-partition-concordance-peaks-to-bigbed-step-v-1',
+        'histone-unreplicated-peak-calling-step':                           '5f9d0122-9974-4750-a8ff-1dad98485c28',
+        'histone-unreplicated-partition-concordance-step':                  'fb4a04ac-a13c-4a6f-86b0-f4781e7e2232',
+        'histone-unreplicated-peaks-to-bigbed-step':                        '2b8daae2-cdf6-41b1-bcd5-6ce99b0970d2',
+        'histone-unreplicated-partition-concordance-peaks-to-bigbed-step':  'db3b685c-8462-49b8-a29c-5f6b180a9294',
 
-        'tf-macs2-signal-calling-step':            'tf-macs2-signal-calling-step-v-1.2',
-        'tf-spp-peak-calling-step':                'tf-spp-peak-calling-step-v-1.2',
-        'tf-idr-step':                             'tf-idr-step-v-1',
-        'tf-peaks-to-bigbed-step':                 'tf-peaks-to-bigbed-step-v-1',
-        'tf-idr-peaks-to-bigbed-step':             'tf-idr-peaks-to-bigbed-step-v-1',
+        'tf-macs2-signal-calling-step':            '37284851-f58c-4c4e-898d-0b595699cd20',
+        'tf-spp-peak-calling-step':                '63326924-00a7-414f-ba7d-923c0f25da92',
+        'tf-idr-step':                             'ad55c9a7-76f4-483d-9feb-ff47c067c523',
+        'tf-peaks-to-bigbed-step':                 '511ba3d7-4b15-49a8-901e-c7516f3312c5',
+        'tf-idr-peaks-to-bigbed-step':             '30b7cd3c-55fd-42c2-8175-19bc98d58752',
 
-        'tf-unreplicated-macs2-signal-calling-step': 'tf-unreplicated-macs2-signal-calling-step-v-1',
-        'tf-unreplicated-spp-peak-calling-step':     'tf-unreplicated-spp-peak-calling-step-v-1',
-        'tf-unreplicated-idr-step':                  'tf-unreplicated-idr-step-v-1',
-        'tf-unreplicated-peaks-to-bigbed-step':      'tf-unreplicated-peaks-to-bigbed-step-v-1',
-        'tf-unreplicated-idr-peaks-to-bigbed-step':  'tf-unreplicated-idr-peaks-to-bigbed-step-v-1'
+        'tf-unreplicated-macs2-signal-calling-step': 'e2902ced-8567-4b82-aa6a-99ff5bbcc916',
+        'tf-unreplicated-spp-peak-calling-step':     '48d55aea-f922-4102-b93e-a57c4af26f6c',
+        'tf-unreplicated-idr-step':                  'abd4401d-96aa-4c37-894d-8e0fee9273ec',
+        'tf-unreplicated-peaks-to-bigbed-step':      'abcc5287-39ae-456a-b587-3af3fc202e00',
+        'tf-unreplicated-idr-peaks-to-bigbed-step':  'fa044b11-91ff-4320-a212-5f98f9f7e165'
 
     }
 }
@@ -1317,42 +1317,42 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
     narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'peaks'},
         common_file_metadata)
 
     narrowpeak_bb_metadata = common.merge_dicts({
         'file_format': 'bigBed',
         'file_format_type': 'narrowPeak',
-        'file_format_specifications': ['ENCODE:narrowPeak.as'],
+        'file_format_specifications': ['encode:narrowPeak.as'],
         'output_type': 'peaks'},
         common_file_metadata)
 
     replicated_narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'replicated peaks'},
         common_file_metadata)
 
     replicated_narrowpeak_bb_metadata = common.merge_dicts({
         'file_format': 'bigBed',
         'file_format_type': 'narrowPeak',
-        'file_format_specifications': ['ENCODE:narrowPeak.as'],
+        'file_format_specifications': ['encode:narrowPeak.as'],
         'output_type': 'replicated peaks'},
         common_file_metadata)
 
     stable_narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'stable peaks'},
         common_file_metadata)
 
     stable_narrowpeak_bb_metadata = common.merge_dicts({
         'file_format': 'bigBed',
         'file_format_type': 'narrowPeak',
-        'file_format_specifications': ['ENCODE:narrowPeak.as'],
+        'file_format_specifications': ['encode:narrowPeak.as'],
         'output_type': 'stable peaks'},
         common_file_metadata)
 
@@ -1545,56 +1545,56 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
     narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'peaks'},
         common_file_metadata)
 
     idr_optimal_narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'optimal idr thresholded peaks'},
         common_file_metadata)
 
     idr_conservative_narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'conservative idr thresholded peaks'},
         common_file_metadata)
 
     idr_stable_narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'pseudoreplicated idr thresholded peaks'},
         common_file_metadata)
 
     narrowpeak_bb_metadata = common.merge_dicts(
         {'file_format': 'bigBed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'peaks'},
         common_file_metadata)
 
     idr_optimal_narrowpeak_bb_metadata = common.merge_dicts(
         {'file_format': 'bigBed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'optimal idr thresholded peaks'},
         common_file_metadata)
 
     idr_conservative_narrowpeak_bb_metadata = common.merge_dicts(
         {'file_format': 'bigBed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'conservative idr thresholded peaks'},
         common_file_metadata)
 
     idr_stable_narrowpeak_bb_metadata = common.merge_dicts(
         {'file_format': 'bigBed',
          'file_format_type': 'narrowPeak',
-         'file_format_specifications': ['ENCODE:narrowPeak.as'],
+         'file_format_specifications': ['encode:narrowPeak.as'],
          'output_type': 'pseudoreplicated idr thresholded peaks'},
         common_file_metadata)
 
@@ -1969,7 +1969,14 @@ def qckiller(f, server, keypair):
         url = \
             server + \
             '/search/?type=%s&quality_metric_of=%s&status!=deleted' % (object_type, f.get('@id'))
+        logger.info(
+            "%s: Searching for existing %s QC objects"
+            % (f.get('accession'), url))
         objs = common.encoded_get(url, keypair)['@graph']
+        if not objs:
+            logger.info(
+                "%s: No %s found"
+                % (f.get('accession'), url))
         for o in objs:
             url = server + o.get('@id')
             logger.info(
@@ -2365,28 +2372,31 @@ def accession_qc_object(obj_type, obj, keypair, server,
 def accession_pipeline(analysis_step_versions, keypair, server,
                        dryrun, force_patch, force_upload):
     patched_files = []
-    for (analysis_step_version_name, steps) in analysis_step_versions.iteritems():
+    for (analysis_step_version_id, steps) in analysis_step_versions.iteritems():
         for step in steps:
             if not (step['stages']
                     and step['stage_name']
                     and step['file_names']):
                 logger.warning(
                     '%s missing stage metadata (files or stage_name) ... skipping'
-                    % (analysis_step_version_name))
+                    % (analysis_step_version_id))
                 continue
             stage_name = step['stage_name']
             logger.info(stage_name)
             logger.debug(step.keys())
             logger.debug(step['stages'].keys())
             jobid = step['stages'][stage_name]['stage_metadata']['id']
-            analysis_step_version = \
-                'versionof:%s' % (analysis_step_version_name)
+            # analysis_step_version = \
+            #     'versionof:%s' % (analysis_step_version_name)
+            # versionof namespace has been removed, now need to find versions
+            # by uuid
             alias = 'dnanexus:%s' % (jobid)
             if step.get('status') == 'virtual':
                 alias += '-virtual-file-conversion-step'
             analysis_step_run_metadata = {
                 'aliases': [alias],
-                'analysis_step_version': analysis_step_version,
+                'analysis_step_version':
+                    '/analysis-step-versions/%s/' % (analysis_step_version_id),
                 'status': step['status'],
                 'dx_applet_details': [{
                     'dx_status': 'finished',
