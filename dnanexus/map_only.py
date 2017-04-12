@@ -24,6 +24,7 @@ FILTER_QC_APPLET_NAME = 'filter_qc'
 XCOR_APPLET_NAME = 'xcor'
 POOL_APPLET_NAME = 'pool'
 ACCESSION_ANALYSIS_APPLET_NAME = 'accession_analysis'
+SCRUB_APPLET_NAME = 'scrub'
 
 REFERENCES = [
     {'assembly': 'GRCh38-minimal', 'organism': 'human', 'sex': 'male',   'file': 'ENCODE Reference Files:/Deprecated/GRCh38/GRCh38_minimal_XY.tar.gz'},
@@ -152,6 +153,12 @@ def get_args():
         '--spp_version',
         help="Version of spp to use for the cross-correlation analysis",
         default='1.14')
+
+    parser.add_argument(
+        '--scrub',
+        help="Scub sequence and PHRED information to produce scrubbed bams",
+        default=False,
+        action='store_true')
 
     parser.add_argument('--accession', help="Accession the results to the ENCODE Portal", default=False, action='store_true')
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
@@ -414,6 +421,26 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key, accessio
             }
         )
 
+    if args.scrub:
+        scrub_applet = \
+            find_applet_by_name(SCRUB_APPLET_NAME, applet_project.get_id())
+        logging.debug('Found applet %s' % (scrub_applet.name))
+        scrub_unfiltered_stage_id = workflow.add_stage(
+            scrub_applet,
+            name='Scrub unfiltered bam of sequence information',
+            folder=final_output_folder,
+            stage_input={
+                'input_bams': [dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'mapped_reads'})]
+            }
+        )
+        scrub_filtered_stage_id = workflow.add_stage(
+            scrub_applet,
+            name='Scrub filtered bam of sequence information',
+            folder=final_output_folder,
+            stage_input={
+                'input_bams': [dxpy.dxlink({'stage': filter_qc_stage_id, 'outputField': 'filtered_bam'})]
+            }
+        )
 
     ''' This should all be done in the shield's postprocess entrypoint
     if args.accession_outputs:
