@@ -17,7 +17,7 @@
   ],
   "outputSpec": [
     {
-      "name": "output_bams",
+      "name": "scrubbed_bams",
       "class": "array:file",
       "patterns": [
         "*"

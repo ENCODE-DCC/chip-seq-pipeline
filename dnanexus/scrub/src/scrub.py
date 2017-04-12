@@ -5,7 +5,6 @@
 
 from __future__ import print_function
 import os
-import sys
 import dxpy
 import common
 import subprocess
@@ -87,9 +86,9 @@ def main(input_bams):
     pool.join()
 
     # Populate output fields and return.
-    output_bams = [dxpy.upload_local_file(path) for path in out_paths]
+    scrubbed_bams = [dxpy.upload_local_file(path) for path in out_paths]
     output = {
-        "output_bams": [dxpy.dxlink(output_bam) for output_bam in output_bams]
+        "scrubbed_bams": [dxpy.dxlink(output_bam) for output_bam in scrubbed_bams]
     }
     return output
 
