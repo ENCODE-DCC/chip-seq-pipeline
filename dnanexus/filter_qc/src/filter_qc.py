@@ -17,7 +17,7 @@ import shlex
 import common
 import dxpy
 import logging
-from pprint import pprint
+from pprint import pformat
 
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
@@ -77,7 +77,7 @@ def pbc_parse(fname):
 
 
 @dxpy.entry_point('main')
-def main(input_bam, paired_end, samtools_params, debug):
+def main(input_bam, paired_end, samtools_params, scrub, debug):
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -256,9 +256,37 @@ def main(input_bam, paired_end, samtools_params, debug):
     if err:
         logger.error("PBC file error: %s" % (err))
 
+    output = {}
     logger.info("Uploading results files to the project")
     filtered_bam = dxpy.upload_local_file(final_bam_filename)
     filtered_bam_index = dxpy.upload_local_file(final_bam_index_filename)
+    output.update({
+        "filtered_bam": dxpy.dxlink(filtered_bam),
+        "filtered_bam_index": dxpy.dxlink(filtered_bam_index)
+    })
+
+    # If so directed, pass the bams to the scrub applet
+    if scrub:
+        scrub_applet = dxpy.find_one_data_object(
+            classname='applet',
+            name='scrub',
+            project=dxpy.PROJECT_CONTEXT_ID,
+            zero_ok=False,
+            more_ok=False,
+            return_handler=True)
+        scrub_subjob = \
+            scrub_applet.run(
+                {"input_bams": [input_bam, dxpy.dxlink(filtered_bam)]},
+                name='Scrub bams')
+        scrubbed_unfiltered_bam = scrub_subjob.get_output_ref("scrubbed_bams", index=0)
+        scrubbed_filtered_bam = scrub_subjob.get_output_ref("scrubbed_bams", index=1)
+
+        output.update({
+            "scrubbed_unfiltered_bam": dxpy.dxlink(scrubbed_unfiltered_bam),
+            "scrubbed_filtered_bam": dxpy.dxlink(scrubbed_filtered_bam)
+        })
+
+    # Upload or calculate the remaining outputs
     filtered_mapstats = \
         dxpy.upload_local_file(final_bam_file_mapstats_filename)
     dup_file = dxpy.upload_local_file(dup_file_qc_filename)
@@ -268,10 +296,8 @@ def main(input_bam, paired_end, samtools_params, debug):
     logger.info("dup_qc: %s" % (dup_qc))
     logger.info("pbc_qc: %s" % (pbc_qc))
 
-    # Return links to the output files
-    output = {
-        "filtered_bam": dxpy.dxlink(filtered_bam),
-        "filtered_bam_index": dxpy.dxlink(filtered_bam_index),
+    # Return links to the output files and values
+    output.update({
         "filtered_mapstats": dxpy.dxlink(filtered_mapstats),
         "dup_file_qc": dxpy.dxlink(dup_file),
         "pbc_file_qc": dxpy.dxlink(pbc_file),
@@ -280,8 +306,10 @@ def main(input_bam, paired_end, samtools_params, debug):
         "PBC1": pbc_qc.get('PBC1'),
         "PBC2": pbc_qc.get('PBC2'),
         "duplicate_fraction": dup_qc.get('percent_duplication')
-    }
-    logger.info("Exiting with output:\n%s" % (pprint(output)))
+    })
+
+    logger.info("Exiting with output:\n%s" % (pformat(output)))
     return output
+
 
 dxpy.run()

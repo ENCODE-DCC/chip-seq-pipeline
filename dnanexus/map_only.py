@@ -156,6 +156,7 @@ def get_args():
     parser.add_argument('--accession', help="Accession the results to the ENCODE Portal", default=False, action='store_true')
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
+    parser.add_argument('--scrub', help="Scrub bam files of sequence information", type=t_or_f, default=None)
 
     args = parser.parse_args()
 
@@ -396,7 +397,8 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key, accessio
             folder=final_output_folder,
             stage_input={
                 'input_bam': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'mapped_reads'}),
-                'paired_end': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'paired_end'})
+                'paired_end': dxpy.dxlink({'stage': mapping_stage_id, 'outputField': 'paired_end'}),
+                'scrub': args.scrub
             }
         )
 

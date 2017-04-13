@@ -563,7 +563,8 @@ def main():
                     folder=filter_qc_output_folder,
                     stage_input={
                         'input_bam': dxpy.dxlink({'stage': superstage_id, 'outputField': 'mapped_reads'}),
-                        'paired_end': dxpy.dxlink({'stage': superstage_id, 'outputField': 'paired_end'})
+                        'paired_end': dxpy.dxlink({'stage': superstage_id, 'outputField': 'paired_end'}),
+                        'scrub': args.scrub
                     }
                 )
                 mapping_superstage.update({'filter_qc_stage_id': filter_qc_stage_id})
