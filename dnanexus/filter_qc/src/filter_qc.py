@@ -265,7 +265,7 @@ def main(input_bam, paired_end, samtools_params, scrub, debug):
         "filtered_bam_index": dxpy.dxlink(filtered_bam_index)
     })
 
-    # If so directed, pass the bams to the scrub applet
+    # If the scrub parameter is true, pass the bams to the scrub applet.
     if scrub:
         scrub_applet = dxpy.find_one_data_object(
             classname='applet',
@@ -280,13 +280,13 @@ def main(input_bam, paired_end, samtools_params, scrub, debug):
                 name='Scrub bams')
         scrubbed_unfiltered_bam = scrub_subjob.get_output_ref("scrubbed_bams", index=0)
         scrubbed_filtered_bam = scrub_subjob.get_output_ref("scrubbed_bams", index=1)
-
+        # Add the optional scrubbed outputs.
         output.update({
             "scrubbed_unfiltered_bam": dxpy.dxlink(scrubbed_unfiltered_bam),
             "scrubbed_filtered_bam": dxpy.dxlink(scrubbed_filtered_bam)
         })
 
-    # Upload or calculate the remaining outputs
+    # Upload or calculate the remaining outputs.
     filtered_mapstats = \
         dxpy.upload_local_file(final_bam_file_mapstats_filename)
     dup_file = dxpy.upload_local_file(dup_file_qc_filename)
@@ -296,7 +296,7 @@ def main(input_bam, paired_end, samtools_params, scrub, debug):
     logger.info("dup_qc: %s" % (dup_qc))
     logger.info("pbc_qc: %s" % (pbc_qc))
 
-    # Return links to the output files and values
+    # Return links to the output files and values.
     output.update({
         "filtered_mapstats": dxpy.dxlink(filtered_mapstats),
         "dup_file_qc": dxpy.dxlink(dup_file),

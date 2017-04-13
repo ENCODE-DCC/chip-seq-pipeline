@@ -236,6 +236,7 @@ def get_args():
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--skip_control', help="If --accession, accession no control files or metadata", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
+    parser.add_argument('--scrub', help="Also produce bams scrubbed of sequence information", type=t_or_f, default=None)
 
     # parser.add_argument('--idr',     help='Report peaks with and without IDR analysis',                 default=False, action='store_true')
     # parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
@@ -557,15 +558,17 @@ def main():
                 # mapping_superstage.update({'map_stage_id': mapped_stage_id})
                 workflow.update_stage(superstage_id, stage_input=mapping_stage_input)
 
+                filter_qc_stage_input = {
+                    'input_bam': dxpy.dxlink({'stage': superstage_id, 'outputField': 'mapped_reads'}),
+                    'paired_end': dxpy.dxlink({'stage': superstage_id, 'outputField': 'paired_end'})
+                }
+                if args.scrub is not None:
+                    filter_qc_stage_input.update({'scrub': args.scrub})
                 filter_qc_stage_id = workflow.add_stage(
                     filter_qc_applet,
                     name='Filter_QC %s' %(superstage_name),
                     folder=filter_qc_output_folder,
-                    stage_input={
-                        'input_bam': dxpy.dxlink({'stage': superstage_id, 'outputField': 'mapped_reads'}),
-                        'paired_end': dxpy.dxlink({'stage': superstage_id, 'outputField': 'paired_end'}),
-                        'scrub': args.scrub
-                    }
+                    stage_input=filter_qc_stage_input
                 )
                 mapping_superstage.update({'filter_qc_stage_id': filter_qc_stage_id})
 
