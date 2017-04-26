@@ -312,16 +312,16 @@ def replicated_IDR(experiment,
     output = {
         "rep1_frip_nreads"           : rep1_n_reads,
         "rep1_frip_nreads_in_peaks"  : rep1_n_reads_in_peaks,
-        "rep1_frip_score"            : rep1_frip_score,
+        "F1"            : rep1_frip_score,
         "rep2_frip_nreads"           : rep2_n_reads,
         "rep2_frip_nreads_in_peaks"  : rep2_n_reads_in_peaks,
-        "rep2_frip_score"            : rep2_frip_score,
+        "F2"            : rep2_frip_score,
         "true_frip_nreads"           : true_n_reads,
         "true_frip_nreads_in_peaks"  : true_n_reads_in_peaks,
-        "true_frip_score"            : true_frip_score,
+        "Ft"            : true_frip_score,
         "pr_frip_nreads"             : pr_n_reads,
         "pr_frip_nreads_in_peaks"    : pr_n_reads_in_peaks,
-        "pr_frip_score"              : pr_frip_score
+        "Fp"              : pr_frip_score
     }
 
     # These are optional outputs to see what's being removed by the blacklist
