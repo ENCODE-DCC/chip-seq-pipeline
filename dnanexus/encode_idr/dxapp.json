@@ -34,11 +34,52 @@
 			"optional": true
 		},
 		{
+			"name": "rep1_ta",
+			"label": "Mapped reads for rep1",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "rep1_xcor",
+			"label": "Cross-correlation file for rep1",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "rep2_ta",
+			"label": "Mapped reads for rep2",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "rep2_xcor",
+			"label": "Cross-correlation file for rep2",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "pool_ta",
+			"label": "Mapped reads for rep1 and rep2 pooled",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "pool_xcor",
+			"label": "Cross-correlation file for rep1 and rep2 pooled",
+			"class": "file",
+			"optional": true
+		},
+		{
 			"name": "pooledpr_peaks",
 			"label": "IDR peaks from pooled self-pseudoreplicates",
 			"class": "file",
 			"optional": true
 		},
+        {
+            "name": "paired_end",
+            "class": "boolean",
+            "optional": true
+        },
 		{
 			"name": "chrom_sizes",
 			"label": "chrom.sizes for bedToBigBed",
@@ -171,6 +212,78 @@
 			"name": "reproducibility_test",
 			"label": "Result of the reproducibility test",
 			"class": "string",
+			"optional": true
+		},
+		{
+			"name": "rep1_frip_nreads",
+			"label": "Number of reads in rep1",
+			"class": "int",
+			"optional": false
+		},
+		{
+			"name": "rep1_frip_nreads_in_peaks",
+			"label": "Number of reads in rep1 peaks",
+			"class": "int",
+			"optional": false
+		},
+		{
+			"name": "F1",
+			"label": "FRiP score rep1 (fraction of reads in peaks)",
+			"class": "float",
+			"optional": false
+		},
+		{
+			"name": "rep2_frip_nreads",
+			"label": "Number of reads in rep2",
+			"class": "int",
+			"optional": true
+		},
+		{
+			"name": "rep2_frip_nreads_in_peaks",
+			"label": "Number of reads in rep2 peaks",
+			"class": "int",
+			"optional": true
+		},
+		{
+			"name": "F2",
+			"label": "FRiP score rep2 (fraction of reads in peaks)",
+			"class": "float",
+			"optional": true
+		},
+		{
+			"name": "true_frip_nreads",
+			"label": "Number of reads in all true reps",
+			"class": "int",
+			"optional": true
+		},
+		{
+			"name": "true_frip_nreads_in_peaks",
+			"label": "Number of reads in all true reps peaks",
+			"class": "int",
+			"optional": true
+		},
+		{
+			"name": "Ft",
+			"label": "FRiP score true reps (fraction of reads in peaks)",
+			"class": "float",
+			"optional": true
+		},
+		{
+			"name": "pr_frip_nreads",
+			"label": "Number of reads in pooled pseudo-reps",
+			"class": "int",
+			"optional": true
+		},
+		{
+			"name": "pr_frip_nreads_in_peaks",
+			"label": "Number of reads in pooled pseuo-reps peaks",
+			"class": "int",
+			"optional": true
+		},
+		{
+			"name": "Fp",
+			"label": "FRiP score pooled pseudo-reps (fraction of reads in peaks)",
+			"class": "float",
 			"optional": true
 		},
 		{

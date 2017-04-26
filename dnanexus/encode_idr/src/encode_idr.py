@@ -50,10 +50,30 @@ def blacklist_filter(input_fname, output_fname, input_blacklist_fname):
         ], output_fname)
 
 
-def internal_pseudoreplicate_IDR(experiment, r1pr_peaks,
+def xcor_only(tags, paired_end, spp_version=None, name='xcor_only'):
+    xcor_only_applet = \
+        dxpy.find_one_data_object(
+            classname='applet',
+            name='xcor_only',
+            project=dxpy.PROJECT_CONTEXT_ID,
+            zero_ok=False,
+            more_ok=False,
+            return_handler=True)
+    applet_input = {
+        "input_tagAlign": tags,
+        "paired_end": paired_end
+    }
+    if spp_version:
+        applet_input.update({'spp_version': spp_version})
+    return xcor_only_applet.run(applet_input, name=name)
+
+
+def internal_pseudoreplicate_IDR(experiment, r1pr_peaks, rep1_ta, rep1_xcor, paired_end,
                                  chrom_sizes, as_file, blacklist, rep1_signal):
 
     r1pr_peaks_file = dxpy.DXFile(r1pr_peaks)
+    rep1_ta = dxpy.DXFile(rep1_ta)
+    rep1_xcor = dxpy.DXFile(rep1_xcor)
     chrom_sizes_file = dxpy.DXFile(chrom_sizes)
     as_file_file = dxpy.DXFile(as_file)
     if blacklist is not None:
@@ -61,11 +81,16 @@ def internal_pseudoreplicate_IDR(experiment, r1pr_peaks,
         blacklist_filename = 'blacklist_%s' % (blacklist_file.name)
         dxpy.download_dxfile(blacklist_file.get_id(), blacklist_filename)
         blacklist_filename = common.uncompress(blacklist_filename)
+
     # Need to prepend something to ensure the local filenames will be unique
     r1pr_peaks_filename = 'r1pr_%s' % (r1pr_peaks_file.name)
+    rep1_ta_filename = 'r1ta_%s' % (rep1_ta.name)
+    rep1_xcor_filename = 'r1xc_%s' % (rep1_xcor.name)
     chrom_sizes_filename = chrom_sizes_file.name
     as_file_filename = as_file_file.name
     dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_filename)
+    dxpy.download_dxfile(rep1_ta.get_id(), rep1_ta_filename)
+    dxpy.download_dxfile(rep1_xcor.get_id(), rep1_xcor_filename)
     dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
     dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
 
@@ -87,7 +112,16 @@ def internal_pseudoreplicate_IDR(experiment, r1pr_peaks,
         Nsb = N1
         logger.info("No blacklist filter applied to the stable set")
 
-    output = {}
+    # calculate FRiP
+
+    n_reads, n_reads_in_peaks, frip_score = common.frip(
+        rep1_ta_filename, rep1_xcor_filename, stable_set_filename, chrom_sizes_filename)
+
+    output = {
+        "rep1_frip_nreads"           : n_reads,
+        "rep1_frip_nreads_in_peaks"  : n_reads_in_peaks,
+        "rep1_frip_score"            : frip_score
+    }
 
     # These are optional outputs to see what's being removed by the blacklist
     if blacklist:
@@ -123,7 +157,8 @@ def internal_pseudoreplicate_IDR(experiment, r1pr_peaks,
 
 def replicated_IDR(experiment,
                    reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks,
-                   chrom_sizes, as_file, blacklist,
+                   rep1_ta, rep1_xcor, rep2_ta, rep2_xcor,
+                   paired_end, chrom_sizes, as_file, blacklist,
                    rep1_signal, rep2_signal, pooled_signal):
 
     # TODO for now just taking the peak files.  This applet should actually
@@ -133,6 +168,10 @@ def replicated_IDR(experiment,
     r1pr_peaks_file = dxpy.DXFile(r1pr_peaks)
     r2pr_peaks_file = dxpy.DXFile(r2pr_peaks)
     pooledpr_peaks_file = dxpy.DXFile(pooledpr_peaks)
+    rep1_ta_file = dxpy.DXFile(rep1_ta)
+    rep2_ta_file = dxpy.DXFile(rep2_ta)
+    rep1_xcor_file = dxpy.DXFile(rep1_xcor)
+    rep2_xcor_file = dxpy.DXFile(rep2_xcor)
     chrom_sizes_file = dxpy.DXFile(chrom_sizes)
     as_file_file = dxpy.DXFile(as_file)
     if blacklist is not None:
@@ -146,6 +185,10 @@ def replicated_IDR(experiment,
     r1pr_peaks_filename = 'r1pr_%s' % (r1pr_peaks_file.name)
     r2pr_peaks_filename = 'r2pr_%s' % (r2pr_peaks_file.name)
     pooledpr_peaks_filename = 'pooledpr_%s' % (pooledpr_peaks_file.name)
+    rep1_ta_filename = 'r1ta_%s' % (rep1_ta_file.name)
+    rep2_ta_filename = 'r2ta_%s' % (rep2_ta_file.name)
+    rep1_xcor_filename = 'r1cc_%s' % (rep1_xcor_file.name)
+    rep2_xcor_filename = 'r2cc_%s' % (rep2_xcor_file.name)
     chrom_sizes_filename = chrom_sizes_file.name
     as_file_filename = as_file_file.name
 
@@ -153,15 +196,48 @@ def replicated_IDR(experiment,
     dxpy.download_dxfile(r1pr_peaks_file.get_id(), r1pr_peaks_filename)
     dxpy.download_dxfile(r2pr_peaks_file.get_id(), r2pr_peaks_filename)
     dxpy.download_dxfile(pooledpr_peaks_file.get_id(), pooledpr_peaks_filename)
+    dxpy.download_dxfile(rep1_ta_file.get_id(), rep1_ta_filename)
+    dxpy.download_dxfile(rep2_ta_file.get_id(), rep2_ta_filename)
+    dxpy.download_dxfile(rep1_xcor_file.get_id(), rep1_xcor_filename)
+    dxpy.download_dxfile(rep2_xcor_file.get_id(), rep2_xcor_filename)
     dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_filename)
     dxpy.download_dxfile(as_file_file.get_id(), as_file_filename)
-
-    subprocess.check_output('set -x; ls -l', shell=True)
 
     reps_peaks_filename = common.uncompress(reps_peaks_filename)
     r1pr_peaks_filename = common.uncompress(r1pr_peaks_filename)
     r2pr_peaks_filename = common.uncompress(r2pr_peaks_filename)
     pooledpr_peaks_filename = common.uncompress(pooledpr_peaks_filename)
+
+    pool_applet = dxpy.find_one_data_object(
+            classname='applet',
+            name='pool',
+            project=dxpy.PROJECT_CONTEXT_ID,
+            zero_ok=False,
+            more_ok=False,
+            return_handler=True)
+    pool_replicates_subjob = \
+        pool_applet.run(
+            {"inputs": [rep1_ta, rep2_ta],
+             "prefix": 'pooled_reps'},
+            name='Pool replicates')
+    pooled_replicates_xcor_subjob = \
+        xcor_only(
+            pool_replicates_subjob.get_output_ref("pooled"),
+            paired_end,
+            spp_version=None,
+            name='Pool cross-correlation')
+    pooled_replicates_xcor_subjob.wait_on_done()
+
+    pool_ta_link = pool_replicates_subjob.describe()['output'].get("pooled")
+    pool_xcor_link = pooled_replicates_xcor_subjob.describe()['output'].get("CC_scores_file")
+    pool_ta_file = dxpy.get_handler(pool_ta_link)
+    pool_xcor_file = dxpy.get_handler(pool_xcor_link)
+    pool_ta_filename = 'poolta_%s' % (pool_ta_file.name)
+    pool_xcor_filename = 'poolcc_%s' % (pool_xcor_file.name)
+    dxpy.download_dxfile(pool_ta_file.get_id(), pool_ta_filename)
+    dxpy.download_dxfile(pool_xcor_file.get_id(), pool_xcor_filename)
+
+    logger.info(subprocess.check_output('set -x; ls -l', shell=True))
 
     Nt = common.count_lines(reps_peaks_filename)
     logger.info("%d peaks from true replicates (Nt)" % (Nt))
@@ -219,7 +295,34 @@ def replicated_IDR(experiment,
     else:
         reproducibility = 'pass'
 
-    output = {}
+    # FRiP (fraction reads in peaks)
+    # rep1 stable peaks comparing internal pseudoreplicates
+    rep1_n_reads, rep1_n_reads_in_peaks, rep1_frip_score = common.frip(
+        rep1_ta_filename, rep1_xcor_filename, r1pr_peaks_filename, chrom_sizes_filename)
+    # rep2 stable peaks comparing internal pseudoreplicates
+    rep2_n_reads, rep2_n_reads_in_peaks, rep2_frip_score = common.frip(
+        rep2_ta_filename, rep2_xcor_filename, r2pr_peaks_filename, chrom_sizes_filename)
+    # comparing true reps
+    true_n_reads, true_n_reads_in_peaks, true_frip_score = common.frip(
+        pool_ta_filename, pool_xcor_filename, reps_peaks_filename, chrom_sizes_filename)
+    # comparing pooled pseudoreplicates
+    pr_n_reads, pr_n_reads_in_peaks, pr_frip_score = common.frip(
+        pool_ta_filename, pool_xcor_filename, pooledpr_peaks_filename, chrom_sizes_filename)
+
+    output = {
+        "rep1_frip_nreads"           : rep1_n_reads,
+        "rep1_frip_nreads_in_peaks"  : rep1_n_reads_in_peaks,
+        "F1"            : rep1_frip_score,
+        "rep2_frip_nreads"           : rep2_n_reads,
+        "rep2_frip_nreads_in_peaks"  : rep2_n_reads_in_peaks,
+        "F2"            : rep2_frip_score,
+        "true_frip_nreads"           : true_n_reads,
+        "true_frip_nreads_in_peaks"  : true_n_reads_in_peaks,
+        "Ft"            : true_frip_score,
+        "pr_frip_nreads"             : pr_n_reads,
+        "pr_frip_nreads_in_peaks"    : pr_n_reads_in_peaks,
+        "Fp"              : pr_frip_score
+    }
 
     # These are optional outputs to see what's being removed by the blacklist
     if blacklist:
@@ -276,22 +379,26 @@ def replicated_IDR(experiment,
 
 
 @dxpy.entry_point("main")
-def main(experiment, r1pr_peaks,
-         chrom_sizes, as_file, blacklist=None,
-         reps_peaks=None, r2pr_peaks=None, pooledpr_peaks=None,
+def main(experiment, r1pr_peaks, rep1_ta, rep1_xcor,
+         paired_end, chrom_sizes, as_file, blacklist=None,
+         r2pr_peaks=None, rep2_ta=None, rep2_xcor=None,
+         reps_peaks=None, pooledpr_peaks=None,
          rep1_signal=None, rep2_signal=None, pooled_signal=None):
 
     simplicate_experiment = not reps_peaks
     if simplicate_experiment:
         output = internal_pseudoreplicate_IDR(
-            experiment, r1pr_peaks, chrom_sizes, as_file, blacklist, rep1_signal)
+            experiment, r1pr_peaks, rep1_ta, rep1_xcor,
+            paired_end, chrom_sizes, as_file, blacklist, rep1_signal)
     else:
         output = replicated_IDR(
             experiment, reps_peaks, r1pr_peaks, r2pr_peaks, pooledpr_peaks,
-            chrom_sizes, as_file, blacklist,
+            rep1_ta, rep1_xcor, rep2_ta, rep2_xcor,
+            paired_end, chrom_sizes, as_file, blacklist,
             rep1_signal, rep2_signal, pooled_signal)
 
     logging.info("Exiting with output: %s", output)
     return output
+
 
 dxpy.run()
