@@ -530,10 +530,15 @@ def idr_quality_metric(step_run, stages, files):
     # this is just a cheap way to detect replicated vs unreplicated experiment
     if final_idr_stage_output.get('rescue_ratio'):
         obj.update({
-            'Nt': int(final_idr_stage_output['Nt']),
-            'Np': int(final_idr_stage_output['Np']),
+            'F1': float(final_idr_stage_output['F1']),
+            'F2': float(final_idr_stage_output['F2']),
+            'Fp': float(final_idr_stage_output['Fp']),
+            'Ft': float(final_idr_stage_output['Ft']),
+
             'N1': int(final_idr_stage_output['N1']),
             'N2': int(final_idr_stage_output['N2']),
+            'Np': int(final_idr_stage_output['Np']),
+            'Nt': int(final_idr_stage_output['Nt']),
 
             'self_consistency_ratio':
                 float(final_idr_stage_output['self_consistency_ratio']),
@@ -572,6 +577,7 @@ def idr_quality_metric(step_run, stages, files):
 
     else:
         obj.update({
+            'F1': float(final_idr_stage_output['F1']),
             'N1': int(final_idr_stage_output['N1']),
             'IDR_plot_rep1_pr': IDR_plot('IDR Rep 1 Self-pseudoreplicates'),
             'IDR_parameters_rep1_pr': IDR_params('IDR Rep 1 Self-pseudoreplicates'),
@@ -2958,13 +2964,13 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
 
 
 def infer_pipeline(analysis):
-    if any(name == 'histone_chip_seq' for name in
+    if any(name.startswith('histone_chip_seq') for name in
            [analysis.get('executableName'), analysis.get('name')]):
         return "histone"
-    elif any(name == 'tf_chip_seq' for name in
+    elif any(name.startswith('tf_chip_seq') for name in
              [analysis.get('executableName'), analysis.get('name')]):
         return "tf"
-    elif (analysis.get('executableName') == 'ENCODE mapping pipeline' or
+    elif (analysis.get('executableName').startswith('ENCODE mapping pipeline') or
           (any([re.match("Map", stage['name'])
                 for stage in analysis['workflow']['stages']]) and
            any([re.match("Filter", stage['name'])
