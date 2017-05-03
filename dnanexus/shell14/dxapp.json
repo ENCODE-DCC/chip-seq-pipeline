@@ -1,0 +1,46 @@
+{
+  "name": "shell14",
+  "title": "shell14",
+  "summary": "Ubuntu14 shell",
+  "dxapi": "1.0.0",
+  "version": "0.0.1",
+  "categories": [],
+  "inputSpec": [
+      {
+          "name": "hours_to_live",
+          "label": "Hours for worker to remain open",
+          "class": "int",
+          "optional": false
+      }
+  ],
+  "outputSpec": [],
+  "runSpec": {
+    "interpreter": "python2.7",
+    "file": "src/shell14.py",
+    "distribution": "Ubuntu", "release": "14.04",
+    "systemRequirements": {
+      "*": {"instanceType": "mem1_ssd1_x2"}
+    },
+    "execDepends": [
+      {"name": "python3-dev"},
+      {"name": "python3-numpy"},
+      {"name": "python3-scipy"},
+      {"name": "python3-matplotlib"},
+      {"name": "python3-setuptools"},
+      {
+        "name": "idr",
+        "package_manager": "git",
+        "url": "https://github.com/nboley/idr.git",
+        "tag": "2.0.3",
+        "destdir": "/home/dnanexus/",
+        "build_commands": "python3 setup.py install"
+      }
+    ]
+  },
+  "access": {
+    "network": [
+      "*"
+    ]
+  },
+  "authorizedUsers": []
+}
