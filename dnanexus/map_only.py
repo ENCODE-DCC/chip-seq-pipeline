@@ -156,6 +156,7 @@ def get_args():
     parser.add_argument('--accession', help="Accession the results to the ENCODE Portal", default=False, action='store_true')
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
+    parser.add_argument('--encoded_check', help="Value is passed on to accession_analysis", type=t_or_f, default=None)
 
     args = parser.parse_args()
 
@@ -445,7 +446,8 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, accession, us
 
 
 def map_only(experiment, biorep_n, files, server, keypair, sex_specific,
-             crop_length, accession, fqcheck, force_patch, use_existing_folders):
+             crop_length, accession, fqcheck, force_patch,
+             use_existing_folders, encoded_check):
 
     if not files:
         logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
@@ -512,6 +514,8 @@ def map_only(experiment, biorep_n, files, server, keypair, sex_specific,
                     accession_job_input.update({'fqcheck' : fqcheck})
                 if force_patch is not None:
                     accession_job_input.update({'force_patch': force_patch})
+                if encoded_check is not None:
+                    accession_job_input.update({'encoded_check': encoded_check})
                 time.sleep(5)
                 max_retries = 10
                 retries = max_retries
@@ -609,7 +613,7 @@ def main():
                                  server, keypair, args.sex_specific,
                                  args.crop_length, args.accession,
                                  args.fqcheck, args.force_patch,
-                                 args.use_existing_folders)
+                                 args.use_existing_folders, args.encoded_check)
                     in_process = True
                 if unpaired_files:
                     se_jobs = \
@@ -617,7 +621,7 @@ def main():
                                  server, keypair, args.sex_specific,
                                  args.crop_length, args.accession,
                                  args.fqcheck, args.force_patch,
-                                 args.use_existing_folders)
+                                 args.use_existing_folders, args.encoded_check)
                     in_process = True
                 if paired_files and pe_jobs:
                     outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))
