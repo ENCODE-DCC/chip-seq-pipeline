@@ -3020,6 +3020,10 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
         logger.setLevel(logging.INFO)
         logger.info('In accession_anlysis_id with logging level INFO')
 
+    # fetch the credentials from the DCC Credentials project
+    dxpy.download_folder(
+        DCC_CREDENTIALS_PROJECT, '.', folder=DCC_CREDENTIALS_FOLDER)
+
     authid, authpw, server = common.processkey(key, keyfile)
     keypair = (authid, authpw)
 
@@ -3189,9 +3193,9 @@ def encode_unready(server):
 
 
 @dxpy.entry_point('main')
-def main(outfn, debug, keyfile, dryrun,
+def main(outfn, debug, dryrun,
          force_patch, force_upload, fqcheck,
-         key=None, pipeline=None, analysis_ids=None, infile=None, project=None,
+         key=None, keyfile=None, pipeline=None, analysis_ids=None, infile=None, project=None,
          accession_raw=False, signal_only=False, skip_control=False,
          wait_on_files=None, encoded_check=True):
 
