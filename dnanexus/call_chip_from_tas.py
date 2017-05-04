@@ -63,8 +63,8 @@ def get_args():
     parser.add_argument('--inf', nargs='*', help="Folder(s) name or ID with tagAligns", default="/")
     parser.add_argument('--yes',   help="Run the workflows created",            default=False, action='store_true')
     parser.add_argument('--tag',   help="String to add to the workflow title")
-    parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default", default='default')
-    parser.add_argument('--keyfile', default=os.path.expanduser("~/keypairs.json"), help="The keypair file.  Default is --keyfile=%s" %(os.path.expanduser("~/keypairs.json")))
+    parser.add_argument('--key', help="The local keypair identifier from the keyfile.  Default is --key=default", default='default')
+    parser.add_argument('--keyfile', default=os.path.expanduser("~/keypairs.json"), help="The local keypair file.  Default is --keyfile=%s" %(os.path.expanduser("~/keypairs.json")))
     parser.add_argument('--gsize', help="Genome size string for MACS2, e.g. mm or hs", default=None)
     parser.add_argument('--csizes', help="chrom.sizes file for bedtobigbed, e.g. ENCODE Reference Files:/mm10/male.mm10.chrom.sizes", default=None)
     parser.add_argument('--blacklist', help="Regions to exclude from final peaks list", default=None)
@@ -736,6 +736,7 @@ def main():
                         "%s: Tried but failed to update experiment internal_status to processing"
                         % (exp_id))
                     logging.error(r.text)
+
 
 if __name__ == '__main__':
     main()

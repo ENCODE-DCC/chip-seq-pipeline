@@ -36,6 +36,9 @@ logger.propagate = False
 logger.setLevel(logging.INFO)
 logger.info('Logging from the applet is activated')
 
+DCC_CREDENTIALS_PROJECT = 'project-F30FzF0048K9JZKxPvB3Y563'
+DCC_CREDENTIALS_FOLDER = '/credentials'
+
 COMMON_METADATA = {
     'lab': 'encode-processing-pipeline',
     'award': 'U41HG006992'
@@ -3202,6 +3205,10 @@ def main(outfn, debug, keyfile, dryrun,
     else:
         logger.setLevel(logging.INFO)
         logger.info('Set logger level to logging.INFO')
+
+    # fetch the credentials from the DCC Credentials project
+    dxpy.download_folder(
+        DCC_CREDENTIALS_PROJECT, '.', folder=DCC_CREDENTIALS_FOLDER)
 
     if infile is not None:
         infile = dxpy.DXFile(infile)
