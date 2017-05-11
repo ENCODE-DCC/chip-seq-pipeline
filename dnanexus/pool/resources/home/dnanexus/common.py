@@ -433,7 +433,7 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
     #it is not strictly necessary to include both the accept header, and format=json, but we do
     #so as to get exactly the same URL as one would use in a web browser
 
-    RETRY_CODES = [500]
+    RETRY_CODES = [500, 502]
     RETRY_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.SSLError)
     HEADERS = {'accept': 'application/json'}
 
@@ -504,7 +504,7 @@ def encoded_update(method, url, keypair, payload, return_response):
         logger.error('Invalid HTTP method: %s' %(method))
         return
 
-    RETRY_CODES = [500]
+    RETRY_CODES = [500, 502]
     RETRY_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.SSLError)
     HEADERS = {'accept': 'application/json', 'content-type': 'application/json'}
 
