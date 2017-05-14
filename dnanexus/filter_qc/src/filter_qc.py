@@ -14,6 +14,7 @@
 import os
 import subprocess
 import shlex
+import re
 import common
 import dxpy
 import logging
@@ -76,6 +77,41 @@ def pbc_parse(fname):
     return pbc_qc
 
 
+def flagstat_parse(fname):
+    with open(fname, 'r') as flagstat_file:
+        if not flagstat_file:
+            return None
+        flagstat_lines = flagstat_file.read().splitlines()
+
+    qc_dict = {
+        # values are regular expressions,
+        # will be replaced with scores [hiq, lowq]
+        'in_total': 'in total',
+        'duplicates': 'duplicates',
+        'mapped': 'mapped',
+        'paired_in_sequencing': 'paired in sequencing',
+        'read1': 'read1',
+        'read2': 'read2',
+        'properly_paired': 'properly paired',
+        'with_self_mate_mapped': 'with itself and mate mapped',
+        'singletons': 'singletons',
+        # i.e. at the end of the line
+        'mate_mapped_different_chr': 'with mate mapped to a different chr$',
+        # RE so must escape
+        'mate_mapped_different_chr_hiQ':
+            'with mate mapped to a different chr \(mapQ>=5\)'
+    }
+
+    for (qc_key, qc_pattern) in qc_dict.items():
+        qc_metrics = next(re.split(qc_pattern, line)
+                          for line in flagstat_lines
+                          if re.search(qc_pattern, line))
+        (hiq, lowq) = qc_metrics[0].split(' + ')
+        qc_dict[qc_key] = [int(hiq.rstrip()), int(lowq.rstrip())]
+
+    return qc_dict
+
+
 @dxpy.entry_point('main')
 def main(input_bam, paired_end, samtools_params, debug):
 
@@ -84,28 +120,18 @@ def main(input_bam, paired_end, samtools_params, debug):
     else:
         logger.setLevel(logging.INFO)
 
-    # input_json is no longer used
-    # # if there is input_JSON, it over-rides any explicit parameters
-    # if input_JSON:
-    #     if 'input_bam' in input_JSON:
-    #         input_bam = input_JSON['input_bam']
-    #     if 'paired_end' in input_JSON:
-    #         paired_end = input_JSON['paired_end']
-    #     if 'samtools_params' in input_JSON:
-    #         samtools_params = input_JSON['samtools_params']
-
-    # this is now handled by the platform input validator
-    # if not input_bam:
-    #     logger.error('input_bam is required')
-    #     raise Exception
-    # assert paired_end is not None, 'paired_end is required, explicitly or in input_JSON'
-
     raw_bam_file = dxpy.DXFile(input_bam)
     raw_bam_filename = raw_bam_file.name
     raw_bam_basename = raw_bam_file.name.rstrip('.bam')
+    raw_bam_file_mapstats_filename = raw_bam_basename + '.flagstat.qc'
     dxpy.download_dxfile(raw_bam_file.get_id(), raw_bam_filename)
-
     subprocess.check_output('set -x; ls -l', shell=True)
+
+    # Generate initial mapping statistics
+    with open(raw_bam_file_mapstats_filename, 'w') as fh:
+        flagstat_command = "samtools flagstat %s" % (raw_bam_filename)
+        logger.info(flagstat_command)
+        subprocess.check_call(shlex.split(flagstat_command), stdout=fh)
 
     filt_bam_prefix = raw_bam_basename + ".filt.srt"
     filt_bam_filename = filt_bam_prefix + ".bam"
@@ -263,8 +289,18 @@ def main(input_bam, paired_end, samtools_params, debug):
         dxpy.upload_local_file(final_bam_file_mapstats_filename)
     dup_file = dxpy.upload_local_file(dup_file_qc_filename)
     pbc_file = dxpy.upload_local_file(pbc_file_qc_filename)
+
+    logger.info("Calcualting QC metrics")
     dup_qc = dup_parse(dup_file_qc_filename)
     pbc_qc = pbc_parse(pbc_file_qc_filename)
+    initial_mapstats_qc = flagstat_parse(raw_bam_file_mapstats_filename)
+    final_mapstats_qc = flagstat_parse(final_bam_file_mapstats_filename)
+    if paired_end:
+        useable_fragments = final_mapstats_qc.get('in_total')[0]/2
+    else:
+        useable_fragments = final_mapstats_qc.get('in_total')[0]
+    logger.info("initial_mapstats_qc: %s" % (initial_mapstats_qc)),
+    logger.info("final_mapstats_qc: %s" % (final_mapstats_qc)),
     logger.info("dup_qc: %s" % (dup_qc))
     logger.info("pbc_qc: %s" % (pbc_qc))
 
@@ -276,6 +312,10 @@ def main(input_bam, paired_end, samtools_params, debug):
         "dup_file_qc": dxpy.dxlink(dup_file),
         "pbc_file_qc": dxpy.dxlink(pbc_file),
         "paired_end": paired_end,
+        "n_reads_input": initial_mapstats_qc.get('in_total'),
+        "picard_read_pairs_examined": dup_qc.get('READ_PAIRS_EXAMINED'),
+        "picard_unpaired_reads_examined": dup_qc.get('UNPAIRED_READS_EXAMINED'),
+        "useable_fragments": useable_fragments,
         "NRF": pbc_qc.get('NRF'),
         "PBC1": pbc_qc.get('PBC1'),
         "PBC2": pbc_qc.get('PBC2'),
@@ -283,5 +323,6 @@ def main(input_bam, paired_end, samtools_params, debug):
     }
     logger.info("Exiting with output:\n%s" % (pprint(output)))
     return output
+
 
 dxpy.run()
