@@ -312,14 +312,16 @@ def main(input_bam, paired_end, samtools_params, debug):
         "dup_file_qc": dxpy.dxlink(dup_file),
         "pbc_file_qc": dxpy.dxlink(pbc_file),
         "paired_end": paired_end,
-        "n_reads_input": initial_mapstats_qc.get('in_total'),
-        "picard_read_pairs_examined": dup_qc.get('READ_PAIRS_EXAMINED'),
-        "picard_unpaired_reads_examined": dup_qc.get('UNPAIRED_READS_EXAMINED'),
-        "useable_fragments": useable_fragments,
-        "NRF": pbc_qc.get('NRF'),
-        "PBC1": pbc_qc.get('PBC1'),
-        "PBC2": pbc_qc.get('PBC2'),
-        "duplicate_fraction": dup_qc.get('percent_duplication')
+        "n_reads_input": str(initial_mapstats_qc.get('in_total')[0]),
+        "picard_read_pairs_examined": str(dup_qc.get('read_pairs_examined')),
+        "picard_unpaired_reads_examined": str(dup_qc.get('unpaired_reads_examined')),
+        "picard_read_pair_duplicates": str(dup_qc.get('read_pair_duplicates')),
+        "picard_unpaired_read_duplicates": str(dup_qc.get('unpaired_read_duplicates')),
+        "useable_fragments": str(useable_fragments),
+        "NRF": str(pbc_qc.get('NRF')),
+        "PBC1": str(pbc_qc.get('PBC1')),
+        "PBC2": str(pbc_qc.get('PBC2')),
+        "duplicate_fraction": str(dup_qc.get('percent_duplication'))
     }
     logger.info("Exiting with output:\n%s" % (pprint(output)))
     return output
