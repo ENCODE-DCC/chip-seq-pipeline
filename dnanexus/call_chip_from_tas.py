@@ -676,9 +676,9 @@ def main():
                     % (exp_id, args.assembly))
         else:
             chrom_sizes = args.csizes
-
+        chip_workflow_absolute_path = os.path.dirname(os.path.realpath(__file__)) + "/chip_workflow.py"
         command_strings = [
-            '~/chip-seq-pipeline/dnanexus/chip_workflow.py',
+            chip_workflow_absolute_path,
             '--nomap --yes',
             '--target %s' % (wf_target),
             '--title "%s"' % (workflow_title),
