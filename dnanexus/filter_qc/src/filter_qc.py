@@ -17,7 +17,7 @@ import shlex
 import common
 import dxpy
 import logging
-from pprint import pprint
+from pprint import pprint, pformat
 
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
@@ -281,7 +281,8 @@ def main(input_bam, paired_end, samtools_params, debug):
         "PBC2": pbc_qc.get('PBC2'),
         "duplicate_fraction": dup_qc.get('percent_duplication')
     }
-    logger.info("Exiting with output:\n%s" % (pprint(output)))
+    logger.info("Exiting with output:\n%s" % (pformat(output)))
     return output
+
 
 dxpy.run()
