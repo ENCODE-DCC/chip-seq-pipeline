@@ -3238,6 +3238,14 @@ def main(outfn, debug, dryrun,
             self_analysis_id = dxpy.describe(dxpy.JOB_ID)['analysis']
             analysis_id = self_analysis_id
 
+        try:
+            subjob_name = "Accession %s" % ((dxpy.DXAnalysis(analysis_id)).name)
+        except:
+            logger.warning(
+                "Failed to construct subjob name from analysis %s. Using default"
+                % (analysis_id))
+            subjob_name = "accession_%s" % (analysis_id)
+
         accession_subjob_input = {
             "debug": debug,
             "key": key,
@@ -3268,7 +3276,7 @@ def main(outfn, debug, dryrun,
             dxpy.new_dxjob(
                 fn_input=accession_subjob_input,
                 fn_name="accession_analysis_id",
-                name="accession_%s" % (analysis_id),
+                name=subjob_name,
                 properties={'id': analysis_id}))
 
     postprocess_subjob = dxpy.new_dxjob(
