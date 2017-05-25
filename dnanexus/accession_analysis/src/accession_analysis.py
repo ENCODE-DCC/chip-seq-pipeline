@@ -1150,8 +1150,8 @@ def get_peak_mapping_stages(peaks_analysis, keypair, server,
     # Build the stage dict and return it
 
     logger.debug(
-        'in get_peak_mapping_stages: peaks_analysis is %s'
-        % (peaks_analysis))
+        'in get_peak_mapping_stages: peaks_analysis is %s named %s'
+        % (peaks_analysis.get('id'), peaks_analysis.get('name')))
 
     if is_unreplicated_analysis(peaks_analysis):
         reps = [1]
@@ -1901,6 +1901,7 @@ def post_file(payload, keypair, server, dryrun):
         new_file_object = None
     else:
         # r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
+        logger.info('POST new file')
         r = common.encoded_post(url, keypair, payload, return_response=True)
         try:
             r.raise_for_status()
@@ -2144,6 +2145,7 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
         new_object = {}
     else:
         # r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(analysis_step_run_metadata))
+        logger.info('POST new analysis_step_run')
         r = common.encoded_post(
             url, keypair, analysis_step_run_metadata, return_response=True)
         try:
@@ -2170,58 +2172,89 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
     return new_object
 
 
+def dx_file_at_encode(dx_fh, keypair, server):
+    md5sum = dx_fh.get_properties().get('md5sum')
+    if not md5sum:
+        logger.info("Downloading %s to calculate md5" % (dx_fh.name))
+        dxpy.download_dxfile(dx_fh.get_id(), dx_fh.name)
+        md5sum = common.md5(dx_fh.name)
+        try:
+            set_property(dx_fh, {'md5sum': md5sum})
+        except Exception as e:
+            logger.warning(
+                '%s: skipping adding md5sum property to %s.' % (e, dx_fh.name))
+
+    search_result = common.encoded_get(
+        server + '/search/?type=File&md5sum=%s' % (md5sum),
+        keypair=keypair)
+    if search_result.get('@graph'):
+        return search_result.get('@graph')[0]
+    else:
+        return None
+
+
 def accession_outputs(stages, keypair, server,
                       dryrun, force_patch, force_upload):
     files = []
     for (stage_name, outputs) in stages.iteritems():
         stage_metadata = outputs['stage_metadata']
         for i, file_metadata in enumerate(outputs['output_files']):
-            project = stage_metadata['project']
-            analysis = stage_metadata['parentAnalysis']
-            dataset_accession = get_experiment_accession(analysis)
             file_id = stage_metadata['output'][file_metadata['name']]
+            project = stage_metadata['project']
             logger.debug(
                 'in accession_outputs getting handler for file %s in %s'
                 % (file_id, project))
             dx = dxpy.DXFile(file_id, project=project)
-            dx_desc = dx.describe()
-            surfaced_outputs = \
-                [o for o in outputs['qc'] if isinstance(o, str)]  # this will be a list of strings
-            calculated_outputs = \
-                [o for o in outputs['qc'] if not isinstance(o, str)]  # this will be a list of functions/methods
-            logger.debug(
-                'in accession_outputs with stage metadata\n%s'
-                % (stage_metadata.get('name')))
-            logger.debug(
-                'in accession_ouputs with surfaced_ouputs %s and calculated_outputs %s from project %s'
-                % (surfaced_outputs, calculated_outputs, project))
-            notes_qc = dict(zip(
-                surfaced_outputs,
-                [stage_metadata['output'][metric]
-                 for metric in surfaced_outputs]))
-            notes_qc.update(dict(zip(
-                [f.__name__ for f in calculated_outputs],
-                [f(stages) for f in calculated_outputs])))
-            post_metadata = {
-                'dx': dx,
-                'notes': {
-                    'dx-id': dx.get_id(),
-                    'dx-createdBy': dx_desc.get('createdBy'),
-                    'dx-parentAnalysis': analysis,
-                    'qc': notes_qc
-                },
-                # 'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
-                'dataset': dataset_accession,
-                'file_size': dx_desc.get('size'),
-                'submitted_file_name':
-                    dx.get_proj_id() + ':' + '/'.join([dx.folder, dx.name])}
-            post_metadata.update(file_metadata['metadata'])
-            new_file = accession_file(
-                post_metadata, server, keypair,
-                dryrun, force_patch, force_upload)
-            stages[stage_name]['output_files'][i].update(
-                {'encode_object': new_file})
-            files.append(new_file)
+            if not force_patch and not force_upload:
+                accessioned_file = dx_file_at_encode(dx, keypair, server)
+                if accessioned_file:
+                    logger.info(
+                        "Found dx file %s named %s already accesioned at ENCODE as %s"
+                        % (file_id, dx.name, accessioned_file.get('accession')))
+                    stages[stage_name]['output_files'][i].update(
+                        {'encode_object': accessioned_file})
+                    files.append(accessioned_file)
+            else:
+                analysis = stage_metadata['parentAnalysis']
+                dataset_accession = get_experiment_accession(analysis)
+                dx_desc = dx.describe()
+                surfaced_outputs = \
+                    [o for o in outputs['qc'] if isinstance(o, str)]  # this will be a list of strings
+                calculated_outputs = \
+                    [o for o in outputs['qc'] if not isinstance(o, str)]  # this will be a list of functions/methods
+                logger.debug(
+                    'in accession_outputs with stage metadata\n%s'
+                    % (stage_metadata.get('name')))
+                logger.debug(
+                    'in accession_ouputs with surfaced_ouputs %s and calculated_outputs %s from project %s'
+                    % (surfaced_outputs, calculated_outputs, project))
+                notes_qc = dict(zip(
+                    surfaced_outputs,
+                    [stage_metadata['output'][metric]
+                     for metric in surfaced_outputs]))
+                notes_qc.update(dict(zip(
+                    [f.__name__ for f in calculated_outputs],
+                    [f(stages) for f in calculated_outputs])))
+                post_metadata = {
+                    'dx': dx,
+                    'notes': {
+                        'dx-id': dx.get_id(),
+                        'dx-createdBy': dx_desc.get('createdBy'),
+                        'dx-parentAnalysis': analysis,
+                        'qc': notes_qc
+                    },
+                    # 'aliases': ['ENCODE:%s-%s' %(experiment.get('accession'), static_metadata.pop('name'))],
+                    'dataset': dataset_accession,
+                    'file_size': dx_desc.get('size'),
+                    'submitted_file_name':
+                        dx.get_proj_id() + ':' + '/'.join([dx.folder, dx.name])}
+                post_metadata.update(file_metadata['metadata'])
+                new_file = accession_file(
+                    post_metadata, server, keypair,
+                    dryrun, force_patch, force_upload)
+                stages[stage_name]['output_files'][i].update(
+                    {'encode_object': new_file})
+                files.append(new_file)
     return files
 
 
