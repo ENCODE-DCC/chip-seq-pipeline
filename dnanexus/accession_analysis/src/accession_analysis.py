@@ -2193,6 +2193,28 @@ def dx_file_at_encode(dx_fh, keypair, server):
         return None
 
 
+def accessioned_outputs(stages, keypair, server):
+    files = []
+    for (stage_name, outputs) in stages.iteritems():
+        stage_metadata = outputs['stage_metadata']
+        for i, file_metadata in enumerate(outputs['output_files']):
+            file_id = stage_metadata['output'][file_metadata['name']]
+            project = stage_metadata['project']
+            logger.debug(
+                'in accessioned_outputs getting handler for file %s in %s'
+                % (file_id, project))
+            dx = dxpy.DXFile(file_id, project=project)
+            accessioned_file = dx_file_at_encode(dx, keypair, server)
+            if accessioned_file:
+                logger.info(
+                    "Found dx file %s named %s accessioned at ENCODE as %s"
+                    % (file_id, dx.name, accessioned_file.get('accession')))
+                stages[stage_name]['output_files'][i].update(
+                    {'encode_object': accessioned_file})
+                files.append(accessioned_file)
+    return files
+
+
 def accession_outputs(stages, keypair, server,
                       dryrun, force_patch, force_upload):
     files = []
@@ -2209,7 +2231,7 @@ def accession_outputs(stages, keypair, server,
                 accessioned_file = dx_file_at_encode(dx, keypair, server)
                 if accessioned_file:
                     logger.info(
-                        "Found dx file %s named %s already accesioned at ENCODE as %s"
+                        "Found dx file %s named %s already accessioned at ENCODE as %s"
                         % (file_id, dx.name, accessioned_file.get('accession')))
                     stages[stage_name]['output_files'][i].update(
                         {'encode_object': accessioned_file})
@@ -2863,9 +2885,19 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
         logger.error("Failed to find peak stages")
         return None
 
-    # accession all the output files
     output_files = []
-    for stages in control_stages + mapping_stages + peak_stages:
+
+    # retrieve file metadata from ENCODE Portal for
+    # exected-to-be-already-accessioned mapping files
+    # fail if they are not accessioned
+    for stages in control_stages + mapping_stages:
+        if stages:
+            logger.info('Retrieving accessioned outputs for mappings')
+            output_files.extend(accessioned_outputs(
+                stages, keypair, server))
+
+    # accession all the output files
+    for stages in peak_stages:
         if stages:
             logger.info('accessioning output')
             output_files.extend(accession_outputs(
@@ -2873,36 +2905,36 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
 
     # now that we have file accessions, loop again and patch derived_from
     files_with_derived = []
-    for stages in control_stages + mapping_stages + peak_stages:
+    for stages in peak_stages:
         if stages:
             files_with_derived.extend(
                 patch_outputs(stages, keypair, server, dryrun))
 
     full_analysis_step_versions = {
-        STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
-            {
-                'stages': "",
-                'stage_name': "",
-                'file_names': [],
-                'status': 'finished',
-                'qc_objects': []
-            }
-        ],
-        STEP_VERSION_ALIASES[pipeline_version]['bwa-alignment-step']: [
-            {
-                'stages': mapping_stage,
-                'stage_name':
-                    next(stage_name
-                         for stage_name in mapping_stage.keys()
-                         if stage_name.startswith('Filter and QC')),
-                'file_names': ['filtered_bam'],
-                'status': 'finished',
-                'qc_objects': [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}]
-            } for mapping_stage in (mapping_stages if skip_control else
-                                    mapping_stages + control_stages)
-        ],
+        # STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
+        #     {
+        #         'stages': "",
+        #         'stage_name': "",
+        #         'file_names': [],
+        #         'status': 'finished',
+        #         'qc_objects': []
+        #     }
+        # ],
+        # STEP_VERSION_ALIASES[pipeline_version]['bwa-alignment-step']: [
+        #     {
+        #         'stages': mapping_stage,
+        #         'stage_name':
+        #             next(stage_name
+        #                  for stage_name in mapping_stage.keys()
+        #                  if stage_name.startswith('Filter and QC')),
+        #         'file_names': ['filtered_bam'],
+        #         'status': 'finished',
+        #         'qc_objects': [
+        #             {'chipseq_filter_quality_metric': ['filtered_bam']},
+        #             {'samtools_flagstats_quality_metric': ['filtered_bam']}]
+        #     } for mapping_stage in (mapping_stages if skip_control else
+        #                             mapping_stages + control_stages)
+        # ],
         STEP_VERSION_ALIASES[pipeline_version][
             'tf-unreplicated-macs2-signal-calling-step'
             if unreplicated_analysis else
