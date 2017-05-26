@@ -1878,6 +1878,7 @@ def patch_file(payload, keypair, server, dryrun):
             urlparse.urljoin(server, '/files/%s' % (accession)), keypair)
     else:
         # r = requests.patch(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
+        logger.info("PATCH file %s" % (url))
         r = common.encoded_patch(url, keypair, payload, return_response=True)
         try:
             r.raise_for_status()
@@ -1901,7 +1902,7 @@ def post_file(payload, keypair, server, dryrun):
         new_file_object = None
     else:
         # r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(payload))
-        logger.info('POST new file')
+        logger.info('POST new file to %s' % (url))
         r = common.encoded_post(url, keypair, payload, return_response=True)
         try:
             r.raise_for_status()
@@ -1988,6 +1989,7 @@ def qckiller(f, server, keypair):
             logger.info(
                 "%s: Remove existing qc object %s by setting status:deleted"
                 % (f.get('accession'), url))
+            logger.info("PATCH qc object %s" % (url))
             common.encoded_patch(url, keypair, {'status': 'deleted'})
 
 
@@ -2145,7 +2147,7 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
         new_object = {}
     else:
         # r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(analysis_step_run_metadata))
-        logger.info('POST new analysis_step_run')
+        logger.info('POST new analysis_step_run to %s' % (url))
         r = common.encoded_post(
             url, keypair, analysis_step_run_metadata, return_response=True)
         try:
@@ -2328,13 +2330,16 @@ def patch_outputs(stages, keypair, server, dryrun):
                 logger.debug(
                     'patch_metadata = %s'
                     % (pprint.pformat(patch_metadata)))
-                patched_file = patch_file(
-                    patch_metadata, keypair, server, dryrun)
-                if patched_file:
-                    stages[stage_name]['output_files'][n]['encode_object'] = patched_file
-                    files.append(patched_file)
+                if new_metadata(file_metadata['encode_object'], patch_metadata):
+                    patched_file = patch_file(
+                        patch_metadata, keypair, server, dryrun)
+                    if patched_file:
+                        stages[stage_name]['output_files'][n]['encode_object'] = patched_file
+                        files.append(patched_file)
+                    else:
+                        logger.error("%s PATCH failed ... skipping" % (accession))
                 else:
-                    logger.error("%s PATCH failed ... skipping" % (accession))
+                    logger.info('Nothing new to patch to %s' % (accession))
             else:
                 logger.warning(
                     '%s,%s: No encode object found ... skipping'
@@ -2403,6 +2408,7 @@ def accession_qc_object(obj_type, obj, keypair, server,
             'Deleting obsolete qc metric object %s'
             % (object_to_delete['@id']))
         url = urlparse.urljoin(server, object_to_delete['@id'])
+        logger.info("PATCH qc object %s" % (url))
         common.encoded_patch(url, keypair, {'status': 'deleted'})
         existing_objects.remove(object_to_delete)
 
@@ -2413,7 +2419,7 @@ def accession_qc_object(obj_type, obj, keypair, server,
         r = common.encoded_put(url, keypair, obj, return_response=True)
     else:
         url = urlparse.urljoin(server, '/%s/' % (obj_type))
-        logger.info('POST to %s' % (url))
+        logger.info('POST qc object to %s' % (url))
         logger.debug('POST to %s with %s' % (url, json.dumps(obj)))
         r = common.encoded_post(url, keypair, obj, return_response=True)
     try:
@@ -3183,6 +3189,7 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
                 internal_status = 'processing'
             else:  # everything else is assumed to be complete
                 internal_status = 'pipeline completed'
+            logger.info("PATCH status %s to experiment %s" % (internal_status, url))
             r = common.encoded_patch(
                 url,
                 keypair,
