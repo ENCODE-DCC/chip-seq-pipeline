@@ -57,7 +57,7 @@ def get_args():
 
     parser.add_argument('experiments', help="Experiment accessions", nargs="*")
     parser.add_argument('--infile', help="File with experiment accessions")
-    parser.add_argument('--debug', help="Print debug messages", default=False, action='store_true')
+    parser.add_argument('--debug', help="Print debug messages and hold jobs for ssh", default=False, action='store_true')
     parser.add_argument('--project', help="Project name or ID", default=dxpy.WORKSPACE_ID)
     parser.add_argument('--outf', help="Output folder name or ID", default="/")
     parser.add_argument('--inf', nargs='*', help="Folder(s) name or ID with tagAligns", default="/")
