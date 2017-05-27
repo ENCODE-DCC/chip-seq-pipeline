@@ -1868,6 +1868,7 @@ def resolve_name_to_accessions(stages, stage_file_name):
 def patch_file(payload, keypair, server, dryrun):
     logger.debug('in patch_file with %s' % (pprint.pformat(payload)))
     accession = payload.pop('accession')
+    # old_file_object = common.encoded.get(server + )        
     url = urlparse.urljoin(server, 'files/%s' % (accession))
     if dryrun:
         logger.info(
@@ -2280,6 +2281,36 @@ def accession_outputs(stages, keypair, server,
                     {'encode_object': new_file})
                 files.append(new_file)
     return files
+
+
+def new_metadata(old_obj, new_obj):
+    logger.debug(
+        'in new_metdata with old_object\n%s\nnew_object\n%s',
+        pprint.pformat(old_obj),
+        pprint.pformat(new_obj))
+    for key in new_obj:
+        if key not in old_obj:
+            return True
+        elif key == 'derived_from':
+            logger.debug("%s" % (set([re.search("ENCFF.{6}", s).group(0) for s in old_obj[key]])))
+            logger.debug("%s" % (set([re.search("ENCFF.{6}", s).group(0) for s in new_obj[key]])))
+            try:
+                if set([re.search("ENCFF.{6}", s).group(0) for s in old_obj[key]]) \
+                   != \
+                   set([re.search("ENCFF.{6}", s).group(0) for s in new_obj[key]]):
+                    return True
+            except:
+                logger.warning(
+                    "In new_metadata: failed to compare derived_from properties.  Old: %s, New: %s"
+                    % (old_obj[key], new_obj))
+                return True
+        elif isinstance(new_obj[key], list):
+            if set(new_obj[key]) != set(old_obj.get(key)):
+                return True
+        else:
+            if new_obj[key] != old_obj[key]:
+                return True
+    return False
 
 
 def patch_outputs(stages, keypair, server, dryrun):
