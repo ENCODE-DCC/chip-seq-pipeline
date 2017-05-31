@@ -24,7 +24,7 @@ logger.setLevel(logging.INFO)
 
 def macs2(experiment, control, xcor_scores, chrom_sizes,
           narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize,
-          name="MACS2", prefix=None):
+          name="MACS2", prefix=None, fragment_length=None):
         macs2_applet = dxpy.find_one_data_object(
                 classname='applet',
                 name='macs2',
@@ -44,6 +44,8 @@ def macs2(experiment, control, xcor_scores, chrom_sizes,
             }
         if prefix:
             macs2_input.update({'prefix': prefix})
+        if fragment_length:
+            macs2_input.update({'fragment_length': fragment_length})
         return macs2_applet.run(macs2_input, name=name)
 
 
@@ -64,9 +66,9 @@ def xcor_only(tags, paired_end, name='xcor_only'):
 
 @dxpy.entry_point('main')
 def main(rep1_ta, ctl1_ta, rep1_xcor, rep1_paired_end, chrom_sizes, genomesize,
-         narrowpeak_as, gappedpeak_as, broadpeak_as, 
-         rep2_ta=None, ctl2_ta=None, rep2_xcor=None, rep2_paired_end=None):
-
+         narrowpeak_as, gappedpeak_as, broadpeak_as,
+         rep2_ta=None, ctl2_ta=None, rep2_xcor=None, rep2_paired_end=None,
+         fragment_length=None):
     rep1_ta_file = dxpy.DXFile(rep1_ta)
     dxpy.download_dxfile(rep1_ta_file.get_id(), rep1_ta_file.name)
     rep1_ta_filename = rep1_ta_file.name
@@ -208,6 +210,9 @@ def main(rep1_ta, ctl1_ta, rep1_xcor, rep1_paired_end, chrom_sizes, genomesize,
         'gappedpeak_as':    gappedpeak_as,
         'broadpeak_as':     broadpeak_as
         }
+    # if the fragment_length argument is given, update macs2 input
+    if fragment_length:
+        common_args.update({'fragment_length' : fragment_length})
 
     common_args.update({'prefix': 'r1'})
     rep1_peaks_subjob      = macs2( rep1_ta,

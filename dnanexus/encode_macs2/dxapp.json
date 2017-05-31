@@ -83,6 +83,12 @@
 			"label": "string for MACS2, hs for human, mm for mouse",
 			"class": "string",
 			"optional": false
+		},
+		{   
+			"name": "fragment_length",
+			"label": "use this fragment length instead of the one calculated from xcor",
+			"class": "string",
+			"optional": true
 		}
 	],
 	"outputSpec": [

@@ -24,7 +24,8 @@ logger.setLevel(logging.INFO)
 
 @dxpy.entry_point('main')
 def main(experiment, control, xcor_scores_input, chrom_sizes,
-         narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize, prefix=None):
+         narrowpeak_as, gappedpeak_as, broadpeak_as, genomesize, prefix=None,
+         fragment_length=None):
 
     experiment        = dxpy.DXFile(experiment)
     control           = dxpy.DXFile(control)
@@ -63,10 +64,15 @@ def main(experiment, control, xcor_scores_input, chrom_sizes,
 
     # Extract the fragment length estimate from column 3 of the
     # cross-correlation scores file
-    with open(xcor_scores_input.name, 'r') as fh:
-        firstline = fh.readline()
-        fraglen = firstline.split()[2]  # third column
-        logger.info("Fraglen %s" % (fraglen))
+    # if the fragment_length argument is given, use that instead
+    if fragment_length:
+        fraglen = fragment_length
+        logger.info("User given fragment length %s" % fraglen)
+    else:
+        with open(xcor_scores_input.name, 'r') as fh:
+            firstline = fh.readline()
+            fraglen = firstline.split()[2]  # third column
+            logger.info("Fraglen %s" % (fraglen))
 
     # ===========================================
     # Generate narrow peaks and preliminary signal tracks

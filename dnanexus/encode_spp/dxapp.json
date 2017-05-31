@@ -92,6 +92,12 @@
             "class": "boolean",
             "optional": true,
             "default": false
+        },
+        {   
+            "name": "fragment_length",
+            "label": "use this fragment length instead of the one calculated from xcor",
+            "class": "string",
+            "optional": true
         }
     ],
     "outputSpec": [
