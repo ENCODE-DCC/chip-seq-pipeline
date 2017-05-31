@@ -713,7 +713,7 @@ def main():
         }
     # if fragment_length argument is provided, update the input mapping
     if args.fragment_length:
-        macs2_stage_input_mapping.update({'fragment_length' : args.fragment_length})
+        macs2_stage_input_mapping.update({'fragment_length': args.fragment_length})
     # have to prune out any arguments with value None because DX will error
     # with arguments with null values
     macs2_stage_input = dict([(k,v) for k,v in macs2_stage_input_mapping.iteritems() if v is not None])
@@ -738,7 +738,7 @@ def main():
                     'rep1_ta' : exp_rep1_ta,
                     'rep2_ta' : exp_rep2_ta,
                     'ctl1_ta': ctl_rep1_ta,
-                    'ctl2_ta' : ctl_rep2_ta
+                    'ctl2_ta' : ctl_rep2_ta,
                     'rep1_xcor' : exp_rep1_cc,
                     'rep2_xcor' : exp_rep2_cc,
                     'rep1_paired_end': rep1_paired_end,
@@ -747,6 +747,9 @@ def main():
                     'idr_peaks': True,
                     'spp_version': args.spp_version
                     }
+        #if fragment_length argument is provided, update the input mapping
+        if args.fragment_length:
+            peaks_stage_input_mapping.update({'fragment_length': args.fragment_length})
         if chrom_sizes:
             peaks_stage_input_mapping.update({'chrom_sizes': chrom_sizes})
         else:

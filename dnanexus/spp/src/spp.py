@@ -81,6 +81,7 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
     # fragment length from xcor file
     if fragment_length:
         fraglen = fragment_length
+        logger.info("User given fragment length %s" % fraglen)
     else:
         fraglen_column = 3
         with open(xcor_scores_input_filename, 'r') as f:
