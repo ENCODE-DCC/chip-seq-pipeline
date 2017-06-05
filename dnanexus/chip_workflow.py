@@ -967,7 +967,7 @@ def main():
 
     if args.yes:
         if args.debug:
-            analysis = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
+            analysis = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['*'])
         else:
             analysis = workflow.run({}, folder=output_folder, priority='normal')
 
