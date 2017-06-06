@@ -37,13 +37,13 @@
 			"name": "rep1_ta",
 			"label": "Mapped reads for rep1",
 			"class": "file",
-			"optional": true
+			"optional": false
 		},
 		{
 			"name": "rep1_xcor",
 			"label": "Cross-correlation file for rep1",
 			"class": "file",
-			"optional": true
+			"optional": false
 		},
 		{
 			"name": "rep2_ta",
@@ -58,18 +58,6 @@
 			"optional": true
 		},
 		{
-			"name": "pool_ta",
-			"label": "Mapped reads for rep1 and rep2 pooled",
-			"class": "file",
-			"optional": true
-		},
-		{
-			"name": "pool_xcor",
-			"label": "Cross-correlation file for rep1 and rep2 pooled",
-			"class": "file",
-			"optional": true
-		},
-		{
 			"name": "pooledpr_peaks",
 			"label": "IDR peaks from pooled self-pseudoreplicates",
 			"class": "file",
@@ -78,7 +66,7 @@
         {
             "name": "paired_end",
             "class": "boolean",
-            "optional": true
+            "optional": false
         },
 		{
 			"name": "chrom_sizes",
