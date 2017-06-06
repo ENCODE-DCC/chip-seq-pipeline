@@ -38,6 +38,8 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
     rep1_peaks      = dxpy.DXFile(rep1_peaks)
     rep2_peaks      = dxpy.DXFile(rep2_peaks)
     pooled_peaks    = dxpy.DXFile(pooled_peaks)
+    rep1_ta         = dxpy.DXFile(rep1_ta)
+    rep1_xcor       = dxpy.DXFile(rep1_xcor)
     chrom_sizes     = dxpy.DXFile(chrom_sizes)
     as_file         = dxpy.DXFile(as_file)
 
@@ -47,6 +49,8 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
     rep1_peaks_fn      = 'rep1-%s' % (rep1_peaks.name)
     rep2_peaks_fn      = 'rep2-%s' % (rep2_peaks.name)
     pooled_peaks_fn    = 'pooled-%s' % (pooled_peaks.name)
+    rep1_ta_fn         = 'r1ta_%s' % (rep1_ta.name)
+    rep1_xcor_fn       = 'r1xc_%s' % (rep1_xcor.name)
     chrom_sizes_fn     = 'chrom.sizes'
     as_file_fn         = '%s.as' % (peak_type)
 
@@ -77,37 +81,10 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
     dxpy.download_dxfile(rep1_peaks.get_id(), rep1_peaks_fn)
     dxpy.download_dxfile(rep2_peaks.get_id(), rep2_peaks_fn)
     dxpy.download_dxfile(pooled_peaks.get_id(), pooled_peaks_fn)
+    dxpy.download_dxfile(rep1_ta.get_id(), rep1_ta_fn)
+    dxpy.download_dxfile(rep1_xcor.get_id(), rep1_xcor_fn)
     dxpy.download_dxfile(chrom_sizes.get_id(), chrom_sizes_fn)
     dxpy.download_dxfile(as_file.get_id(), as_file_fn)
-
-    pool_applet = dxpy.find_one_data_object(
-            classname='applet',
-            name='pool',
-            project=dxpy.PROJECT_CONTEXT_ID,
-            zero_ok=False,
-            more_ok=False,
-            return_handler=True)
-    pool_replicates_subjob = \
-        pool_applet.run(
-            {"inputs": [rep1_ta, rep2_ta],
-             "prefix": 'pooled_reps'},
-            name='Pool replicates')
-    pooled_replicates_xcor_subjob = \
-        xcor_only(
-            pool_replicates_subjob.get_output_ref("pooled"),
-            paired_end,
-            spp_version=None,
-            name='Pool cross-correlation')
-    pooled_replicates_xcor_subjob.wait_on_done()
-
-    pool_ta_link = pool_replicates_subjob.describe()['output'].get("pooled")
-    pool_xcor_link = pooled_replicates_xcor_subjob.describe()['output'].get("CC_scores_file")
-    pool_ta_file = dxpy.get_handler(pool_ta_link)
-    pool_xcor_file = dxpy.get_handler(pool_xcor_link)
-    pool_ta_filename = 'poolta_%s' % (pool_ta_file.name)
-    pool_xcor_filename = 'poolcc_%s' % (pool_xcor_file.name)
-    dxpy.download_dxfile(pool_ta_file.get_id(), pool_ta_filename)
-    dxpy.download_dxfile(pool_xcor_file.get_id(), pool_xcor_filename)
 
     logger.info(subprocess.check_output('set -x; ls -l', shell=True))
 
@@ -164,7 +141,7 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
 
     # Extract the fragment length estimate from column 3 of the
     # cross-correlation scores file
-    with open(pool_xcor_filename, 'r') as fh:
+    with open(rep1_xcor_fn, 'r') as fh:
         firstline = fh.readline()
         fraglen = firstline.split()[2]  # third column
         print("Xcor fraglen %s" % (fraglen))
@@ -173,11 +150,11 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
     reads_in_peaks_fn = 'reads_in_%s.ta' % (peak_type)
     out, err = common.run_pipe([
         'slopBed -i %s -g %s -s -l %s -r %s' % (
-            pool_ta_filename, chrom_sizes_fn, -half_fraglen, half_fraglen),
+            rep1_ta_fn, chrom_sizes_fn, -half_fraglen, half_fraglen),
         r"""awk '{if ($2>=0 && $3>=0 && $2<=$3) print $0}'""",
         'intersectBed -a stdin -b %s -wa -u' % (overlapping_peaks_fn)
         ], reads_in_peaks_fn)
-    n_reads          = common.count_lines(common.uncompress(pool_ta_filename))
+    n_reads          = common.count_lines(common.uncompress(rep1_ta_fn))
     n_reads_in_peaks = common.count_lines(reads_in_peaks_fn)
     frip_score = float(n_reads_in_peaks)/float(n_reads)
 
