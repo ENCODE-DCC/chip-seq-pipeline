@@ -923,6 +923,11 @@ def main():
                 'pooledpr2_peaks': dxpy.dxlink(
                     {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == PEAKS_STAGE_NAME),
                      'outputField': 'pooledpr2_%s' % (peaktype)}),
+                'rep1_ta': exp_rep1_ta,
+                'rep1_xcor': exp_rep1_cc,
+                'rep2_ta': exp_rep2_ta,
+                'rep2_xcor': exp_rep2_cc,
+                'paired_end': rep1_paired_end,  # applies to replicated experiments, too
                 'as_file': as_file,
                 'peak_type': peak_type_extension,
                 'prefix': 'final',
@@ -945,6 +950,9 @@ def main():
                 'pooled_peaks': dxpy.dxlink(
                     {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == PEAKS_STAGE_NAME),
                      'outputField': 'rep1_%s' % (peaktype)}),
+                'rep1_ta': exp_rep1_ta,
+                'rep1_xcor': exp_rep1_cc,
+                'paired_end': rep1_paired_end,  # applies to replicated experiments, too
                 'as_file': as_file,
                 'peak_type': peak_type_extension,
                 'prefix': 'final',
@@ -967,7 +975,7 @@ def main():
 
     if args.yes:
         if args.debug:
-            analysis = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
+            analysis = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['*'])
         else:
             analysis = workflow.run({}, folder=output_folder, priority='normal')
 

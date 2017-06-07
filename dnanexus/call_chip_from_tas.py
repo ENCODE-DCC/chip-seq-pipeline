@@ -57,7 +57,7 @@ def get_args():
 
     parser.add_argument('experiments', help="Experiment accessions", nargs="*")
     parser.add_argument('--infile', help="File with experiment accessions")
-    parser.add_argument('--debug', help="Print debug messages", default=False, action='store_true')
+    parser.add_argument('--debug', help="Print debug messages and hold jobs for ssh", default=False, action='store_true')
     parser.add_argument('--project', help="Project name or ID", default=dxpy.WORKSPACE_ID)
     parser.add_argument('--outf', help="Output folder name or ID", default="/")
     parser.add_argument('--inf', nargs='*', help="Folder(s) name or ID with tagAligns", default="/")
@@ -78,6 +78,11 @@ def get_args():
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--skip_control', help="If --accession, accession no control files or metadata", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
+    parser.add_argument(
+        '--use_existing_folders',
+        help="Reuse existing folders even if results have already been saved there",
+        default=False,
+        action='store_true')
 
     args = parser.parse_args()
 
@@ -701,6 +706,8 @@ def main():
             command_strings.append('--blacklist "%s"' % (blacklist))
         if args.debug:
             command_strings.append('--debug')
+        if args.use_existing_folders:
+            command_strings.append('--use_existing_folders')
         if args.accession:
             command_strings.append('--accession')
             if args.fqcheck is not None:

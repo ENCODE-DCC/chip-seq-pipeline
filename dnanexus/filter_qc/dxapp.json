@@ -65,6 +65,36 @@
       "class": "boolean"
     },
     {
+      "name": "n_reads_input",
+      "label": "Total number of reads in the input",
+      "class": "string"
+    },
+    {
+      "name": "picard_read_pairs_examined",
+      "label": "Number of read pairs passed to picard (PE sequencing)",
+      "class": "string"
+    },
+    {
+      "name": "picard_unpaired_reads_examined",
+      "label": "Number of SE reads passed to picard (SE sequencing)",
+      "class": "string"
+    },
+    {
+      "name": "picard_read_pair_duplicates",
+      "label": "Number of duplicate read pairs from picard (PE sequencing)",
+      "class": "string"
+    },
+    {
+      "name": "picard_unpaired_read_duplicates",
+      "label": "Number of SE duplicate reads from picard (SE sequencing)",
+      "class": "string"
+    },
+    {
+      "name": "useable_fragments",
+      "label": "Number of DNA fragments (SE reads or PE pairs) surviving all filters",
+      "class": "string"
+    },
+    {
       "name": "NRF",
       "label": "Non-redundant fraction",
       "class": "string"
