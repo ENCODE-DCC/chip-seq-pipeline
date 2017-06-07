@@ -783,8 +783,6 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     for acc in input_fastq_accessions:
         fobj = common.encoded_get(
             urlparse.urljoin(server, 'files/%s' % (acc)), keypair)
-        # logger.debug('fobj')
-        # logger.debug('%s' %(pprint.pprint(fobj)))
         fastqs.append(fobj)
 
     logger.info('Found input fastq objects with accessions %s'
@@ -966,8 +964,6 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     for acc in input_fastq_accessions:
         fobj = common.encoded_get(
             urlparse.urljoin(server, 'files/%s' % (acc)), keypair)
-        # logger.debug('fobj')
-        # logger.debug('%s' %(pprint.pprint(fobj)))
         fastqs.append(fobj)
 
     logger.info('Found input fastq objects with accessions %s'

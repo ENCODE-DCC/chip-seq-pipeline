@@ -18,7 +18,7 @@ import re
 import common
 import dxpy
 import logging
-from pprint import pprint
+from pprint import pprint, pformat
 
 logger = logging.getLogger(__name__)
 logger.addHandler(dxpy.DXLogHandler())
@@ -271,8 +271,6 @@ def main(input_bam, paired_end, samtools_params, debug):
             "bamToBed -i %s" % (filt_bam_filename),
             r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$6}'"""]
     steps.extend([
-        # TODO this should be implemented as an explicit list of allowable
-        # names, so that mapping can be done to a complete reference
         "grep -v 'chrM'",
         "sort",
         "uniq -c",
@@ -323,7 +321,7 @@ def main(input_bam, paired_end, samtools_params, debug):
         "PBC2": str(pbc_qc.get('PBC2')),
         "duplicate_fraction": str(dup_qc.get('percent_duplication'))
     }
-    logger.info("Exiting with output:\n%s" % (pprint(output)))
+    logger.info("Exiting with output:\n%s" % (pformat(output)))
     return output
 
 

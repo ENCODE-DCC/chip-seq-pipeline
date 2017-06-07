@@ -21,18 +21,6 @@
 			"optional": false
 		},
 		{
-			"name": "pool_ta",
-			"label": "Pooled tagAlign",
-			"class": "file",
-			"optional": false
-		},
-		{
-			"name": "pool_xcor",
-			"label": "Cross-correlation file for pooled reads",
-			"class": "file",
-			"optional": false
-		},
-		{
 			"name": "pooled_peaks",
 			"label": "Pooled replicates peak file",
 			"class": "file",
@@ -50,6 +38,35 @@
 			"class": "file",
 			"optional": true
 		},
+		{
+			"name": "rep1_ta",
+			"label": "Mapped reads for rep1",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep1_xcor",
+			"label": "Cross-correlation file for rep1",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep2_ta",
+			"label": "Mapped reads for rep2",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "rep2_xcor",
+			"label": "Cross-correlation file for rep2",
+			"class": "file",
+			"optional": true
+		},
+        {
+            "name": "paired_end",
+            "class": "boolean",
+            "optional": false
+        },
 		{
 			"name": "chrom_sizes",
 			"label": "chrom.sizes for bedToBigBed",
