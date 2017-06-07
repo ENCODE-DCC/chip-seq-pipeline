@@ -35,22 +35,22 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
                                      rep1_ta, rep1_xcor,
                                      paired_end, chrom_sizes, as_file, peak_type, prefix):
 
-    rep1_peaks      = dxpy.DXFile(rep1_peaks)
-    rep2_peaks      = dxpy.DXFile(rep2_peaks)
-    pooled_peaks    = dxpy.DXFile(pooled_peaks)
-    rep1_ta         = dxpy.DXFile(rep1_ta)
-    rep1_xcor       = dxpy.DXFile(rep1_xcor)
-    chrom_sizes     = dxpy.DXFile(chrom_sizes)
-    as_file         = dxpy.DXFile(as_file)
+    rep1_peaks_file      = dxpy.DXFile(rep1_peaks)
+    rep2_peaks_file      = dxpy.DXFile(rep2_peaks)
+    pooled_peaks_file    = dxpy.DXFile(pooled_peaks)
+    rep1_ta_file         = dxpy.DXFile(rep1_ta)
+    rep1_xcor_file       = dxpy.DXFile(rep1_xcor)
+    chrom_sizes_file     = dxpy.DXFile(chrom_sizes)
+    as_file_file         = dxpy.DXFile(as_file)
 
     # Input filenames - necessary to define each explicitly because input files
     # could have the same name, in which case subsequent
     # file would overwrite previous file
-    rep1_peaks_fn      = 'rep1-%s' % (rep1_peaks.name)
-    rep2_peaks_fn      = 'rep2-%s' % (rep2_peaks.name)
-    pooled_peaks_fn    = 'pooled-%s' % (pooled_peaks.name)
-    rep1_ta_fn         = 'r1ta_%s' % (rep1_ta.name)
-    rep1_xcor_fn       = 'r1xc_%s' % (rep1_xcor.name)
+    rep1_peaks_fn      = 'rep1-%s' % (rep1_peaks_file.name)
+    rep2_peaks_fn      = 'rep2-%s' % (rep2_peaks_file.name)
+    pooled_peaks_fn    = 'pooled-%s' % (pooled_peaks_file.name)
+    rep1_ta_fn         = 'r1ta_%s' % (rep1_ta_file.name)
+    rep1_xcor_fn       = 'r1xc_%s' % (rep1_xcor_file.name)
     chrom_sizes_fn     = 'chrom.sizes'
     as_file_fn         = '%s.as' % (peak_type)
 
@@ -78,13 +78,13 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
 
     # Download file inputs to the local file system with local filenames
 
-    dxpy.download_dxfile(rep1_peaks.get_id(), rep1_peaks_fn)
-    dxpy.download_dxfile(rep2_peaks.get_id(), rep2_peaks_fn)
-    dxpy.download_dxfile(pooled_peaks.get_id(), pooled_peaks_fn)
-    dxpy.download_dxfile(rep1_ta.get_id(), rep1_ta_fn)
-    dxpy.download_dxfile(rep1_xcor.get_id(), rep1_xcor_fn)
-    dxpy.download_dxfile(chrom_sizes.get_id(), chrom_sizes_fn)
-    dxpy.download_dxfile(as_file.get_id(), as_file_fn)
+    dxpy.download_dxfile(rep1_peaks_file.get_id(), rep1_peaks_fn)
+    dxpy.download_dxfile(rep2_peaks_file.get_id(), rep2_peaks_fn)
+    dxpy.download_dxfile(pooled_peaks_file.get_id(), pooled_peaks_fn)
+    dxpy.download_dxfile(rep1_ta_file.get_id(), rep1_ta_fn)
+    dxpy.download_dxfile(rep1_xcor_file.get_id(), rep1_xcor_fn)
+    dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_fn)
+    dxpy.download_dxfile(as_file_file.get_id(), as_file_fn)
 
     logger.info(subprocess.check_output('set -x; ls -l', shell=True))
 
@@ -197,30 +197,30 @@ def replicated_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
                        rep1_ta, rep1_xcor, rep2_ta, rep2_xcor,
                        paired_end, chrom_sizes, as_file, peak_type, prefix):
 
-    rep1_peaks      = dxpy.DXFile(rep1_peaks)
-    rep2_peaks      = dxpy.DXFile(rep2_peaks)
-    pooled_peaks    = dxpy.DXFile(pooled_peaks)
-    pooledpr1_peaks = dxpy.DXFile(pooledpr1_peaks)
-    pooledpr2_peaks = dxpy.DXFile(pooledpr2_peaks)
-    rep1_ta         = dxpy.DXFile(rep1_ta)
-    rep2_ta         = dxpy.DXFile(rep2_ta)
-    rep1_xcor       = dxpy.DXFile(rep1_xcor)
-    rep2_xcor       = dxpy.DXFile(rep2_xcor)
-    chrom_sizes     = dxpy.DXFile(chrom_sizes)
-    as_file         = dxpy.DXFile(as_file)
+    rep1_peaks_file      = dxpy.DXFile(rep1_peaks)
+    rep2_peaks_file      = dxpy.DXFile(rep2_peaks)
+    pooled_peaks_file    = dxpy.DXFile(pooled_peaks)
+    pooledpr1_peaks_file = dxpy.DXFile(pooledpr1_peaks)
+    pooledpr2_peaks_file = dxpy.DXFile(pooledpr2_peaks)
+    rep1_ta_file         = dxpy.DXFile(rep1_ta)
+    rep2_ta_file         = dxpy.DXFile(rep2_ta)
+    rep1_xcor_file       = dxpy.DXFile(rep1_xcor)
+    rep2_xcor_file       = dxpy.DXFile(rep2_xcor)
+    chrom_sizes_file     = dxpy.DXFile(chrom_sizes)
+    as_file_file         = dxpy.DXFile(as_file)
 
     # Input filenames - necessary to define each explicitly because input files
     # could have the same name, in which case subsequent
     # file would overwrite previous file
-    rep1_peaks_fn      = 'rep1-%s' % (rep1_peaks.name)
-    rep2_peaks_fn      = 'rep2-%s' % (rep2_peaks.name)
-    pooled_peaks_fn    = 'pooled-%s' % (pooled_peaks.name)
-    pooledpr1_peaks_fn = 'pooledpr1-%s' % (pooledpr1_peaks.name)
-    pooledpr2_peaks_fn = 'pooledpr2-%s' % (pooledpr2_peaks.name)
-    rep1_ta_fn         = 'r1ta_%s' % (rep1_ta.name)
-    rep2_ta_fn         = 'r2ta_%s' % (rep2_ta.name)
-    rep1_xcor_fn       = 'r1cc_%s' % (rep1_xcor.name)
-    rep2_xcor_fn       = 'r2cc_%s' % (rep2_xcor.name)
+    rep1_peaks_fn      = 'rep1-%s' % (rep1_peaks_file.name)
+    rep2_peaks_fn      = 'rep2-%s' % (rep2_peaks_file.name)
+    pooled_peaks_fn    = 'pooled-%s' % (pooled_peaks_file.name)
+    pooledpr1_peaks_fn = 'pooledpr1-%s' % (pooledpr1_peaks_file.name)
+    pooledpr2_peaks_fn = 'pooledpr2-%s' % (pooledpr2_peaks_file.name)
+    rep1_ta_fn         = 'r1ta_%s' % (rep1_ta_file.name)
+    rep2_ta_fn         = 'r2ta_%s' % (rep2_ta_file.name)
+    rep1_xcor_fn       = 'r1cc_%s' % (rep1_xcor_file.name)
+    rep2_xcor_fn       = 'r2cc_%s' % (rep2_xcor_file.name)
     chrom_sizes_fn     = 'chrom.sizes'
     as_file_fn         = '%s.as' % (peak_type)
 
@@ -248,17 +248,17 @@ def replicated_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
 
     # Download file inputs to the local file system with local filenames
 
-    dxpy.download_dxfile(rep1_peaks.get_id(), rep1_peaks_fn)
-    dxpy.download_dxfile(rep2_peaks.get_id(), rep2_peaks_fn)
-    dxpy.download_dxfile(pooled_peaks.get_id(), pooled_peaks_fn)
-    dxpy.download_dxfile(pooledpr1_peaks.get_id(), pooledpr1_peaks_fn)
-    dxpy.download_dxfile(pooledpr2_peaks.get_id(), pooledpr2_peaks_fn)
-    dxpy.download_dxfile(rep1_ta.get_id(), rep1_ta_fn)
-    dxpy.download_dxfile(rep2_ta.get_id(), rep2_ta_fn)
-    dxpy.download_dxfile(rep1_xcor.get_id(), rep1_xcor_fn)
-    dxpy.download_dxfile(rep2_xcor.get_id(), rep2_xcor_fn)
-    dxpy.download_dxfile(chrom_sizes.get_id(), chrom_sizes_fn)
-    dxpy.download_dxfile(as_file.get_id(), as_file_fn)
+    dxpy.download_dxfile(rep1_peaks_file.get_id(), rep1_peaks_fn)
+    dxpy.download_dxfile(rep2_peaks_file.get_id(), rep2_peaks_fn)
+    dxpy.download_dxfile(pooled_peaks_file.get_id(), pooled_peaks_fn)
+    dxpy.download_dxfile(pooledpr1_peaks_file.get_id(), pooledpr1_peaks_fn)
+    dxpy.download_dxfile(pooledpr2_peaks_file.get_id(), pooledpr2_peaks_fn)
+    dxpy.download_dxfile(rep1_ta_file.get_id(), rep1_ta_fn)
+    dxpy.download_dxfile(rep2_ta_file.get_id(), rep2_ta_fn)
+    dxpy.download_dxfile(rep1_xcor_file.get_id(), rep1_xcor_fn)
+    dxpy.download_dxfile(rep2_xcor_file.get_id(), rep2_xcor_fn)
+    dxpy.download_dxfile(chrom_sizes_file.get_id(), chrom_sizes_fn)
+    dxpy.download_dxfile(as_file_file.get_id(), as_file_fn)
 
     pool_applet = dxpy.find_one_data_object(
             classname='applet',
