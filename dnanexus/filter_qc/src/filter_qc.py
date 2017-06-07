@@ -245,8 +245,6 @@ def main(input_bam, paired_end, samtools_params, debug):
             "bamToBed -i %s" % (filt_bam_filename),
             r"""awk 'BEGIN{OFS="\t"}{print $1,$2,$3,$6}'"""]
     steps.extend([
-        # TODO this should be implemented as an explicit list of allowable
-        # names, so that mapping can be done to a complete reference
         "grep -v 'chrM'",
         "sort",
         "uniq -c",

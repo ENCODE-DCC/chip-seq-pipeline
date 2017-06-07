@@ -79,6 +79,12 @@ def get_args():
     parser.add_argument('--skip_control', help="If --accession, accession no control files or metadata", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
     parser.add_argument('--fragment_length', help="Instead of calculating fragment length from xcor, use this fragment length", default=None)
+    parser.add_argument(
+        '--use_existing_folders',
+        help="Reuse existing folders even if results have already been saved there",
+        default=False,
+        action='store_true')
+
     args = parser.parse_args()
 
     if args.debug:
@@ -704,6 +710,8 @@ def main():
             command_strings.append('--blacklist "%s"' % (blacklist))
         if args.debug:
             command_strings.append('--debug')
+        if args.use_existing_folders:
+            command_strings.append('--use_existing_folders')
         if args.accession:
             command_strings.append('--accession')
             if args.fqcheck is not None:
