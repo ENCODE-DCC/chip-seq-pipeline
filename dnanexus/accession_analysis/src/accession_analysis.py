@@ -2230,16 +2230,25 @@ def accession_outputs(stages, keypair, server,
                 'in accession_outputs getting handler for file %s in %s'
                 % (file_id, project))
             dx = dxpy.DXFile(file_id, project=project)
-            if not force_patch and not force_upload:
-                accessioned_file = dx_file_at_encode(dx, keypair, server)
-                if accessioned_file:
-                    logger.info(
-                        "Found dx file %s named %s already accessioned at ENCODE as %s"
-                        % (file_id, dx.name, accessioned_file.get('accession')))
-                    stages[stage_name]['output_files'][i].update(
-                        {'encode_object': accessioned_file})
-                    files.append(accessioned_file)
+            accessioned_file = dx_file_at_encode(dx, keypair, server)
+
+            if accessioned_file:
+                logger.info(
+                    "Found dx file %s named %s already accessioned at ENCODE as %s"
+                    % (file_id, dx.name, accessioned_file.get('accession')))
+            if accessioned_file and not force_patch and not force_upload:
+                stages[stage_name]['output_files'][i].update(
+                    {'encode_object': accessioned_file})
+                files.append(accessioned_file)
             else:
+                if accessioned_file:
+                    if force_patch:
+                        logger.info("File already accessioned, but force_patch so patching new metadata")
+                    if force_upload:
+                        logger.info("File already accessioned, but force_upload so patching new metadata")
+                logger.info(
+                    "Accessioning dx file %s named %s"
+                    % (file_id, dx.name))
                 analysis = stage_metadata['parentAnalysis']
                 dataset_accession = get_experiment_accession(analysis)
                 dx_desc = dx.describe()
