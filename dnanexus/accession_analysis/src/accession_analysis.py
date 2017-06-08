@@ -1850,11 +1850,12 @@ def resolve_name_to_accessions(stages, stage_file_name):
         for stage_file in all_files:
             if stage_file['name'] == stage_file_name:
                 encode_object = stage_file.get('encode_object')
-                if isinstance(encode_object, list):
-                    for obj in encode_object:
-                        accessions.append(obj.get('accession'))
-                else:
-                    accessions.append(encode_object.get('accession'))
+                if encode_object:
+                    if isinstance(encode_object, list):
+                        for obj in encode_object:
+                            accessions.append(obj.get('accession'))
+                    else:
+                        accessions.append(encode_object.get('accession'))
     if accessions:
         logger.debug('resolve_name_to_accessons returning:')
         logger.debug('%s' % (pprint.pformat(accessions)))
@@ -2056,7 +2057,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
     # check if an ENCODE accession number in in the list of tags, as it would
     # be if accessioned by this script or similar scripts
     for tag in dx_fh.tags:
-        m = re.findall(r'ENCFF\d{3}\D{3}', tag)
+        m = re.findall(r'ENCFF\d{3}\D{3}', tag)  # Deliberately ignore TSTFF accessions
         if m:
             logger.info(
                 '%s appears to contain ENCODE accession number in tag %s.'
@@ -2148,7 +2149,6 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
         new_object = {}
     else:
         # r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(analysis_step_run_metadata))
-        logger.info('POST new analysis_step_run to %s' % (url))
         r = common.encoded_post(
             url, keypair, analysis_step_run_metadata, return_response=True)
         try:
@@ -2169,6 +2169,7 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
                 logger.warning(r.text)
                 new_object = {}
         else:
+            logger.info('POST new analysis_step_run to %s' % (url))
             new_object = r.json()['@graph'][0]
             logger.info(
                 "New analysis_step_run uuid: %s" % (new_object.get('uuid')))
@@ -2357,7 +2358,12 @@ def patch_outputs(stages, keypair, server, dryrun):
                     # single control is reused, there
                     # will be two paths back to it (one via rep1 one via rep2)
                     # and so it will come out of this loop twice.
-                    for acc in resolve_name_to_accessions(stages_to_use, name_to_use):
+                    encode_accessions = resolve_name_to_accessions(stages_to_use, name_to_use)
+                    if not encode_accessions:
+                        raise AccessioningError(
+                            "Expected but found no accessioned file for %s"
+                            % (name_to_use))
+                    for acc in encode_accessions:
                         if acc:
                             derived_from_accessions.add(acc)
                 logger.debug(
@@ -2604,9 +2610,6 @@ def accession_mapping_analysis_files(
                 'in accession_mapping_analysis_files, accession_outputs failed')
         files_with_derived = patch_outputs(
             stages, keypair, server, dryrun)
-        if not files_with_derived:
-            logger.error(
-                'in accession_mapping_analysis_files, patch_outputs for derived from failed')
 
     mapping_analysis_step_versions = {
         STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
@@ -2936,9 +2939,14 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
     # retrieve file metadata from ENCODE Portal for
     # exected-to-be-already-accessioned mapping files
     # fail if they are not accessioned
-    for stages in control_stages + mapping_stages:
+    for stages in control_stages:
         if stages:
-            logger.info('Retrieving accessioned outputs for mappings')
+            logger.info('Retrieving accessioned outputs for control mappings')
+            output_files.extend(accessioned_outputs(
+                stages, keypair, server))
+    for stages in mapping_stages:
+        if stages:
+            logger.info('Retrieving accessioned outputs for experiment mappings')
             output_files.extend(accessioned_outputs(
                 stages, keypair, server))
 
