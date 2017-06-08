@@ -5,12 +5,15 @@ import logging
 import time
 import subprocess
 import shlex
+import dxpy
 
 ACCESSION_ANALYSIS_APPLET = '/applets/accession_analysis'
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
+
+timestring = time.strftime("%y%m%d%H%M%S")
 
 EPILOG = '''Notes:
 
@@ -39,13 +42,12 @@ def get_args():
         else:
             assert not (True or False), "Cannot parse %s to boolean" % (arg)
 
-    timestring = time.strftime("%y%m%d%H%M%S")
 
     parser.add_argument('analysis_ids', help='List of analysis IDs to accession', nargs='*', default=None)
     parser.add_argument('--infile', help='Local file containing analysis IDs', type=argparse.FileType('r'), default=sys.stdin)
     parser.add_argument('--outfile', help='DNAnexus file to save output summary table', default="accession_%s.csv" % (timestring))
     parser.add_argument('--destination', help='DNAnexus folder for output summary table', default='/accession_log/')
-    parser.add_argument('--name', help='DNAnexus name for the accessioning run', default="accession_%s" % (timestring))
+    parser.add_argument('--name', help='DNAnexus name for the accessioning run', default=None)
     parser.add_argument('--watch', help="Watch the run log", default=False, action='store_true')
     # Any applet arguments with default None will not be passed to the DNAnexus
     # applet, so that its defaults will be used
@@ -78,18 +80,25 @@ def main():
         logger.setLevel(logging.INFO)
 
     if args.analysis_ids:
-        ids = args.analysis_ids
+        ids = [i for i in args.analysis_ids if not i.startswith('#')]
     elif args.infile:
-        ids = args.infile
+        ids = [i for i in args.infile if not i.startswith('#')]
     else:
         # never reached because inile defaults to stdin
         raise InputError("Must supply analysis id's in arguments or --infile")
+
+    if not args.name:
+        if len(ids) > 1:
+            job_name = "batch_%s" % (timestring)
+        else:
+            analysis = dxpy.DXAnalysis(ids[0])
+            job_name = "Accession %s" % (analysis.name)
 
     tokens = [
         'dx run applets/accession_analysis',
         '-i "outfn=%s"' % (args.outfile),
         '--destination "%s"' % (args.destination),
-        '--name "%s"' % (args.name),
+        '--name "%s"' % (job_name),
         '--yes'
     ]
     if args.watch:
