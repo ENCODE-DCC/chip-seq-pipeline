@@ -124,7 +124,7 @@
     "execDepends": [
     ],
     "assetDepends": [
-      {"id": "record-F4XJxQQ0XFkfv1KqF6QXpvq1"}
+      {"id": "record-F4vB7gj004jP3fQz8zFf0qjj"}
     ],
     "systemRequirements": {
       "main": {"instanceType": "mem2_hdd2_x1"}
