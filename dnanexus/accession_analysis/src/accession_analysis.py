@@ -533,11 +533,6 @@ def idr_quality_metric(step_run, stages, files):
     # this is just a cheap way to detect replicated vs unreplicated experiment
     if final_idr_stage_output.get('rescue_ratio'):
         obj.update({
-            'F1': float(final_idr_stage_output['F1']),
-            'F2': float(final_idr_stage_output['F2']),
-            'Fp': float(final_idr_stage_output['Fp']),
-            'Ft': float(final_idr_stage_output['Ft']),
-
             'N1': int(final_idr_stage_output['N1']),
             'N2': int(final_idr_stage_output['N2']),
             'Np': int(final_idr_stage_output['Np']),
@@ -560,6 +555,14 @@ def idr_quality_metric(step_run, stages, files):
             'IDR_parameters_rep2_pr': IDR_params('IDR Rep 2 Self-pseudoreplicates'),
             'IDR_parameters_pool_pr': IDR_params('IDR Pooled Pseudoreplicates')
         })
+        # Only accession FRiP scores if calculated
+        if final_idr_stage_output.get('F1'):
+            obj.update({
+                'F1': float(final_idr_stage_output['F1']),
+                'F2': float(final_idr_stage_output['F2']),
+                'Fp': float(final_idr_stage_output['Fp']),
+                'Ft': float(final_idr_stage_output['Ft'])
+            })
         # these were not surfaced as outputs in earlier versions of the
         # ENCODE IDR applet, so need to check first if they're there
         if 'No' in final_idr_stage_output:
@@ -580,12 +583,16 @@ def idr_quality_metric(step_run, stages, files):
 
     else:
         obj.update({
-            'F1': float(final_idr_stage_output['F1']),
             'N1': int(final_idr_stage_output['N1']),
             'IDR_plot_rep1_pr': IDR_plot('IDR Rep 1 Self-pseudoreplicates'),
             'IDR_parameters_rep1_pr': IDR_params('IDR Rep 1 Self-pseudoreplicates'),
             'IDR_cutoff': IDR_threshold('IDR Rep 1 Self-pseudoreplicates')
         })
+        # Only accession FRiP scores if calculated
+        if final_idr_stage_output.get('F1'):
+            obj.update({
+                'F1': float(final_idr_stage_output['F1'])
+            })
 
     obj.update(COMMON_METADATA)
 
