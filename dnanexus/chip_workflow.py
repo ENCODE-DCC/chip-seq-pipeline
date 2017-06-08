@@ -235,7 +235,10 @@ def get_args():
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--skip_control', help="If --accession, accession no control files or metadata", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
-    parser.add_argument('--fragment_length', help="Instead of calculating fragment length from xcor, use this fragment length", default=None)
+    parser.add_argument('--fragment_length',
+                        type=int,
+                        help="Instead of calculating fragment length from xcor, use this fragment length",
+                        default=None)
     # parser.add_argument('--idr',     help='Report peaks with and without IDR analysis',                 default=False, action='store_true')
     # parser.add_argument('--idronly',  help='Only report IDR peaks', default=None, action='store_true')
     # parser.add_argument('--idrversion', help='Version of IDR to use (1 or 2)', default="2")
@@ -712,7 +715,7 @@ def main():
         }
     # if fragment_length argument is provided, update the input mapping
     if args.fragment_length:
-        macs2_stage_input_mapping.update({'fragment_length': args.fragment_length})
+        macs2_stage_input_mapping.update({'fragment_length': str(args.fragment_length)})
     # have to prune out any arguments with value None because DX will error
     # with arguments with null values
     macs2_stage_input = dict([(k,v) for k,v in macs2_stage_input_mapping.iteritems() if v is not None])
@@ -748,7 +751,7 @@ def main():
                     }
         #if fragment_length argument is provided, update the input mapping
         if args.fragment_length:
-            peaks_stage_input_mapping.update({'fragment_length': args.fragment_length})
+            peaks_stage_input_mapping.update({'fragment_length': str(args.fragment_length)})
         if chrom_sizes:
             peaks_stage_input_mapping.update({'chrom_sizes': chrom_sizes})
         else:

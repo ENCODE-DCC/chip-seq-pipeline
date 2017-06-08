@@ -78,7 +78,10 @@ def get_args():
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--skip_control', help="If --accession, accession no control files or metadata", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
-    parser.add_argument('--fragment_length', help="Instead of calculating fragment length from xcor, use this fragment length", default=None)
+    parser.add_argument('--fragment_length',
+                        type=int,
+                        help="Instead of calculating fragment length from xcor, use this fragment length",
+                        default=None)
     parser.add_argument(
         '--use_existing_folders',
         help="Reuse existing folders even if results have already been saved there",
@@ -704,7 +707,7 @@ def main():
             ])
 
         if args.fragment_length:
-            command_strings.append('--fragment_length %s' % args.fragment_length)
+            command_strings.append('--fragment_length %s' % str(args.fragment_length))
 
         if blacklist:
             command_strings.append('--blacklist "%s"' % (blacklist))
