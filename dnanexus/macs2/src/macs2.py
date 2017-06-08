@@ -66,7 +66,7 @@ def main(experiment, control, xcor_scores_input, chrom_sizes,
     # cross-correlation scores file
     # if the fragment_length argument is given, use that instead
     if fragment_length:
-        fraglen = fragment_length
+        fraglen = str(fragment_length)
         logger.info("User given fragment length %s" % fraglen)
     else:
         with open(xcor_scores_input.name, 'r') as fh:

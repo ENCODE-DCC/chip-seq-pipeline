@@ -40,7 +40,7 @@ def spp(experiment, control, xcor_scores, chrom_sizes, spp_version,
                  "chrom_sizes": chrom_sizes,
                  "spp_version": spp_version}
     if fragment_length:
-        spp_input.update({"fragment_length": fragment_length})
+        spp_input.update({"fragment_length": str(fragment_length)})
     if bigbed and as_file:
         spp_input.update({"as_file": as_file})
     if prefix:
@@ -192,7 +192,7 @@ def main(rep1_ta, ctl1_ta, rep1_xcor, rep1_paired_end,
         'as_file':     as_file
         }
     if fragment_length:
-        common_args.update({'fragment_length': fragment_length})
+        common_args.update({'fragment_length': str(fragment_length)})
     rep1_peaks_subjob = spp(
         rep1_ta,
         rep1_control,
