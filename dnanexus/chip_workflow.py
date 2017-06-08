@@ -63,7 +63,6 @@ Examples:
     --ctl1 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/C1-ENCFF069WCH.chr19.fq.gz" \\
     --ctl2 "/ChIP-seq/test_data/ENCSR087PLZ-mH3K9ac/C2-ENCFF101KOM.chr19.fq.gz" \\
     --yes
- 
 '''
 
 WF = {
@@ -879,6 +878,8 @@ def main():
                              'outputField': 'pooled_fc_signal'})
                     })
 
+            if args.fragment_length:
+                final_idr_stage_input.update({'fragment_length': args.fragment_length})
             if blacklist:
                 final_idr_stage_input.update({'blacklist': blacklist})
             if chrom_sizes:
@@ -966,6 +967,9 @@ def main():
                     {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == PEAKS_STAGE_NAME),
                      'outputField': 'rep1_fc_signal'})
             }
+
+            if args.fragment_length:
+                overlap_peaks_stage_input.update({'fragment_length': args.fragment_length})
             if chrom_sizes:
                 overlap_peaks_stage_input.update({'chrom_sizes': chrom_sizes})
             else:
