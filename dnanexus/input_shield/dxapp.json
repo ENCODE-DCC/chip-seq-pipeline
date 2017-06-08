@@ -122,7 +122,9 @@
     "interpreter": "python2.7",
     "file": "src/input_shield.py",
     "execDepends": [
-      {"name": "awscli", "package_manager": "pip"}
+    ],
+    "assetDepends": [
+      {"id": "record-F4vB7gj004jP3fQz8zFf0qjj"}
     ],
     "systemRequirements": {
       "main": {"instanceType": "mem2_hdd2_x1"}

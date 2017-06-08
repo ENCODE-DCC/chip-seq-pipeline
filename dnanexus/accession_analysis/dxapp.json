@@ -115,9 +115,10 @@
     "interpreter": "python2.7",
     "file": "src/accession_analysis.py",
     "execDepends": [
-      {"name": "awscli", "package_manager": "pip"}
+    ],
+    "assetDepends": [
+      {"id": "record-F4XJxQQ0XFkfv1KqF6QXpvq1"}
     ]
-
   },
   "access": {
     "network": ["*"],
