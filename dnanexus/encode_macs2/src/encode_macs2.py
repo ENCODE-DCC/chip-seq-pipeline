@@ -45,7 +45,7 @@ def macs2(experiment, control, xcor_scores, chrom_sizes,
         if prefix:
             macs2_input.update({'prefix': prefix})
         if fragment_length:
-            macs2_input.update({'fragment_length': str(fragment_length)})
+            macs2_input.update({'fragment_length': fragment_length})
         return macs2_applet.run(macs2_input, name=name)
 
 
@@ -212,7 +212,7 @@ def main(rep1_ta, ctl1_ta, rep1_xcor, rep1_paired_end, chrom_sizes, genomesize,
         }
     # if the fragment_length argument is given, update macs2 input
     if fragment_length:
-        common_args.update({'fragment_length' : str(fragment_length)})
+        common_args.update({'fragment_length' : fragment_length})
 
     common_args.update({'prefix': 'r1'})
     rep1_peaks_subjob      = macs2( rep1_ta,
