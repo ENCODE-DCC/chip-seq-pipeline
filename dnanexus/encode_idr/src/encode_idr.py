@@ -118,7 +118,7 @@ def internal_pseudoreplicate_IDR(experiment, r1pr_peaks, rep1_ta, rep1_xcor, pai
         rep1_ta_filename, rep1_xcor_filename, stable_set_filename, chrom_sizes_filename)
 
     output = {
-        "rep1_frip_nreads"           : n_reads,
+        "F1"           : n_reads,
         "rep1_frip_nreads_in_peaks"  : n_reads_in_peaks,
         "rep1_frip_score"            : frip_score
     }
