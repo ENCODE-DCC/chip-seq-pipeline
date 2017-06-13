@@ -39,6 +39,35 @@
 			"optional": true
 		},
 		{
+			"name": "rep1_ta",
+			"label": "Mapped reads for rep1",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep1_xcor",
+			"label": "Cross-correlation file for rep1",
+			"class": "file",
+			"optional": false
+		},
+		{
+			"name": "rep2_ta",
+			"label": "Mapped reads for rep2",
+			"class": "file",
+			"optional": true
+		},
+		{
+			"name": "rep2_xcor",
+			"label": "Cross-correlation file for rep2",
+			"class": "file",
+			"optional": true
+		},
+        {
+            "name": "paired_end",
+            "class": "boolean",
+            "optional": false
+        },
+		{
 			"name": "chrom_sizes",
 			"label": "chrom.sizes for bedToBigBed",
 			"class": "file",
@@ -116,6 +145,21 @@
 			"name": "npeaks_rejected",
 			"label": "Number of peaks rejected",
 			"class": "int"
+		},
+		{
+			"name": "frip_nreads",
+			"label": "Number of reads in the pool",
+			"class": "int"
+		},
+		{
+			"name": "frip_nreads_in_peaks",
+			"label": "Number of pooled reads in peaks",
+			"class": "int"
+		},
+		{
+			"name": "frip_score",
+			"label": "FRiP score (fraction of reads in peaks)",
+			"class": "float"
 		},
 		{
 			"name": "rep1_signal",

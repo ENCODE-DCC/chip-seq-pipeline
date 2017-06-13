@@ -845,9 +845,12 @@ def main():
                 idr_stages.append({'name': 'IDR Pooled Pseudoreplicates', 'stage_id': idr_stage_id})
 
             final_idr_stage_input = {
-                    'r1pr_peaks' : dxpy.dxlink(
+                    'r1pr_peaks': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Rep 1 Self-pseudoreplicates'),
                          'outputField': 'IDR_peaks'}),
+                    'rep1_ta': exp_rep1_ta,
+                    'rep1_xcor': exp_rep1_cc,
+                    'paired_end': rep1_paired_end,  # applies to replicated experiments, too
                     'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
                     'rep1_signal': dxpy.dxlink(
                         {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
@@ -864,6 +867,8 @@ def main():
                         'pooledpr_peaks': dxpy.dxlink(
                             {'stage': next(ss.get('stage_id') for ss in idr_stages if ss['name'] == 'IDR Pooled Pseudoreplicates'),
                              'outputField': 'IDR_peaks'}),
+                        'rep2_ta': exp_rep2_ta,
+                        'rep2_xcor': exp_rep2_cc,
                         'rep2_signal': dxpy.dxlink(
                             {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == 'ENCODE Peaks'),
                              'outputField': 'rep2_fc_signal'}),
@@ -922,6 +927,11 @@ def main():
                 'pooledpr2_peaks': dxpy.dxlink(
                     {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == PEAKS_STAGE_NAME),
                      'outputField': 'pooledpr2_%s' % (peaktype)}),
+                'rep1_ta': exp_rep1_ta,
+                'rep1_xcor': exp_rep1_cc,
+                'rep2_ta': exp_rep2_ta,
+                'rep2_xcor': exp_rep2_cc,
+                'paired_end': rep1_paired_end,  # applies to replicated experiments, too
                 'as_file': as_file,
                 'peak_type': peak_type_extension,
                 'prefix': 'final',
@@ -944,6 +954,9 @@ def main():
                 'pooled_peaks': dxpy.dxlink(
                     {'stage': next(ss.get('stage_id') for ss in encode_macs2_stages if ss['name'] == PEAKS_STAGE_NAME),
                      'outputField': 'rep1_%s' % (peaktype)}),
+                'rep1_ta': exp_rep1_ta,
+                'rep1_xcor': exp_rep1_cc,
+                'paired_end': rep1_paired_end,  # applies to replicated experiments, too
                 'as_file': as_file,
                 'peak_type': peak_type_extension,
                 'prefix': 'final',
@@ -964,10 +977,9 @@ def main():
             )
             overlap_peaks_stages.append({'name': 'Final %s' %(peaktype), 'stage_id': overlap_peaks_stage_id})
 
-
     if args.yes:
         if args.debug:
-            analysis = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['255.255.255.255'])
+            analysis = workflow.run({}, folder=output_folder, priority='high', debug={'debugOn': ['AppInternalError', 'AppError']}, delay_workspace_destruction=True, allow_ssh=['*'])
         else:
             analysis = workflow.run({}, folder=output_folder, priority='normal')
 

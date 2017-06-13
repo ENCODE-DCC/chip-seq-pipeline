@@ -100,12 +100,12 @@ def get_args():
 
     parser.add_argument(
         '--key',
-        help="The keypair identifier from the keyfile. Default is 'default'",
+        help="The local keypair identifier from the local keyfile. Default is 'default'",
         default='default')
 
     parser.add_argument(
         '--keyfile',
-        help="The keypair filename.",
+        help="The local keypair filename.",
         default=os.path.expanduser("~/keypairs.json"))
 
     parser.add_argument(
@@ -157,6 +157,7 @@ def get_args():
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
     parser.add_argument('--scrub', help="Scrub bam files of sequence information", type=t_or_f, default=None)
+    parser.add_argument('--encoded_check', help="Value is passed on to accession_analysis", type=t_or_f, default=None)
 
     args = parser.parse_args()
 
@@ -168,6 +169,7 @@ def get_args():
             format='%(levelname)s:%(message)s')
 
     return args
+
 
 def resolve_project(identifier, privs='r'):
     project = dxpy.find_one_project(name=identifier, level='VIEW', name_mode='exact', return_handler=True, zero_ok=True)
@@ -303,7 +305,7 @@ def choose_reference(experiment, biorep_n, server, keypair, sex_specific):
     return reference
 
 
-def build_workflow(experiment, biorep_n, input_shield_stage_input, key, accession):
+def build_workflow(experiment, biorep_n, input_shield_stage_input, accession, use_existing_folders):
 
     output_project = resolve_project(args.outp, 'w')
     logging.debug('Found output project %s' % (output_project.name))
@@ -331,14 +333,16 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key, accessio
          for folder_path in folder_paths
          if resolve_folder(output_project, folder_path)]
     if any(paths_exist):
-        logging.error(
-            "%s: output paths already exist: %s"
-            % (experiment.get('accession'), paths_exist))
-        return None
-    else:
-        workflow_output_folder, fastq_output_folder, mapping_output_folder, final_output_folder = \
-            tuple(create_folder(output_project, folder_path)
-                  for folder_path in folder_paths)
+        msg = "%s: output paths already exist: %s" % (experiment.get('accession'), paths_exist)
+        if use_existing_folders:
+            logging.warning(msg)
+        else:
+            msg += "\nUse --use_existing_folders to supress but possibly create duplicate files"
+            logging.error(msg)
+            return None
+    workflow_output_folder, fastq_output_folder, mapping_output_folder, final_output_folder = \
+        tuple(create_folder(output_project, folder_path)
+              for folder_path in folder_paths)
 
     if args.raw:
         workflow_title = \
@@ -444,8 +448,9 @@ def build_workflow(experiment, biorep_n, input_shield_stage_input, key, accessio
     return workflow
 
 
-def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
-             crop_length, accession, fqcheck, force_patch):
+def map_only(experiment, biorep_n, files, server, keypair, sex_specific,
+             crop_length, accession, fqcheck, force_patch,
+             use_existing_folders, encoded_check):
 
     if not files:
         logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
@@ -463,13 +468,12 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
     input_shield_stage_input.update({
         'reference_tar': reference_tar,
         'debug': args.debug,
-        'key': key,
         'crop_length': crop_length
     })
 
     if all(isinstance(f, dict) for f in files): #single end
         input_shield_stage_input.update({'reads1': [f.get('accession') for f in files]})
-        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key, accession))
+        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, accession, use_existing_folders))
     elif all(isinstance(f, tuple) for f in files): #paired-end
         #launches separate mapping jobs for each readpair
         #TODO: upadte input_shield to take an array of read1/read2 PE pairs then pass that array from here
@@ -481,7 +485,7 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
             except StopIteration:
                 logging.error('%s rep %s: Unmatched read pairs' %(experiment.get('accession'),biorep_n))
                 return []
-        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, key, accession))
+        workflows.append(build_workflow(experiment, biorep_n, input_shield_stage_input, accession, use_existing_folders))
     else:
         logging.error('%s: List of files to map appears to be mixed single-end and paired-end: %s' %(experiment.get('accession'), files))
 
@@ -513,6 +517,8 @@ def map_only(experiment, biorep_n, files, key, server, keypair, sex_specific,
                     accession_job_input.update({'fqcheck' : fqcheck})
                 if force_patch is not None:
                     accession_job_input.update({'force_patch': force_patch})
+                if encoded_check is not None:
+                    accession_job_input.update({'encoded_check': encoded_check})
                 time.sleep(5)
                 max_retries = 10
                 retries = max_retries
@@ -607,14 +613,18 @@ def main():
                 if paired_files:
                     pe_jobs = \
                         map_only(experiment, biorep_n, paired_files,
-                                 args.key, server, keypair, args.sex_specific,
-                                 args.crop_length, args.accession, args.fqcheck, args.force_patch)
+                                 server, keypair, args.sex_specific,
+                                 args.crop_length, args.accession,
+                                 args.fqcheck, args.force_patch,
+                                 args.use_existing_folders, args.encoded_check)
                     in_process = True
                 if unpaired_files:
                     se_jobs = \
                         map_only(experiment, biorep_n, unpaired_files,
-                                 args.key, server, keypair, args.sex_specific,
-                                 args.crop_length, args.accession, args.fqcheck, args.force_patch)
+                                 server, keypair, args.sex_specific,
+                                 args.crop_length, args.accession,
+                                 args.fqcheck, args.force_patch,
+                                 args.use_existing_folders, args.encoded_check)
                     in_process = True
                 if paired_files and pe_jobs:
                     outstrings.append('paired:%s' %([(a.get('accession'), b.get('accession')) for (a,b) in paired_files]))

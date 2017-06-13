@@ -57,14 +57,14 @@ def get_args():
 
     parser.add_argument('experiments', help="Experiment accessions", nargs="*")
     parser.add_argument('--infile', help="File with experiment accessions")
-    parser.add_argument('--debug', help="Print debug messages", default=False, action='store_true')
+    parser.add_argument('--debug', help="Print debug messages and hold jobs for ssh", default=False, action='store_true')
     parser.add_argument('--project', help="Project name or ID", default=dxpy.WORKSPACE_ID)
     parser.add_argument('--outf', help="Output folder name or ID", default="/")
     parser.add_argument('--inf', nargs='*', help="Folder(s) name or ID with tagAligns", default="/")
     parser.add_argument('--yes',   help="Run the workflows created",            default=False, action='store_true')
     parser.add_argument('--tag',   help="String to add to the workflow title")
-    parser.add_argument('--key', help="The keypair identifier from the keyfile.  Default is --key=default", default='default')
-    parser.add_argument('--keyfile', default=os.path.expanduser("~/keypairs.json"), help="The keypair file.  Default is --keyfile=%s" %(os.path.expanduser("~/keypairs.json")))
+    parser.add_argument('--key', help="The local keypair identifier from the keyfile.  Default is --key=default", default='default')
+    parser.add_argument('--keyfile', default=os.path.expanduser("~/keypairs.json"), help="The local keypair file.  Default is --keyfile=%s" %(os.path.expanduser("~/keypairs.json")))
     parser.add_argument('--gsize', help="Genome size string for MACS2, e.g. mm or hs", default=None)
     parser.add_argument('--csizes', help="chrom.sizes file for bedtobigbed, e.g. ENCODE Reference Files:/mm10/male.mm10.chrom.sizes", default=None)
     parser.add_argument('--blacklist', help="Regions to exclude from final peaks list", default=None)
@@ -78,6 +78,11 @@ def get_args():
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--skip_control', help="If --accession, accession no control files or metadata", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
+    parser.add_argument(
+        '--use_existing_folders',
+        help="Reuse existing folders even if results have already been saved there",
+        default=False,
+        action='store_true')
 
     args = parser.parse_args()
 
@@ -676,9 +681,9 @@ def main():
                     % (exp_id, args.assembly))
         else:
             chrom_sizes = args.csizes
-
+        chip_workflow_absolute_path = os.path.dirname(os.path.realpath(__file__)) + "/chip_workflow.py"
         command_strings = [
-            '~/chip-seq-pipeline/dnanexus/chip_workflow.py',
+            chip_workflow_absolute_path,
             '--nomap --yes',
             '--target %s' % (wf_target),
             '--title "%s"' % (workflow_title),
@@ -701,6 +706,8 @@ def main():
             command_strings.append('--blacklist "%s"' % (blacklist))
         if args.debug:
             command_strings.append('--debug')
+        if args.use_existing_folders:
+            command_strings.append('--use_existing_folders')
         if args.accession:
             command_strings.append('--accession')
             if args.fqcheck is not None:
@@ -736,6 +743,7 @@ def main():
                         "%s: Tried but failed to update experiment internal_status to processing"
                         % (exp_id))
                     logging.error(r.text)
+
 
 if __name__ == '__main__':
     main()

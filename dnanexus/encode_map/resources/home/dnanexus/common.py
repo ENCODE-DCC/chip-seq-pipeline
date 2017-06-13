@@ -61,7 +61,7 @@ def run_pipe(steps, outfile=None):
     first_step_n = 1
     last_step_n = len(steps)
     for n, step in enumerate(steps, start=first_step_n):
-        print("step %d: %s" % (n, step))
+        logger.debug("step %d: %s" % (n, step))
         if n == first_step_n:
             if n == last_step_n and outfile:  # one-step pipeline with outfile
                 with open(outfile, 'w') as fh:
@@ -142,6 +142,33 @@ def count_lines(fname):
         'wc -l'
         ])
     return int(out)
+
+
+def xcor_fraglen(filename):
+    # Extract the fragment length estimate from column 3 of the
+    # cross-correlation scores file
+    with open(filename, 'r') as fh:
+        firstline = fh.readline()
+        fraglen = firstline.split()[2]  # third column
+    return int(fraglen)
+
+
+def frip(reads_filename, xcor_filename, peaks_filename, chrom_sizes_filename):
+    # calculate FRiP
+    fraglen = xcor_fraglen(xcor_filename)
+    half_fraglen = int(fraglen)/2
+
+    reads_in_peaks_fn = 'reads_in_peaks.ta'
+    out, err = run_pipe([
+        'slopBed -i %s -g %s -s -l %s -r %s' % (
+            reads_filename, chrom_sizes_filename, -half_fraglen, half_fraglen),
+        r"""awk '{if ($2>=0 && $3>=0 && $2<=$3) print $0}'""",
+        'intersectBed -a stdin -b %s -wa -u' % (peaks_filename)
+        ], reads_in_peaks_fn)
+    n_reads          = count_lines(uncompress(reads_filename))
+    n_reads_in_peaks = count_lines(reads_in_peaks_fn)
+    frip_score = float(n_reads_in_peaks)/float(n_reads)
+    return (n_reads, n_reads_in_peaks, frip_score)
 
 
 def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
@@ -406,7 +433,7 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
     #it is not strictly necessary to include both the accept header, and format=json, but we do
     #so as to get exactly the same URL as one would use in a web browser
 
-    RETRY_CODES = [500]
+    RETRY_CODES = [500, 502]
     RETRY_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.SSLError)
     HEADERS = {'accept': 'application/json'}
 
@@ -477,7 +504,7 @@ def encoded_update(method, url, keypair, payload, return_response):
         logger.error('Invalid HTTP method: %s' %(method))
         return
 
-    RETRY_CODES = [500]
+    RETRY_CODES = [500, 502]
     RETRY_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.SSLError)
     HEADERS = {'accept': 'application/json', 'content-type': 'application/json'}
 
