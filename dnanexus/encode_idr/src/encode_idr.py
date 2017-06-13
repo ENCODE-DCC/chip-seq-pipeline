@@ -127,7 +127,7 @@ def internal_pseudoreplicate_IDR(experiment, r1pr_peaks, rep1_ta, rep1_xcor,
 
     n_reads, n_reads_in_peaks, frip_score = common.frip(
         rep1_ta_filename, rep1_xcor_filename, stable_set_filename,
-        chrom_sizes_filename, fragment_length)
+        chrom_sizes_filename, fragment_length_used_rep1)
 
     output = {
         "rep1_frip_nreads": n_reads,
@@ -235,6 +235,7 @@ def replicated_IDR(experiment,
             {"inputs": [rep1_ta, rep2_ta],
              "prefix": 'pooled_reps'},
             name='Pool replicates')
+    # next call could be on 267 and save time?
     pool_replicates_subjob.wait_on_done()
     # If fragment_length is not given, calculate the fragment_length
     # using crosscorrelation. Else use the overridevalue. Set the

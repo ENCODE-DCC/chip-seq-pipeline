@@ -33,7 +33,8 @@ def xcor_only(tags, paired_end, spp_version=None, name='xcor_only'):
 
 def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
                                      rep1_ta, rep1_xcor,
-                                     paired_end, chrom_sizes, as_file, peak_type, prefix):
+                                     paired_end, chrom_sizes, as_file,
+                                     peak_type, prefix, fragment_length=None):
 
     rep1_peaks_file      = dxpy.DXFile(rep1_peaks)
     rep2_peaks_file      = dxpy.DXFile(rep2_peaks)
@@ -140,28 +141,26 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
     # calculate FRiP (Fraction of Reads in Peaks)
 
     # Extract the fragment length estimate from column 3 of the
-    # cross-correlation scores file
-    with open(rep1_xcor_fn, 'r') as fh:
-        firstline = fh.readline()
-        fraglen = firstline.split()[2]  # third column
-        print("Xcor fraglen %s" % (fraglen))
-    half_fraglen = int(fraglen)/2
+    # cross-correlation scores file or use the user-defined
+    # fragment_length if given.
+    if fragment_length:
+        fraglen = fragment_length
+        fragment_length_given_by_user = True
+    else:
+        fraglen = common.xcor_fraglen(rep1_xcor_fn)
+        fragment_length_given_by_user = False
 
+    # FRiP
     reads_in_peaks_fn = 'reads_in_%s.ta' % (peak_type)
-    out, err = common.run_pipe([
-        'slopBed -i %s -g %s -s -l %s -r %s' % (
-            rep1_ta_fn, chrom_sizes_fn, -half_fraglen, half_fraglen),
-        r"""awk '{if ($2>=0 && $3>=0 && $2<=$3) print $0}'""",
-        'intersectBed -a stdin -b %s -wa -u' % (overlapping_peaks_fn)
-        ], reads_in_peaks_fn)
-    n_reads          = common.count_lines(common.uncompress(rep1_ta_fn))
-    n_reads_in_peaks = common.count_lines(reads_in_peaks_fn)
-    frip_score = float(n_reads_in_peaks)/float(n_reads)
+    n_reads, n_reads_in_peaks, frip_score = common.frip(
+        rep1_ta_fn, rep1_xcor_fn, overlapping_peaks_fn,
+        chrom_sizes_fn, fraglen,
+        reads_in_peaks_fn=reads_in_peaks_fn)
 
     # count peaks
-    npeaks_in        = common.count_lines(common.uncompress(pooled_peaks_fn))
-    npeaks_out       = common.count_lines(overlapping_peaks_fn)
-    npeaks_rejected  = common.count_lines(rejected_peaks_fn)
+    npeaks_in = common.count_lines(common.uncompress(pooled_peaks_fn))
+    npeaks_out = common.count_lines(overlapping_peaks_fn)
+    npeaks_rejected = common.count_lines(rejected_peaks_fn)
 
     # make bigBed files for visualization
     overlapping_peaks_bb_fn = common.bed2bb(
@@ -171,10 +170,10 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
 
     # Upload file outputs from the local file system.
 
-    overlapping_peaks       = dxpy.upload_local_file(common.compress(overlapping_peaks_fn))
-    overlapping_peaks_bb    = dxpy.upload_local_file(overlapping_peaks_bb_fn)
-    rejected_peaks          = dxpy.upload_local_file(common.compress(rejected_peaks_fn))
-    rejected_peaks_bb       = dxpy.upload_local_file(rejected_peaks_bb_fn)
+    overlapping_peaks = dxpy.upload_local_file(common.compress(overlapping_peaks_fn))
+    overlapping_peaks_bb = dxpy.upload_local_file(overlapping_peaks_bb_fn)
+    rejected_peaks = dxpy.upload_local_file(common.compress(rejected_peaks_fn))
+    rejected_peaks_bb = dxpy.upload_local_file(rejected_peaks_bb_fn)
 
     output = {
         "overlapping_peaks"     : dxpy.dxlink(overlapping_peaks),
@@ -186,7 +185,9 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
         "npeaks_rejected"       : npeaks_rejected,
         "frip_nreads"           : n_reads,
         "frip_nreads_in_peaks"  : n_reads_in_peaks,
-        "frip_score"            : frip_score
+        "frip_score"            : frip_score,
+        "fragment_length_used"  : fraglen,
+        "fragment_length_given_by_user": fragment_length_given_by_user
     }
 
     return output
@@ -195,7 +196,8 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
 def replicated_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
                        pooledpr1_peaks, pooledpr2_peaks,
                        rep1_ta, rep1_xcor, rep2_ta, rep2_xcor,
-                       paired_end, chrom_sizes, as_file, peak_type, prefix):
+                       paired_end, chrom_sizes, as_file, peak_type, prefix,
+                       fragment_length=None):
 
     rep1_peaks_file      = dxpy.DXFile(rep1_peaks)
     rep2_peaks_file      = dxpy.DXFile(rep2_peaks)
@@ -272,22 +274,34 @@ def replicated_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
             {"inputs": [rep1_ta, rep2_ta],
              "prefix": 'pooled_reps'},
             name='Pool replicates')
-    pooled_replicates_xcor_subjob = \
-        xcor_only(
-            pool_replicates_subjob.get_output_ref("pooled"),
-            paired_end,
-            spp_version=None,
-            name='Pool cross-correlation')
-    pooled_replicates_xcor_subjob.wait_on_done()
+    # If fragment length was given by user we skip pooled_replicates
+    # _xcor_subjob, set the pool_xcor_filename to None, and update
+    # the flag fragment_length_given_by_user. Otherwise, run the subjob
+    # to be able to extract the fragment length fron cross-correlations.
+    if fragment_length:
+        pool_xcor_filename = None
+        fraglen = fragment_length
+        fragment_length_given_by_user = True
+    else:
+        pooled_replicates_xcor_subjob = \
+            xcor_only(
+                pool_replicates_subjob.get_output_ref("pooled"),
+                paired_end,
+                spp_version=None,
+                name='Pool cross-correlation')
+        pooled_replicates_xcor_subjob.wait_on_done()
+        pool_xcor_link = pooled_replicates_xcor_subjob.describe()['output'].get("CC_scores_file")
+        pool_xcor_file = dxpy.get_handler(pool_xcor_link)
+        pool_xcor_filename = 'poolcc_%s' % (pool_xcor_file.name)
+        dxpy.download_dxfile(pool_xcor_file.get_id(), pool_xcor_filename)
+        fraglen = common.xcor_fraglen(pool_xcor_filename)
+        fragment_length_given_by_user = False
 
+    pool_replicates_subjob.wait_on_done()
     pool_ta_link = pool_replicates_subjob.describe()['output'].get("pooled")
-    pool_xcor_link = pooled_replicates_xcor_subjob.describe()['output'].get("CC_scores_file")
     pool_ta_file = dxpy.get_handler(pool_ta_link)
-    pool_xcor_file = dxpy.get_handler(pool_xcor_link)
     pool_ta_filename = 'poolta_%s' % (pool_ta_file.name)
-    pool_xcor_filename = 'poolcc_%s' % (pool_xcor_file.name)
     dxpy.download_dxfile(pool_ta_file.get_id(), pool_ta_filename)
-    dxpy.download_dxfile(pool_xcor_file.get_id(), pool_xcor_filename)
 
     logger.info(subprocess.check_output('set -x; ls -l', shell=True))
 
@@ -357,25 +371,10 @@ def replicated_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
     print("%d peaks were rejected" % (common.count_lines(rejected_peaks_fn)))
 
     # calculate FRiP (Fraction of Reads in Peaks)
-
-    # Extract the fragment length estimate from column 3 of the
-    # cross-correlation scores file
-    with open(pool_xcor_filename, 'r') as fh:
-        firstline = fh.readline()
-        fraglen = firstline.split()[2]  # third column
-        print("Xcor fraglen %s" % (fraglen))
-    half_fraglen = int(fraglen)/2
-
     reads_in_peaks_fn = 'reads_in_%s.ta' % (peak_type)
-    out, err = common.run_pipe([
-        'slopBed -i %s -g %s -s -l %s -r %s' % (
-            pool_ta_filename, chrom_sizes_fn, -half_fraglen, half_fraglen),
-        r"""awk '{if ($2>=0 && $3>=0 && $2<=$3) print $0}'""",
-        'intersectBed -a stdin -b %s -wa -u' % (overlapping_peaks_fn)
-        ], reads_in_peaks_fn)
-    n_reads          = common.count_lines(common.uncompress(pool_ta_filename))
-    n_reads_in_peaks = common.count_lines(reads_in_peaks_fn)
-    frip_score = float(n_reads_in_peaks)/float(n_reads)
+    n_reads, n_reads_in_peaks, frip_score = common.frip(
+        pool_ta_filename, pool_xcor_filename, overlapping_peaks_fn,
+        chrom_sizes_fn, fraglen, reads_in_peaks_fn=reads_in_peaks_fn)
 
     # count peaks
     npeaks_in        = common.count_lines(common.uncompress(pooled_peaks_fn))
@@ -405,7 +404,9 @@ def replicated_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
         "npeaks_rejected"       : npeaks_rejected,
         "frip_nreads"           : n_reads,
         "frip_nreads_in_peaks"  : n_reads_in_peaks,
-        "frip_score"            : frip_score
+        "frip_score"            : frip_score,
+        "fragment_length_used"  : fraglen,
+        "fragment_length_given_by_user": fragment_length_given_by_user
     }
 
     return output
@@ -418,23 +419,27 @@ def main(rep1_peaks, rep2_peaks, pooled_peaks,
          pooledpr1_peaks=None, pooledpr2_peaks=None,
          rep2_ta=None, rep2_xcor=None,
          prefix=None,
-         rep1_signal=None, rep2_signal=None, pooled_signal=None):
+         rep1_signal=None, rep2_signal=None, pooled_signal=None,
+         fragment_length=None):
 
     replicate_inputs = [pooledpr1_peaks, pooledpr2_peaks]
     simplicate_experiment = \
         all([replicate_input is None for replicate_input in replicate_inputs])
+    # that means pooledpr1_peaks is None and pooledpr2_peaks is None
 
     if simplicate_experiment:
         output = internal_pseudoreplicate_overlap(
             rep1_peaks, rep2_peaks, pooled_peaks,
             rep1_ta, rep1_xcor,
-            paired_end, chrom_sizes, as_file, peak_type, prefix)
+            paired_end, chrom_sizes, as_file, peak_type, prefix,
+            fragment_length)
     else:
         output = replicated_overlap(
             rep1_peaks, rep2_peaks, pooled_peaks,
             pooledpr1_peaks, pooledpr2_peaks,
             rep1_ta, rep1_xcor, rep2_ta, rep2_xcor,
-            paired_end, chrom_sizes, as_file, peak_type, prefix)
+            paired_end, chrom_sizes, as_file, peak_type, prefix,
+            fragment_length)
 
     # These are just passed through for convenience so that signals and tracks
     # are available in one place.  Both input and output are optional.
