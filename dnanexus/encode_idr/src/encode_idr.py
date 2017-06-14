@@ -120,7 +120,7 @@ def internal_pseudoreplicate_IDR(experiment, r1pr_peaks, rep1_ta, rep1_xcor, pai
     output = {
         "rep1_frip_nreads"           : n_reads,
         "rep1_frip_nreads_in_peaks"  : n_reads_in_peaks,
-        "rep1_frip_score"            : frip_score
+        "F1"            : frip_score
     }
 
     # These are optional outputs to see what's being removed by the blacklist
