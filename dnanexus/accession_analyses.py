@@ -93,6 +93,8 @@ def main():
         else:
             analysis = dxpy.DXAnalysis(ids[0])
             job_name = "Accession %s" % (analysis.name)
+    else:
+        job_name = args.name
 
     tokens = [
         'dx run applets/accession_analysis',
