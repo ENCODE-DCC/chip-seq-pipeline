@@ -3110,24 +3110,30 @@ def infer_pipeline(analysis):
         return None
 
 
+def pipeline_version_by_date(analysis):
+    analysis_date = analysis.get('created')
+    # get the largest version number that was activated on a date before
+    # this analysis was created
+    pipeline_version = str(max([
+        float(version) for version in VERSION_TIMES
+        if VERSION_TIMES[version] < analysis_date])) or None
+    return pipeline_version
+
+
 def infer_pipeline_version(analysis):
     try:
         workflow = dxpy.describe(
             analysis['workflow']['id'], fields={'properties': True})
     except dxpy.exceptions.ResourceNotFound:
-        analysis_date = analysis.get('created')
-        # get the largest version number that was activated on a date before
-        # this analysis was created
-        pipeline_version = str(max([
-            float(version) for version in VERSION_TIMES
-            if VERSION_TIMES[version] < analysis_date])) or None
+        pipeline_version = pipeline_version_by_date(analysis)
         logger.warning(
             "Workflow for %s is missing.  Inferred version %s"
             % (analysis.get('id'), pipeline_version))
     else:
-        pipeline_version = workflow['properties'].get('pipeline_version')
+        pipeline_version = \
+            workflow['properties'].get('pipeline_version') or pipeline_version_by_date(analysis)
 
-    return pipeline_version or 'default'
+    return pipeline_version
 
 
 @dxpy.entry_point('accession_analysis_id')

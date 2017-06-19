@@ -119,6 +119,8 @@ def main(input_bam, paired_end, spp_version):
     # =================================
     # Subsample tagAlign file
     # ================================
+    logger.info(
+        "Intermediate tA md5: %s" % (common.md5(intermediate_TA_filename)))
     NREADS = 15000000
     if paired_end:
         end_infix = 'MATE1'
@@ -134,6 +136,8 @@ def main(input_bam, paired_end, spp_version):
         steps.extend([r"""awk 'BEGIN{OFS="\t"}{$4="N";$5="1000";print $0}'"""])
     steps.extend(['gzip -cn'])
     out, err = common.run_pipe(steps, outfile=subsampled_TA_filename)
+    logger.info(
+        "Subsampled tA md5: %s" % (common.md5(subsampled_TA_filename)))
 
     # Calculate Cross-correlation QC scores
     CC_scores_filename = subsampled_TA_filename + ".cc.qc"
@@ -188,7 +192,7 @@ def main(input_bam, paired_end, spp_version):
     }
     if paired_end:
         output.update({"BEDPE_file": dxpy.dxlink(BEDPE_file)})
-
     return output
+
 
 dxpy.run()
