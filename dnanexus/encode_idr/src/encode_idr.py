@@ -94,7 +94,7 @@ def internal_pseudoreplicate_IDR(experiment, r1pr_peaks, rep1_ta, rep1_xcor,
     # If fragment_length is given, override appropriate values.
     # Calculate, or set the actually used fragment length value.
     # Set the fragment_length_given_by_user flag appropriately.
-    if fragment_length:
+    if fragment_length is not None:
         rep1_xcor_filename = None
         fragment_length_used_rep1 = fragment_length
         fragment_length_given_by_user = True
@@ -243,7 +243,7 @@ def replicated_IDR(experiment,
     # Calculate, or set, actually used fragment lengths for different
     # cases. Set the flag indicating whether the fragment length
     # was given by the user.
-    if fragment_length:
+    if fragment_length is not None:
         pool_xcor_filename = None
         fragment_length_used_rep1 = fragment_length
         fragment_length_used_rep2 = fragment_length

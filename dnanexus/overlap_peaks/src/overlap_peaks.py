@@ -143,7 +143,7 @@ def internal_pseudoreplicate_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
     # Extract the fragment length estimate from column 3 of the
     # cross-correlation scores file or use the user-defined
     # fragment_length if given.
-    if fragment_length:
+    if fragment_length is not None:
         fraglen = fragment_length
         fragment_length_given_by_user = True
     else:
@@ -278,7 +278,7 @@ def replicated_overlap(rep1_peaks, rep2_peaks, pooled_peaks,
     # _xcor_subjob, set the pool_xcor_filename to None, and update
     # the flag fragment_length_given_by_user. Otherwise, run the subjob
     # to be able to extract the fragment length fron cross-correlations.
-    if fragment_length:
+    if fragment_length is not None:
         pool_xcor_filename = None
         fraglen = fragment_length
         fragment_length_given_by_user = True
