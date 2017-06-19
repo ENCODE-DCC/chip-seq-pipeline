@@ -65,7 +65,7 @@ def main(experiment, control, xcor_scores_input, chrom_sizes,
     # Extract the fragment length estimate from column 3 of the
     # cross-correlation scores file
     # if the fragment_length argument is given, use that instead
-    if fragment_length:
+    if fragment_length is not None:
         fraglen = str(fragment_length)
         logger.info("User given fragment length %s" % fraglen)
     else:
