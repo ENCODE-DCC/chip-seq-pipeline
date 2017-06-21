@@ -2516,7 +2516,10 @@ def accession_pipeline(analysis_step_versions, keypair, server,
                 'aliases': [alias],
                 'analysis_step_version':
                     '/analysis-step-versions/%s/' % (analysis_step_version_id),
-                'status': step['status'],
+                # this used to be taken from the step definition,
+                # but the Portal was changed to mean something different
+                # so now steps are always set to released
+                'status': 'released',
                 'dx_applet_details': [{
                     'dx_status': 'finished',
                     'dx_job_id': 'dnanexus:%s' % (jobid),
@@ -2624,7 +2627,7 @@ def accession_mapping_analysis_files(
                 'stages': "",
                 'stage_name': "",
                 'file_names': [],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             }
         ],
@@ -2634,7 +2637,7 @@ def accession_mapping_analysis_files(
                 'stage_name': get_stage_name(
                     'Filter and QC.*', analysis_stages),
                 'file_names': ['filtered_bam'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': [
                     {'chipseq_filter_quality_metric': ['filtered_bam']},
                     {'samtools_flagstats_quality_metric': ['filtered_bam']}
@@ -2649,7 +2652,7 @@ def accession_mapping_analysis_files(
                 'stages': raw_mapping_stages,
                 'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
                 'file_names': ['mapped_reads'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': [
                     {'samtools_flagstats_quality_metric': ['mapped_reads']}
                 ]
@@ -2703,7 +2706,7 @@ def accession_raw_mapping_analysis_files(
                 'stages': "",
                 'stage_name': "",
                 'file_names': [],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             }
         ],
@@ -2712,7 +2715,7 @@ def accession_raw_mapping_analysis_files(
                 'stages': raw_mapping_stages,
                 'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
                 'file_names': ['mapped_reads'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': [
                     {'samtools_flagstats_quality_metric': ['mapped_reads']}
                 ]
@@ -2799,7 +2802,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'stages': "",
                 'stage_name': "",
                 'file_names': [],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             }
         ],
@@ -2811,7 +2814,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                          for stage_name in mapping_stage.keys()
                          if stage_name.startswith('Filter and QC')),
                 'file_names': ['filtered_bam'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': [
                     {'chipseq_filter_quality_metric': ['filtered_bam']},
                     {'samtools_flagstats_quality_metric': ['filtered_bam']}]
@@ -2833,7 +2836,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                      'rep1_pvalue_signal', 'rep2_pvalue_signal',
                      'pooled_pvalue_signal', 'rep1_narrowpeaks',
                      'rep2_narrowpeaks', 'pooled_narrowpeaks'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -2848,7 +2851,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                     for stage_name in peak_stage.keys()
                     if re.match('(Overlap|Final) narrowpeaks', stage_name)),
                 'file_names': ['overlapping_peaks'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -3009,7 +3012,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                     ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal',
                      'rep1_pvalue_signal', 'rep2_pvalue_signal',
                      'pooled_pvalue_signal'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -3026,7 +3029,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'file_names':
                     ['rep1_peaks'] if unreplicated_analysis else
                     ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -3040,7 +3043,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'file_names':
                     ['stable_set'] if unreplicated_analysis else
                     ['conservative_set', 'optimal_set'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': [
                     {'idr_quality_metric':
                         ['stable_set'] if unreplicated_analysis else
