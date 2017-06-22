@@ -24,6 +24,7 @@ import csv
 import json
 import copy
 from base64 import b64encode
+import tempfile
 
 import dxpy
 import common
@@ -500,7 +501,7 @@ def samtools_flagstats_quality_metric(step_run, stages, files):
 def idr_quality_metric(step_run, stages, files):
 
     logger.debug(
-        "in idr_seq_filter_quality_metric with "
+        "in idr_filter_quality_metric with "
         "step_run %s stages.keys() %s output files %s"
         % (step_run, stages.keys(), files))
 
@@ -597,6 +598,50 @@ def idr_quality_metric(step_run, stages, files):
     obj.update(COMMON_METADATA)
 
     return [obj]
+
+
+def dxf_md5(dx_fh):
+    logger.debug(
+        "in dxf_md5 with handler %s with name %s"
+        % (dx_fh, dx_fh.name))
+    if 'md5sum' in dx_fh.get_properties():
+        md5sum = dx_fh.get_properties()['md5sum']
+    else:
+        with tempfile.NamedTemporaryFile(delete=True) as tmpfile:
+            dxpy.download_dxfile(dx_fh.get_id(), tmpfile.name)
+            md5sum = common.md5(tmpfile.name)
+        try:
+            set_property(dx_fh, {'md5sum': md5sum})
+        except Exception as e:
+            logger.warning(
+                '%s: skipping adding md5sum property to %s.' % (e, dx_fh.name))
+    logger.debug('exiting dxf_md5 with %s' % (md5sum))
+    return md5sum
+
+
+def dxf_content_md5(dx_fh):
+    logger.debug(
+        "in dxf_content_md5 with handler %s with name %s"
+        % (dx_fh, dx_fh.name))
+    with tempfile.NamedTemporaryFile(delete=True) as tmpfile:
+        dxpy.download_dxfile(dx_fh.get_id(), tmpfile.name)
+        from magic import from_file
+        compressed_mimetypes = [
+            "application/x-compress",
+            "application/x-bzip2",
+            "application/x-gzip"
+            ]
+        mime_type = from_file(tmpfile.name, mime=True)
+        if mime_type in compressed_mimetypes:
+            with tempfile.NamedTemporaryFile(delete=True) as uncompressed_tmpfile:
+                out, err = common.run_pipe([
+                    'cat %s' % (tmpfile.name),
+                    'gzip -d'], uncompressed_tmpfile.name)
+                md5sum = common.md5(uncompressed_tmpfile.name)
+        else:
+            md5sum = common.md5(tmpfile.name)
+    logger.debug('exiting dxf_content_md5 with %s' % (md5sum))
+    return md5sum
 
 
 def get_rep_fastqs(experiment, keypair, server, repn):
@@ -1505,6 +1550,31 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
     return [peak_stages]
 
 
+def idr_sets_same(analysis_stages):
+    if not isinstance(analysis_stages, list):
+        stages = [analysis_stages]
+    else:
+        stages = analysis_stages
+
+    logger.debug('in idr_sets_same with stages %s'
+                 % ([stage.get('name') for stage in stages]))
+    pattern = "Final IDR peak calls"
+    final_idr_stage = next(
+        stage
+        for stage in stages
+        if re.match(pattern, stage['name'])) or None
+    if not final_idr_stage:
+        raise AccessioningError("In idr_sets_same: no peak stage named 'Final IDR peak calls'")
+    optimal_set = dxpy.DXFile(final_idr_stage['output']['optimal_set'])
+    conservative_set = dxpy.DXFile(final_idr_stage['output']['conservative_set'])
+    if dxf_content_md5(optimal_set) == dxf_content_md5(conservative_set):
+        logger.debug("IDR sets are the same")
+        return True
+    else:
+        logger.debug("IDR sets differ")
+        return False
+
+
 def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
                        experiment, keypair, server, signal_only):
 
@@ -1757,47 +1827,71 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
             }
         })
 
-        peak_stages.update({
-            get_stage_name("Final IDR peak calls", analysis_stages): {
+        IDR_sets_same = idr_sets_same(analysis_stages)
+        if not unreplicated_analysis and not IDR_sets_same:
+            peak_stages.update({
+                get_stage_name("Final IDR peak calls", analysis_stages): {
+                    'output_files': [
+                        {'name': 'conservative_set',
+                         'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                         'metadata': idr_conservative_narrowpeak_metadata},
 
-                'output_files': [
+                        {'name': 'conservative_set_bb',
+                         'derived_from': ['conservative_set'],
+                         'metadata': idr_conservative_narrowpeak_bb_metadata},
 
-                    {'name': 'conservative_set',
-                     'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                     'metadata': idr_conservative_narrowpeak_metadata},
+                        {'name': 'optimal_set',
+                         'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                         'metadata': idr_optimal_narrowpeak_metadata},
 
-                    {'name': 'conservative_set_bb',
-                     'derived_from': ['conservative_set'],
-                     'metadata': idr_conservative_narrowpeak_bb_metadata},
-
-                    {'name': 'optimal_set',
-                     'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                     'metadata': idr_optimal_narrowpeak_metadata},
-
-                    {'name': 'optimal_set_bb',
-                     'derived_from': ['optimal_set'],
-                     'metadata': idr_optimal_narrowpeak_bb_metadata}
-
-                ] if not unreplicated_analysis else [
-
-                    {'name': 'stable_set',
-                     'derived_from': ['rep1_peaks'],
-                     'metadata': idr_stable_narrowpeak_metadata},
-
-                    {'name': 'stable_set_bb',
-                     'derived_from': ['stable_set'],
-                     'metadata': idr_stable_narrowpeak_bb_metadata},
-                ],
-
-                'qc': [
+                        {'name': 'optimal_set_bb',
+                         'derived_from': ['optimal_set'],
+                         'metadata': idr_optimal_narrowpeak_bb_metadata}
+                    ],
+                    'qc': [
                         'reproducibility_test', 'rescue_ratio', 'Np', 'N1',
                         'N2', 'Nt', 'self_consistency_ratio'
-                      ] if not unreplicated_analysis else [
-                        'N1', 'Ns'],
+                    ],
+                    'stage_metadata': {}  # initialized below
+                }
+            })
+        elif not unreplicated_analysis and IDR_sets_same:
+            peak_stages.update({
+                get_stage_name("Final IDR peak calls", analysis_stages): {
 
-                'stage_metadata': {}  # initialized below
-            }
-        })
+                    'output_files': [
+                        {'name': 'optimal_set',
+                         'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                         'metadata': idr_optimal_narrowpeak_metadata},
+
+                        {'name': 'optimal_set_bb',
+                         'derived_from': ['optimal_set'],
+                         'metadata': idr_optimal_narrowpeak_bb_metadata}
+
+                    ],
+                    'qc': [
+                        'reproducibility_test', 'rescue_ratio', 'Np', 'N1',
+                        'N2', 'Nt', 'self_consistency_ratio'
+                    ],
+                    'stage_metadata': {}  # initialized below
+                }
+            })
+        elif unreplicated_analysis:
+            peak_stages.update({
+                get_stage_name("Final IDR peak calls", analysis_stages): {
+                    'output_files': [
+                        {'name': 'stable_set',
+                         'derived_from': ['rep1_peaks'],
+                         'metadata': idr_stable_narrowpeak_metadata},
+
+                        {'name': 'stable_set_bb',
+                         'derived_from': ['stable_set'],
+                         'metadata': idr_stable_narrowpeak_bb_metadata},
+                    ],
+                    'qc': ['N1', 'Ns'],
+                    'stage_metadata': {}  # initialized below
+                }
+            })
 
         final_idr_stage_name = \
             get_stage_name("Final IDR peak calls", analysis_stages)
@@ -2023,22 +2117,10 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
         'in accession_file with f %s'
         % (pprint.pformat(f['submitted_file_name'])))
     dx_fh = f.pop('dx')
-
-    if 'md5sum' in dx_fh.get_properties():
-        f.update({'md5sum': dx_fh.get_properties()['md5sum']})
-        local_fname = None
-    else:
-        local_fname = dx_fh.name
-        logger.info("Downloading %s" % (local_fname))
-        dxpy.download_dxfile(dx_fh.get_id(), local_fname)
-        md5sum = common.md5(local_fname)
-        try:
-            set_property(dx_fh, {'md5sum': md5sum})
-        except Exception as e:
-            logger.warning(
-                '%s: skipping adding md5sum property to %s.' % (e, dx_fh.name))
-        f.update({'md5sum': md5sum})
-
+    local_fname = dx_fh.name
+    logger.info("Downloading %s" % (local_fname))
+    dxpy.download_dxfile(dx_fh.get_id(), local_fname)
+    f.update({'md5sum': common.md5(local_fname)})
     f['notes'] = json.dumps(f.get('notes'))
 
     # check to see if md5 already in the database
@@ -2112,11 +2194,6 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
                     % (new_file_object.get('accession'),
                        new_file_object.get('status')))
             else:
-                if not local_fname:
-                    local_fname = dx_fh.name
-                    logger.info("Downloading %s" % (local_fname))
-                    dxpy.download_dxfile(dx_fh.get_id(), local_fname)
-
                 logger.info(
                     "accession_file: MD5 exisits, but force_upload, so uploading and patching file metatdata")
                 return_code = common.s3_cp(
@@ -2127,10 +2204,6 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
                 assert not return_code, '%s: s3_cp failed. Returned non-zero return code %s' % (new_file_object.get('accession'), return_code)
                 add_tag(dx_fh, new_file_object.get('accession'))
     else:
-        if not local_fname:
-            local_fname = dx_fh.name
-            logger.info("Downloading %s" % (local_fname))
-            dxpy.download_dxfile(dx_fh.get_id(), local_fname)
         logger.info("accession_file: New MD5")
         logger.info('posting new file %s' % (f.get('submitted_file_name')))
         logger.debug('%s' % (f))
@@ -2184,17 +2257,7 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
 
 
 def dx_file_at_encode(dx_fh, keypair, server):
-    md5sum = dx_fh.get_properties().get('md5sum')
-    if not md5sum:
-        logger.info("Downloading %s to calculate md5" % (dx_fh.name))
-        dxpy.download_dxfile(dx_fh.get_id(), dx_fh.name)
-        md5sum = common.md5(dx_fh.name)
-        try:
-            set_property(dx_fh, {'md5sum': md5sum})
-        except Exception as e:
-            logger.warning(
-                '%s: skipping adding md5sum property to %s.' % (e, dx_fh.name))
-
+    md5sum = dxf_md5(dx_fh)
     search_result = common.encoded_get(
         server + '/search/?type=File&md5sum=%s' % (md5sum),
         keypair=keypair)
@@ -2516,7 +2579,10 @@ def accession_pipeline(analysis_step_versions, keypair, server,
                 'aliases': [alias],
                 'analysis_step_version':
                     '/analysis-step-versions/%s/' % (analysis_step_version_id),
-                'status': step['status'],
+                # this used to be taken from the step definition,
+                # but the Portal was changed to mean something different
+                # so now steps are always set to released
+                'status': 'released',
                 'dx_applet_details': [{
                     'dx_status': 'finished',
                     'dx_job_id': 'dnanexus:%s' % (jobid),
@@ -2624,7 +2690,7 @@ def accession_mapping_analysis_files(
                 'stages': "",
                 'stage_name': "",
                 'file_names': [],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             }
         ],
@@ -2634,7 +2700,7 @@ def accession_mapping_analysis_files(
                 'stage_name': get_stage_name(
                     'Filter and QC.*', analysis_stages),
                 'file_names': ['filtered_bam'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': [
                     {'chipseq_filter_quality_metric': ['filtered_bam']},
                     {'samtools_flagstats_quality_metric': ['filtered_bam']}
@@ -2649,7 +2715,7 @@ def accession_mapping_analysis_files(
                 'stages': raw_mapping_stages,
                 'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
                 'file_names': ['mapped_reads'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': [
                     {'samtools_flagstats_quality_metric': ['mapped_reads']}
                 ]
@@ -2703,7 +2769,7 @@ def accession_raw_mapping_analysis_files(
                 'stages': "",
                 'stage_name': "",
                 'file_names': [],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             }
         ],
@@ -2712,7 +2778,7 @@ def accession_raw_mapping_analysis_files(
                 'stages': raw_mapping_stages,
                 'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
                 'file_names': ['mapped_reads'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': [
                     {'samtools_flagstats_quality_metric': ['mapped_reads']}
                 ]
@@ -2799,7 +2865,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'stages': "",
                 'stage_name': "",
                 'file_names': [],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             }
         ],
@@ -2811,7 +2877,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                          for stage_name in mapping_stage.keys()
                          if stage_name.startswith('Filter and QC')),
                 'file_names': ['filtered_bam'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': [
                     {'chipseq_filter_quality_metric': ['filtered_bam']},
                     {'samtools_flagstats_quality_metric': ['filtered_bam']}]
@@ -2833,7 +2899,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                      'rep1_pvalue_signal', 'rep2_pvalue_signal',
                      'pooled_pvalue_signal', 'rep1_narrowpeaks',
                      'rep2_narrowpeaks', 'pooled_narrowpeaks'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -2848,7 +2914,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                     for stage_name in peak_stage.keys()
                     if re.match('(Overlap|Final) narrowpeaks', stage_name)),
                 'file_names': ['overlapping_peaks'],
-                'status': 'finished',
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -2890,6 +2956,14 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
         full_analysis_step_versions, keypair, server,
         dryrun, force_patch, force_upload)
     return patched_files
+
+
+def stage_output_names(stages, stage_name):
+    output_names = []
+    for stage in stages:
+        for output_file in stage[stage_name]['output_files']:
+            output_names.append(output_file['name'])
+    return output_names
 
 
 def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
@@ -2971,45 +3045,34 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
             files_with_derived.extend(
                 patch_outputs(stages, keypair, server, dryrun))
 
+    signal_filenames = \
+        ['rep1_fc_signal', 'rep1_pvalue_signal'] if unreplicated_analysis else \
+        ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal',
+         'rep1_pvalue_signal', 'rep2_pvalue_signal',
+         'pooled_pvalue_signal']
+    peaks_filenames = \
+        ['rep1_peaks'] if unreplicated_analysis else \
+        ['rep1_peaks', 'rep2_peaks', 'pooled_peaks']
+    idr_filenames = \
+        ['stable_set'] if unreplicated_analysis else \
+        [fn for fn in ['optimal_set', 'conservative_set'] if fn in stage_output_names(peak_stages, 'Final IDR peak calls')]
+    peaks_bb_filenames = \
+        ['rep1_peaks_bb'] if unreplicated_analysis else \
+        ['rep1_peaks_bb', 'rep2_peaks_bb', 'pooled_peaks_bb']
+    idr_bb_filenames = \
+        ['stable_set_bb'] if unreplicated_analysis else \
+        [fn for fn in ['optimal_set_bb', 'conservative_set_bb'] if fn in stage_output_names(peak_stages, 'Final IDR peak calls')]
+
     full_analysis_step_versions = {
-        # STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
-        #     {
-        #         'stages': "",
-        #         'stage_name': "",
-        #         'file_names': [],
-        #         'status': 'finished',
-        #         'qc_objects': []
-        #     }
-        # ],
-        # STEP_VERSION_ALIASES[pipeline_version]['bwa-alignment-step']: [
-        #     {
-        #         'stages': mapping_stage,
-        #         'stage_name':
-        #             next(stage_name
-        #                  for stage_name in mapping_stage.keys()
-        #                  if stage_name.startswith('Filter and QC')),
-        #         'file_names': ['filtered_bam'],
-        #         'status': 'finished',
-        #         'qc_objects': [
-        #             {'chipseq_filter_quality_metric': ['filtered_bam']},
-        #             {'samtools_flagstats_quality_metric': ['filtered_bam']}]
-        #     } for mapping_stage in (mapping_stages if skip_control else
-        #                             mapping_stages + control_stages)
-        # ],
-        STEP_VERSION_ALIASES[pipeline_version][
+       STEP_VERSION_ALIASES[pipeline_version][
             'tf-unreplicated-macs2-signal-calling-step'
             if unreplicated_analysis else
             'tf-macs2-signal-calling-step']: [
             {
                 'stages': peak_stage,
                 'stage_name': 'ENCODE Peaks',
-                'file_names':
-                    ['rep1_fc_signal', 'rep1_pvalue_signal']
-                    if unreplicated_analysis else
-                    ['rep1_fc_signal', 'rep2_fc_signal', 'pooled_fc_signal',
-                     'rep1_pvalue_signal', 'rep2_pvalue_signal',
-                     'pooled_pvalue_signal'],
-                'status': 'finished',
+                'file_names': signal_filenames,
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -3023,10 +3086,8 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
             {
                 'stages': peak_stage,
                 'stage_name': 'SPP Peaks',
-                'file_names':
-                    ['rep1_peaks'] if unreplicated_analysis else
-                    ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                'status': 'finished',
+                'file_names': peaks_filenames,
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -3037,15 +3098,9 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
             {
                 'stages': peak_stage,
                 'stage_name': 'Final IDR peak calls',
-                'file_names':
-                    ['stable_set'] if unreplicated_analysis else
-                    ['conservative_set', 'optimal_set'],
-                'status': 'finished',
-                'qc_objects': [
-                    {'idr_quality_metric':
-                        ['stable_set'] if unreplicated_analysis else
-                        ['conservative_set', 'optimal_set']}
-                    ]
+                'file_names': idr_filenames,
+                'status': 'released',
+                'qc_objects': [{'idr_quality_metric': idr_filenames}]
             } for peak_stage in peak_stages
         ],
         STEP_VERSION_ALIASES[pipeline_version][
@@ -3055,9 +3110,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
             {
                 'stages': peak_stage,
                 'stage_name': 'SPP Peaks',
-                'file_names':
-                    ['rep1_peaks_bb'] if unreplicated_analysis else
-                    ['rep1_peaks_bb', 'rep2_peaks_bb', 'pooled_peaks_bb'],
+                'file_names': peaks_bb_filenames,
                 'status': 'virtual',
                 'qc_objects': []
             } for peak_stage in peak_stages
@@ -3069,15 +3122,9 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
             {
                 'stages': peak_stage,
                 'stage_name': 'Final IDR peak calls',
-                'file_names':
-                    ['stable_set_bb'] if unreplicated_analysis else
-                    ['conservative_set_bb', 'optimal_set_bb'],
+                'file_names': idr_bb_filenames,
                 'status': 'virtual',
-                'qc_objects': [
-                    {'idr_quality_metric':
-                        ['stable_set_bb'] if unreplicated_analysis else
-                        ['conservative_set_bb', 'optimal_set_bb']}
-                    ]
+                'qc_objects': [{'idr_quality_metric': idr_bb_filenames}]
             } for peak_stage in peak_stages
         ]
     } if not signal_only else {})
@@ -3110,24 +3157,30 @@ def infer_pipeline(analysis):
         return None
 
 
+def pipeline_version_by_date(analysis):
+    analysis_date = analysis.get('created')
+    # get the largest version number that was activated on a date before
+    # this analysis was created
+    pipeline_version = str(max([
+        float(version) for version in VERSION_TIMES
+        if VERSION_TIMES[version] < analysis_date])) or None
+    return pipeline_version
+
+
 def infer_pipeline_version(analysis):
     try:
         workflow = dxpy.describe(
             analysis['workflow']['id'], fields={'properties': True})
     except dxpy.exceptions.ResourceNotFound:
-        analysis_date = analysis.get('created')
-        # get the largest version number that was activated on a date before
-        # this analysis was created
-        pipeline_version = str(max([
-            float(version) for version in VERSION_TIMES
-            if VERSION_TIMES[version] < analysis_date])) or None
+        pipeline_version = pipeline_version_by_date(analysis)
         logger.warning(
             "Workflow for %s is missing.  Inferred version %s"
             % (analysis.get('id'), pipeline_version))
     else:
-        pipeline_version = workflow['properties'].get('pipeline_version')
+        pipeline_version = \
+            workflow['properties'].get('pipeline_version') or pipeline_version_by_date(analysis)
 
-    return pipeline_version or 'default'
+    return pipeline_version
 
 
 @dxpy.entry_point('accession_analysis_id')

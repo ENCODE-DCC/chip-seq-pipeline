@@ -32,7 +32,8 @@ SPP_VERSION_MAP = {
 
 @dxpy.entry_point('main')
 def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
-         chrom_sizes, spp_version, as_file=None, prefix=None):
+         chrom_sizes, spp_version, as_file=None, prefix=None,
+         fragment_length=None):
 
     # The following line(s) initialize your data object inputs on the platform
     # into dxpy.DXDataObject instances that you can start using immediately.
@@ -76,11 +77,17 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
         'ls -l', shell=True, stderr=subprocess.STDOUT))
 
     # third column in the cross-correlation scores input file
-    fraglen_column = 3
-    with open(xcor_scores_input_filename, 'r') as f:
-        line = f.readline()
-        fragment_length = int(line.split('\t')[fraglen_column-1])
-        logger.info("Read fragment length: %d" % (fragment_length))
+    # if fragment_length is provided, use that. Else read
+    # fragment length from xcor file
+    if fragment_length is not None:
+        fraglen = str(fragment_length)
+        logger.info("User given fragment length %s" % fraglen)
+    else:
+        fraglen_column = 3
+        with open(xcor_scores_input_filename, 'r') as f:
+            line = f.readline()
+            fraglen = line.split('\t')[fraglen_column-1]
+            logger.info("Read fragment length: %s" % (fraglen))
 
     spp_tarball = SPP_VERSION_MAP.get(spp_version)
     assert spp_tarball, "spp version %s is not supported" % (spp_version)
@@ -91,9 +98,9 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
     # install spp
     subprocess.check_output(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
     spp_command = (
-        "Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%d -savr=%s -savp=%s -rf -out=%s"
+        "Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%s -savr=%s -savp=%s -rf -out=%s"
         % (run_spp, cpu_count(), experiment_filename, control_filename, npeaks,
-           fragment_length, peaks_filename, xcor_plot_filename,
+           fraglen, peaks_filename, xcor_plot_filename,
            xcor_scores_filename))
     logger.info(spp_command)
     subprocess.check_call(shlex.split(spp_command))

@@ -1,6 +1,6 @@
 {
   "name": "bam2tagalign",
-  "title": "BAM to tagAlign",
+  "title": "bam to tagAlign",
   "summary": "Convert a bam file to a gzip-compressed tagAlign file",
   "dxapi": "1.0.0",
   "version": "0.0.1",
@@ -28,7 +28,7 @@
     },
     {
       "name": "BEDPE_file",
-      "label": "BEDPW file (read pairs on each line)",
+      "label": "BEDPE file (read pairs on each line)",
       "class": "file",
       "optional": true
     }
@@ -39,14 +39,7 @@
     "systemRequirements": {
       "main":     {"instanceType": "mem1_ssd1_x8"}
     },
-    "execDepends": [
-      {"name": "samtools",
-       "package_manager": "git",
-       "url": "https://github.com/samtools/samtools.git",
-       "destdir": "/tmp",
-       "tag": "0.1.19",
-       "build_commands": "make samtools && cp /tmp/samtools/samtools /usr/local/bin/samtools"}
-    ]
+    "execDepends": []
   },
   "access": {
     "network": [

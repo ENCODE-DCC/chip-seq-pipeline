@@ -23,6 +23,10 @@ logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
 logger.setLevel(logging.INFO)
 
+SAMTOOLS_PATH = {
+    "1.0": "/usr/local/bin/samtools-1.0/bin/samtools"
+}
+
 
 @dxpy.entry_point('main')
 def main(input_bam, paired_end):
@@ -41,6 +45,8 @@ def main(input_bam, paired_end):
     final_TA_filename = input_bam_basename + '.' + end_infix + '.tagAlign.gz'
 
     subprocess.check_output('ls -l', shell=True)
+
+    samtools = SAMTOOLS_PATH["1.0"]
 
     # ===================
     # Create tagAlign file
@@ -61,8 +67,8 @@ def main(input_bam, paired_end):
         final_nmsrt_bam_prefix = input_bam_basename + ".nmsrt"
         final_nmsrt_bam_filename = final_nmsrt_bam_prefix + ".bam"
         command = \
-            "samtools sort -@ %d -n %s %s" \
-            % (cpu_count(), input_bam_filename, final_nmsrt_bam_prefix)
+            "%s sort -@ %d -n %s %s" \
+            % (samtools, cpu_count(), input_bam_filename, final_nmsrt_bam_prefix)
         logger.info(command)
         subprocess.check_call(shlex.split(command))
 
@@ -84,5 +90,6 @@ def main(input_bam, paired_end):
         output["BEDPE_file"] = dxpy.dxlink(BEDPE_file)
 
     return output
+
 
 dxpy.run()

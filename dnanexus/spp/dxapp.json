@@ -70,6 +70,12 @@
       "label": "Basename for output files",
       "class": "string",
       "optional": true
+    },
+    {   
+      "name": "fragment_length",
+      "label": "use this fragment length instead of the one calculated from xcor",
+      "class": "int",
+      "optional": true
     }
   ],
   "outputSpec": [
