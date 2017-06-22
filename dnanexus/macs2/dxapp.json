@@ -117,8 +117,11 @@
 			"main":     {"instanceType": "mem3_hdd2_x2"}
 		},
 		"execDepends": [
-			{"name": "python-numpy"}
-		]
+		],
+		"assetDepends": [{
+      "id": "record-F50g1fj01bx6JvbF9GjKBjkx"
+    }
+    ]
 	},
 	"access": {
 		"network": [

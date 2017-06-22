@@ -156,7 +156,7 @@ def xcor_fraglen(filename):
 def frip(reads_filename, xcor_filename, peaks_filename, chrom_sizes_filename,
          fragment_length=None):
     # calculate FRiP
-    if not fragment_length:
+    if fragment_length is None:
         fraglen = xcor_fraglen(xcor_filename)
     else:
         fraglen = fragment_length
