@@ -1,9 +1,19 @@
 #!/usr/bin/env python2
 
-import os.path, sys, subprocess, logging, re, json, urlparse, requests, csv, StringIO
+import os.path
+import sys
+import subprocess
+import logging
+import re
+import json
+import urlparse
+import requests
+import csv
+import StringIO
 import common
 import dxpy
 import time
+import pprint
 
 EPILOG = '''Notes:
 
@@ -12,7 +22,7 @@ Examples:
     %(prog)s
 '''
 FILE_STATUSES_TO_MAP = ['in progress', 'released', 'uploading']
-FILE_FORMATS_TO_MAP = ['fastq', 'fasta']
+FILE_FORMATS_TO_MAP = ['fastq', 'fasta', 'sra']
 #DEFAULT_APPLET_PROJECT = 'E3 ChIP-seq'
 DEFAULT_APPLET_PROJECT = dxpy.WORKSPACE_ID
 DEFAULT_OUTPUT_PROJECT = dxpy.WORKSPACE_ID
@@ -164,9 +174,11 @@ def get_args():
     if args.debug:
         logging.basicConfig(
             format='%(levelname)s:%(message)s', level=logging.DEBUG)
+        logging.debug("Logging level set to DEBUG")
     else:  # use the defaulf logging level
         logging.basicConfig(
             format='%(levelname)s:%(message)s')
+        logging.info("Logging level set to detault")
 
     return args
 
@@ -234,7 +246,7 @@ def filenames_in(files=None):
 def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
     if not exp_obj or not (exp_obj.get('files') or exp_obj.get('original_files')):
         logging.warning('Experiment %s or experiment has no files' %(exp_obj.get('accession')))
-        return []
+        files = []
     else:
         files = []
         for file_uri in exp_obj.get('original_files'):
@@ -254,7 +266,8 @@ def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
             elif file_obj.get('output_type') == 'reads' and \
                 file_obj.get('file_format') in FILE_FORMATS_TO_MAP and not file_obj.get('replicate'):
                 logging.error('%s: Reads file has no replicate' %(file_obj.get('accession')))
-        return files
+    print('returning from files_to_map with %s' % (pprint.pformat(files)))
+    return files
 
 def replicates_to_map(files, server, keypair, map_only_reps=[]):
     if not files:
@@ -452,6 +465,7 @@ def map_only(experiment, biorep_n, files, server, keypair, sex_specific,
              crop_length, accession, fqcheck, force_patch,
              use_existing_folders, encoded_check):
 
+    pprint.pprint("in maponly with files %s" % (pprint.pformat(files)))
     if not files:
         logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
         return
@@ -549,7 +563,7 @@ def main():
     args = get_args()
 
     authid, authpw, server = common.processkey(args.key, args.keyfile)
-    keypair = (authid,authpw)
+    keypair = (authid, authpw)
 
     if args.experiments:
         exp_ids = csv.reader(StringIO.StringIO('\n'.join([s.rstrip() for s in args.experiments])))
@@ -578,12 +592,16 @@ def main():
         biorep_numbers = \
             set([rep.get('biological_replicate_number') for rep in replicates])
         in_process = False
+        print("files %s" % (pprint.pformat(files)))
         if files:
             for biorep_n in biorep_numbers:
                 outstrings.append('rep%s' %(biorep_n))
+                print("biorep n %s" % (biorep_n))
                 biorep_files = [f for f in files if biorep_n in common.biorep_ns(f,server,keypair)]
+                print("biorep_files %s" % (pprint.pformat(biorep_files)))
                 paired_files = []
                 unpaired_files = []
+                print("biorep_files %s" % (pprint.pformat(biorep_files)))
                 while biorep_files:
                     file_object = biorep_files.pop()
                     if file_object.get('paired_end') == None: # group all the unpaired reads for this biorep together
