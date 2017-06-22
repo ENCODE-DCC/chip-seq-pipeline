@@ -9,7 +9,7 @@ PRODUCTION_APPLETS=('bam2tagalign' 'encode_map' 'filter_qc' 'xcor' 'xcor_only' '
 ACCESSORY_APPLETS=('input_shield' 'accession_analysis' 'shell')
 
 for appl in ${PRODUCTION_APPLETS[@]}; do
-		dest="$project:$folder$appl"
+	dest="$project:$folder$appl"
 	echo $dest
 	cp common.py $appl/resources/home/dnanexus/common.py
 	dx build --archive --destination "$dest" "$appl/"

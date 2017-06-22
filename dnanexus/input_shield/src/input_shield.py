@@ -22,7 +22,7 @@ import urlparse
 import os
 
 S3_SERVER = 's3://encode-files/'
-DATA_CACHE_PROJECT = None  # if specified, look in that project for ENCFF files
+DATA_CACHE_PROJECT = 'phs000791'  # if specified, look in that project for files
 
 DCC_CREDENTIALS_PROJECT = 'project-F30FzF0048K9JZKxPvB3Y563'
 DCC_CREDENTIALS_FOLDER = '/credentials'

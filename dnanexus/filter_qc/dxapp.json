@@ -1,6 +1,6 @@
 {
   "name": "filter_qc",
-  "title": "ENCODE TF Chip-seq Mapped Read Filter and QC.",
+  "title": "ENCODE TF Chip-seq Mapped Read Filter and QC",
   "summary": "Take a raw bam file of mapped reads, filter, calculate QC metrics",
   "dxapi": "1.0.0",
   "version": "0.0.1",
@@ -24,6 +24,13 @@
       "class": "string",
       "optional": true,
       "default": "-q 30"
+    },
+    {
+      "name": "scrub",
+      "label": "Scrub bam files",
+      "class": "boolean",
+      "optional": true,
+      "default": false
     },
     {
       "name": "debug",
@@ -113,6 +120,18 @@
       "name": "duplicate_fraction",
       "label": "Picard MarkDuplicates fraction",
       "class": "string"
+    },
+    {
+      "name": "scrubbed_unfiltered_bam",
+      "label": "Mapped reads scrubbed of sequence information.",
+      "class": "file",
+      "optional": true
+    },
+    {
+      "name": "scrubbed_filtered_bam",
+      "label": "Filtered mapped reads scrubbed of sequence information.",
+      "class": "file",
+      "optional": true
     }
   ],
   "runSpec": {
