@@ -103,6 +103,12 @@
 			"label": "Pooled replicates signal",
 			"class": "file",
 			"optional": true
+		},
+		{
+			"name": "fragment_length",
+			"label": "Use this fragment length instead of the one calculated from xcor",
+			"class": "int",
+			"optional": true
 		}
 
 	],
@@ -309,6 +315,30 @@
 			"label": "Non blacklist-filtered stable peaks (only if blacklist is used)",
 			"class": "file",
 			"optional": true
+		},
+		{
+			"name": "fragment_length_used_rep1",
+			"label": "Fragment length used for rep1",
+			"class": "int",
+			"optional": false
+		},
+		{
+			"name": "fragment_length_used_rep2",
+			"label": "Fragment length used for rep2",
+			"class": "int",
+			"optional": true
+		},
+		{
+			"name": "fragment_length_used_pool",
+			"label": "Fragment length used for pool",
+			"class": "int",
+			"optional": true
+		},
+		{
+			"name": "fragment_length_given_by_user",
+			"label": "Was the fragment length specified by user",
+			"class": "boolean",
+			"optional": false
 		}
 	],
 	"runSpec": {

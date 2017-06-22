@@ -108,6 +108,12 @@
 			"label": "Pooled replicates signal",
 			"class": "file",
 			"optional": true
+		},
+		{
+			"name": "fragment_length",
+			"label": "Use this fragment length instead of the one calculated from xcor",
+			"class": "int",
+			"optional": true
 		}
 	],
 	"outputSpec": [
@@ -178,6 +184,18 @@
 			"label": "Pooled replicates signal",
 			"class": "file",
 			"optional": true
+		},
+		{
+			"name": "fragment_length_used",
+			"label": "Fragment length used",
+			"class": "int",
+			"optional": false
+		},
+		{
+			"name": "fragment_length_given_by_user",
+			"label": "Was the fragment length specified by user",
+			"class": "boolean",
+			"optional": false
 		}
 	],
 	"runSpec": {

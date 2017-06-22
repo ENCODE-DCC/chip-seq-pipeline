@@ -39,7 +39,7 @@ def spp(experiment, control, xcor_scores, chrom_sizes, spp_version,
                  "bigbed": bigbed,
                  "chrom_sizes": chrom_sizes,
                  "spp_version": spp_version}
-    if fragment_length:
+    if fragment_length is not None:
         spp_input.update({"fragment_length": fragment_length})
     if bigbed and as_file:
         spp_input.update({"as_file": as_file})
@@ -191,7 +191,7 @@ def main(rep1_ta, ctl1_ta, rep1_xcor, rep1_paired_end,
         'spp_version': spp_version,
         'as_file':     as_file
         }
-    if fragment_length:
+    if fragment_length is not None:
         common_args.update({'fragment_length': fragment_length})
     rep1_peaks_subjob = spp(
         rep1_ta,

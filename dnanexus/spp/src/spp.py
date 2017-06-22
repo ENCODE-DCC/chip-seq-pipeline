@@ -79,7 +79,7 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
     # third column in the cross-correlation scores input file
     # if fragment_length is provided, use that. Else read
     # fragment length from xcor file
-    if fragment_length:
+    if fragment_length is not None:
         fraglen = str(fragment_length)
         logger.info("User given fragment length %s" % fraglen)
     else:
