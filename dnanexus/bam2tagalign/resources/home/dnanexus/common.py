@@ -8,15 +8,19 @@ import logging
 import re
 import urlparse
 import dateutil.parser
-from time import time, sleep
+import time
+import pprint
+import dxpy
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+# logger.setLevel(logging.DEBUG)
+# logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = True
 
 
 def test():
-    print "In common.test"
+    print("In common.test")
 
 
 def flat(l):
@@ -35,9 +39,11 @@ def rstrips(string, substring):
     else:
         return string[:len(string)-len(substring)]
 
+
 def touch(fname, times=None):
     with open(fname, 'a'):
         os.utime(fname, times)
+
 
 def block_on(command):
     process = subprocess.Popen(shlex.split(command), stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
@@ -46,73 +52,128 @@ def block_on(command):
     process.wait()
     return process.returncode
 
+
 def run_pipe(steps, outfile=None):
-    #break this out into a recursive function
-    #TODO:  capture stderr
+    # TODO:  capture stderr
     from subprocess import Popen, PIPE
     p = None
     p_next = None
     first_step_n = 1
     last_step_n = len(steps)
-    for n,step in enumerate(steps, start=first_step_n):
-        print "step %d: %s" %(n,step)
+    for n, step in enumerate(steps, start=first_step_n):
+        logger.debug("step %d: %s" % (n, step))
         if n == first_step_n:
-            if n == last_step_n and outfile: #one-step pipeline with outfile
+            if n == last_step_n and outfile:  # one-step pipeline with outfile
                 with open(outfile, 'w') as fh:
-                    print "one step shlex: %s to file: %s" %(shlex.split(step), outfile)
+                    print("one step shlex: %s to file: %s" % (shlex.split(step), outfile))
                     p = Popen(shlex.split(step), stdout=fh)
                 break
-            print "first step shlex to stdout: %s" %(shlex.split(step))
+            print("first step shlex to stdout: %s" % (shlex.split(step)))
             p = Popen(shlex.split(step), stdout=PIPE)
-            #need to close p.stdout here?
-        elif n == last_step_n and outfile: #only treat the last step specially if you're sending stdout to a file
+        elif n == last_step_n and outfile:  # only treat the last step specially if you're sending stdout to a file
             with open(outfile, 'w') as fh:
-                print "last step shlex: %s to file: %s" %(shlex.split(step), outfile)
+                print("last step shlex: %s to file: %s" % (shlex.split(step), outfile))
                 p_last = Popen(shlex.split(step), stdin=p.stdout, stdout=fh)
                 p.stdout.close()
                 p = p_last
-        else: #handles intermediate steps and, in the case of a pipe to stdout, the last step
-            print "intermediate step %d shlex to stdout: %s" %(n,shlex.split(step))
+        else:  # handles intermediate steps and, in the case of a pipe to stdout, the last step
+            print("intermediate step %d shlex to stdout: %s" % (n, shlex.split(step)))
             p_next = Popen(shlex.split(step), stdin=p.stdout, stdout=PIPE)
             p.stdout.close()
             p = p_next
-    out,err = p.communicate()
-    return out,err
+    out, err = p.communicate()
+    return out, err
+
 
 def uncompress(filename):
-    #leaves compressed file intact
-    m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename)
+    # leaves compressed file intact
+    m = re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))', filename)
     if m:
         basename = m.group(1)
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
-        logging.info("Decompressing %s" %(filename))
-        #logging.info(subprocess.check_output(shlex.split('gzip -dc %s' %(filename))))
-        out,err = run_pipe([
-            'gzip -dc %s' %(filename)],
+        logger.info("Decompressing %s" % (filename))
+        # logger.info(subprocess.check_output(shlex.split('gzip -dc %s' %(filename))))
+        out, err = run_pipe([
+            'gzip -dc %s' % (filename)],
             basename)
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(basename))))
         return basename
     else:
         return filename
 
-def compress(filename):
-    #leaves uncompressed file intact
-    if re.match('(.*)(\.((gz)|(Z)|(bz)|(bz2)))',filename):
-        return filename
+
+def compress(fname):
+    # leaves uncompressed file intact
+    from magic import from_file
+    compressed_mimetypes = [
+        "application/x-compress",
+        "application/x-bzip2",
+        "application/x-gzip"
+        ]
+    mime_type = from_file(fname, mime=True)
+    if mime_type in compressed_mimetypes:
+        return fname
     else:
-        logging.info(subprocess.check_output(shlex.split('cp %s tmp' %(filename))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
-        logging.info("Compressing %s" %(filename))
-        logging.info(subprocess.check_output(shlex.split('gzip %s' %(filename))))
-        new_filename = filename + '.gz'
-        logging.info(subprocess.check_output(shlex.split('cp tmp %s' %(filename))))
-        logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
-        return new_filename
+        # the gzip version shipped with Ubuntu 12 does not have --keep/-k so
+        # have to do this copy manually
+        from uuid import uuid4
+        logger.info("Compressing %s" % (fname))
+        tmpname = uuid4()
+        subprocess.check_output(shlex.split('cp %s %s' % (fname, tmpname)))
+        # gzip -n is used in order to make output deterministic
+        subprocess.check_output(shlex.split('gzip -f -n %s' % (fname)))
+        new_fname = fname + '.gz'
+        subprocess.check_output(shlex.split('cp %s %s' % (tmpname, fname)))
+        return new_fname
+
 
 def count_lines(fname):
-    wc_output = subprocess.check_output(shlex.split('wc -l %s' %(fname)))
-    lines = wc_output.split()[0]
-    return int(lines)
+    from magic import from_file
+    compressed_mimetypes = [
+        "application/x-compress",
+        "application/x-bzip2",
+        "application/x-gzip"
+        ]
+    mime_type = from_file(fname, mime=True)
+    if mime_type in compressed_mimetypes:
+        catcommand = 'gzip -dc'
+    else:
+        catcommand = 'cat'
+    out, err = run_pipe([
+        '%s %s' % (catcommand, fname),
+        'wc -l'
+        ])
+    return int(out)
+
+
+def xcor_fraglen(filename):
+    # Extract the fragment length estimate from column 3 of the
+    # cross-correlation scores file
+    with open(filename, 'r') as fh:
+        firstline = fh.readline()
+        fraglen = firstline.split()[2]  # third column
+    return int(fraglen)
+
+
+def frip(reads_filename, xcor_filename, peaks_filename, chrom_sizes_filename,
+         fragment_length=None):
+    # calculate FRiP
+    if fragment_length is None:
+        fraglen = xcor_fraglen(xcor_filename)
+    else:
+        fraglen = fragment_length
+
+    half_fraglen = int(fraglen)/2
+    reads_in_peaks_fn = 'reads_in_peaks.ta'
+    out, err = run_pipe([
+        'slopBed -i %s -g %s -s -l %s -r %s' % (
+            reads_filename, chrom_sizes_filename, -half_fraglen, half_fraglen),
+        r"""awk '{if ($2>=0 && $3>=0 && $2<=$3) print $0}'""",
+        'intersectBed -a stdin -b %s -wa -u' % (peaks_filename)
+        ], reads_in_peaks_fn)
+    n_reads          = count_lines(uncompress(reads_filename))
+    n_reads_in_peaks = count_lines(reads_in_peaks_fn)
+    frip_score = float(n_reads_in_peaks)/float(n_reads)
+    return (n_reads, n_reads_in_peaks, frip_score)
+
 
 def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
     if bed_filename.endswith('.bed'):
@@ -121,7 +182,7 @@ def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
         bb_filename = bed_filename + '.bb'
     bed_filename_sorted = bed_filename + ".sorted"
 
-    logging.debug("In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file))
+    logger.debug("In bed2bb with bed_filename=%s, chrom_sizes=%s, as_file=%s" %(bed_filename, chrom_sizes, as_file))
 
     print "Sorting"
     print subprocess.check_output(shlex.split("sort -k1,1 -k2,2n -o %s %s" %(bed_filename_sorted, bed_filename)), shell=False, stderr=subprocess.STDOUT)
@@ -158,26 +219,45 @@ def bed2bb(bed_filename, chrom_sizes, as_file, bed_type='bed6+4'):
     print "Returning bb file %s" %(bb_filename)
     return bb_filename
 
+
 def rescale_scores(fn, scores_col, new_min=10, new_max=1000):
     n_peaks = count_lines(fn)
-    sorted_fn = '%s-sorted' %(fn)
-    rescaled_fn = '%s-rescaled' %(fn)
-    out,err = run_pipe([
-        'sort -k %dgr,%dgr %s' %(scores_col, scores_col, fn),
+    sorted_fn = '%s-sorted' % (fn)
+    rescaled_fn = '%s-rescaled' % (fn)
+
+    out, err = run_pipe([
+        'sort -k %dgr,%dgr %s' % (scores_col, scores_col, fn),
         r"""awk 'BEGIN{FS="\t";OFS="\t"}{if (NF != 0) print $0}'"""],
         sorted_fn)
+
     out, err = run_pipe([
-        'head -n 1 %s' %(sorted_fn),
-        'cut -f %s' %(scores_col)])
+        'head -n 1 %s' % (sorted_fn),
+        'cut -f %s' % (scores_col)])
     max_score = float(out.strip())
+    logger.info("rescale_scores: max_score = %s" % (max_score))
+
     out, err = run_pipe([
-        'tail -n 1 %s' %(sorted_fn),
-        'cut -f %s' %(scores_col)])
+        'tail -n 1 %s' % (sorted_fn),
+        'cut -f %s' % (scores_col)])
     min_score = float(out.strip())
-    out,err = run_pipe([
-        'cat %s' %(sorted_fn),
-        r"""awk 'BEGIN{OFS="\t"}{n=$%d;a=%d;b=%d;x=%d;y=%d}""" %(scores_col, min_score, max_score, new_min, new_max) + \
-        r"""{$%d=int(((n-a)*(y-x)/(b-a))+x) ; print $0}'""" %(scores_col)],
+    logger.info("rescale_scores: min_score = %s" % (min_score))
+
+    a = min_score
+    b = max_score
+    x = new_min
+    y = new_max
+    if min_score == max_score:  # give all peaks new_min
+        rescale_formula = "x"
+    else:  # n is the unscaled score from scores_col
+        rescale_formula = "((n-a)*(y-x)/(b-a))+x"
+    out, err = run_pipe(
+        [
+            'cat %s' % (sorted_fn),
+            r"""awk 'BEGIN{OFS="\t"}{n=$%d;a=%d;b=%d;x=%d;y=%d}"""
+            % (scores_col, a, b, x, y) +
+            r"""{$%d=int(%s) ; print $0}'"""
+            % (scores_col, rescale_formula)
+        ],
         rescaled_fn)
     return rescaled_fn
 
@@ -193,6 +273,9 @@ def slop_clip(filename, chrom_sizes, bed_type='bed'):
     out, err = run_pipe(pipe)
     if bed_type == 'bed':
         return clipped_fn
+    # MACS2 sometimes generates blocks that span outside of the peak
+    # this causes bedtobigbed to exit with an error
+    # need to clip those back
     elif bed_type == 'gappedPeak':
         clipped_gappedPeaks_fn = '%s-gapclipped' % (clipped_fn)
         import csv
@@ -230,6 +313,8 @@ def slop_clip(filename, chrom_sizes, bed_type='bed'):
                     peak['thickStart'] = chromStart
                 if peak['thickEnd'] > chromEnd:
                     peak['thickEnd'] = chromEnd
+                # build blocks in absolute chromosome coordinates
+                # the peak's blockStarts are zero-based
                 blocks = [
                     dict(zip(
                         ['start', 'end'],
@@ -237,23 +322,32 @@ def slop_clip(filename, chrom_sizes, bed_type='bed'):
                     for i in range(peak['blockCount'])]
                 newblocks = []
                 for block in blocks:
-                    if block['start'] < chromStart and block['end'] < chromStart:
+                    # drop blocks that are entirely outside the peak
+                    if \
+                        ((block['start'] < chromStart and block['end'] < chromstart) or
+                         (block['start'] > chromEnd and block['end'] > chromEnd)):
                         continue
-                    elif block['start'] > chromEnd and block['end'] > chromEnd:
-                        continue
-                    elif block['end'] > chromEnd:
+                    # clip the end of blocks that extend past the peak
+                    if block['end'] > chromEnd:
                         block['end'] = chromEnd
-                    elif block['start'] < block['start']:
+                    # clip the start of blocks that start before the peak
+                    if block['start'] < chromStart:
                         block['start'] = chromStart
+                    # drop zero-length blocks
+                    if block['start'] == block['end']:
+                        continue
                     newblocks.append(block)
-                if not [b for b in blocks if b['start'] == chromStart]:
+                # bed2bigbed requires a block at the beginning
+                if not [b for b in newblocks if b['start'] == chromStart]:
                     newblocks.insert(
                         0,
                         {'start': chromStart, 'end': chromStart+1})
-                if not [b for b in blocks if b['end'] == chromEnd]:
+                # bed2bigbed requires a block at the end
+                if not [b for b in newblocks if b['end'] == chromEnd]:
                     newblocks.append(
                         {'start': chromEnd-1, 'end': chromEnd})
-
+                # chromStart + chromStarts[last] + blockSizes[last] must equal chromEnd
+                # rewrite the new blocks into the peak
                 peak['blockCount'] = len(newblocks)
                 peak['blockSizes'] = \
                     [(block['end']-block['start']) for block in newblocks]
@@ -271,6 +365,13 @@ def slop_clip(filename, chrom_sizes, bed_type='bed'):
 
 def processkey(key=None, keyfile=None):
 
+    # these are just for logger testing
+    # logger.debug('processkey DEBGU')
+    # logger.info('processkey INFO')
+    # logger.warning('processkey WARNING')
+    # logger.error('processkey ERROR')
+    # logger.critical('processkey CRITICAL')
+
     import json
 
     if not (key or keyfile) and os.getenv('ENCODE_AUTHID',None) and os.getenv('ENCODE_AUTHPW',None) and os.getenv('ENCODE_SERVER',None):
@@ -284,14 +385,14 @@ def processkey(key=None, keyfile=None):
             elif os.path.isfile(os.path.expanduser('~/keypairs.json')):
                 keyfile = os.path.expanduser('~/keypairs.json')
             else:
-                logging.error("Keyfile must be specified, in ~/keypairs.json or in global KEYFILE.")
+                logger.error("Keyfile must be specified, in ~/keypairs.json or in global KEYFILE.")
                 return None
         if key:
             try:
                 keysf = open(keyfile,'r')
             except IOError as e:
-                logging.error("Failed to open keyfile %s" %(keyfile))
-                logging.error("e.")
+                logger.error("Failed to open keyfile %s" %(keyfile))
+                logger.error("e.")
                 return None
             except:
                 raise
@@ -300,16 +401,16 @@ def processkey(key=None, keyfile=None):
             try:
                 keys = json.loads(keys_json_string)
             except ValueError as e:
-                logging.error(e.message)
-                logging.error("Keyfile %s not in parseable JSON" %(keyfile))
+                logger.error(e.message)
+                logger.error("Keyfile %s not in parseable JSON" %(keyfile))
                 return None
             except:
                 raise
             try:
                 key_dict = keys[key]
             except ValueError:
-                logging.error(e.message)
-                logging.error("Keyfile %s has no key named %s" %(keyfile,key))
+                logger.error(e.message)
+                logger.error("Keyfile %s has no key named %s" %(keyfile,key))
                 return None
             except:
                 raise
@@ -330,11 +431,13 @@ def processkey(key=None, keyfile=None):
 
 
 def encoded_get(url, keypair=None, frame='object', return_response=False):
-    import urlparse, urllib, requests
+    import urlparse
+    import urllib
+    import requests
     #it is not strictly necessary to include both the accept header, and format=json, but we do
     #so as to get exactly the same URL as one would use in a web browser
 
-    RETRY_CODES = [500]
+    RETRY_CODES = [500, 502]
     RETRY_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.SSLError)
     HEADERS = {'accept': 'application/json'}
 
@@ -350,7 +453,7 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
     if new_url_list[3].startswith('&'):
         new_url_list[3] = new_url_list[3].replace('&','',1)
     get_url = urlparse.urlunsplit(new_url_list)
-    logging.debug('encoded_get: %s' %(get_url))
+    logger.debug('encoded_get: %s' %(get_url))
     max_retries = 10
     max_sleep = 10
     while max_retries:
@@ -360,20 +463,23 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
             else:
                 response = requests.get(get_url, headers=HEADERS)
         except RETRY_EXCEPTIONS as e:
-            logging.warning(
+            logger.warning(
                 "%s ... %d retries left." % (e, max_retries))
-            sleep(max_sleep - max_retries)
+            time.sleep(max_sleep - max_retries)
             max_retries -= 1
             continue
         except Exception as e:
-            logging.error("%s" % (e))
-            return None
+            logger.error("%s" % (e))
+            if return_response:
+                return response
+            else:
+                return None
         else:
             if response.status_code in RETRY_CODES:
-                logging.warning(
+                logger.warning(
                     "%d %s ... %d retries left."
                     % (response.status_code, response.text, max_retries))
-                sleep(max_sleep - max_retries)
+                time.sleep(max_sleep - max_retries)
                 max_retries -= 1
                 continue
             if return_response:
@@ -383,8 +489,11 @@ def encoded_get(url, keypair=None, frame='object', return_response=False):
                     return response.json()
                 except:
                     return response.text
-    logging.error("Max retried exhausted.")
-    return None
+    logger.error("Max retries exhausted.")
+    if return_response:
+        return response
+    else:
+        return None
 
 
 def encoded_update(method, url, keypair, payload, return_response):
@@ -396,10 +505,10 @@ def encoded_update(method, url, keypair, payload, return_response):
     elif method == 'put':
         request_method = requests.put
     else:
-        logging.error('Invalid HTTP method: %s' %(method))
+        logger.error('Invalid HTTP method: %s' %(method))
         return
 
-    RETRY_CODES = [500]
+    RETRY_CODES = [500, 502]
     RETRY_EXCEPTIONS = (requests.exceptions.ConnectionError, requests.exceptions.SSLError)
     HEADERS = {'accept': 'application/json', 'content-type': 'application/json'}
 
@@ -410,20 +519,20 @@ def encoded_update(method, url, keypair, payload, return_response):
             response = request_method(
                 url, auth=keypair, headers=HEADERS, data=json.dumps(payload))
         except RETRY_EXCEPTIONS as e:
-            logging.warning(
+            logger.warning(
                 "%s ... %d retries left." % (e, max_retries))
-            sleep(max_sleep - max_retries)
+            time.sleep(max_sleep - max_retries)
             max_retries -= 1
             continue
         except Exception as e:
-            logging.error("%s" % (e))
+            logger.error("%s" % (e))
             return None
         else:
             if response.status_code in RETRY_CODES:
-                logging.warning(
+                logger.warning(
                     "%d %s ... %d retries left."
                     % (response.status_code, response.text, max_retries))
-                sleep(max_sleep - max_retries)
+                time.sleep(max_sleep - max_retries)
                 max_retries -= 1
                 continue
             if return_response:
@@ -433,8 +542,11 @@ def encoded_update(method, url, keypair, payload, return_response):
                     return response.json()
                 except:
                     return response.text
-    logging.error("Max retried exhausted.")
-    return None
+    logger.error("Max retries exhausted.")
+    if return_response:
+        return response
+    else:
+        return None
 
 def encoded_patch(url, keypair, payload, return_response=False):
     return encoded_update('patch', url, keypair, payload, return_response)
@@ -476,6 +588,7 @@ def md5(fn):
 
     md5_output = subprocess.check_output(' '.join([md5_command, fn]), shell=True)
     return md5_output.partition(' ')[0].rstrip()
+
 
 def after(date1, date2):
     try:
@@ -552,16 +665,37 @@ def derived_from_references(f, server, keypair):
     return [n for n in set(derived_from_references_generator(f, server, keypair)) if n is not None]
 
 
+def expired(credentials):
+    if after(time.asctime(), credentials.get('expiration')):
+        return True
+    else:
+        return False
+
+
+def new_creds(file_object, server, keypair):
+    url = server + '/files/%s/upload/' % (file_object['accession'])
+    response = encoded_post(url, keypair, {}, return_response=True)
+    result = response.json()
+    logger.debug('POST to %s returned %s' % (url, pprint.pformat(result)))
+    response.raise_for_status()
+    new_file_object = result['@graph'][0]
+    return new_file_object.get('upload_credentials')
+
+
 def s3_cp(file_object, local_fname, server, keypair, overwrite=False):
     # TODO check overwrite and regenerate credential if necessary
-    if 'upload_credentials' not in file_object:
+    logger.debug('in s3_cp with file_object:')
+    logger.debug(pprint.pformat(file_object))
+    creds = file_object.get('upload_credentials')
+    if not creds:
         url = server + '/files/%s/upload/' % (file_object['accession'])
         response_json = encoded_get(url, keypair)
         logger.debug('s3_cp: Got %s response_json %s' % (url, response_json))
         creds = response_json['@graph'][0]['upload_credentials']
-    else:
-        creds = file_object['upload_credentials']
     logger.debug('s3_cp: Got creds %s' % (creds))
+    if expired(creds):
+        creds = new_creds(file_object, server, keypair)
+        logger.debug('s3_cp: Got new creds %s' % (creds))
     env = os.environ.copy()
     env.update({
         'AWS_ACCESS_KEY_ID': creds['access_key'],
@@ -569,7 +703,7 @@ def s3_cp(file_object, local_fname, server, keypair, overwrite=False):
         'AWS_SECURITY_TOKEN': creds['session_token'],
     })
     logger.info("Uploading file.")
-    start = time()
+    start = time.time()
     logger.debug('accession_file local_fname %s' % (local_fname))
     logger.debug('accession_file upload_url %s' % (creds['upload_url']))
     try:
@@ -581,7 +715,7 @@ def s3_cp(file_object, local_fname, server, keypair, overwrite=False):
         logger.error("Upload failed with exit code %d" % e.returncode)
         return e.returncode
     else:
-        end = time()
+        end = time.time()
         duration = end - start
         logger.info("Uploaded in %.2f seconds" % duration)
         return return_code
