@@ -7,7 +7,7 @@ import subprocess
 import shlex
 import dxpy
 
-ACCESSION_ANALYSIS_APPLET = '/applets/accession_analysis'
+ACCESSION_ANALYSIS_APPLET = '/ChIP-seq/applets/accession_analysis'
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -41,7 +41,6 @@ def get_args():
             return False
         else:
             assert not (True or False), "Cannot parse %s to boolean" % (arg)
-
 
     parser.add_argument('analysis_ids', help='List of analysis IDs to accession', nargs='*', default=None)
     parser.add_argument('--infile', help='Local file containing analysis IDs', type=argparse.FileType('r'), default=sys.stdin)
@@ -97,7 +96,7 @@ def main():
         job_name = args.name
 
     tokens = [
-        'dx run applets/accession_analysis',
+        'dx run %s' % (ACCESSION_ANALYSIS_APPLET),
         '-i "outfn=%s"' % (args.outfile),
         '--destination "%s"' % (args.destination),
         '--name "%s"' % (job_name),
