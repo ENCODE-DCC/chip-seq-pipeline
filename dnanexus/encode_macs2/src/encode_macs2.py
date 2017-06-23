@@ -143,6 +143,7 @@ def main(rep1_ta, ctl1_ta, rep1_xcor, rep1_paired_end, chrom_sizes, genomesize,
         logger.info("Only one control supplied.")
         if not simplicate_experiment:
             logger.info("Using one control for both replicate 1 and 2 and for the pool.")
+        rep2_control = rep1_control
         control_for_pool = rep1_control
         pool_ctl_msg = "one control"
     else:
