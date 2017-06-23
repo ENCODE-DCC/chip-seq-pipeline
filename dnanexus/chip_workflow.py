@@ -659,6 +659,7 @@ def main():
             else:
                 exp_rep2_ta = None
                 exp_rep2_cc = None
+                rep2_paired_end = None
 
             ctl_rep1_ta = dxpy.dxlink(resolve_file(args.ctl1[0]).get_id())
             if not unary_control and not simplicate_experiment:
