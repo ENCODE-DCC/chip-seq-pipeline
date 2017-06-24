@@ -154,7 +154,7 @@ def xcor_fraglen(filename):
 
 
 def frip(reads_filename, xcor_filename, peaks_filename, chrom_sizes_filename,
-         fragment_length=None):
+         fragment_length=None, reads_in_peaks_fn='reads_in_peaks.ta'):
     # calculate FRiP
     if fragment_length is None:
         fraglen = xcor_fraglen(xcor_filename)
@@ -162,7 +162,6 @@ def frip(reads_filename, xcor_filename, peaks_filename, chrom_sizes_filename,
         fraglen = fragment_length
 
     half_fraglen = int(fraglen)/2
-    reads_in_peaks_fn = 'reads_in_peaks.ta'
     out, err = run_pipe([
         'slopBed -i %s -g %s -s -l %s -r %s' % (
             reads_filename, chrom_sizes_filename, -half_fraglen, half_fraglen),
@@ -609,7 +608,7 @@ def after(date1, date2):
 
 def biorep_ns_generator(f, server, keypair):
     if isinstance(f, dict):
-        acc = f.get('accession')
+        acc = f.get('accession') or f.get('external_accession')
     else:
         m = re.match('^/?(files)?/?(\w*)', f)
         if m:
@@ -619,7 +618,9 @@ def biorep_ns_generator(f, server, keypair):
     if not acc:
         return
     url = urlparse.urljoin(server, '/files/%s' % (acc))
+    print("url %s" % (pprint.pformat(url)))
     file_object = encoded_get(url, keypair)
+    print("file_object %s" % (pprint.pformat(file_object)))
     if file_object.get('derived_from'):
         for derived_from in file_object.get('derived_from'):
             for repnum in biorep_ns_generator(derived_from, server, keypair):
