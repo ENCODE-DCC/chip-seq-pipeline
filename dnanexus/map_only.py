@@ -166,7 +166,7 @@ def get_args():
     parser.add_argument('--accession', help="Accession the results to the ENCODE Portal", default=False, action='store_true')
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
-    parser.add_argument('--scrub', help="Scrub bam files of sequence information", type=t_or_f, default=None)
+    parser.add_argument('--scrub', help="Scrub bam files of sequence information", type=t_or_f, default=False)
     parser.add_argument('--encoded_check', help="Value is passed on to accession_analysis", type=t_or_f, default=None)
 
     args = parser.parse_args()
@@ -266,7 +266,7 @@ def files_to_map(exp_obj, server, keypair, no_sfn_dupes):
             elif file_obj.get('output_type') == 'reads' and \
                 file_obj.get('file_format') in FILE_FORMATS_TO_MAP and not file_obj.get('replicate'):
                 logging.error('%s: Reads file has no replicate' %(file_obj.get('accession')))
-    print('returning from files_to_map with %s' % (pprint.pformat(files)))
+    logging.debug('returning from files_to_map with %s' % (pprint.pformat(files)))
     return files
 
 def replicates_to_map(files, server, keypair, map_only_reps=[]):
@@ -465,7 +465,7 @@ def map_only(experiment, biorep_n, files, server, keypair, sex_specific,
              crop_length, accession, fqcheck, force_patch,
              use_existing_folders, encoded_check):
 
-    pprint.pprint("in maponly with files %s" % (pprint.pformat(files)))
+    logging.debug("in maponly with files %s" % (pprint.pformat(files)))
     if not files:
         logging.debug('%s:%s No files to map' %(experiment.get('accession'), biorep_n))
         return
@@ -592,16 +592,12 @@ def main():
         biorep_numbers = \
             set([rep.get('biological_replicate_number') for rep in replicates])
         in_process = False
-        print("files %s" % (pprint.pformat(files)))
         if files:
             for biorep_n in biorep_numbers:
                 outstrings.append('rep%s' %(biorep_n))
-                print("biorep n %s" % (biorep_n))
                 biorep_files = [f for f in files if biorep_n in common.biorep_ns(f,server,keypair)]
-                print("biorep_files %s" % (pprint.pformat(biorep_files)))
                 paired_files = []
                 unpaired_files = []
-                print("biorep_files %s" % (pprint.pformat(biorep_files)))
                 while biorep_files:
                     file_object = biorep_files.pop()
                     if file_object.get('paired_end') == None: # group all the unpaired reads for this biorep together

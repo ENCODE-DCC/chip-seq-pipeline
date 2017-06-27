@@ -618,9 +618,7 @@ def biorep_ns_generator(f, server, keypair):
     if not acc:
         return
     url = urlparse.urljoin(server, '/files/%s' % (acc))
-    print("url %s" % (pprint.pformat(url)))
     file_object = encoded_get(url, keypair)
-    print("file_object %s" % (pprint.pformat(file_object)))
     if file_object.get('derived_from'):
         for derived_from in file_object.get('derived_from'):
             for repnum in biorep_ns_generator(derived_from, server, keypair):
