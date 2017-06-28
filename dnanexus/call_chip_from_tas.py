@@ -746,10 +746,10 @@ def main():
                 try:
                     r.raise_for_status()
                 except:
-                    logging.error(
-                        "%s: Tried but failed to update experiment internal_status to processing"
+                    logging.warning(
+                        "%s: Failed to update experiment internal_status to processing. Skipping that update."
                         % (exp_id))
-                    logging.error(r.text)
+                    logging.debug(r.text)
 
 
 if __name__ == '__main__':
