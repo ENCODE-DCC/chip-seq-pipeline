@@ -101,7 +101,7 @@ def compress(filename):
     else:
         logging.info(subprocess.check_output(shlex.split('ls -l %s' %(filename))))
         logging.info("Compressing %s" %(filename))
-        logging.info(subprocess.check_output(shlex.split('gzip %s' %(filename))))
+        logging.info(subprocess.check_output(shlex.split('gzip -n %s' %(filename))))
         new_filename = filename + '.gz'
         logging.info(subprocess.check_output(shlex.split('ls -l %s' %(new_filename))))
         return new_filename
