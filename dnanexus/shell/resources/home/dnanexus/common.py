@@ -14,8 +14,8 @@ import dxpy
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-#logger.setLevel(logging.DEBUG)
-#logger.addHandler(dxpy.DXLogHandler())
+# logger.setLevel(logging.DEBUG)
+# logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = True
 
 
@@ -153,12 +153,15 @@ def xcor_fraglen(filename):
     return int(fraglen)
 
 
-def frip(reads_filename, xcor_filename, peaks_filename, chrom_sizes_filename):
+def frip(reads_filename, xcor_filename, peaks_filename, chrom_sizes_filename,
+         fragment_length=None, reads_in_peaks_fn='reads_in_peaks.ta'):
     # calculate FRiP
-    fraglen = xcor_fraglen(xcor_filename)
-    half_fraglen = int(fraglen)/2
+    if fragment_length is None:
+        fraglen = xcor_fraglen(xcor_filename)
+    else:
+        fraglen = fragment_length
 
-    reads_in_peaks_fn = 'reads_in_peaks.ta'
+    half_fraglen = int(fraglen)/2
     out, err = run_pipe([
         'slopBed -i %s -g %s -s -l %s -r %s' % (
             reads_filename, chrom_sizes_filename, -half_fraglen, half_fraglen),
@@ -605,7 +608,7 @@ def after(date1, date2):
 
 def biorep_ns_generator(f, server, keypair):
     if isinstance(f, dict):
-        acc = f.get('accession')
+        acc = f.get('accession') or f.get('external_accession')
     else:
         m = re.match('^/?(files)?/?(\w*)', f)
         if m:
