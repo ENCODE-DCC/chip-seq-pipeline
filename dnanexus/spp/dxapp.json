@@ -108,7 +108,13 @@
       "main":     {"instanceType": "mem3_ssd1_x4"}
     },
     "assetDepends": [
-      {"id": "record-Bzyq5700Ykg8g3jb8Q4XxYJF"}
+      {"id": "record-Bzyq5700Ykg8g3jb8Q4XxYJF"},
+      {
+      "name": "bedtools_asset",
+      "project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
+      "version": "0.0.1",
+      "folder": "/assets/"
+      }
     ]
   },
   "access": {
