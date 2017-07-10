@@ -1827,56 +1827,7 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
             }
         })
 
-        IDR_sets_same = idr_sets_same(analysis_stages)
-        if not unreplicated_analysis and not IDR_sets_same:
-            peak_stages.update({
-                get_stage_name("Final IDR peak calls", analysis_stages): {
-                    'output_files': [
-                        {'name': 'conservative_set',
-                         'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                         'metadata': idr_conservative_narrowpeak_metadata},
-
-                        {'name': 'conservative_set_bb',
-                         'derived_from': ['conservative_set'],
-                         'metadata': idr_conservative_narrowpeak_bb_metadata},
-
-                        {'name': 'optimal_set',
-                         'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                         'metadata': idr_optimal_narrowpeak_metadata},
-
-                        {'name': 'optimal_set_bb',
-                         'derived_from': ['optimal_set'],
-                         'metadata': idr_optimal_narrowpeak_bb_metadata}
-                    ],
-                    'qc': [
-                        'reproducibility_test', 'rescue_ratio', 'Np', 'N1',
-                        'N2', 'Nt', 'self_consistency_ratio'
-                    ],
-                    'stage_metadata': {}  # initialized below
-                }
-            })
-        elif not unreplicated_analysis and IDR_sets_same:
-            peak_stages.update({
-                get_stage_name("Final IDR peak calls", analysis_stages): {
-
-                    'output_files': [
-                        {'name': 'optimal_set',
-                         'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
-                         'metadata': idr_optimal_narrowpeak_metadata},
-
-                        {'name': 'optimal_set_bb',
-                         'derived_from': ['optimal_set'],
-                         'metadata': idr_optimal_narrowpeak_bb_metadata}
-
-                    ],
-                    'qc': [
-                        'reproducibility_test', 'rescue_ratio', 'Np', 'N1',
-                        'N2', 'Nt', 'self_consistency_ratio'
-                    ],
-                    'stage_metadata': {}  # initialized below
-                }
-            })
-        elif unreplicated_analysis:
+        if unreplicated_analysis:
             peak_stages.update({
                 get_stage_name("Final IDR peak calls", analysis_stages): {
                     'output_files': [
@@ -1892,6 +1843,55 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
                     'stage_metadata': {}  # initialized below
                 }
             })
+        else:  # replicated analysis
+            if idr_sets_same(analysis_stages):
+                peak_stages.update({
+                    get_stage_name("Final IDR peak calls", analysis_stages): {
+
+                        'output_files': [
+                            {'name': 'optimal_set',
+                             'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                             'metadata': idr_optimal_narrowpeak_metadata},
+
+                            {'name': 'optimal_set_bb',
+                             'derived_from': ['optimal_set'],
+                             'metadata': idr_optimal_narrowpeak_bb_metadata}
+
+                        ],
+                        'qc': [
+                            'reproducibility_test', 'rescue_ratio', 'Np', 'N1',
+                            'N2', 'Nt', 'self_consistency_ratio'
+                        ],
+                        'stage_metadata': {}  # initialized below
+                    }
+                })
+            else:  # idr sets not same and a replicated analysis
+                peak_stages.update({
+                    get_stage_name("Final IDR peak calls", analysis_stages): {
+                        'output_files': [
+                            {'name': 'conservative_set',
+                             'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                             'metadata': idr_conservative_narrowpeak_metadata},
+
+                            {'name': 'conservative_set_bb',
+                             'derived_from': ['conservative_set'],
+                             'metadata': idr_conservative_narrowpeak_bb_metadata},
+
+                            {'name': 'optimal_set',
+                             'derived_from': ['rep1_peaks', 'rep2_peaks', 'pooled_peaks'],
+                             'metadata': idr_optimal_narrowpeak_metadata},
+
+                            {'name': 'optimal_set_bb',
+                             'derived_from': ['optimal_set'],
+                             'metadata': idr_optimal_narrowpeak_bb_metadata}
+                        ],
+                        'qc': [
+                            'reproducibility_test', 'rescue_ratio', 'Np', 'N1',
+                            'N2', 'Nt', 'self_consistency_ratio'
+                        ],
+                        'stage_metadata': {}  # initialized below
+                    }
+                })
 
         final_idr_stage_name = \
             get_stage_name("Final IDR peak calls", analysis_stages)
@@ -1936,12 +1936,22 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
 def resolve_name_to_accessions(stages, stage_file_name):
     # given a dict of named stages, and the name of one of the stages' outputs,
     # return that output's ENCODE accession number
-    logger.debug("in resolve_name_to_accessions with stage_file_name")
-    logger.debug("%s" % (pprint.pformat(stage_file_name)))
+
+    logger.debug(
+        "in resolve_name_to_accessions with stage_file_name %s"
+        % (pprint.pformat(stage_file_name)))
+    logger.debug(
+        "in resolve_name_to_accessions with stages\n%s"
+        % (pprint.pformat(stages.keys())))
+
     accessions = []
     if not stages:
         return [None]
     for stage_name in [s for s in stages if s]:
+        logger.debug(
+            "input files:\n%s" % (pprint.pformat(stages[stage_name].get('input_files'))))
+        logger.debug(
+            "output files:\n%s" % (pprint.pformat(stages[stage_name].get('output_files'))))
         if stages[stage_name].get('input_files'):
             all_files = \
                 stages[stage_name].get('output_files') + \
