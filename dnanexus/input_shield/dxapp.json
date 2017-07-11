@@ -124,7 +124,13 @@
     "execDepends": [
     ],
     "assetDepends": [
-      {"id": "record-F4vB7gj004jP3fQz8zFf0qjj"}
+      {"id": "record-F4vB7gj004jP3fQz8zFf0qjj"},
+      {
+            "name": "common_asset",
+            "project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
+            "version": "0.0.1",
+            "folder": "/ChIP-seq/assets/"
+      }
     ],
     "systemRequirements": {
       "main": {"instanceType": "mem2_hdd2_x1"}
