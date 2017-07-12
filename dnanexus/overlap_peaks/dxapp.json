@@ -199,12 +199,20 @@
 		}
 	],
 	"runSpec": {
-		"assetDepends":[{
+		"assetDepends":[
+		{
       		"name": "bedtools_asset",
       		"project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
       		"version": "0.0.1",
       		"folder": "/ChIP-seq/assets/"
-    }],
+    	},
+	    {
+            "name": "common_asset",
+            "project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
+            "version": "0.0.1",
+            "folder": "/ChIP-seq/assets/"
+        }
+	],
 		"interpreter": "python2.7",
 		"file": "src/overlap_peaks.py"
 	},

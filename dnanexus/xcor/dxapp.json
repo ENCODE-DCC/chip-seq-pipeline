@@ -91,6 +91,12 @@
             "project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
             "version": "0.0.1",
             "folder": "/ChIP-seq/assets/"
+          },
+          {
+            "name": "common_asset",
+            "project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
+            "version": "0.0.1",
+            "folder": "/ChIP-seq/assets/"
           }
         ],
         "systemRequirements": {

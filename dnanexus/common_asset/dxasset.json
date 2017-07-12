@@ -1,0 +1,10 @@
+{
+  "name": "common_asset",
+  "title": "common.py",
+  "description": "Your favorite utility module common.py, now as AssetBundle!",
+  "version": "0.0.1",
+  "distribution": "Ubuntu",
+  "instanceType": "mem3_hdd2_x2",
+  "release": "12.04",
+  "execDepends": []
+}
