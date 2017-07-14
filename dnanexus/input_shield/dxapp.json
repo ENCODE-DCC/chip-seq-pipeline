@@ -133,7 +133,7 @@
       }
     ],
     "systemRequirements": {
-      "main": {"instanceType": "mem2_hdd2_x1"}
+      "main": {"instanceType": "mem2_hdd2_x4"}
     }
   },
   "access": {

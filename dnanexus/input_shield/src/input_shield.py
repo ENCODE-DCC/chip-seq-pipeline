@@ -72,7 +72,7 @@ def s3_dxcp(accession, server, keypair):
 
     # this is the actual S3 https URL after redirection
     s3_url = r.url
-    logger.debug(s3_url)
+    logger.debug("s3_url: %s" % (s3_url))
 
     # release the connection
     r.close()
@@ -87,6 +87,7 @@ def s3_dxcp(accession, server, keypair):
     bucket_url = S3_SERVER.rstrip('/') + o.path
 
     # cp the file from the bucket
+    logger.debug("bucket_url: %s" % (bucket_url))
     subprocess.check_call(shlex.split(
         'aws s3 cp %s . --quiet' % (bucket_url)), stderr=subprocess.STDOUT)
     subprocess.check_call(shlex.split('ls -l %s' % (filename)))
