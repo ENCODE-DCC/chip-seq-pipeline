@@ -8,6 +8,8 @@ folder=${2:-$DEFAULT_FOLDER}
 PRODUCTION_APPLETS=('bam2tagalign' 'encode_map' 'filter_qc' 'xcor' 'xcor_only' 'spp' 'pool' 'pseudoreplicator' 'encode_spp' 'encode_macs2' 'macs2' 'idr2' 'encode_idr' 'overlap_peaks')
 ACCESSORY_APPLETS=('input_shield' 'accession_analysis' 'shell')
 
+dx mkdir -p $folder
+
 for appl in ${PRODUCTION_APPLETS[@]}; do
 	dest="$project:$folder$appl"
 	echo $dest

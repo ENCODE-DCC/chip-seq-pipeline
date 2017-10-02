@@ -9,3 +9,5 @@ dnanexus/accessionator/resources/keypairs.json
 **/.aws/*
 **/keypairs.json
 
+
+dnanexus/.python-version
