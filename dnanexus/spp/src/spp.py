@@ -24,10 +24,10 @@ logger.addHandler(dxpy.DXLogHandler())
 logger.propagate = False
 logger.setLevel(logging.INFO)
 
-SPP_VERSION_MAP = {
-    "1.10.1": "/phantompeakqualtools/spp_1.10.1.tar.gz",
-    "1.14":   "/phantompeakqualtools/spp-1.14.tar.gz"
-}
+# SPP_VERSION_MAP = {
+#     "1.10.1": "/phantompeakqualtools/spp_1.10.1.tar.gz",
+#     "1.14":   "/phantompeakqualtools/spp-1.14.tar.gz"
+# }
 
 
 @dxpy.entry_point('main')
@@ -81,7 +81,7 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
     # fragment length from xcor file
     if fragment_length is not None:
         fraglen = str(fragment_length)
-        logger.info("User given fragment length %s" % fraglen)
+        logger.info("User given fragment length %s" % (fraglen))
     else:
         fraglen_column = 3
         with open(xcor_scores_input_filename, 'r') as f:
@@ -89,14 +89,11 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
             fraglen = line.split('\t')[fraglen_column-1]
             logger.info("Read fragment length: %s" % (fraglen))
 
-    spp_tarball = SPP_VERSION_MAP.get(spp_version)
-    assert spp_tarball, "spp version %s is not supported" % (spp_version)
-    if nodups:
-        run_spp = '/phantompeakqualtools/run_spp_nodups.R'
-    else:
-        run_spp = '/phantompeakqualtools/run_spp.R'
+    # spp_tarball = SPP_VERSION_MAP.get(spp_version)
+    # assert spp_tarball, "spp version %s is not supported" % (spp_version)
     # install spp
-    subprocess.check_output(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
+    # subprocess.check_output(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
+    run_spp = '/phantompeakqualtools/run_spp.R'
     spp_command = (
         "Rscript %s -p=%d -c=%s -i=%s -npeak=%d -speak=%s -savr=%s -savp=%s -rf -out=%s"
         % (run_spp, cpu_count(), experiment_filename, control_filename, npeaks,
@@ -173,5 +170,6 @@ def main(experiment, control, xcor_scores_input, npeaks, nodups, bigbed,
         output["peaks_bb"] = dxpy.dxlink(peaks_bb)
 
     return output
+
 
 dxpy.run()
