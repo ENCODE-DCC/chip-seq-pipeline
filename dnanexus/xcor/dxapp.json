@@ -81,25 +81,25 @@
              "build_commands": "make samtools && cp /tmp/samtools/samtools /usr/local/bin/samtools"}
         ],
         "assetDepends": [
-          {"name": "bioconductorAsset",
-           "project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
+          {"name": "bioconductor_asset",
+           "project": "project-F7970b0067fQZQvx3Y3y7Yyj",
            "version": "0.0.1",
            "folder": "/ChIP-seq/assets/" 
           },
           {
             "name": "bedtools_asset",
-            "project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
+            "project": "project-F7970b0067fQZQvx3Y3y7Yyj",
             "version": "0.0.1",
             "folder": "/ChIP-seq/assets/"
           },
           {
             "name": "common_asset",
-            "project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
+            "project": "project-F7970b0067fQZQvx3Y3y7Yyj",
             "version": "0.0.1",
             "folder": "/ChIP-seq/assets/"
           },
           {
-            "name": "sppAsset",
+            "name": "spp_asset",
             "project": "project-F7970b0067fQZQvx3Y3y7Yyj",
             "version": "0.0.1",
             "folder": "/ChIP-seq/assets/"

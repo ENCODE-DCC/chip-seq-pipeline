@@ -101,7 +101,7 @@
     },
     "assetDepends":[{
       "name": "bedtools_asset",
-      "project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
+      "project": "project-F7970b0067fQZQvx3Y3y7Yyj",
       "version": "0.0.1",
       "folder": "/ChIP-seq/assets/"
     }],
