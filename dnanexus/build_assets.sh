@@ -11,6 +11,6 @@ dx mkdir -p "$project:$folder/assets/"
 for asset in ${ASSETS[@]}; do
 	dest="$project:$folder/assets/$asset"
 	echo $dest
-	dx build_asset --destination "$project:$folder/assets/$asset" "$asset/"
+	dx build_asset --no-watch --destination "$project:$folder/assets/$asset" "$asset/" &
 done
 
