@@ -117,10 +117,15 @@
     "execDepends": [
     ],
     "assetDepends": [
-      {"id": "record-F4XJxQQ0XFkfv1KqF6QXpvq1"},
+      {
+        "name": "awscli_asset",
+        "project": "project-F7970b0067fQZQvx3Y3y7Yyj",
+        "version": "0.0.1",
+        "folder": "/ChIP-seq/assets/"
+      },
       {
         "name": "common_asset",
-        "project": "project-F4Kv2280g45x6ZyFFj8FJgxZ",
+        "project": "project-F7970b0067fQZQvx3Y3y7Yyj",
         "version": "0.0.1",
         "folder": "/ChIP-seq/assets/"
       }

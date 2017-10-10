@@ -24,10 +24,10 @@ logger.propagate = False
 logger.setLevel(logging.INFO)
 
 
-SPP_VERSION_MAP = {
-    "1.10.1": "/phantompeakqualtools/spp_1.10.1.tar.gz",
-    "1.14":   "/phantompeakqualtools/spp-1.14.tar.gz"
-}
+# SPP_VERSION_MAP = {
+#     "1.10.1": "/phantompeakqualtools/spp_1.10.1.tar.gz",
+#     "1.14":   "/phantompeakqualtools/spp-1.14.tar.gz"
+# }
 
 
 def xcor_parse(fname):
@@ -117,12 +117,12 @@ def main(input_tagAlign, paired_end, spp_version):
     # relPhantomPeakCoef <tab>
     # QualityTag
 
-    spp_tarball = SPP_VERSION_MAP.get(spp_version)
-    assert spp_tarball, "spp version %s is not supported" % (spp_version)
-    # install spp
-    subprocess.check_output(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
+    # spp_tarball = SPP_VERSION_MAP.get(spp_version)
+    # assert spp_tarball, "spp version %s is not supported" % (spp_version)
+    # # install spp
+    # subprocess.check_output(shlex.split('R CMD INSTALL %s' % (spp_tarball)))
     # run spp
-    run_spp_command = '/phantompeakqualtools/run_spp_nodups.R'
+    run_spp_command = '/phantompeakqualtools/run_spp.R'
     out, err = common.run_pipe([
         "Rscript %s -c=%s -p=%d -filtchr=chrM -savp=%s -out=%s"
         % (run_spp_command, subsampled_TA_filename, cpu_count(),

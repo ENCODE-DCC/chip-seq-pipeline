@@ -1,5 +1,5 @@
 {
-	"name": "bioconductorAsset",
+	"name": "bioconductor_asset",
 	"title": "Bioconductor",
 	"description": "R package bioconductor, required for SPP 1.14",
 	"version": "0.0.1",

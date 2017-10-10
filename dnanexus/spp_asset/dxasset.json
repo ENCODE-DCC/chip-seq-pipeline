@@ -1,0 +1,22 @@
+{
+    "name": "spp_asset",
+    "title": "SPP",
+    "description": "Phantompeakqualtools SPP 1.14 and dependencies",
+    "version": "0.0.1",
+    "distribution": "Ubuntu",
+    "instanceType": "mem1_ssd1_x2",
+    "release": "12.04",
+    "execDepends": [
+        {"name": "snow", "package_manager": "cran"},
+        {"name": "snowfall", "package_manager": "cran"},
+        {"name": "bitops", "package_manager": "cran"},
+        {"name": "caTools", "package_manager": "cran"},
+        {
+            "name": "phantompeakqualtools",
+            "package_manager": "git",
+            "url": "https://github.com/kundajelab/phantompeakqualtools",
+            "tag": "1.2",
+            "destdir": "/"
+        }
+    ]
+}
