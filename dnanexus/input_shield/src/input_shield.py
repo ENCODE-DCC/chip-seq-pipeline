@@ -22,7 +22,7 @@ import urlparse
 import os
 
 S3_SERVER = 's3://encode-files/'
-DATA_CACHE_PROJECT = 'phs000791'  # if specified, look in that project for files
+DATA_CACHE_PROJECT = 'phs000610'  # if specified, look in that project for files
 
 DCC_CREDENTIALS_PROJECT = 'project-F30FzF0048K9JZKxPvB3Y563'
 DCC_CREDENTIALS_FOLDER = '/credentials'
@@ -212,8 +212,8 @@ def resolve_file(identifier, server, keypair):
             folder_name = '/' + folder_name
         file_name = m.group(2)
     else:
-        folder_name = '/'
-        file_name = file_identifier
+        folder_name = '/fastqs/'
+        file_name = file_identifier + '.fastq.gz'
 
     logger.debug("Looking for file %s in folder %s" % (file_name, folder_name))
 
