@@ -22,7 +22,7 @@ import urlparse
 import os
 
 S3_SERVER = 's3://encode-files/'
-DATA_CACHE_PROJECT = 'phs000610'  # if specified, look in that project for files
+DATA_CACHE_PROJECT = dxpy.PROJECT_CONTEXT_ID  # if specified, look in that project for files
 
 DCC_CREDENTIALS_PROJECT = 'project-F30FzF0048K9JZKxPvB3Y563'
 DCC_CREDENTIALS_FOLDER = '/credentials'
@@ -198,7 +198,7 @@ def resolve_file(identifier, server, keypair):
         file_identifier = m.group(2)
     else:
         logger.debug("Defaulting to the current project")
-        project_identifier = dxpy.WORKSPACE_ID
+        project_identifier = DATA_CACHE_PROJECT
         file_identifier = identifier
 
     project = resolve_project(project_identifier)
