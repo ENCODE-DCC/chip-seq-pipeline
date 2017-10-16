@@ -44,7 +44,7 @@ def scrub(in_filepath, out_filepath):
     # Scrub the sequence from field 10 with awk.
     common.run_pipe([
         'samtools view %s' % (in_filepath),
-        r"""awk '{OFS="\t"} {s=""; for(i=1;i<=length($10);i++) s=(s "N"); $10=s; $11="*"; print}'"""
+        r"""awk '{OFS="\t"} {s=""; for(i=1;i<=length($10);i++) s=(s "N"); $6=(i-1 "M"); $10=s; $11="*"; print}'"""
         ], sam_path)
     # Add back the header.
     common.run_pipe([
