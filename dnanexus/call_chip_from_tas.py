@@ -156,7 +156,7 @@ def get_all_tas(experiment, default_project, ta_folders):
             base_path = '/' + base_path
         if not base_path.endswith('/'):
             base_path = base_path + '/'
-        path = base_path + exp_id + '/'
+        path = base_path + 'bams/' + exp_id + '/'
         logging.debug(
             "get_all_tas: find_data objects in project %s project_name %s path %s"
             % (project, project_name, path))
