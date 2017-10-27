@@ -41,10 +41,10 @@ def scrub(in_filepath, out_filepath):
     sam_path = os.path.join(dirname, "scrubbed.sam")
     # Cache the header.
     shell_command("samtools view -H %s -o %s" % (in_filepath, header_path))
-    # Scrub the sequence from field 10 with awk.
+    # Scrub the sequence information from fields 6, 10, 11 and suppress optional tags
     common.run_pipe([
         'samtools view %s' % (in_filepath),
-        r"""awk '{OFS="\t"} {s=""; for(i=1;i<=length($10);i++) s=(s "N"); $6=(i-1 "M"); $10=s; $11="*"; print}'"""
+        r"""awk '{OFS="\t"} {s=""; for(i=1;i<=length($10);i++) s=(s "N"); $6=(i-1 "M"); $10=s; $11="*"; print $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11}'"""
         ], sam_path)
     # Add back the header.
     common.run_pipe([
