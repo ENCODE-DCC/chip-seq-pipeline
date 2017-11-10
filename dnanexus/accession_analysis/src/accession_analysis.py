@@ -2250,9 +2250,9 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
             f['accession'] = md5_exists['accession']
             # if the same file has been deleted then we "undelete" it by
             # resetting its status to uploading
-            if existing_file_status in ['deleted']:
+            if existing_file_status in ['deleted'] or (existing_file_status in ['upload failed'] and force_upload):
                 logger.info(
-                    "File %s with matching MD5 %s has status deleted and will be reset to status uploading"
+                    "File %s with matching MD5 %s will be reset to status uploading"
                     % (md5_exists.get('accession'), md5_exists.get('md5sum')))
                 f['status'] = 'uploading'
             # blow away existing qc metrics from the existing file object
