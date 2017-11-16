@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DEFAULT_FOLDER='/ChIP-seq/'
+DEFAULT_FOLDER='/ChIP-seq'
 
 project=$1
 folder=${2:-$DEFAULT_FOLDER}
@@ -17,7 +17,7 @@ for applet in ${PRODUCTION_APPLETS[@]}; do
 done
 
 for applet in ${ACCESSORY_APPLETS[@]}; do
-	dest="$project:$folder/applets/$appl"
+	dest="$project:$folder/applets/$applet"
 	echo $dest
 	# cp common.py $appl/resources/home/dnanexus/common.py
 	dx build --archive --destination "$dest" "$applet/"
