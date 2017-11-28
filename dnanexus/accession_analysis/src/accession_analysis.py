@@ -776,6 +776,11 @@ def is_unary_control(analysis):
     return analysis['properties'].get('unary_control') in ['True', 'true']
 
 
+def scrubbed_stage(stage):
+    logger.debug('in scrubbed_stage with stage %s', pprint.pformat(stage, depth=3))
+    return stage['input'].get('scrub')
+
+
 def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     logger.debug(
         'in get_raw_mapping_stages with mapping analysis %s and rep %s'
@@ -859,9 +864,17 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     raw_mapping_stage = next(
         stage for stage in analysis_stages
         if stage['name'].startswith("Map ENCSR"))
+    filter_qc_stage = next(
+        stage for stage in analysis_stages
+        if stage['name'].startswith("Filter and QC"))
+    scrubbed = scrubbed_stage(filter_qc_stage)
 
-    bam = dxpy.describe(
-        raw_mapping_stage['output']['mapped_reads'])
+    # if filter_qc_stage['input'].get('scrub') == 'true':
+    #     bam = dxpy.describe(
+    #         filter_qc_stage['output']['scrubbed_unfiltered_bam'])
+    # else:
+    #     bam = dxpy.describe(
+    #         raw_mapping_stage['output']['scrubbed_unfiltered_bam'])
     crop_length = raw_mapping_stage['output'].get('crop_length')
 
     if not crop_length or crop_length == 'native':
@@ -913,35 +926,85 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         'mapped_read_length': mapped_read_length
     }, COMMON_METADATA)
 
-    mapping_stages = {
-        get_stage_name("Map ENCSR.*", analysis_stages): {
-            'input_files': [
+    if scrubbed:
+        mapping_stages = {
+            get_stage_name("Map ENCSR.*", analysis_stages): {
+                'input_files': [
 
-                {'name': 'rep%s_fastqs' % (repn),
-                 'derived_from': None,
-                 'metadata': None,
-                 'encode_object': fastqs},
+                    {'name': 'rep%s_fastqs' % (repn),
+                     'derived_from': None,
+                     'metadata': None,
+                     'encode_object': fastqs},
 
-                {'name': 'reference',
-                 'derived_from': None,
-                 'metadata': None,
-                 'encode_object': reference}
+                    {'name': 'reference',
+                     'derived_from': None,
+                     'metadata': None,
+                     'encode_object': reference}
 
-            ],
+                ],
 
-            'output_files': [
+                'output_files': [],
 
-                {'name': 'mapped_reads',
-                 'derived_from': ['rep%s_fastqs' % (repn), 'reference'],
-                 'metadata': bam_metadata}
+                'qc': [],
 
-            ],
+                'stage_metadata': {}  # initialized below
+            },
+            get_stage_name("Filter and QC.*", analysis_stages): {
+                'input_files': [
 
-            'qc': [qc],
+                    {'name': 'rep%s_fastqs' % (repn),
+                     'derived_from': None,
+                     'metadata': None,
+                     'encode_object': fastqs},
 
-            'stage_metadata': {}  # initialized below
+                    {'name': 'reference',
+                     'derived_from': None,
+                     'metadata': None,
+                     'encode_object': reference}
+
+                ],
+
+                'output_files': [
+                    {'name': 'scrubbed_unfiltered_bam',
+                     'derived_from': ['rep%s_fastqs' % (repn), 'reference'],
+                     'metadata': bam_metadata}
+                ],
+
+                'qc': [qc],
+
+                'stage_metadata': {}  # initialized below
+            }
         }
-    }
+    else:
+        mapping_stages = {
+            get_stage_name("Map ENCSR.*", analysis_stages): {
+                'input_files': [
+
+                    {'name': 'rep%s_fastqs' % (repn),
+                     'derived_from': None,
+                     'metadata': None,
+                     'encode_object': fastqs},
+
+                    {'name': 'reference',
+                     'derived_from': None,
+                     'metadata': None,
+                     'encode_object': reference}
+
+                ],
+
+                'output_files': [
+
+                    {'name': 'mapped_reads',
+                     'derived_from': ['rep%s_fastqs' % (repn), 'reference'],
+                     'metadata': bam_metadata}
+
+                ],
+
+                'qc': [qc],
+
+                'stage_metadata': {}  # initialized below
+            }
+        }
 
     for stage_name in mapping_stages:
         if not stage_name.startswith('_'):
@@ -1043,8 +1106,9 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     filter_qc_stage = next(
         stage for stage in analysis_stages
         if stage['name'].startswith("Filter and QC"))
+    scrubbed = scrubbed_stage(filter_qc_stage)
 
-    bam = dxpy.describe(filter_qc_stage['output']['filtered_bam'])
+    # bam = dxpy.describe(filter_qc_stage['output']['scrubbed_filtered_bam'])
     crop_length = raw_mapping_stage['output'].get('crop_length')
 
     if not crop_length or crop_length == 'native':
@@ -1121,7 +1185,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
             ],
 
             'output_files': [
-                {'name': 'filtered_bam',
+                {'name': 'scrubbed_filtered_bam' if scrubbed else 'filtered_bam',
                  'derived_from': ['rep%s_fastqs' % (repn), 'reference'],
                  'metadata': bam_metadata}
             ],
@@ -1332,15 +1396,18 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         % (experiment['accession'], len(mapping_stages), len(control_stages)))
     unreplicated_analysis = is_unreplicated_analysis(peaks_analysis)
 
-    # rep1_bam, rep2_bam = \
-    #     [(mapping_stages[n], 'filtered_bam') for n in range(2)]
-    bams = \
-        [(mapping_stage, 'filtered_bam') for mapping_stage in mapping_stages]
+    experiment_scrubbed = any(
+        [scrubbed_stage(stage) for stage in 
+        [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in mapping_stages for stage_name in mapping_stage.keys()]])
+    control_scrubbed = any(
+        [scrubbed_stage(stage) for stage in 
+        [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in control_stages for stage_name in mapping_stage.keys()]])
 
-    # rep1_ctl_bam, rep2_ctl_bam = \
-    #     [(control_stages[n], 'filtered_bam') for n in range(2)]
+    bams = \
+        [(mapping_stage, 'scrubbed_filtered_bam' if experiment_scrubbed else 'filtered_bam') for mapping_stage in mapping_stages]
+
     ctl_bams = \
-        [(control_stage, 'filtered_bam') for control_stage in control_stages]
+        [(control_stage, 'scrubbed_filtered_bam' if control_scrubbed else 'filtered_bam') for control_stage in control_stages]
 
     assemblies = \
         [get_assembly(bam)
@@ -1585,15 +1652,11 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         % (experiment['accession'], len(mapping_stages), len(control_stages)))
     unreplicated_analysis = is_unreplicated_analysis(peaks_analysis)
 
-    # rep1_bam, rep2_bam = \
-    #     [(mapping_stages[n], 'filtered_bam') for n in range(2)]
     bams = \
-        [(mapping_stage, 'filtered_bam') for mapping_stage in mapping_stages]
+        [(mapping_stage, 'scrubbed_filtered_bam' if scrubbed_stage(mapping_stage) else 'filtered_bam') for mapping_stage in mapping_stages]
 
-    # rep1_ctl_bam, rep2_ctl_bam = \
-    #     [(control_stages[n], 'filtered_bam') for n in range(2)]
     ctl_bams = \
-        [(control_stage, 'filtered_bam') for control_stage in control_stages]
+        [(control_stage, 'scrubbed_filtered_bam' if scrubbed_stage(control_stage) else 'filtered_bam') for control_stage in control_stages]
 
     assemblies = \
         [get_assembly(bam)
@@ -2187,9 +2250,9 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
             f['accession'] = md5_exists['accession']
             # if the same file has been deleted then we "undelete" it by
             # resetting its status to uploading
-            if existing_file_status in ['deleted']:
+            if existing_file_status in ['deleted'] or (existing_file_status in ['upload failed'] and force_upload):
                 logger.info(
-                    "File %s with matching MD5 %s has status deleted and will be reset to status uploading"
+                    "File %s with matching MD5 %s will be reset to status uploading"
                     % (md5_exists.get('accession'), md5_exists.get('md5sum')))
                 f['status'] = 'uploading'
             # blow away existing qc metrics from the existing file object
@@ -2694,6 +2757,11 @@ def accession_mapping_analysis_files(
         files_with_derived = patch_outputs(
             stages, keypair, server, dryrun)
 
+    scrubbed = any([scrubbed_stage(stage) for stage in analysis_stages])
+    filtered_bam = \
+        'scrubbed_filtered_bam' if scrubbed else 'filtered_bam'
+    unfiltered_bam = \
+        'scrubbed_unfiltered_bam' if scrubbed else 'mapped_reads'
     mapping_analysis_step_versions = {
         STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
             {
@@ -2709,11 +2777,11 @@ def accession_mapping_analysis_files(
                 'stages': mapping_stages,
                 'stage_name': get_stage_name(
                     'Filter and QC.*', analysis_stages),
-                'file_names': ['filtered_bam'],
+                'file_names': [filtered_bam],
                 'status': 'released',
                 'qc_objects': [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}
+                    {'chipseq_filter_quality_metric': [filtered_bam]},
+                    {'samtools_flagstats_quality_metric': [filtered_bam]}
                 ]
             }
         ]
@@ -2723,11 +2791,11 @@ def accession_mapping_analysis_files(
         mapping_analysis_step_versions[STEP_VERSION_ALIASES[pipeline_version]['bwa-alignment-step']].append(
             {
                 'stages': raw_mapping_stages,
-                'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
-                'file_names': ['mapped_reads'],
+                'stage_name': get_stage_name('Filter and QC.*' if scrubbed else 'Map ENCSR.*', analysis_stages),
+                'file_names': [unfiltered_bam],
                 'status': 'released',
                 'qc_objects': [
-                    {'samtools_flagstats_quality_metric': ['mapped_reads']}
+                    {'samtools_flagstats_quality_metric': [unfiltered_bam]}
                 ]
             }
         )
@@ -2768,6 +2836,10 @@ def accession_raw_mapping_analysis_files(
     raw_mapping_stages = get_raw_mapping_stages(
         mapping_analysis, keypair, server, fqcheck, repn)
 
+    scrubbed = any([scrubbed_stage(stage.get('stage_metadata')) for stage in raw_mapping_stages])
+    unfiltered_bam = \
+        'scrubbed_unfiltered_bam' if scrubbed else 'mapped_reads'
+
     output_files = \
         accession_outputs(raw_mapping_stages, keypair, server, dryrun,
                           force_patch, force_upload)
@@ -2786,11 +2858,11 @@ def accession_raw_mapping_analysis_files(
         STEP_VERSION_ALIASES[pipeline_version]['bwa-raw-alignment-step']: [
             {
                 'stages': raw_mapping_stages,
-                'stage_name': get_stage_name('Map ENCSR.*', analysis_stages),
-                'file_names': ['mapped_reads'],
+                'stage_name': get_stage_name('Filter and QC.*' if scrubbed else 'Map ENCSR.*', analysis_stages),
+                'file_names': [unfiltered_bam],
                 'status': 'released',
                 'qc_objects': [
-                    {'samtools_flagstats_quality_metric': ['mapped_reads']}
+                    {'samtools_flagstats_quality_metric': [unfiltered_bam]}
                 ]
             }
         ]
@@ -2829,7 +2901,9 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
     if not mapping_stages:
         logger.error("Failed to find peak mapping stages")
         return None
-
+    scrubbed = any(
+        [scrubbed_stage(stage) for stage in 
+        [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in mapping_stages for stage_name in mapping_stage.keys()]])
     # returns a list with three elements: the mapping stages for the controls
     # for [rep1, rep2, pooled], the control stages for rep1 and rep2 might be
     # the same as the pool if the experiment used pooled controls
@@ -2869,6 +2943,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
             files_with_derived.extend(
                 patch_outputs(stages, keypair, server, dryrun))
 
+    filtered_bam = 'scrubbed_filtered_bam' if scrubbed else 'filtered_bam'
     full_analysis_step_versions = {
         STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
             {
@@ -2886,11 +2961,11 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                     next(stage_name
                          for stage_name in mapping_stage.keys()
                          if stage_name.startswith('Filter and QC')),
-                'file_names': ['filtered_bam'],
+                'file_names': [filtered_bam],
                 'status': 'released',
                 'qc_objects': [
-                    {'chipseq_filter_quality_metric': ['filtered_bam']},
-                    {'samtools_flagstats_quality_metric': ['filtered_bam']}]
+                    {'chipseq_filter_quality_metric': [filtered_bam]},
+                    {'samtools_flagstats_quality_metric': [filtered_bam]}]
             } for mapping_stage in (mapping_stages if skip_control else
                                     mapping_stages + control_stages)
         ],

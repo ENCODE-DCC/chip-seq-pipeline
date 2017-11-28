@@ -35,7 +35,7 @@
     "file": "src/scrub.py",
     "systemRequirements": {
       "*": {
-        "instanceType": "mem1_ssd1_x2"
+        "instanceType": "mem1_ssd2_x2"
       }
     },
     "distribution": "Ubuntu",
