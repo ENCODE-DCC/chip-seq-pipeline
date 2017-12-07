@@ -1652,11 +1652,18 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         % (experiment['accession'], len(mapping_stages), len(control_stages)))
     unreplicated_analysis = is_unreplicated_analysis(peaks_analysis)
 
+    experiment_scrubbed = any(
+        [scrubbed_stage(stage) for stage in 
+        [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in mapping_stages for stage_name in mapping_stage.keys()]])
+    control_scrubbed = any(
+        [scrubbed_stage(stage) for stage in 
+        [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in control_stages for stage_name in mapping_stage.keys()]])
+
     bams = \
-        [(mapping_stage, 'scrubbed_filtered_bam' if scrubbed_stage(mapping_stage) else 'filtered_bam') for mapping_stage in mapping_stages]
+        [(mapping_stage, 'scrubbed_filtered_bam' if experiment_scrubbed else 'filtered_bam') for mapping_stage in mapping_stages]
 
     ctl_bams = \
-        [(control_stage, 'scrubbed_filtered_bam' if scrubbed_stage(control_stage) else 'filtered_bam') for control_stage in control_stages]
+        [(control_stage, 'scrubbed_filtered_bam' if control_scrubbed else 'filtered_bam') for control_stage in control_stages]
 
     assemblies = \
         [get_assembly(bam)
