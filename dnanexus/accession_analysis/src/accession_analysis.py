@@ -2366,7 +2366,7 @@ def dx_file_at_encode(dx_fh, keypair, server):
             value=dxf_content_md5(dx_fh)
         )
     )
-    return match if match else None
+    return match
 
 
 def accessioned_outputs(stages, keypair, server):
