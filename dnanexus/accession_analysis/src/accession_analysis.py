@@ -2337,6 +2337,7 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
 
 
 def encode_file(keypair, server, field, value):
+    logger.info('Searching ENCODE for file with %s=%s' % (field, value))
     search_result = common.encoded_get(
         server + '/search/?type=File&%s=%s' % (field, value),
         keypair=keypair)
