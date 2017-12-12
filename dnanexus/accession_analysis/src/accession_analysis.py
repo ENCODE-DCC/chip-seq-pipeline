@@ -2224,6 +2224,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload, access
         md5_exists = r.json()
 
     if accessioned_file and not md5_exists:
+        logger.info('Using file with matching content_md5sum')
         md5_exists = accessioned_file
 
     # check if an ENCODE accession number in in the list of tags, as it would
