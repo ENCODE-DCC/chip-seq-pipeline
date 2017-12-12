@@ -2176,7 +2176,7 @@ def qckiller(f, server, keypair):
             common.encoded_patch(url, keypair, {'status': 'deleted'})
 
 
-def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
+def accession_file(f, server, keypair, dryrun, force_patch, force_upload, accessioned_file=None):
     # check for duplication
     # - if it has ENCFF or TSTFF number in it's tag, or
     # - if there exists an accessioned file with the same submitted_file_name
@@ -2222,6 +2222,9 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
             md5_exists = None
     else:
         md5_exists = r.json()
+
+    if accessioned_file and not md5_exists:
+        md5_exists = accessioned_file
 
     # check if an ENCODE accession number in in the list of tags, as it would
     # be if accessioned by this script or similar scripts
@@ -2455,7 +2458,7 @@ def accession_outputs(stages, keypair, server,
                 post_metadata.update(file_metadata['metadata'])
                 new_file = accession_file(
                     post_metadata, server, keypair,
-                    dryrun, force_patch, force_upload)
+                    dryrun, force_patch, force_upload, accessioned_file)
                 stages[stage_name]['output_files'][i].update(
                     {'encode_object': new_file})
                 files.append(new_file)
