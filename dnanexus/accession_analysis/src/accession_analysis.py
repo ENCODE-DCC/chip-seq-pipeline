@@ -2336,15 +2336,33 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
     return new_object
 
 
-def dx_file_at_encode(dx_fh, keypair, server):
-    md5sum = dxf_md5(dx_fh)
+def encode_file(keypair, server, field, value):
     search_result = common.encoded_get(
-        server + '/search/?type=File&md5sum=%s' % (md5sum),
+        server + '/search/?type=File&%s=%s' % (field, value),
         keypair=keypair)
     if search_result.get('@graph'):
         return search_result.get('@graph')[0]
     else:
-        return None
+        None
+
+
+def dx_file_at_encode(dx_fh, keypair, server):
+    match = (
+        encode_file(
+            keypair,
+            server,
+            field='md5sum',
+            value=dxf_md5(dx_fh)
+        )
+        or
+        encode_file(
+            keypair,
+            server,
+            field='content_md5sum',
+            value=dxf_content_md5(dx_fh)
+        )
+    )
+    return match if match else None
 
 
 def accessioned_outputs(stages, keypair, server):
