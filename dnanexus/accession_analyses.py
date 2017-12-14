@@ -59,6 +59,12 @@ def get_args():
     parser.add_argument('--dryrun', help="Set up runs but don't change anything.", type=t_or_f, default=None)
     parser.add_argument('--force_patch', help="Force patching metadata for existing files", type=t_or_f, default=None)
     parser.add_argument('--force_upload', help="Force re-uploading for existing files. Files not in status uploading are skipped", type=t_or_f, default=None)
+    parser.add_argument(
+        '--use_content_md5sum',
+        help='Match on content_md5sum instead if md5sum different. Will patch portal metadata with md5sum of original portal metadata if not --force_upload.',
+        type=t_or_f,
+        default=None
+    )
     parser.add_argument('--fqcheck', help="Check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
     parser.add_argument('--accession_raw', help="Accession unfiltered bams", type=t_or_f, default=None)
     parser.add_argument('--signal_only', help="Accession through signal generation only", type=t_or_f, default=None)
@@ -120,6 +126,8 @@ def main():
         tokens.append('-i "force_patch=%s"' % (args.force_patch))
     if args.force_upload is not None:
         tokens.append('-i "force_upload=%s"' % (args.force_upload))
+    if args.use_content_md5sum is not None:
+        tokens.append('-i "use_content_md5sum=%s"' % (args.use_content_md5sum))
     if args.fqcheck is not None:
         tokens.append('-i "fqcheck=%s"' % (args.fqcheck))
     if args.accession_raw is not None:
@@ -141,6 +149,7 @@ def main():
     command_string = ' '.join(tokens)
     logger.debug(command_string)
     subprocess.check_call(shlex.split(command_string))
+
 
 if __name__ == '__main__':
     main()

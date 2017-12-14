@@ -3485,7 +3485,7 @@ def encode_unready(server):
 
 @dxpy.entry_point('main')
 def main(outfn, debug, dryrun,
-         force_patch, force_upload, fqcheck,
+         force_patch, force_upload, fqcheck, use_content_md5sum,
          key=None, keyfile=None, pipeline=None, analysis_ids=None, infile=None, project=None,
          accession_raw=False, signal_only=False, skip_control=False,
          wait_on_files=None, encoded_check=True):
