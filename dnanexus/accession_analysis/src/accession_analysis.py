@@ -2351,22 +2351,15 @@ def encode_file(keypair, server, field, value):
         None
 
 
-def dx_file_at_encode(dx_fh, keypair, server):
-    match = (
-        encode_file(
-            keypair,
-            server,
-            field='md5sum',
-            value=dxf_md5(dx_fh)
-        )
-        or
-        encode_file(
+def dx_file_at_encode(dx_fh, keypair, server, use_content_md5sum):
+    match = encode_file(keypair, server, field='md5sum', value=dxf_md5(dx_fh))
+    if not match and use_content_md5sum:
+        match = encode_file(
             keypair,
             server,
             field='content_md5sum',
             value=dxf_content_md5(dx_fh)
         )
-    )
     return match
 
 
