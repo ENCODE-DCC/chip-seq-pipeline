@@ -2177,7 +2177,6 @@ def qckiller(f, server, keypair):
 
 
 def accession_file(f, server, keypair, dryrun, force_patch, force_upload, use_content_md5sum, accessioned_file=None):
-    using_content_md5sum = False
     # check for duplication
     # - if it has ENCFF or TSTFF number in it's tag, or
     # - if there exists an accessioned file with the same submitted_file_name
@@ -2228,6 +2227,8 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload, use_co
         logger.info('Using file with matching content_md5sum')
         md5_exists = accessioned_file
         using_content_md5sum = True
+    else:
+        using_content_md5sum = False
 
     # check if an ENCODE accession number in in the list of tags, as it would
     # be if accessioned by this script or similar scripts
