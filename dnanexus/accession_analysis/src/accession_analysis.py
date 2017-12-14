@@ -1240,7 +1240,7 @@ def get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck):
     mapping_jobs = [dxpy.describe(ta['createdBy']['job']) for ta in tas]
 
     mapping_analyses = [dxpy.describe(mapping_job['analysis'])
-                        for mapping_job in mapping_jobs]
+                        for mapping_job in mapping_jobs if mapping_job]
 
     mapping_stages = []
 
@@ -1290,7 +1290,7 @@ def get_peak_mapping_stages(peaks_analysis, keypair, server,
 
     mapping_analyses = \
         [dxpy.describe(mapping_job['analysis'])
-         for mapping_job in mapping_jobs]
+         for mapping_job in mapping_jobs if mapping_job]
 
     mapping_stages = []
     for (i, repn) in enumerate(reps):
@@ -1397,11 +1397,11 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
     unreplicated_analysis = is_unreplicated_analysis(peaks_analysis)
 
     experiment_scrubbed = any(
-        [scrubbed_stage(stage) for stage in 
-        [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in mapping_stages for stage_name in mapping_stage.keys()]])
+        [scrubbed_stage(stage) for stage in
+         [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in mapping_stages for stage_name in mapping_stage.keys()]])
     control_scrubbed = any(
-        [scrubbed_stage(stage) for stage in 
-        [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in control_stages for stage_name in mapping_stage.keys()]])
+        [scrubbed_stage(stage) for stage in
+         [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in control_stages for stage_name in mapping_stage.keys()]])
 
     bams = \
         [(mapping_stage, 'scrubbed_filtered_bam' if experiment_scrubbed else 'filtered_bam') for mapping_stage in mapping_stages]
@@ -1653,11 +1653,11 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
     unreplicated_analysis = is_unreplicated_analysis(peaks_analysis)
 
     experiment_scrubbed = any(
-        [scrubbed_stage(stage) for stage in 
-        [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in mapping_stages for stage_name in mapping_stage.keys()]])
+        [scrubbed_stage(stage) for stage in
+         [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in mapping_stages for stage_name in mapping_stage.keys()]])
     control_scrubbed = any(
-        [scrubbed_stage(stage) for stage in 
-        [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in control_stages for stage_name in mapping_stage.keys()]])
+        [scrubbed_stage(stage) for stage in
+         [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in control_stages for stage_name in mapping_stage.keys()]])
 
     bams = \
         [(mapping_stage, 'scrubbed_filtered_bam' if experiment_scrubbed else 'filtered_bam') for mapping_stage in mapping_stages]
