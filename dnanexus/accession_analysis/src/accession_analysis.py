@@ -2261,6 +2261,11 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload, use_co
             logger.info(
                 "accession_file: MD5 exisits, but force_patch, so patching file metatdata")
             f['accession'] = md5_exists['accession']
+            if using_content_md5sum and not force_upload:
+                logger.info('Using content_md5sum match and not force_upload '
+                            'so patching original md5sum and file_size')
+                f['md5sum'] = md5_exists['md5sum']
+                f['file_size'] = md5_exists['file_size']
             # if the same file has been deleted then we "undelete" it by
             # resetting its status to uploading
             if existing_file_status in ['deleted'] or (existing_file_status in ['upload failed'] and force_upload):
