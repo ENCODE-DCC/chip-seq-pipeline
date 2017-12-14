@@ -2698,7 +2698,7 @@ def accession_pipeline(analysis_step_versions, keypair, server,
             }
             analysis_step_run = accession_analysis_step_run(
                 analysis_step_run_metadata, keypair, server,
-                dryrun, force_patch, force_upload)
+                dryrun, force_patch, force_upload, use_content_md5sum)
             logger.debug(
                 'in accession_pipeline analysis_step_run %s'
                 % (pprint.pformat(analysis_step_run)))
