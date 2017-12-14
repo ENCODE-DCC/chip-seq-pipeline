@@ -2345,8 +2345,10 @@ def encode_file(keypair, server, field, value):
     search_result = common.encoded_get(
         server + '/search/?type=File&%s=%s' % (field, value),
         keypair=keypair)
-    if search_result.get('@graph'):
-        return search_result.get('@graph')[0]
+    filtered_result = [r for r in search_result.get('@graph', [])
+                       if r.get('status') != 'replaced']
+    if filtered_result:
+        return filtered_result[0]
     else:
         None
 
