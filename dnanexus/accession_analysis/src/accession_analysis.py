@@ -2356,7 +2356,12 @@ def encode_file(keypair, server, field, value):
     filtered_result = [r for r in search_result.get('@graph', [])
                        if r.get('status') != 'replaced']
     if filtered_result:
-        return filtered_result[0]
+        try:
+            # Preferentially return relased files.
+            return [f for f in filtered_result
+                    if f.get('status') == 'released'][0]
+        except IndexError:
+            return filtered_result[0]
     else:
         None
 
