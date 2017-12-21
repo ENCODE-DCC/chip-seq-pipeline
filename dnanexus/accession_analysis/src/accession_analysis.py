@@ -2358,8 +2358,12 @@ def encode_file(keypair, server, field, value):
     if filtered_result:
         try:
             # Preferentially return relased files.
-            return [f for f in filtered_result
-                    if f.get('status') == 'released'][0]
+            released = [f for f in filtered_result
+                        if f.get('status') == 'released']
+            assert len(released) <= 1, 'More than one released file with {}={} found on portal'.format(
+                field, value
+            )
+            return released[0]
         except IndexError:
             return filtered_result[0]
     else:
