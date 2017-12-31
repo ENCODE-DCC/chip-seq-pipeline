@@ -206,7 +206,7 @@ def run_idr(rep1_peaks_filename, rep2_peaks_filename, pooled_peaks_filename, rep
     elif idr_version == 2:
         for command in [
             "sudo mv /etc/apt/apt.conf.d/99dnanexus /tmp",
-            "sudo add-apt-repository -y ppa:fkrull/deadsnakes",
+            "sudo add-apt-repository -y ppa:deadsnakes/ppa",
             "sudo apt-get update",
             "sudo apt-get -y install python3.4-dev libfreetype6-dev",
             ]:
