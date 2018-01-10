@@ -2794,7 +2794,7 @@ def accession_mapping_analysis_files(
     for stages in [i for i in [raw_mapping_stages, mapping_stages] if i]:
         output_files = \
             accession_outputs(stages, keypair, server, dryrun,
-                              force_patch, force_upload)
+                              force_patch, force_upload, use_content_md5sum)
         if not output_files:
             logger.error(
                 'in accession_mapping_analysis_files, accession_outputs failed')
@@ -2886,7 +2886,7 @@ def accession_raw_mapping_analysis_files(
 
     output_files = \
         accession_outputs(raw_mapping_stages, keypair, server, dryrun,
-                          force_patch, force_upload)
+                          force_patch, force_upload, use_content_md5sum)
     files_with_derived = patch_outputs(raw_mapping_stages, keypair, server, dryrun)
 
     raw_mapping_analysis_step_versions = {
