@@ -2176,7 +2176,7 @@ def qckiller(f, server, keypair):
             common.encoded_patch(url, keypair, {'status': 'deleted'})
 
 
-def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
+def accession_file(f, server, keypair, dryrun, force_patch, force_upload, use_content_md5sum, accessioned_file=None):
     # check for duplication
     # - if it has ENCFF or TSTFF number in it's tag, or
     # - if there exists an accessioned file with the same submitted_file_name
@@ -2223,6 +2223,13 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
     else:
         md5_exists = r.json()
 
+    if use_content_md5sum and accessioned_file and not md5_exists:
+        logger.info('Using file with matching content_md5sum')
+        md5_exists = accessioned_file
+        using_content_md5sum = True
+    else:
+        using_content_md5sum = False
+
     # check if an ENCODE accession number in in the list of tags, as it would
     # be if accessioned by this script or similar scripts
     for tag in dx_fh.tags:
@@ -2255,6 +2262,11 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
             logger.info(
                 "accession_file: MD5 exisits, but force_patch, so patching file metatdata")
             f['accession'] = md5_exists['accession']
+            if using_content_md5sum and not force_upload:
+                logger.info('Using content_md5sum match and not force_upload '
+                            'so patching original md5sum and file_size')
+                f.pop('md5sum', None)
+                f.pop('file_size', None)
             # if the same file has been deleted then we "undelete" it by
             # resetting its status to uploading
             if existing_file_status in ['deleted'] or (existing_file_status in ['upload failed'] and force_upload):
@@ -2302,7 +2314,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload):
 
 
 def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
-                                dryrun, force_patch, force_upload):
+                                dryrun, force_patch, force_upload, use_content_md5sum):
     url = urlparse.urljoin(server, '/analysis-step-runs/')
     if dryrun:
         logger.info("Dry run.  Would POST %s" % (analysis_step_run_metadata))
@@ -2336,18 +2348,41 @@ def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
     return new_object
 
 
-def dx_file_at_encode(dx_fh, keypair, server):
-    md5sum = dxf_md5(dx_fh)
+def encode_file(keypair, server, field, value):
+    logger.info('Searching ENCODE for file with %s=%s' % (field, value))
     search_result = common.encoded_get(
-        server + '/search/?type=File&md5sum=%s' % (md5sum),
+        server + '/search/?type=File&%s=%s' % (field, value),
         keypair=keypair)
-    if search_result.get('@graph'):
-        return search_result.get('@graph')[0]
+    filtered_result = [r for r in search_result.get('@graph', [])
+                       if r.get('status') != 'replaced']
+    if filtered_result:
+        try:
+            # Preferentially return relased files.
+            released = [f for f in filtered_result
+                        if f.get('status') == 'released']
+            assert len(released) <= 1, 'More than one released file with {}={} found on portal'.format(
+                field, value
+            )
+            return released[0]
+        except IndexError:
+            return filtered_result[0]
     else:
-        return None
+        None
 
 
-def accessioned_outputs(stages, keypair, server):
+def dx_file_at_encode(dx_fh, keypair, server, use_content_md5sum):
+    match = encode_file(keypair, server, field='md5sum', value=dxf_md5(dx_fh))
+    if not match and use_content_md5sum:
+        match = encode_file(
+            keypair,
+            server,
+            field='content_md5sum',
+            value=dxf_content_md5(dx_fh)
+        )
+    return match
+
+
+def accessioned_outputs(stages, keypair, server, use_content_md5sum):
     files = []
     for (stage_name, outputs) in stages.iteritems():
         stage_metadata = outputs['stage_metadata']
@@ -2358,7 +2393,7 @@ def accessioned_outputs(stages, keypair, server):
                 'in accessioned_outputs getting handler for file %s in %s'
                 % (file_id, project))
             dx = dxpy.DXFile(file_id, project=project)
-            accessioned_file = dx_file_at_encode(dx, keypair, server)
+            accessioned_file = dx_file_at_encode(dx, keypair, server, use_content_md5sum)
             if accessioned_file:
                 logger.info(
                     "Found dx file %s named %s accessioned at ENCODE as %s"
@@ -2370,7 +2405,7 @@ def accessioned_outputs(stages, keypair, server):
 
 
 def accession_outputs(stages, keypair, server,
-                      dryrun, force_patch, force_upload):
+                      dryrun, force_patch, force_upload, use_content_md5sum):
     files = []
     for (stage_name, outputs) in stages.iteritems():
         stage_metadata = outputs['stage_metadata']
@@ -2381,7 +2416,7 @@ def accession_outputs(stages, keypair, server,
                 'in accession_outputs getting handler for file %s in %s'
                 % (file_id, project))
             dx = dxpy.DXFile(file_id, project=project)
-            accessioned_file = dx_file_at_encode(dx, keypair, server)
+            accessioned_file = dx_file_at_encode(dx, keypair, server, use_content_md5sum)
 
             if accessioned_file:
                 logger.info(
@@ -2436,7 +2471,9 @@ def accession_outputs(stages, keypair, server,
                 post_metadata.update(file_metadata['metadata'])
                 new_file = accession_file(
                     post_metadata, server, keypair,
-                    dryrun, force_patch, force_upload)
+                    dryrun, force_patch, force_upload,
+                    use_content_md5sum, accessioned_file
+                )
                 stages[stage_name]['output_files'][i].update(
                     {'encode_object': new_file})
                 files.append(new_file)
@@ -2545,7 +2582,7 @@ def patch_outputs(stages, keypair, server, dryrun):
 
 
 def accession_qc_object(obj_type, obj, keypair, server,
-                        dryrun, force_patch, force_upload):
+                        dryrun, force_patch, force_upload, use_content_md5sum):
 
     logger.debug(
         'in accession_qc_object with obj_type %s obj.keys() %s'
@@ -2632,7 +2669,7 @@ def accession_qc_object(obj_type, obj, keypair, server,
 
 
 def accession_pipeline(analysis_step_versions, keypair, server,
-                       dryrun, force_patch, force_upload):
+                       dryrun, force_patch, force_upload, use_content_md5sum):
     patched_files = []
     for (analysis_step_version_id, steps) in analysis_step_versions.iteritems():
         for step in steps:
@@ -2670,7 +2707,7 @@ def accession_pipeline(analysis_step_versions, keypair, server,
             }
             analysis_step_run = accession_analysis_step_run(
                 analysis_step_run_metadata, keypair, server,
-                dryrun, force_patch, force_upload)
+                dryrun, force_patch, force_upload, use_content_md5sum)
             logger.debug(
                 'in accession_pipeline analysis_step_run %s'
                 % (pprint.pformat(analysis_step_run)))
@@ -2688,7 +2725,7 @@ def accession_pipeline(analysis_step_versions, keypair, server,
                         keypair,
                         server,
                         dryrun,
-                        force_patch, force_upload)
+                        force_patch, force_upload, use_content_md5sum)
                     logger.info(
                         'New %s qc object %s aliases %s'
                         % (qc_object_name, new_object.get('uuid'),
@@ -2710,7 +2747,7 @@ def accession_pipeline(analysis_step_versions, keypair, server,
 
 def accession_mapping_analysis_files(
         mapping_analysis, keypair, server, dryrun, force_patch, force_upload,
-        fqcheck, accession_raw, pipeline_version):
+        fqcheck, accession_raw, pipeline_version, use_content_md5sum):
 
     experiment_accession = get_experiment_accession(mapping_analysis)
     if not experiment_accession:
@@ -2757,7 +2794,7 @@ def accession_mapping_analysis_files(
     for stages in [i for i in [raw_mapping_stages, mapping_stages] if i]:
         output_files = \
             accession_outputs(stages, keypair, server, dryrun,
-                              force_patch, force_upload)
+                              force_patch, force_upload, use_content_md5sum)
         if not output_files:
             logger.error(
                 'in accession_mapping_analysis_files, accession_outputs failed')
@@ -2809,13 +2846,13 @@ def accession_mapping_analysis_files(
 
     patched_files = accession_pipeline(
         mapping_analysis_step_versions, keypair, server,
-        dryrun, force_patch, force_upload)
+        dryrun, force_patch, force_upload, use_content_md5sum)
     return patched_files
 
 
 def accession_raw_mapping_analysis_files(
         mapping_analysis, keypair, server, dryrun, force_patch, force_upload,
-        fqcheck, pipeline_version):
+        fqcheck, pipeline_version, use_content_md5sum):
 
     experiment_accession = get_experiment_accession(mapping_analysis)
     if not experiment_accession:
@@ -2849,7 +2886,7 @@ def accession_raw_mapping_analysis_files(
 
     output_files = \
         accession_outputs(raw_mapping_stages, keypair, server, dryrun,
-                          force_patch, force_upload)
+                          force_patch, force_upload, use_content_md5sum)
     files_with_derived = patch_outputs(raw_mapping_stages, keypair, server, dryrun)
 
     raw_mapping_analysis_step_versions = {
@@ -2877,13 +2914,13 @@ def accession_raw_mapping_analysis_files(
 
     patched_files = accession_pipeline(
         raw_mapping_analysis_step_versions, keypair, server,
-        dryrun, force_patch, force_upload)
+        dryrun, force_patch, force_upload, use_content_md5sum)
     return patched_files
 
 
 def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                                      force_patch, force_upload, fqcheck,
-                                     skip_control, pipeline_version):
+                                     skip_control, pipeline_version, use_content_md5sum):
 
     experiment_accession = get_experiment_accession(peaks_analysis)
     if experiment_accession:
@@ -2941,8 +2978,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
     for stages in control_stages + mapping_stages + peak_stages:
         logger.info('accessioning output')
         output_files.extend(accession_outputs(stages, keypair, server, dryrun,
-                            force_patch, force_upload))
-
+            force_patch, force_upload, use_content_md5sum))
     # now that we have file accessions, loop again and patch derived_from
     files_with_derived = []
     for stages in control_stages + mapping_stages + peak_stages:
@@ -3046,7 +3082,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
 
     patched_files = accession_pipeline(
         full_analysis_step_versions, keypair, server,
-        dryrun, force_patch, force_upload)
+        dryrun, force_patch, force_upload, use_content_md5sum)
     return patched_files
 
 
@@ -3060,7 +3096,7 @@ def stage_output_names(stages, stage_name):
 
 def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                                 force_patch, force_upload, fqcheck,
-                                signal_only, skip_control, pipeline_version):
+                                signal_only, skip_control, pipeline_version, use_content_md5sum):
 
     experiment_accession = get_experiment_accession(peaks_analysis)
     if experiment_accession:
@@ -3116,19 +3152,19 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
         if stages:
             logger.info('Retrieving accessioned outputs for control mappings')
             output_files.extend(accessioned_outputs(
-                stages, keypair, server))
+                stages, keypair, server, use_content_md5sum))
     for stages in mapping_stages:
         if stages:
             logger.info('Retrieving accessioned outputs for experiment mappings')
             output_files.extend(accessioned_outputs(
-                stages, keypair, server))
+                stages, keypair, server, use_content_md5sum))
 
     # accession all the output files
     for stages in peak_stages:
         if stages:
             logger.info('accessioning output')
             output_files.extend(accession_outputs(
-                stages, keypair, server, dryrun, force_patch, force_upload))
+                stages, keypair, server, dryrun, force_patch, force_upload, use_content_md5sum))
 
     # now that we have file accessions, loop again and patch derived_from
     files_with_derived = []
@@ -3223,7 +3259,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
 
     patched_files = accession_pipeline(
         full_analysis_step_versions,
-        keypair, server, dryrun, force_patch, force_upload)
+        keypair, server, dryrun, force_patch, force_upload, use_content_md5sum)
     return patched_files
 
 
@@ -3278,7 +3314,7 @@ def infer_pipeline_version(analysis):
 @dxpy.entry_point('accession_analysis_id')
 def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
                           force_upload, fqcheck, analysis_id, pipeline,
-                          project, accession_raw, signal_only, skip_control):
+                          project, accession_raw, signal_only, skip_control, use_content_md5sum):
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -3326,7 +3362,8 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
             accessioned_files = \
                 accession_histone_analysis_files(
                     analysis, keypair, server, dryrun, force_patch,
-                    force_upload, fqcheck, skip_control, pipeline_version)
+                    force_upload, fqcheck, skip_control, pipeline_version,
+                    use_content_md5sum)
             logger.info('accession histone analysis completed')
         elif inferred_pipeline == "mapping":
             logger.info('accession mapping analysis started')
@@ -3335,7 +3372,8 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
             accessioned_files = \
                 accession_mapping_analysis_files(
                     analysis, keypair, server, dryrun, force_patch,
-                    force_upload, fqcheck, accession_raw, pipeline_version)
+                    force_upload, fqcheck, accession_raw, pipeline_version,
+                    use_content_md5sum)
             logger.info('accession mapping analysis completed')
         elif inferred_pipeline == "tf":
             logger.info('accession tf_chip_seq analysis started')
@@ -3345,7 +3383,7 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
                 accession_tf_analysis_files(
                     analysis, keypair, server, dryrun, force_patch,
                     force_upload, fqcheck, signal_only, skip_control,
-                    pipeline_version)
+                    pipeline_version, use_content_md5sum)
             logger.info('accession tf_chip_seq analysis completed')
         elif inferred_pipeline == "raw":
             logger.info('accession raw mapping analysis started')
@@ -3354,7 +3392,8 @@ def accession_analysis_id(debug, key, keyfile, dryrun, force_patch,
             accessioned_files = \
                 accession_raw_mapping_analysis_files(
                     analysis, keypair, server, dryrun, force_patch,
-                    force_upload, fqcheck, pipeline_version)
+                    force_upload, fqcheck, pipeline_version,
+                    use_content_md5sum)
             logger.info('accession raw mapping analysis completed')
         else:
             logger.error(
@@ -3462,7 +3501,7 @@ def encode_unready(server):
 
 @dxpy.entry_point('main')
 def main(outfn, debug, dryrun,
-         force_patch, force_upload, fqcheck,
+         force_patch, force_upload, fqcheck, use_content_md5sum,
          key=None, keyfile=None, pipeline=None, analysis_ids=None, infile=None, project=None,
          accession_raw=False, signal_only=False, skip_control=False,
          wait_on_files=None, encoded_check=True):
@@ -3525,6 +3564,7 @@ def main(outfn, debug, dryrun,
             "dryrun": dryrun,
             "force_patch": force_patch,
             "force_upload": force_upload,
+            "use_content_md5sum": use_content_md5sum,
             "fqcheck": fqcheck,
             "pipeline": pipeline,
             "analysis_id": analysis_id,

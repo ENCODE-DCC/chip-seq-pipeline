@@ -70,6 +70,12 @@
       "default": false
     },
     {
+      "name": "use_content_md5sum",
+      "class": "boolean",
+      "optional": true,
+      "default": false
+    },
+    {
       "name": "fqcheck",
       "class": "boolean",
       "optional": true,
