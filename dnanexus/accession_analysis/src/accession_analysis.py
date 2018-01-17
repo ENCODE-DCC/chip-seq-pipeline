@@ -1174,7 +1174,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
                  'derived_from': ['rep%s_fastqs' % (repn), 'reference'],
                  'metadata': bam_metadata}
             ],
->>> not getting the qc or filtered_qc here???
+            # >>> not getting the qc or filtered_qc here???
             'qc': [qc, dup_qc, pbc_qc, filtered_qc, xcor_qc],
 
             'stage_metadata': {}  # initialized below
