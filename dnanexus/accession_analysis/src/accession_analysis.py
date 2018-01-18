@@ -467,7 +467,7 @@ def get_flagstat_obj(step_run, stage, file_accessions):
 
 def samtools_flagstats_quality_metric(step_run, stages, files):
     logger.debug(
-        "in chip_seq_filter_quality_metric with "
+        "in samtools_flagstats_quality_metric with "
         "step_run %s stages.keys() %s output files %s"
         % (step_run, stages.keys(), files))
 
@@ -487,13 +487,14 @@ def samtools_flagstats_quality_metric(step_run, stages, files):
             file_accessions))
 
     if any([stage_name.startswith('Filter and QC')
-            for stage_name in stages.keys()]):
+            for stage_name in stages.keys()]) \
+       and 'scrubbed_unfiltered_bam' not in files:
         quality_metric_objects.append(get_flagstat_obj(
-            step_run,
-            next(stages[stage_name]['stage_metadata']
-                 for stage_name in stages.keys()
-                 if stage_name.startswith("Filter and QC")),
-            file_accessions))
+                step_run,
+                next(stages[stage_name]['stage_metadata']
+                     for stage_name in stages.keys()
+                     if stage_name.startswith("Filter and QC")),
+                file_accessions))
 
     return quality_metric_objects
 
@@ -954,7 +955,6 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
                      'derived_from': ['rep%s_fastqs' % (repn), 'reference'],
                      'metadata': bam_metadata}
                 ],
-
                 'qc': [qc],
 
                 'stage_metadata': {}  # initialized below
@@ -1174,7 +1174,6 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
                  'derived_from': ['rep%s_fastqs' % (repn), 'reference'],
                  'metadata': bam_metadata}
             ],
-            # >>> not getting the qc or filtered_qc here???
             'qc': [qc, dup_qc, pbc_qc, filtered_qc, xcor_qc],
 
             'stage_metadata': {}  # initialized below
