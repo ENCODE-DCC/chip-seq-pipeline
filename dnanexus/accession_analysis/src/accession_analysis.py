@@ -2021,9 +2021,9 @@ def resolve_name_to_accessions(stages, stage_file_name):
     for stage_name in [s for s in stages if s]:
         logger.debug("stage name: %s" % (stage_name))
         logger.debug(
-            "%d input files:" % (len(stages[stage_name].get('input_files'))))
+            "%d input files:" % (len(stages[stage_name].get('input_files', []))))
         logger.debug(
-            "%d output files:" % (len(stages[stage_name].get('output_files'))))
+            "%d output files:" % (len(stages[stage_name].get('output_files', []))))
         if stages[stage_name].get('input_files'):
             all_files = \
                 stages[stage_name].get('output_files') + \
