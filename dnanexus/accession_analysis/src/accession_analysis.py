@@ -2610,6 +2610,12 @@ def accession_qc_object(obj_type, obj, keypair, server,
     logger.debug(
         'get qc objects url %s'
         % (url))
+    logger.info('Waiting 2 minutes to check if ENCODE server is indexing')
+    time.sleep(120)
+    while encode_unready(server):
+        logger.info(
+            'In accession_qc_object but ENCODE server is not ready.  Checking again in 60s.')
+        time.sleep(60)
 
     r = common.encoded_get(url, keypair)
     # need the process_stage special case for the samtools_flagstat objects,
@@ -2622,7 +2628,7 @@ def accession_qc_object(obj_type, obj, keypair, server,
         [o for o in r['@graph']
          if o['status'] not in DEPRECATED and
          ((o.get('processing_stage') == obj.get('processing_stage')) or
-          (obj.get('processing_stage') and not o.get('processing_stage')))]
+          (obj.get('processing_stage') and o.get('processing_stage') is None))]
 
     logger.debug(
         'found %d qc objects of type %s'
@@ -2644,11 +2650,15 @@ def accession_qc_object(obj_type, obj, keypair, server,
             'Deleting obsolete qc metric object %s'
             % (object_to_delete['@id']))
         url = urlparse.urljoin(server, object_to_delete['@id'])
-        logger.info("PATCH qc object %s" % (url))
+        logger.info("PATCH qc object %s to status: 'deleted'" % (url))
         common.encoded_patch(url, keypair, {'status': 'deleted'})
         existing_objects.remove(object_to_delete)
 
     if object_to_replace:
+        # retain any existing links from this metric to existing files
+        obj['quality_metric_of'] = list(set(
+            (object_to_replace.get('quality_metric_of') or []) +
+            (obj.get('quality_metric_of') or [])))
         url = urlparse.urljoin(server, object_to_replace['@id'])
         logger.info('PUT to %s' % (url))
         logger.debug('PUT %s with %s' % (url, json.dumps(obj)))
