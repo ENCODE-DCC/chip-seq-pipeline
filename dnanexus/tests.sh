@@ -396,9 +396,9 @@ idr2
 
 # Run SPP with ENCSR000EEB chr21 rep1 vs input
 dx run \
---input "control=/ENCSR000EEB/ctl/ENCFF000XTF-chr21.tagAlign.gz" \
---input "experiment=/ENCSR000EEB/rep1/ENCFF000XUL-chr21.tagAlign.gz" \
---input "xcor_scores_input=/test_data/ENCFF000XUL-chr21.tagAlign.sample.15.SE.tagAlign.gz.cc.qc" \
+--input "control=E3 ChIP-seq:/test_data/TF/ENCSR000EEB-hs-MAFK/ctl1-chr21.tagAlign.gz" \
+--input "experiment=E3 ChIP-seq:/test_data/TF/ENCSR000EEB-hs-MAFK/rep1-chr21.tagAlign.gz" \
+--input "xcor_scores_input=E3 ChIP-seq:/reference_analyses/hg19/ENCSR000EEB-chr21-201706221826/encode_map/rep1-chr21.raw.srt.filt.nodup.srt.filt.nodup.sample.15.SE.tagAlign.gz.cc.qc" \
 --input "bigbed=true" \
 --input "chrom_sizes=ENCODE Reference Files:/hg19/male.hg19.chrom.sizes" \
 --input "as_file=ENCODE Reference Files:/narrowPeak.as" \
@@ -408,7 +408,7 @@ dx run \
 --delay-workspace-destruction \
 --priority high \
 --yes \
-spp
+/ChIP-seq/applets/spp
 
 # Run SPP with ENCSR000EEB rep1 vs input - bedtobigbed fails with code 255 with coodinates in scientific notation
 dx run \

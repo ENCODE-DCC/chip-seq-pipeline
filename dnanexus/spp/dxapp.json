@@ -107,6 +107,11 @@
     "systemRequirements": {
       "main":     {"instanceType": "mem3_ssd1_x4"}
     },
+    "timeoutPolicy": {
+      "*" : {
+        "days": 2
+      }
+    },
     "assetDepends": [
       {
         "name": "bioconductor_asset",
