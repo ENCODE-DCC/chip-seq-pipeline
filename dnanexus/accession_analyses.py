@@ -145,6 +145,7 @@ def main():
         analysis_id = analysis_id.rstrip()
         logger.debug('%s' % (analysis_id))
         tokens.append('-i "analysis_ids=%s"' % (analysis_id))
+        tokens.append('--depends-on=%s' % (analysis_id))
 
     command_string = ' '.join(tokens)
     logger.debug(command_string)
