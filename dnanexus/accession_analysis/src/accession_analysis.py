@@ -866,16 +866,13 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         stage for stage in analysis_stages
         if stage['name'].startswith("Map ENCSR"))
     filter_qc_stage = next(
-        stage for stage in analysis_stages
-        if stage['name'].startswith("Filter and QC"))
-    scrubbed = scrubbed_stage(filter_qc_stage)
+        (stage for stage in analysis_stages
+         if stage['name'].startswith("Filter and QC")), None)
+    if filter_qc_stage:
+        scrubbed = scrubbed_stage(filter_qc_stage)
+    else:
+        scrubbed = False
 
-    # if filter_qc_stage['input'].get('scrub') == 'true':
-    #     bam = dxpy.describe(
-    #         filter_qc_stage['output']['scrubbed_unfiltered_bam'])
-    # else:
-    #     bam = dxpy.describe(
-    #         raw_mapping_stage['output']['scrubbed_unfiltered_bam'])
     crop_length = raw_mapping_stage['output'].get('crop_length')
 
     if not crop_length or crop_length == 'native':
@@ -2492,12 +2489,12 @@ def new_metadata(old_obj, new_obj):
         if key not in old_obj:
             return True
         elif key == 'derived_from':
-            logger.debug("%s" % (set([re.search("ENCFF.{6}", s).group(0) for s in old_obj[key]])))
-            logger.debug("%s" % (set([re.search("ENCFF.{6}", s).group(0) for s in new_obj[key]])))
+            logger.debug("%s" % (set([re.search("(ENC|TST)FF.{6}", s).group(0) for s in old_obj[key]])))
+            logger.debug("%s" % (set([re.search("(ENC|TST)FF.{6}", s).group(0) for s in new_obj[key]])))
             try:
-                if set([re.search("ENCFF.{6}", s).group(0) for s in old_obj[key]]) \
+                if set([re.search("(ENC|TST)FF.{6}", s).group(0) for s in old_obj[key]]) \
                    != \
-                   set([re.search("ENCFF.{6}", s).group(0) for s in new_obj[key]]):
+                   set([re.search("(ENC|TST)FF.{6}", s).group(0) for s in new_obj[key]]):
                     return True
             except:
                 logger.warning(
@@ -2893,7 +2890,7 @@ def accession_raw_mapping_analysis_files(
     raw_mapping_stages = get_raw_mapping_stages(
         mapping_analysis, keypair, server, fqcheck, repn)
 
-    scrubbed = any([scrubbed_stage(stage.get('stage_metadata')) for stage in raw_mapping_stages])
+    scrubbed = any([scrubbed_stage(stage) for stage in analysis_stages])
     unfiltered_bam = \
         'scrubbed_unfiltered_bam' if scrubbed else 'mapped_reads'
 
