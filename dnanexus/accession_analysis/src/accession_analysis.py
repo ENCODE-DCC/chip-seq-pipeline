@@ -868,7 +868,10 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     filter_qc_stage = next(
         stage for stage in analysis_stages
         if stage['name'].startswith("Filter and QC"))
-    scrubbed = any([scrubbed_stage(stage) for stage in analysis_stages])
+    if filter_qc_stage:
+        scrubbed = any([scrubbed_stage(stage) for stage in analysis_stages])
+    else:
+        scrubbed = False
     logger.debug('scrubbed is %s' % (scrubbed))
     crop_length = raw_mapping_stage['output'].get('crop_length')
 
