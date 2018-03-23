@@ -866,10 +866,10 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         stage for stage in analysis_stages
         if stage['name'].startswith("Map ENCSR"))
     filter_qc_stage = next(
-        (stage for stage in analysis_stages
-         if stage['name'].startswith("Filter and QC")), None)
+        stage for stage in analysis_stages
+        if stage['name'].startswith("Filter and QC"))
     if filter_qc_stage:
-        scrubbed = scrubbed_stage(filter_qc_stage)
+        scrubbed = any([scrubbed_stage(stage) for stage in analysis_stages])
     else:
         scrubbed = False
     logger.debug('scrubbed is %s' % (scrubbed))
