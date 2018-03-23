@@ -95,14 +95,8 @@
         },
         {   
             "name": "fragment_length",
-            "label": "Use this fragment length instead of the one calculated from xcor",
+            "label": "use this fragment length instead of the one calculated from xcor",
             "class": "int",
-            "optional": true
-        },
-        {   
-            "name": "spp_instance",
-            "label": "If provided this will over-ride the default instance type for all spp peak-calling jobs",
-            "class": "string",
             "optional": true
         }
     ],
