@@ -73,7 +73,6 @@ def get_args():
     # parser.add_argument('--idrversion', help="IDR version (relevant only if --idr is specified", default="2")
     parser.add_argument('--dryrun', help="Formulate the run command, but don't actually run", default=False, action='store_true')
     parser.add_argument('--spp_version', help="spp version", default="1.14")
-    parser.add_argument('--spp_instance', help="Override the spp applet instance type", default=None)
     parser.add_argument('--control', help="Use specified control tagAlign rather than infer one.", default=None)
     parser.add_argument('--accession', help="Accession the results to the ENCODE Portal", default=False, action='store_true')
     parser.add_argument('--fqcheck', help="If --accession, check that analysis is based on latest fastqs on ENCODEd", type=t_or_f, default=None)
@@ -706,10 +705,10 @@ def main():
                 '--rep2 %s' % (tas['rep2_ta'].get('file_id')),
                 '--ctl2 %s' % (tas['rep2_ta'].get('control_id')),
             ])
-        if args.spp_instance:
-            command_strings.append('--spp_instance %s' % str(args.spp_instance))
+
         if args.fragment_length:
             command_strings.append('--fragment_length %s' % str(args.fragment_length))
+
         if blacklist:
             command_strings.append('--blacklist "%s"' % (blacklist))
         if args.debug:

@@ -230,10 +230,6 @@ def get_args():
         help="Version string for spp",
         default="1.14")
     parser.add_argument(
-        '--spp_instance',
-        help="Override the spp applet instance type",
-        default=None)
-    parser.add_argument(
         '--pipeline_version',
         help="Version string for ENCODE pipeline",
         default="1.2")
@@ -782,8 +778,7 @@ def main():
                         'rep2_paired_end': rep2_paired_end,
                         'as_file': dxpy.dxlink(resolve_file(args.narrowpeak_as)),
                         'idr_peaks': True,
-                        'spp_version': args.spp_version,
-                        'spp_instance': args.spp_instance
+                        'spp_version': args.spp_version
                         }
             if chrom_sizes:
                 peaks_stage_input_mapping.update({'chrom_sizes': chrom_sizes})

@@ -24,7 +24,7 @@ logger.setLevel(logging.INFO)
 
 def spp(experiment, control, xcor_scores, chrom_sizes, spp_version,
         bigbed=False, as_file=None, name="spp", prefix=None,
-        fragment_length=None, spp_instance=None):
+        fragment_length=None):
     spp_applet = \
         dxpy.find_one_data_object(
             classname='applet',
@@ -45,14 +45,7 @@ def spp(experiment, control, xcor_scores, chrom_sizes, spp_version,
         spp_input.update({"as_file": as_file})
     if prefix:
         spp_input.update({"prefix": prefix})
-    spp_args = {
-        'name': name,
-    }
-    if spp_instance:
-        spp_args.update({
-            'instance_type': spp_instance
-        })
-    return spp_applet.run(spp_input, **spp_args)
+    return spp_applet.run(spp_input, name=name)
 
 
 def xcor_only(tags, paired_end, spp_version, name='xcor_only'):
@@ -75,7 +68,7 @@ def xcor_only(tags, paired_end, spp_version, name='xcor_only'):
 def main(rep1_ta, ctl1_ta, rep1_xcor, rep1_paired_end,
          npeaks, nodups,  chrom_sizes, spp_version,
          rep2_ta=None, ctl2_ta=None, rep2_xcor=None, rep2_paired_end=None,
-         as_file=None, idr_peaks=False, fragment_length=None, spp_instance=None):
+         as_file=None, idr_peaks=False, fragment_length=None):
 
     rep1_ta_file = dxpy.DXFile(rep1_ta)
     dxpy.download_dxfile(rep1_ta_file.get_id(), rep1_ta_file.name)
@@ -197,8 +190,7 @@ def main(rep1_ta, ctl1_ta, rep1_xcor, rep1_paired_end,
     common_args = {
         'chrom_sizes': chrom_sizes,
         'spp_version': spp_version,
-        'as_file':     as_file,
-        'spp_instance': spp_instance
+        'as_file':     as_file
         }
     if fragment_length is not None:
         common_args.update({'fragment_length': fragment_length})
