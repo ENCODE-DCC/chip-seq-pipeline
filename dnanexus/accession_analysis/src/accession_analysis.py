@@ -869,10 +869,10 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
         (stage for stage in analysis_stages
          if stage['name'].startswith("Filter and QC")), None)
     if filter_qc_stage:
-        scrubbed = scrubbed_stage(filter_qc_stage)
+        scrubbed = any([scrubbed_stage(stage) for stage in analysis_stages])
     else:
         scrubbed = False
-
+    logger.debug('scrubbed is %s' % (scrubbed))
     crop_length = raw_mapping_stage['output'].get('crop_length')
 
     if not crop_length or crop_length == 'native':
@@ -919,7 +919,7 @@ def get_raw_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     bam_metadata = common.merge_dicts({
         'file_format': 'bam',
-        'output_type': 'unfiltered alignments',
+        'output_type': 'unfiltered alignments' if not scrubbed else 'redacted unfiltered alignments',
         'assembly': reference.get('assembly'),
         'mapped_read_length': mapped_read_length
     }, COMMON_METADATA)
@@ -1088,9 +1088,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
     filter_qc_stage = next(
         stage for stage in analysis_stages
         if stage['name'].startswith("Filter and QC"))
-    scrubbed = scrubbed_stage(filter_qc_stage)
-
-    # bam = dxpy.describe(filter_qc_stage['output']['scrubbed_filtered_bam'])
+    scrubbed = any([scrubbed_stage(stage) for stage in analysis_stages])
     crop_length = raw_mapping_stage['output'].get('crop_length')
 
     if not crop_length or crop_length == 'native':
@@ -1137,7 +1135,7 @@ def get_mapping_stages(mapping_analysis, keypair, server, fqcheck, repn):
 
     bam_metadata = common.merge_dicts({
         'file_format': 'bam',
-        'output_type': 'alignments',
+        'output_type': 'alignments' if not scrubbed else 'redacted alignments',
         'mapped_read_length': mapped_read_length,
         'assembly': reference.get('assembly')
     }, COMMON_METADATA)
@@ -1381,13 +1379,6 @@ def get_histone_peak_stages(peaks_analysis, mapping_stages, control_stages,
         'experiment %s and len(mapping_stages) %d len(control_stages) %d'
         % (experiment['accession'], len(mapping_stages), len(control_stages)))
     unreplicated_analysis = is_unreplicated_analysis(peaks_analysis)
-
-    # experiment_scrubbed = any(
-    #     [scrubbed_stage(stage) for stage in
-    #      [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in mapping_stages for stage_name in mapping_stage.keys()]])
-    # control_scrubbed = any(
-    #     [scrubbed_stage(stage) for stage in
-    #      [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in control_stages for stage_name in mapping_stage.keys()]])
 
     bams = \
         [(mapping_stage,
@@ -1643,13 +1634,6 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         'experiment %s and len(mapping_stages) %d len(control_stages) %d'
         % (experiment['accession'], len(mapping_stages), len(control_stages)))
     unreplicated_analysis = is_unreplicated_analysis(peaks_analysis)
-
-    # experiment_scrubbed = any(
-    #     [scrubbed_stage(stage) for stage in
-    #      [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in mapping_stages for stage_name in mapping_stage.keys()]])
-    # control_scrubbed = any(
-    #     [scrubbed_stage(stage) for stage in
-    #      [mapping_stage.get(stage_name).get('stage_metadata') for mapping_stage in control_stages for stage_name in mapping_stage.keys()]])
 
     bams = \
         [(mapping_stage,
