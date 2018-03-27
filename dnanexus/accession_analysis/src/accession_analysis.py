@@ -3082,7 +3082,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                     ] if unreplicated_analysis else [
                      'rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb',
                      'pooled_narrowpeaks_bb'],
-                'status': 'virtual',
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -3097,7 +3097,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                     for stage_name in peak_stage.keys()
                     if re.match('(Overlap|Final) narrowpeaks', stage_name)),
                 'file_names': ['overlapping_peaks_bb'],
-                'status': 'virtual',
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ]
@@ -3262,7 +3262,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'stages': peak_stage,
                 'stage_name': 'SPP Peaks',
                 'file_names': peaks_bb_filenames,
-                'status': 'virtual',
+                'status': 'released',
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -3274,7 +3274,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'stages': peak_stage,
                 'stage_name': 'Final IDR peak calls',
                 'file_names': idr_bb_filenames,
-                'status': 'virtual',
+                'status': 'released',
                 'qc_objects': [{'idr_quality_metric': idr_bb_filenames}]
             } for peak_stage in peak_stages
         ]
