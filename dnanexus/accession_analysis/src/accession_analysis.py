@@ -601,6 +601,58 @@ def idr_quality_metric(step_run, stages, files):
     return [obj]
 
 
+def histone_chipseq_quality_metric(step_run, stages, files):
+    logger.debug(
+        "in histone_chipseq_quality_metric with "
+        "step_run %s stages.keys() %s output files %s"
+        % (step_run, stages.keys(), files))
+
+    file_accessions = list(set(flat([
+        resolve_name_to_accessions(stages, output_name)
+        for output_name in files])))
+
+    histone_overlap_stage_output = \
+        stages['Final narrowpeaks']['stage_metadata']['output']
+
+    obj = {
+        # 'assay_term_id':     'OBI:0000716',
+        'assay_term_name':   'ChIP-seq',
+        'step_run':          step_run,
+        'quality_metric_of': file_accessions,
+    }
+
+    if not histone_overlap_stage_output.get('rep1_signal'):
+        raise AccessioningError(
+            "Expected stage 'Final narrowpeaks' to have rep1_signal output.  Found these outputs:\n%s"
+            % (histone_overlap_stage_output.keys()))
+    replicated_analysis = all([
+        histone_overlap_stage_output.get(s) for s in [
+            'rep1_signal',
+            'rep2_signal']
+        ])
+    logger.debug("replicated_analysis %s" % (replicated_analysis))
+    qc_data_mapping_DX_ENCODE = {
+        'frip_score': ('Ft' if replicated_analysis else 'F1', float),
+        'frip_nreads': ('nreads', int),
+        'frip_nreads_in_peaks': ('nreads_in_peaks', int),
+        'npeaks_out': ('npeak_overlap', int)
+    }
+
+    for dx_output_name, encode_property in qc_data_mapping_DX_ENCODE.iteritems():
+        # Only accession FRiP scores if calculated
+        encode_property_name = encode_property[0]
+        encode_property_type = encode_property[1]
+        if histone_overlap_stage_output.get(dx_output_name):
+            obj.update({
+                encode_property_name:
+                    encode_property_type(histone_overlap_stage_output[dx_output_name])
+            })
+
+    obj.update(COMMON_METADATA)
+
+    return [obj]
+
+
 def dxf_md5(dx_fh):
     logger.debug(
         "in dxf_md5 with handler %s with name %s"
@@ -2137,7 +2189,8 @@ def qckiller(f, server, keypair):
     QC_OBJECS_TO_KILL = [
         'chipseq_filter_quality_metric',
         'samtools_flagstats_quality_metric',
-        'idr_quality_metric']
+        'idr_quality_metric',
+        'histone_chipseq_quality_metric']
 
     for object_type in QC_OBJECS_TO_KILL:
         url = \
@@ -3008,33 +3061,11 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
             files_with_derived.extend(
                 patch_outputs(stages, keypair, server, dryrun))
 
+    replicated_peaks_filename = 'overlapping_peaks'
+    replicated_peaks_bb_filename = 'overlapping_peaks_bb'
+
     full_analysis_step_versions = {
-        # STEP_VERSION_ALIASES[pipeline_version]['bwa-indexing-step']: [
-        #     {
-        #         'stages': "",
-        #         'stage_name': "",
-        #         'file_names': [],
-        #         'status': 'released',
-        #         'qc_objects': []
-        #     }
-        # ],
-        # STEP_VERSION_ALIASES[pipeline_version]['bwa-alignment-step']: [
-        #     {
-        #         'stages': mapping_stage,
-        #         'stage_name':
-        #             next(stage_name
-        #                  for stage_name in mapping_stage.keys()
-        #                  if stage_name.startswith('Filter and QC')),
-        #         'file_names': [filtered_bam_output_name(mapping_stage)],
-        #         'status': 'released',
-        #         'qc_objects': [
-        #             {'chipseq_filter_quality_metric':
-        #                 [filtered_bam_output_name(mapping_stage)]},
-        #             {'samtools_flagstats_quality_metric':
-        #                 [filtered_bam_output_name(mapping_stage)]}]
-        #     } for mapping_stage in (mapping_stages if skip_control else
-        #                             mapping_stages + control_stages)
-        # ],
+
         STEP_VERSION_ALIASES[pipeline_version][
             'histone-unreplicated-peak-calling-step'
             if unreplicated_analysis else
@@ -3064,9 +3095,9 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                     stage_name
                     for stage_name in peak_stage.keys()
                     if re.match('(Overlap|Final) narrowpeaks', stage_name)),
-                'file_names': ['overlapping_peaks'],
+                'file_names': [replicated_peaks_filename],
                 'status': 'released',
-                'qc_objects': []
+                'qc_objects': [{'histone_chipseq_quality_metric': [replicated_peaks_filename]}]
             } for peak_stage in peak_stages
         ],
         STEP_VERSION_ALIASES[pipeline_version][
@@ -3096,9 +3127,9 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                     stage_name
                     for stage_name in peak_stage.keys()
                     if re.match('(Overlap|Final) narrowpeaks', stage_name)),
-                'file_names': ['overlapping_peaks_bb'],
+                'file_names': [replicated_peaks_bb_filename],
                 'status': 'released',
-                'qc_objects': []
+                'qc_objects': [{'histone_chipseq_quality_metric': [replicated_peaks_bb_filename]}]
             } for peak_stage in peak_stages
         ]
     }
