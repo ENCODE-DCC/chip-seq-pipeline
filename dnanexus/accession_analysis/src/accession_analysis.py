@@ -1732,7 +1732,7 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
          'file_format_specifications': ['encode:narrowPeak.as'],
-         'output_type': 'peaks'},
+         'output_type': 'peaks and background as input for IDR'},
         common_file_metadata)
 
     idr_optimal_narrowpeak_metadata = common.merge_dicts(
@@ -1760,7 +1760,7 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         {'file_format': 'bigBed',
          'file_format_type': 'narrowPeak',
          'file_format_specifications': ['encode:narrowPeak.as'],
-         'output_type': 'peaks'},
+         'output_type': 'peaks and background as input for IDR'},
         common_file_metadata)
 
     idr_optimal_narrowpeak_bb_metadata = common.merge_dicts(
