@@ -1265,13 +1265,23 @@ def get_control_mapping_stages(peaks_analysis, keypair, server, fqcheck):
         for input_key in peaks_stage['input'].keys()
         if re.match("ctl(\d+)_ta", input_key)])
 
-    tas = [dxpy.describe(peaks_stage['input']['ctl%s_ta' % (n)])
-           for n in reps]
+    mapping_analyses = []
+    for repn in reps:
 
-    mapping_jobs = [dxpy.describe(ta['createdBy']['job']) for ta in tas]
+        ta = dxpy.describe(peaks_stage['input']['ctl%s_ta' % (repn)])
+        if not ta:
+            raise AccessioningError("Could not find contol tagAlign for control rep %s" % (repn))
 
-    mapping_analyses = [dxpy.describe(mapping_job['analysis'])
-                        for mapping_job in mapping_jobs if mapping_job]
+        mapping_job_id = ta['createdBy']['job']
+        if not mapping_job_id:
+            raise AccessioningError("Failed to find job id that created tagAlign for control rep %s.  If this analysis used a custom control consider running with --skip_control" % (repn))
+
+        mapping_job = dxpy.describe(mapping_job_id)
+        mapping_analysis_id = mapping_job.get('analysis')
+        if not mapping_analysis_id:
+            raise AccessioningError("Failed to find mapping analysis ids that created tagAlign for control rep %s.  If this analysis used a custom control consider running with --skip_control" % (repn))
+
+        mapping_analyses.append(dxpy.describe(mapping_analysis_id))
 
     mapping_stages = []
 
@@ -2352,37 +2362,58 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload, use_co
 
 def accession_analysis_step_run(analysis_step_run_metadata, keypair, server,
                                 dryrun, force_patch, force_upload, use_content_md5sum):
-    url = urlparse.urljoin(server, '/analysis-step-runs/')
+    logger.debug(
+        "in accession_analysis_step_run with analysis_step_run_metadata\n%s"
+        % (pprint.pformat(analysis_step_run_metadata)))
+
     if dryrun:
         logger.info("Dry run.  Would POST %s" % (analysis_step_run_metadata))
-        new_object = {}
-    else:
-        # r = requests.post(url, auth=keypair, headers={'content-type': 'application/json'}, data=json.dumps(analysis_step_run_metadata))
-        r = common.encoded_post(
-            url, keypair, analysis_step_run_metadata, return_response=True)
-        try:
-            r.raise_for_status()
-        except:
-            if r.status_code == 409:
-                url = urlparse.urljoin(
-                    server,
-                    "/%s" % (analysis_step_run_metadata['aliases'][0]))  # assumes there's only one alias
-                new_object = common.encoded_get(url, keypair)
+        return {}
+
+    post_url = urlparse.urljoin(server, '/analysis-step-runs/')
+    post_response = common.encoded_post(
+        post_url, keypair, analysis_step_run_metadata, return_response=True)
+    try:
+        post_response.raise_for_status()
+    except:  # POST failed
+        if post_response.status_code == 409:
+            existing_url = urlparse.urljoin(
+                server,
+                "/%s" % (analysis_step_run_metadata['aliases'][0]))  # assumes there's only one alias
+            if force_patch:
+                try:
+                    put_response = common.encoded_put(
+                        existing_url, keypair, analysis_step_run_metadata, return_response=True)
+                except:  # PUT failed
+                    logger.error(
+                        'PUT analysis_step_run object failed: %s %s'
+                        % (put_response.status_code, put_response.reason))
+                    logger.error(put_response.text)
+                    return None
+                else:  # PUT succeeded
+                    return_object = put_response.json()['@graph'][0]
+            else:  # POST failed but not force_patch
+                logger.warning(post_response.text)
+                return_object = common.encoded_get(existing_url, keypair)
                 logger.info(
                     'Using existing analysis_step_run object %s'
-                    % (new_object.get('@id')))
-            else:
-                logger.warning(
-                    'POST analysis_step_run object failed: %s %s'
-                    % (r.status_code, r.reason))
-                logger.warning(r.text)
-                new_object = {}
-        else:
-            logger.info('POST new analysis_step_run to %s' % (url))
-            new_object = r.json()['@graph'][0]
-            logger.info(
-                "New analysis_step_run uuid: %s" % (new_object.get('uuid')))
-    return new_object
+                    % (return_object.get('@id')))
+        else:  # POST failed with something other than 409
+            logger.error(
+                'POST analysis_step_run object failed: %s %s'
+                % (post_response.status_code, post_response.reason))
+            logger.error(post_response.text)
+            return_object = None
+    else:  # POST succeeded
+        logger.info('POST new analysis_step_run to %s' % (post_url))
+        return_object = post_response.json()['@graph'][0]
+        logger.info(
+            "New analysis_step_run uuid: %s" % (return_object.get('uuid')))
+    if return_object is None:
+        raise AccessioningError(
+            "accession_analysis_step_run failed to accession:\n%s"
+            % (pprint.pformat(analysis_step_run_metadata)))
+    return return_object
 
 
 def encode_file(keypair, server, field, value):
@@ -2691,8 +2722,10 @@ def accession_qc_object(obj_type, obj, keypair, server,
     if object_to_replace:
         # retain any existing links from this metric to existing files
         obj['quality_metric_of'] = list(set(
-            (object_to_replace.get('quality_metric_of') or []) +
-            (obj.get('quality_metric_of') or [])))
+            [uri.split('/') if '/' in uri else uri for uri in
+                (object_to_replace.get('quality_metric_of') or []) +
+                (obj.get('quality_metric_of') or [])]
+            ))
         url = urlparse.urljoin(server, object_to_replace['@id'])
         logger.info('PUT to %s' % (url))
         logger.debug('PUT %s with %s' % (url, json.dumps(obj)))
@@ -2737,7 +2770,7 @@ def accession_pipeline(analysis_step_versions, keypair, server,
             # versionof namespace has been removed, now need to find versions
             # by uuid
             alias = 'dnanexus:%s' % (jobid)
-            if step.get('status') == 'virtual':
+            if step.pop('virtual', None):
                 alias += '-virtual-file-conversion-step'
             analysis_step_run_metadata = {
                 'aliases': [alias],
@@ -2755,6 +2788,7 @@ def accession_pipeline(analysis_step_versions, keypair, server,
             analysis_step_run = accession_analysis_step_run(
                 analysis_step_run_metadata, keypair, server,
                 dryrun, force_patch, force_upload, use_content_md5sum)
+
             logger.debug(
                 'in accession_pipeline analysis_step_run %s'
                 % (pprint.pformat(analysis_step_run)))
@@ -3114,6 +3148,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                      'rep1_narrowpeaks_bb', 'rep2_narrowpeaks_bb',
                      'pooled_narrowpeaks_bb'],
                 'status': 'released',
+                'virtual': True,
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -3129,6 +3164,7 @@ def accession_histone_analysis_files(peaks_analysis, keypair, server, dryrun,
                     if re.match('(Overlap|Final) narrowpeaks', stage_name)),
                 'file_names': [replicated_peaks_bb_filename],
                 'status': 'released',
+                'virtual': True,
                 'qc_objects': [{'histone_chipseq_quality_metric': [replicated_peaks_bb_filename]}]
             } for peak_stage in peak_stages
         ]
@@ -3294,6 +3330,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'stage_name': 'SPP Peaks',
                 'file_names': peaks_bb_filenames,
                 'status': 'released',
+                'virtual': True,
                 'qc_objects': []
             } for peak_stage in peak_stages
         ],
@@ -3306,6 +3343,7 @@ def accession_tf_analysis_files(peaks_analysis, keypair, server, dryrun,
                 'stage_name': 'Final IDR peak calls',
                 'file_names': idr_bb_filenames,
                 'status': 'released',
+                'virtual': True,
                 'qc_objects': [{'idr_quality_metric': idr_bb_filenames}]
             } for peak_stage in peak_stages
         ]
