@@ -120,6 +120,7 @@
   "runSpec": {
     "interpreter": "python2.7",
     "file": "src/accession_analysis.py",
+    "distribution": "Ubuntu", "release": "16.04",
     "execDepends": [
     ],
     "assetDepends": [
