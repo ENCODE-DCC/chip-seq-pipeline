@@ -2721,8 +2721,13 @@ def accession_qc_object(obj_type, obj, keypair, server,
 
     if object_to_replace:
         # retain any existing links from this metric to existing files
+        logger.debug('object_to_replace.quality_metric_of: %s' % (object_to_replace.get('quality_metric_of')))
+        logger.debug('obj.quality_metric_of: %s' % (obj.get('quality_metric_of')))
+        logger.debug('combined: %s' % (
+            (object_to_replace.get('quality_metric_of') or []) +
+            (obj.get('quality_metric_of') or [])))
         obj['quality_metric_of'] = list(set(
-            [uri.split('/') if '/' in uri else uri for uri in
+            [uri.split('/')[2] if '/' in uri else uri for uri in
                 (object_to_replace.get('quality_metric_of') or []) +
                 (obj.get('quality_metric_of') or [])]
             ))
