@@ -2268,7 +2268,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload, use_co
             logger.error(r.text)
             md5_exists = None
     else:
-        md5_exists = r.json()
+        md5_exists = r.json()['@graph'][0]
 
     if use_content_md5sum and accessioned_file and not md5_exists:
         logger.info('Using file with matching content_md5sum')
