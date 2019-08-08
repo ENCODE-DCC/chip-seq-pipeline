@@ -2253,7 +2253,7 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload, use_co
     # check to see if md5 already in the database
     url = \
         server + \
-        '/md5:%s?format=json&frame=object' % (f.get('md5sum'))
+        '/search/?type=File&md5sum=%s?format=json&frame=object' % (f.get('md5sum'))
     r = common.encoded_get(url, keypair, return_response=True)
     try:
         r.raise_for_status()
