@@ -2253,13 +2253,13 @@ def accession_file(f, server, keypair, dryrun, force_patch, force_upload, use_co
     # check to see if md5 already in the database
     url = \
         server + \
-        '/search/?type=File&md5sum=%s?format=json&frame=object' % (f.get('md5sum'))
+        '/search/?type=File&md5sum=%s&format=json&frame=object' % (f.get('md5sum'))
     r = common.encoded_get(url, keypair, return_response=True)
     try:
         r.raise_for_status()
     except:
         if r.status_code == 404:
-            logger.info('No md5 matches %s' % (f.get('md5sum')))
+            logger.info('No file md5sum matches %s' % (f.get('md5sum')))
             md5_exists = False
         else:
             logger.error(
