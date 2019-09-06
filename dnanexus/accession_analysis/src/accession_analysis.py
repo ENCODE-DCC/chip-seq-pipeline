@@ -1749,21 +1749,21 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
          'file_format_specifications': ['encode:narrowPeak.as'],
-         'output_type': 'optimal idr thresholded peaks'},
+         'output_type': 'optimal IDR thresholded peaks'},
         common_file_metadata)
 
     idr_conservative_narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
          'file_format_specifications': ['encode:narrowPeak.as'],
-         'output_type': 'conservative idr thresholded peaks'},
+         'output_type': 'conservative IDR thresholded peaks'},
         common_file_metadata)
 
     idr_stable_narrowpeak_metadata = common.merge_dicts(
         {'file_format': 'bed',
          'file_format_type': 'narrowPeak',
          'file_format_specifications': ['encode:narrowPeak.as'],
-         'output_type': 'pseudoreplicated idr thresholded peaks'},
+         'output_type': 'pseudoreplicated IDR thresholded peaks'},
         common_file_metadata)
 
     narrowpeak_bb_metadata = common.merge_dicts(
@@ -1777,21 +1777,21 @@ def get_tf_peak_stages(peaks_analysis, mapping_stages, control_stages,
         {'file_format': 'bigBed',
          'file_format_type': 'narrowPeak',
          'file_format_specifications': ['encode:narrowPeak.as'],
-         'output_type': 'optimal idr thresholded peaks'},
+         'output_type': 'optimal IDR thresholded peaks'},
         common_file_metadata)
 
     idr_conservative_narrowpeak_bb_metadata = common.merge_dicts(
         {'file_format': 'bigBed',
          'file_format_type': 'narrowPeak',
          'file_format_specifications': ['encode:narrowPeak.as'],
-         'output_type': 'conservative idr thresholded peaks'},
+         'output_type': 'conservative IDR thresholded peaks'},
         common_file_metadata)
 
     idr_stable_narrowpeak_bb_metadata = common.merge_dicts(
         {'file_format': 'bigBed',
          'file_format_type': 'narrowPeak',
          'file_format_specifications': ['encode:narrowPeak.as'],
-         'output_type': 'pseudoreplicated idr thresholded peaks'},
+         'output_type': 'pseudoreplicated IDR thresholded peaks'},
         common_file_metadata)
 
     fc_signal_metadata = common.merge_dicts(
