@@ -54,6 +54,36 @@ def s3_dxcp(accession, server, keypair):
 
     # make the URL that will get redirected
     # get it from the file object's href property
+    encode_url = urlparse.urljoin(server, f_obj.get('href'))
+    logger.debug("URL: %s" % (encode_url))
+    # stream=True avoids actually downloading the file,
+    # but it evaluates the redirection
+    r = requests.get(
+        encode_url,
+        auth=keypair,
+        headers={'content-type': 'application/json'},
+        allow_redirects=True,
+        stream=True)
+    try:
+        r.raise_for_status
+    except:
+        logger.error('%s href does not resolve' % (f_obj.get('accession')))
+    logger.debug("Response: %s", (r))
+
+    # this is the actual S3 https URL after redirection
+    s3_url = r.url
+    logger.debug("s3_url: %s" % (s3_url))
+
+    # release the connection
+    r.close()
+
+    # split up the url into components
+    o = urlparse.urlparse(s3_url)
+
+    # pull out the filename
+    filename = os.path.basename(o.path)
+
+    # hack together the s3 cp url (with the s3 method instead of https)
     bucket_url = urlparse.urljoin(server, f_obj.get('s3_uri'))
 
     # cp the file from the bucket
