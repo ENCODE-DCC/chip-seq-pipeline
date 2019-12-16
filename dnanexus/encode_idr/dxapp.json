@@ -344,6 +344,8 @@
 	"runSpec": {
 		"interpreter": "python2.7",
 		"file": "src/encode_idr.py",
+		"distribution": "Ubuntu",
+		"release": "14.04",
 		"assetDepends":[
 			{
       			"name": "bedtools_asset",

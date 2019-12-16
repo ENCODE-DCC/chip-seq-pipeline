@@ -199,6 +199,8 @@
 		}
 	],
 	"runSpec": {
+		"distribution": "Ubuntu",
+		"release": "14.04",
 		"assetDepends":[
 		{
       		"name": "bedtools_asset",

@@ -22,7 +22,9 @@
   ],
   "runSpec": {
     "interpreter": "bash",
-    "file": "src/create_idr_venv.sh"
+    "file": "src/create_idr_venv.sh",
+    "distribution": "Ubuntu",
+    "release": "14.04"
   },
   "access": {
     "network": [

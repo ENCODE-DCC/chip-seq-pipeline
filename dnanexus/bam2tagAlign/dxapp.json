@@ -36,6 +36,8 @@
   "runSpec": {
     "interpreter": "python2.7",
     "file": "src/bam2tagalign.py",
+    "distribution": "Ubuntu",
+    "release": "14.04",
     "systemRequirements": {
       "main":     {"instanceType": "mem1_ssd1_x8"}
     },

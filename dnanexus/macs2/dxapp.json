@@ -111,6 +111,8 @@
 		}
 	],
 	"runSpec": {
+		"distribution": "Ubuntu",
+		"release": "14.04",
 		"interpreter": "python2.7",
 		"file": "src/macs2.py",
 		"systemRequirements": {

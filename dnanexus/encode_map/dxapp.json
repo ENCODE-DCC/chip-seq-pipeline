@@ -93,6 +93,8 @@
   "runSpec": {
     "interpreter": "python2.7",
     "file": "src/encode_map.py",
+    "distribution": "Ubuntu",
+    "release": "14.04",
     "execDepends": [
       {"name": "openjdk-6-jdk"}
     ],

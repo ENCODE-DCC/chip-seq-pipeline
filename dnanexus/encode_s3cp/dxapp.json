@@ -37,6 +37,8 @@
   "runSpec": {
     "interpreter": "python2.7",
     "file": "src/encode_s3cp.py",
+    "distribution": "Ubuntu",
+    "release": "14.04",
     "execDepends": [
       {"name": "awscli", "package_manager": "pip"}
     ]

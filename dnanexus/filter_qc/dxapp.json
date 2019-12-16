@@ -137,6 +137,8 @@
   "runSpec": {
     "interpreter": "python2.7",
     "file": "src/filter_qc.py",
+    "distribution": "Ubuntu",
+    "release": "14.04",
     "execDepends": [
       {"name": "samtools",
        "package_manager": "git",

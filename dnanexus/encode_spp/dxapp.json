@@ -216,6 +216,8 @@
     "runSpec": {
         "interpreter": "python2.7",
         "file": "src/encode_spp.py",
+        "distribution": "Ubuntu",
+        "release": "14.04",
         "assetDepends":[
             {
                 "name": "common_asset",

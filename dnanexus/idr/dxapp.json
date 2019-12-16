@@ -102,6 +102,8 @@
   "runSpec": {
     "interpreter": "python2.7",
     "file": "src/idr.py",
+    "distribution": "Ubuntu",
+    "release": "14.04",
     "assetDepends":[{
       "name": "bedtools_asset",
       "project": "project-BKpvFg00VBPV975PgJ6Q03v6",

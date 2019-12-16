@@ -31,6 +31,8 @@
   "runSpec": {
     "interpreter": "python2.7",
     "file": "src/pool.py",
+    "distribution": "Ubuntu",
+    "release": "14.04",
     "systemRequirements": {
       "main": {"instanceType": "mem2_hdd2_x4"}
     },
